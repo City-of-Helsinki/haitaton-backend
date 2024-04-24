@@ -25,11 +25,15 @@ import assertk.assertions.single
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
-import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.ContactType
+import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_APPLICATION_IDENTIFIER
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.asianHoitajaCustomerContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationEntity
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationData
@@ -43,8 +47,16 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUSTAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_MUU
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_OMISTAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_PERUSTAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_SUORITTAJA
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
+import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
+import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.identifier
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -52,6 +64,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
+import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
 import fi.hel.haitaton.hanke.test.Asserts.hasReceivers
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.auditEvent
@@ -61,6 +74,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasTargetType
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toChangeLogJsonString
 import fi.hel.haitaton.hanke.userId
 import io.mockk.every
@@ -72,18 +86,11 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.core.context.SecurityContext
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
-private const val USERNAME = "test7358"
 const val kayttajaTunnistePattern = "[a-zA-z0-9]{24}"
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
-class HankeKayttajaServiceITest : DatabaseTest() {
+class HankeKayttajaServiceITest : IntegrationTest() {
 
     @Autowired private lateinit var hankeKayttajaService: HankeKayttajaService
     @Autowired private lateinit var permissionService: PermissionService
@@ -129,15 +136,17 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val response = hankeKayttajaService.getKayttaja(kayttajaEntity.id)
 
             assertThat(response).all {
-                prop(HankeKayttajaDto::id).isEqualTo(kayttajaEntity.id)
-                prop(HankeKayttajaDto::sahkoposti).isEqualTo(HankeKayttajaFactory.KAKE_EMAIL)
-                prop(HankeKayttajaDto::etunimi).isEqualTo(HankeKayttajaFactory.KAKE)
-                prop(HankeKayttajaDto::sukunimi).isEqualTo(HankeKayttajaFactory.KATSELIJA)
-                prop(HankeKayttajaDto::nimi)
-                    .isEqualTo("${HankeKayttajaFactory.KAKE} ${HankeKayttajaFactory.KATSELIJA}")
-                prop(HankeKayttajaDto::puhelinnumero).isEqualTo(HankeKayttajaFactory.KAKE_PUHELIN)
-                prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
-                prop(HankeKayttajaDto::tunnistautunut).isEqualTo(true)
+                prop(HankeKayttaja::id).isEqualTo(kayttajaEntity.id)
+                prop(HankeKayttaja::hankeId).isEqualTo(hanke.id)
+                prop(HankeKayttaja::etunimi).isEqualTo(HankeKayttajaFactory.KAKE)
+                prop(HankeKayttaja::sukunimi).isEqualTo(HankeKayttajaFactory.KATSELIJA)
+                prop(HankeKayttaja::sahkoposti).isEqualTo(HankeKayttajaFactory.KAKE_EMAIL)
+                prop(HankeKayttaja::puhelinnumero).isEqualTo(HankeKayttajaFactory.KAKE_PUHELIN)
+                prop(HankeKayttaja::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
+                prop(HankeKayttaja::roolit).isEmpty()
+                prop(HankeKayttaja::permissionId).isNotNull()
+                prop(HankeKayttaja::kayttajaTunnisteId).isNull()
+                prop(HankeKayttaja::kutsuttu).isNull()
             }
         }
 
@@ -149,8 +158,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val response = hankeKayttajaService.getKayttaja(kayttajaEntity.id)
 
             assertThat(response).all {
-                prop(HankeKayttajaDto::id).isEqualTo(kayttajaEntity.id)
-                prop(HankeKayttajaDto::tunnistautunut).isEqualTo(false)
+                prop(HankeKayttaja::id).isEqualTo(kayttajaEntity.id)
+                prop(HankeKayttaja::permissionId).isNull()
             }
         }
     }
@@ -177,7 +186,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Returns data matching to the saved entity`() {
-            val hanke = hankeFactory.builder(USERNAME).withPerustaja(KAYTTAJA_INPUT_HAKIJA).create()
+            val hanke =
+                hankeFactory.builder(USERNAME).withPerustaja(KAYTTAJA_INPUT_PERUSTAJA).create()
 
             val result: List<HankeKayttajaDto> =
                 hankeKayttajaService.getKayttajatByHankeId(hanke.id)
@@ -188,12 +198,51 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 prop(HankeKayttajaDto::id).isEqualTo(entity.id)
                 prop(HankeKayttajaDto::etunimi).isEqualTo(entity.etunimi)
                 prop(HankeKayttajaDto::sukunimi).isEqualTo(entity.sukunimi)
-                prop(HankeKayttajaDto::nimi).isEqualTo(entity.fullName())
                 prop(HankeKayttajaDto::puhelinnumero).isEqualTo(entity.puhelin)
                 prop(HankeKayttajaDto::sahkoposti).isEqualTo(entity.sahkoposti)
                 prop(HankeKayttajaDto::kayttooikeustaso)
                     .isEqualTo(entity.permission!!.kayttooikeustaso)
                 prop(HankeKayttajaDto::tunnistautunut).isEqualTo(true)
+                prop(HankeKayttajaDto::kutsuttu).isNull()
+            }
+        }
+
+        @Test
+        fun `Returns correct roles for the users`() {
+            val hanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withPerustaja(KAYTTAJA_INPUT_PERUSTAJA)
+                    .saveWithYhteystiedot {
+                        omistaja()
+                        rakennuttaja()
+                        toteuttaja()
+                        toteuttaja(kayttaja(KAYTTAJA_INPUT_RAKENNUTTAJA))
+                        muuYhteystieto(kayttaja(KAYTTAJA_INPUT_ASIANHOITAJA))
+                        muuYhteystieto(kayttaja(KAYTTAJA_INPUT_MUU))
+                    }
+            val expectedRoles =
+                mapOf(
+                    Pair(KAYTTAJA_INPUT_OMISTAJA.email, arrayOf(ContactType.OMISTAJA)),
+                    Pair(
+                        KAYTTAJA_INPUT_RAKENNUTTAJA.email,
+                        arrayOf(ContactType.RAKENNUTTAJA, ContactType.TOTEUTTAJA)
+                    ),
+                    Pair(KAYTTAJA_INPUT_SUORITTAJA.email, arrayOf(ContactType.TOTEUTTAJA)),
+                    Pair(KAYTTAJA_INPUT_ASIANHOITAJA.email, arrayOf(ContactType.MUU)),
+                    Pair(KAYTTAJA_INPUT_MUU.email, arrayOf(ContactType.MUU))
+                )
+
+            val result: List<HankeKayttajaDto> =
+                hankeKayttajaService.getKayttajatByHankeId(hanke.id)
+
+            assertThat(result).hasSize(6) // one is the founder
+            result.forEach {
+                if (it.sahkoposti == KAYTTAJA_INPUT_PERUSTAJA.email) {
+                    assertThat(it.roolit).isEmpty() // founder has no roles
+                } else {
+                    assertThat(it.roolit).containsExactlyInAnyOrder(*expectedRoles[it.sahkoposti]!!)
+                }
             }
         }
     }
@@ -210,8 +259,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(result).isNotNull().all {
                 prop(HankekayttajaEntity::id).isNotNull()
                 prop(HankekayttajaEntity::sahkoposti).isEqualTo(DEFAULT_HANKE_PERUSTAJA.sahkoposti)
-                prop(HankekayttajaEntity::etunimi).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
-                prop(HankekayttajaEntity::sukunimi).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(DEFAULT_LAST_NAME)
                 prop(HankekayttajaEntity::puhelin).isEqualTo(DEFAULT_HANKE_PERUSTAJA.puhelinnumero)
                 prop(HankekayttajaEntity::permission)
                     .isNotNull()
@@ -260,10 +309,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Nested
     inner class AddHankeFounder {
-        private val founder = HankeFactory.DEFAULT_HANKE_PERUSTAJA
+        private val founder = DEFAULT_HANKE_PERUSTAJA
         private val securityContext = mockk<SecurityContext>()
-        private val founderFullName =
-            "${ProfiiliFactory.DEFAULT_NAMES.givenName} ${ProfiiliFactory.DEFAULT_NAMES.lastName}"
 
         @BeforeEach
         fun setUp() {
@@ -321,8 +368,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                         prop(HankeKayttaja::hankeId).isEqualTo(savedHankeId)
                         prop(HankeKayttaja::kayttajaTunnisteId).isNull()
                         prop(HankeKayttaja::permissionId).isNotNull()
-                        prop(HankeKayttaja::nimi).isEqualTo(founderFullName)
+                        prop(HankeKayttaja::etunimi)
+                            .isEqualTo(ProfiiliFactory.DEFAULT_NAMES.givenName)
+                        prop(HankeKayttaja::sukunimi)
+                            .isEqualTo(ProfiiliFactory.DEFAULT_NAMES.lastName)
                         prop(HankeKayttaja::sahkoposti).isEqualTo(founder.sahkoposti)
+                        prop(HankeKayttaja::puhelinnumero).isEqualTo(founder.puhelinnumero)
                     }
                 }
             }
@@ -376,10 +427,10 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 prop(HankeKayttajaDto::sahkoposti).isEqualTo(email)
                 prop(HankeKayttajaDto::etunimi).isEqualTo("Joku")
                 prop(HankeKayttajaDto::sukunimi).isEqualTo("Jokunen")
-                prop(HankeKayttajaDto::nimi).isEqualTo("Joku Jokunen")
                 prop(HankeKayttajaDto::puhelinnumero).isEqualTo("0508889999")
                 prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
                 prop(HankeKayttajaDto::tunnistautunut).isFalse()
+                prop(HankeKayttajaDto::kutsuttu).isRecent()
             }
         }
 
@@ -538,8 +589,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val kayttajat = hankeKayttajaRepository.findAll()
             assertThat(kayttajat).hasSize(4)
             assertThat(kayttajat).each { kayttaja ->
-                kayttaja.transform { it.etunimi }.isEqualTo("Teppo")
-                kayttaja.transform { it.sukunimi }.isEqualTo("Testihenkilö")
+                kayttaja.transform { it.etunimi }.isEqualTo(TEPPO)
+                kayttaja.transform { it.sukunimi }.isEqualTo(TESTIHENKILO)
                 kayttaja.transform { it.hankeId }.isEqualTo(hanke.id)
                 kayttaja.transform { it.permission }.isNull()
                 kayttaja.transform { it.kayttajakutsu }.isNotNull()
@@ -609,7 +660,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(capturedEmails).hasSize(3)
             assertThat(capturedEmails)
                 .areValidHankeInvitations(
-                    KAYTTAJA_INPUT_HAKIJA.fullName(),
+                    "${KAYTTAJA_INPUT_HAKIJA.etunimi} ${KAYTTAJA_INPUT_HAKIJA.sukunimi}",
                     KAYTTAJA_INPUT_HAKIJA.email,
                     hanke
                 )
@@ -1132,7 +1183,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `Succeeds with with admin permission if updating to KAIKKI_OIKEUDET`() {
+        fun `Succeeds with admin permission if updating to KAIKKI_OIKEUDET`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja = kayttajaFactory.saveUnidentifiedUser(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.KAIKKI_OIKEUDET)
@@ -1194,20 +1245,74 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 it.kayttooikeustaso == Kayttooikeustaso.HANKEMUOKKAUS
             }
         }
+
+        @Test
+        fun `Sends an email about the changed permission`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val updater = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            val kayttaja = kayttajaFactory.saveIdentifiedUser(hanke.id)
+            val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
+
+            hankeKayttajaService.updatePermissions(hanke.identifier(), updates, false, USERNAME)
+
+            val capturedEmails = greenMail.receivedMessages
+            assertThat(capturedEmails).hasSize(1)
+            assertThat(capturedEmails.first())
+                .isValidPermissionUpdateNotification(
+                    hanke.hankeTunnus,
+                    hanke.nimi,
+                    updater.fullName(),
+                    updater.sahkoposti,
+                    "Hankemuokkaus"
+                )
+        }
     }
 
     @Nested
     inner class CreatePermissionFromToken {
         private val tunniste = "Itf4UuErPqBHkhJF7CUAsu69"
         private val newUserId = "newUser"
+        private val securityContext = mockk<SecurityContext>()
+
+        @BeforeEach
+        fun setUp() {
+            every { securityContext.userId() } returns USERNAME
+            every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
+        }
 
         @Test
         fun `throws exception if tunniste doesn't exist`() {
-            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, "fake") }
+            assertFailure {
+                    hankeKayttajaService.createPermissionFromToken(
+                        newUserId,
+                        "fake",
+                        securityContext
+                    )
+                }
                 .all {
                     hasClass(TunnisteNotFoundException::class)
                     messageContains(newUserId)
                     messageContains("fake")
+                }
+        }
+
+        @Test
+        fun `throws exception if cannot retrieve verified name from Profiili`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
+            every { profiiliClient.getVerifiedName(any()) } throws
+                VerifiedNameNotFound("Verified name not found from profile.")
+
+            assertFailure {
+                    hankeKayttajaService.createPermissionFromToken(
+                        newUserId,
+                        tunniste,
+                        securityContext
+                    )
+                }
+                .all {
+                    hasClass(VerifiedNameNotFound::class)
+                    messageContains("Verified name not found from profile.")
                 }
         }
 
@@ -1221,7 +1326,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 )
             kayttajaFactory.addToken(kayttaja)
 
-            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, "existing") }
+            assertFailure {
+                    hankeKayttajaService.createPermissionFromToken(
+                        newUserId,
+                        "existing",
+                        securityContext
+                    )
+                }
                 .all {
                     hasClass(UserAlreadyHasPermissionException::class)
                     messageContains(newUserId)
@@ -1241,7 +1352,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS
                 )
 
-            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, tunniste) }
+            assertFailure {
+                    hankeKayttajaService.createPermissionFromToken(
+                        newUserId,
+                        tunniste,
+                        securityContext
+                    )
+                }
                 .all {
                     hasClass(UserAlreadyHasPermissionException::class)
                     messageContains(newUserId)
@@ -1256,7 +1373,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val kayttaja = kayttajaFactory.saveIdentifiedUser(hanke.id, userId = "Other user")
             kayttajaFactory.addToken(kayttaja)
 
-            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, "existing") }
+            assertFailure {
+                    hankeKayttajaService.createPermissionFromToken(
+                        newUserId,
+                        "existing",
+                        securityContext
+                    )
+                }
                 .all {
                     hasClass(PermissionAlreadyExistsException::class)
                     messageContains(newUserId)
@@ -1267,11 +1390,35 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         }
 
         @Test
+        fun `Updates name from Profiili`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val originalHankekayttaja =
+                kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
+
+            val kayttaja =
+                hankeKayttajaService.createPermissionFromToken(newUserId, tunniste, securityContext)
+
+            assertThat(kayttaja.etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
+            assertThat(kayttaja.sukunimi).isEqualTo(DEFAULT_LAST_NAME)
+            val hankeKayttaja = hankeKayttajaRepository.findById(kayttaja.id).get()
+            assertThat(hankeKayttaja).all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::etunimi).isNotEqualTo(originalHankekayttaja.etunimi)
+                prop(HankekayttajaEntity::sukunimi).isNotEqualTo(originalHankekayttaja.sukunimi)
+                prop(HankekayttajaEntity::kutsuttuEtunimi)
+                    .isEqualTo(originalHankekayttaja.kutsuttuEtunimi)
+                prop(HankekayttajaEntity::kutsuttuSukunimi)
+                    .isEqualTo(originalHankekayttaja.kutsuttuSukunimi)
+            }
+        }
+
+        @Test
         fun `Creates a permission`() {
             val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
 
-            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
+            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste, securityContext)
 
             val permission = permissionRepository.findOneByHankeIdAndUserId(hanke.id, newUserId)
             assertThat(permission)
@@ -1285,7 +1432,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
 
-            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
+            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste, securityContext)
 
             assertThat(kayttajakutsuRepository.findAll()).isEmpty()
         }
@@ -1296,7 +1443,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
             auditLogRepository.deleteAll()
 
-            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
+            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste, securityContext)
 
             val logs =
                 auditLogRepository.findAll().filter {
@@ -1402,6 +1549,175 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         }
     }
 
+    @Nested
+    inner class UpdateOwnContactInfo {
+        private val update = ContactUpdate("updated@email.test", "9991111")
+
+        @Test
+        fun `Throws exception if there's no hanke`() {
+            val hanketunnus = "HAI-001"
+
+            val failure = assertFailure {
+                hankeKayttajaService.updateOwnContactInfo(hanketunnus, update, USERNAME)
+            }
+
+            failure.all {
+                hasClass(HankeNotFoundException::class)
+                messageContains(hanketunnus)
+            }
+        }
+
+        @Test
+        fun `Throws exception if user not in hanke`() {
+            val hanke = hankeFactory.builder("Other user").save()
+
+            val failure = assertFailure {
+                hankeKayttajaService.updateOwnContactInfo(hanke.hankeTunnus, update, USERNAME)
+            }
+
+            failure.all {
+                hasClass(HankeNotFoundException::class)
+                messageContains(hanke.hankeTunnus)
+            }
+        }
+
+        @Test
+        fun `Updates the contact information of the user`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+
+            hankeKayttajaService.updateOwnContactInfo(hanke.hankeTunnus, update, USERNAME)
+
+            val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)
+            assertThat(kayttaja).isNotNull().all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
+            }
+        }
+    }
+
+    @Nested
+    inner class UpdateKayttajaInfo {
+        private val update = KayttajaUpdate("updated@email.test", "9991111")
+
+        @Test
+        fun `Throws exception if there's no hanke`() {
+            val hanketunnus = "HAI-001"
+
+            val failure = assertFailure {
+                hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, UUID.randomUUID())
+            }
+
+            failure.all {
+                hasClass(HankeNotFoundException::class)
+                messageContains(hanketunnus)
+            }
+        }
+
+        @Test
+        fun `Throws exception if user not in hanke`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val otherHanke = hankeFactory.builder("Other user").save()
+            val otherUser = kayttajaFactory.saveIdentifiedUser(otherHanke.id)
+
+            val failure = assertFailure {
+                hankeKayttajaService.updateKayttajaInfo(hanke.hankeTunnus, update, otherUser.id)
+            }
+
+            failure.all {
+                hasClass(HankeKayttajaNotFoundException::class)
+                messageContains(otherUser.id.toString())
+            }
+        }
+
+        @Test
+        fun `Throws exception when user is identified and try to change name`() {
+            val update = KayttajaUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val identifiedUser = kayttajaFactory.saveIdentifiedUser(hanke.id)
+
+            val failure = assertFailure {
+                hankeKayttajaService.updateKayttajaInfo(
+                    hanke.hankeTunnus,
+                    update,
+                    identifiedUser.id
+                )
+            }
+
+            failure.all {
+                hasClass(UserAlreadyHasPermissionException::class)
+                messageContains("The user already has an active permission")
+            }
+        }
+
+        @Test
+        fun `Updates email and phone number of an identified user`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val identifiedUser = kayttajaFactory.saveIdentifiedUser(hanke.id)
+
+            hankeKayttajaService.updateKayttajaInfo(hanke.hankeTunnus, update, identifiedUser.id)
+
+            val kayttaja = hankeKayttajaService.getKayttajaForHanke(identifiedUser.id, hanke.id)
+            assertThat(kayttaja).isNotNull().all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(identifiedUser.etunimi)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(identifiedUser.sukunimi)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
+            }
+        }
+
+        @Test
+        fun `Updates email and phone number of an unidentified user`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val unidentifiedUser = kayttajaFactory.saveUnidentifiedUser(hanke.id)
+
+            hankeKayttajaService.updateKayttajaInfo(hanke.hankeTunnus, update, unidentifiedUser.id)
+
+            val kayttaja = hankeKayttajaService.getKayttajaForHanke(unidentifiedUser.id, hanke.id)
+            assertThat(kayttaja).isNotNull().all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(unidentifiedUser.etunimi)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(unidentifiedUser.sukunimi)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
+            }
+        }
+
+        @Test
+        fun `Updates email, phone and name of an unidentified user`() {
+            val update = KayttajaUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val unidentifiedUser = kayttajaFactory.saveUnidentifiedUser(hanke.id)
+
+            hankeKayttajaService.updateKayttajaInfo(hanke.hankeTunnus, update, unidentifiedUser.id)
+
+            val kayttaja = hankeKayttajaService.getKayttajaForHanke(unidentifiedUser.id, hanke.id)
+            assertThat(kayttaja).isNotNull().all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(update.etunimi)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(update.sukunimi)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
+            }
+        }
+
+        @Test
+        fun `Does not update name if it is empty or blank`() {
+            val update = KayttajaUpdate("updated@email.test", "9991111", "", " ")
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val unidentifiedUser = kayttajaFactory.saveUnidentifiedUser(hanke.id)
+
+            hankeKayttajaService.updateKayttajaInfo(hanke.hankeTunnus, update, unidentifiedUser.id)
+
+            val kayttaja = hankeKayttajaService.getKayttajaForHanke(unidentifiedUser.id, hanke.id)
+            assertThat(kayttaja).isNotNull().all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(unidentifiedUser.etunimi)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(unidentifiedUser.sukunimi)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
+            }
+        }
+    }
+
     private fun findKayttaja(hankeId: Int, email: String) =
         hankeKayttajaRepository.findByHankeIdAndSahkopostiIn(hankeId, listOf(email)).first()
 
@@ -1437,6 +1753,20 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             contains("$inviterName ($inviterEmail) lisäsi sinut")
             containsMatch("kutsu\\?id=$kayttajaTunnistePattern".toRegex())
             contains("hankkeelle $hankeNimi ($hankeTunnus)")
+        }
+    }
+
+    private fun Assert<MimeMessage>.isValidPermissionUpdateNotification(
+        hankeTunnus: String,
+        hankeNimi: String,
+        updatedByName: String,
+        updatedByEmail: String,
+        newAccessRights: String,
+    ) {
+        prop(MimeMessage::textBody).all {
+            contains("$updatedByName ($updatedByEmail) on muuttanut käyttöoikeustasoasi")
+            contains("hankkeella \"$hankeNimi\" ($hankeTunnus)")
+            contains("Uusi käyttöoikeutesi on \"$newAccessRights\"")
         }
     }
 }

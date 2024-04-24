@@ -331,6 +331,7 @@ class CableReportServiceITests {
             Customer(
                 type = CustomerType.COMPANY,
                 name = "Haitaton Oy Ab",
+                postalAddress = null,
                 country = "FI",
                 email = "info@haitaton.fi",
                 phone = "042-555-6125",

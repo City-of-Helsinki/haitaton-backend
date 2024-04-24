@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.DEFAULT_YTUNNUS
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import java.time.ZonedDateTime
@@ -21,11 +22,12 @@ object HankeYhteystietoFactory {
     /** Create a test yhteystieto with values in all fields. */
     fun create(
         id: Int? = 1,
-        nimi: String = "Teppo Testihenkilö",
+        nimi: String = TEPPO_TESTI,
         email: String = TEPPO_EMAIL,
         tyyppi: YhteystietoTyyppi = YRITYS,
         ytunnus: String = DEFAULT_YTUNNUS,
-        puhelinnumero: String = "04012345678",
+        puhelinnumero: String = TEPPO_PHONE,
+        osasto: String? = "Osasto",
         createdAt: ZonedDateTime? = getCurrentTimeUTC(),
         modifiedAt: ZonedDateTime? = getCurrentTimeUTC(),
     ): HankeYhteystieto {
@@ -37,7 +39,7 @@ object HankeYhteystietoFactory {
             ytunnus = if (tyyppi != YKSITYISHENKILO) ytunnus else null,
             puhelinnumero = puhelinnumero,
             organisaatioNimi = "Organisaatio",
-            osasto = "Osasto",
+            osasto = osasto,
             createdBy = "test7358",
             createdAt = createdAt,
             modifiedBy = "test7358",

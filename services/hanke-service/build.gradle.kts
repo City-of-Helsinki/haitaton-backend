@@ -7,7 +7,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "7.3.0"
+val sentryVersion = "7.8.0"
 
 repositories { mavenCentral() }
 
@@ -48,7 +48,7 @@ spotless {
 }
 
 plugins {
-    val kotlinVersion = "1.9.22"
+    val kotlinVersion = "1.9.23"
     id("org.springframework.boot") version "3.1.6"
     id("io.spring.dependency-management") version "1.1.4"
     id("com.diffplug.spotless") version "6.25.0"
@@ -59,7 +59,7 @@ plugins {
     kotlin("plugin.jpa") version kotlinVersion
     idea
     id("jacoco")
-    id("io.freefair.mjml.java") version "8.4"
+    id("io.freefair.mjml.java") version "8.6"
 }
 
 dependencies {
@@ -79,26 +79,27 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.7.2")
-    implementation("commons-io:commons-io:2.15.1")
-    implementation("com.github.librepdf:openpdf:1.3.40")
-    implementation("net.pwall.mustache:kotlin-mustache:0.11")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
+    implementation("commons-io:commons-io:2.16.1")
+    implementation("com.github.librepdf:openpdf:2.0.2")
+    implementation("net.pwall.mustache:kotlin-mustache:0.12")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
 
     implementation("org.postgresql:postgresql")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testImplementation("io.mockk:mockk:1.13.9")
+    testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.0")
     testImplementation("com.squareup.okhttp3:mockwebserver")
     testImplementation("com.icegreen:greenmail-junit5:2.0.1")
 
     // Testcontainers
-    implementation(platform("org.testcontainers:testcontainers-bom:1.19.5"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.19.7"))
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
 
@@ -113,7 +114,7 @@ dependencies {
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
-    implementation(platform("com.azure:azure-sdk-bom:1.2.20"))
+    implementation(platform("com.azure:azure-sdk-bom:1.2.22"))
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity")

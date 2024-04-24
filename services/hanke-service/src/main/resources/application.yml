@@ -7,6 +7,8 @@ haitaton:
     updateInitialDelayMilliSeconds: ${ALLU_UPDATE_INITIAL_DELAY:60000}
     updateIntervalMilliSeconds: ${ALLU_UPDATE_INTERVAL:60000}
     username: ${ALLU_USERNAME:fake_user}
+  api:
+    disabled: ${HAITATON_API_DISABLED:false}
   azure:
     blob:
       connection-string: ${HAITATON_BLOB_CONNECTION_STRING:#{null}}
@@ -23,6 +25,9 @@ haitaton:
     # For non-prod envs, send filter should be used to send only in allowed addresses.
     filter:
       # List of allowed addresses, separated by ;
+      # The addresses allow for *-wildcards.
+      # The allow list used in test environments, so the email server won't try
+      # to send emails to made-up addresses.
       allow-list: ${HAITATON_EMAIL_FILTER_ALLOW_LIST:haitaton@test.com}
       use: ${HAITATON_EMAIL_FILTER_USE:true}
     from: ${HAITATON_EMAIL_FROM:Haitaton <noreply.haitaton@hel.fi>}
@@ -41,6 +46,8 @@ haitaton:
     issuer: ${HAITATON_GDPR_ISSUER:http://gdpr-api-tester:8888/}
     query-scope: ${HAITATON_GDPR_QUERY_SCOPE:haitaton.gdprquery}
     # For dev and test environments, enable the testdata controller for resetting data
+  migration:
+    enabled: ${HAITATON_MIGRATION_ENABLED:false}
   profiili-api:
     api-tokens-url: ${PROFIILI_API_TOKENS_URL:https://tunnistamo.test.hel.ninja/api-tokens/}
     graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
@@ -98,7 +105,6 @@ spring:
     url: jdbc:postgresql://${HAITATON_HOST:localhost}:${HAITATON_PORT:5432}/${HAITATON_DATABASE:haitaton}
     username: ${HAITATON_USER:haitaton_user}
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       naming:
         # Make database field names to match the entity member names
@@ -126,6 +132,9 @@ spring:
     format:
       # REST API request parameter parsing to work for date values
       date: yyyy-MM-dd
+  security:
+    filter:
+      order: -100
   servlet:
     multipart:
       max-file-size: 100MB

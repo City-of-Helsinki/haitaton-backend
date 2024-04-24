@@ -15,9 +15,15 @@ import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
+import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.ModifyGeometriaRequest
+import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
+import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
+import fi.hel.haitaton.hanke.domain.ModifyHankealueRequest
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.profiili.Names
@@ -60,16 +66,8 @@ data class HankeBuilder(
     fun save(): Hanke {
         val createdHanke = create()
         return hankeService.updateHanke(
-            hanke.copy(id = createdHanke.id, hankeTunnus = createdHanke.hankeTunnus).apply {
-                omistajat = hanke.omistajat.onEach { it.id = null }
-                rakennuttajat = hanke.rakennuttajat.onEach { it.id = null }
-                toteuttajat = hanke.toteuttajat.onEach { it.id = null }
-                muut = hanke.muut.onEach { it.id = null }
-                tyomaaKatuosoite = hanke.tyomaaKatuosoite
-                tyomaaTyyppi = hanke.tyomaaTyyppi
-                alueet = hanke.alueet
-                tormaystarkasteluTulos = hanke.tormaystarkasteluTulos
-            }
+            createdHanke.hankeTunnus,
+            hanke.toModifyRequest(idMapper = { null })
         )
     }
 
@@ -94,13 +92,27 @@ data class HankeBuilder(
         return Pair(application, hanke)
     }
 
+    /**
+     * Save a hanke that has the generated field set. The hanke is created like it would be created
+     * for a stand-alone johtoselvityshakemus.
+     *
+     * This is the best way to create a hanke with generated = true, since [save] overwrites the
+     * generated tag during the update. Call through [HankeFactory.saveGenerated].
+     */
+    internal fun saveGenerated(
+        createRequest: CreateHankeRequest = HankeFactory.createRequest()
+    ): HankeEntity {
+        val hanke = hankeService.createHanke(createRequest, setUpProfiiliMocks())
+        val entity = hankeRepository.getReferenceById(hanke.id)
+        return hankeRepository.save(entity.apply { generated = true })
+    }
+
     fun saveWithYhteystiedot(f: HankeYhteystietoBuilder.() -> Unit): HankeEntity {
         val entity = saveEntity()
         val builder =
             HankeYhteystietoBuilder(
                 entity,
                 userId,
-                hankeService,
                 hankeKayttajaFactory,
                 hankeYhteystietoRepository,
                 hankeYhteyshenkiloRepository,
@@ -119,7 +131,7 @@ data class HankeBuilder(
     fun withGeneratedOmistaja(i: Int = 1) = withGeneratedOmistajat(i)
 
     fun withGeneratedOmistajat(vararg discriminators: Int) = applyToHanke {
-        omistajat = HankeYhteystietoFactory.createDifferentiated(discriminators.toList())
+        omistajat = HankeYhteystietoFactory.createDifferentiated(discriminators.asList())
     }
 
     fun withGeneratedRakennuttaja(i: Int = 1) = applyToHanke {
@@ -160,65 +172,162 @@ data class HankeBuilder(
         every { mockProfiiliClient.getVerifiedName(any()) } returns names
         return securityContext
     }
+
+    companion object {
+        fun Hanke.toModifyRequest(idMapper: (Int?) -> Int? = { it }) =
+            ModifyHankeRequest(
+                onYKTHanke = onYKTHanke,
+                nimi = nimi,
+                kuvaus = kuvaus,
+                vaihe = vaihe,
+                omistajat = omistajat.map { it.toModifyRequest(id = idMapper(it.id)) },
+                rakennuttajat = rakennuttajat.map { it.toModifyRequest(id = idMapper(it.id)) },
+                toteuttajat = toteuttajat.map { it.toModifyRequest(id = idMapper(it.id)) },
+                muut = muut.map { it.toModifyRequest(id = idMapper(it.id)) },
+                tyomaaKatuosoite = tyomaaKatuosoite,
+                tyomaaTyyppi = tyomaaTyyppi,
+                alueet = alueet.map { it.toModifyRequest(id = idMapper(it.id)) },
+            )
+
+        fun HankeYhteystieto.toModifyRequest(id: Int? = this.id) =
+            ModifyHankeYhteystietoRequest(
+                id = id,
+                nimi = nimi,
+                email = email,
+                puhelinnumero = puhelinnumero,
+                organisaatioNimi = organisaatioNimi,
+                osasto = osasto,
+                rooli = rooli,
+                tyyppi = tyyppi,
+                ytunnus = ytunnus,
+                yhteyshenkilot = yhteyshenkilot.map { it.id }
+            )
+
+        fun SavedHankealue.toModifyRequest(id: Int? = this.id) =
+            ModifyHankealueRequest(
+                id = id,
+                nimi = nimi,
+                haittaAlkuPvm = haittaAlkuPvm,
+                haittaLoppuPvm = haittaLoppuPvm,
+                geometriat =
+                    geometriat?.let { ModifyGeometriaRequest(it.id, it.featureCollection) },
+                kaistaHaitta = kaistaHaitta,
+                kaistaPituusHaitta = kaistaPituusHaitta,
+                meluHaitta = meluHaitta,
+                polyHaitta = polyHaitta,
+                tarinaHaitta = tarinaHaitta
+            )
+    }
 }
 
 data class HankeYhteystietoBuilder(
-    private val hankeEntity: HankeEntity,
+    val hankeEntity: HankeEntity,
     private val userId: String,
-    private val hankeService: HankeService? = null,
     private val hankeKayttajaFactory: HankeKayttajaFactory,
     private val hankeYhteystietoRepository: HankeYhteystietoRepository,
     private val hankeYhteyshenkiloRepository: HankeYhteyshenkiloRepository,
 ) {
-    fun omistaja(
-        omistaja: HankekayttajaInput = HankeKayttajaFactory.KAYTTAJA_INPUT_HAKIJA,
-        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS
-    ): HankeYhteystietoBuilder {
-        yhteystieto(ContactType.OMISTAJA, omistaja, kayttooikeustaso)
-        return this
-    }
+    fun kayttaja(
+        sahkoposti: String = HankeKayttajaFactory.KAKE_EMAIL,
+        userId: String = HankeKayttajaFactory.FAKE_USERID,
+        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+    ): HankekayttajaEntity =
+        hankeKayttajaFactory.saveIdentifiedUser(
+            hankeEntity.id,
+            sahkoposti = sahkoposti,
+            userId = userId,
+            kayttooikeustaso = kayttooikeustaso,
+        )
 
-    fun rakennuttaja(
-        rakennuttaja: HankekayttajaInput = HankeKayttajaFactory.KAYTTAJA_INPUT_RAKENNUTTAJA,
-        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS
-    ): HankeYhteystietoBuilder {
-        yhteystieto(ContactType.RAKENNUTTAJA, rakennuttaja, kayttooikeustaso)
-        return this
-    }
-
-    fun toteuttaja(
-        toteuttaja: HankekayttajaInput = HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA,
-        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS
-    ): HankeYhteystietoBuilder {
-        yhteystieto(ContactType.TOTEUTTAJA, toteuttaja, kayttooikeustaso)
-        return this
-    }
-
-    fun muuYhteystieto(
-        muu: HankekayttajaInput = HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA,
-        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS
-    ): HankeYhteystietoBuilder {
-        yhteystieto(ContactType.MUU, muu, kayttooikeustaso)
-        return this
-    }
-
-    private fun yhteystieto(
-        tyyppi: ContactType,
+    fun kayttaja(
         kayttajaInput: HankekayttajaInput,
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
-    ): HankeYhteystietoBuilder {
-        val kayttaja =
-            hankeKayttajaFactory.saveIdentifiedUser(hankeEntity.id, kayttajaInput, kayttooikeustaso)
-        val yhteystieto = HankeYhteystietoFactory.create(id = null)
+    ): HankekayttajaEntity =
+        hankeKayttajaFactory.findOrSaveIdentifiedUser(
+            hankeEntity.id,
+            kayttajaInput,
+            kayttooikeustaso = kayttooikeustaso,
+        )
+
+    fun omistaja(
+        yhteystieto: HankeYhteystieto = HankeYhteystietoFactory.create(id = null),
+        vararg yhteyshenkilot: HankekayttajaEntity =
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA))
+    ): HankeYhteystietoEntity =
+        saveYhteystieto(ContactType.OMISTAJA, yhteystieto, yhteyshenkilot.asList())
+
+    fun omistaja(kayttooikeustaso: Kayttooikeustaso): HankeYhteystietoEntity =
+        omistaja(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA, kayttooikeustaso))
+
+    fun omistaja(
+        first: HankekayttajaEntity,
+        vararg yhteyshenkilot: HankekayttajaEntity
+    ): HankeYhteystietoEntity = omistaja(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
+
+    fun rakennuttaja(
+        yhteystieto: HankeYhteystieto = HankeYhteystietoFactory.create(id = null),
+        vararg yhteyshenkilot: HankekayttajaEntity =
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_RAKENNUTTAJA))
+    ): HankeYhteystietoEntity =
+        saveYhteystieto(ContactType.RAKENNUTTAJA, yhteystieto, yhteyshenkilot.asList())
+
+    fun rakennuttaja(kayttooikeustaso: Kayttooikeustaso) =
+        rakennuttaja(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_RAKENNUTTAJA, kayttooikeustaso))
+
+    fun rakennuttaja(
+        first: HankekayttajaEntity,
+        vararg yhteyshenkilot: HankekayttajaEntity
+    ): HankeYhteystietoEntity = rakennuttaja(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
+
+    fun toteuttaja(
+        yhteystieto: HankeYhteystieto = HankeYhteystietoFactory.create(id = null),
+        vararg yhteyshenkilot: HankekayttajaEntity =
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA))
+    ): HankeYhteystietoEntity =
+        saveYhteystieto(ContactType.TOTEUTTAJA, yhteystieto, yhteyshenkilot.asList())
+
+    fun toteuttaja(kayttooikeustaso: Kayttooikeustaso) =
+        toteuttaja(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA, kayttooikeustaso))
+
+    fun toteuttaja(
+        first: HankekayttajaEntity,
+        vararg yhteyshenkilot: HankekayttajaEntity
+    ): HankeYhteystietoEntity = toteuttaja(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
+
+    fun muuYhteystieto(
+        yhteystieto: HankeYhteystieto = HankeYhteystietoFactory.create(id = null),
+        vararg yhteyshenkilot: HankekayttajaEntity =
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA))
+    ): HankeYhteystietoEntity =
+        saveYhteystieto(ContactType.MUU, yhteystieto, yhteyshenkilot.asList())
+
+    fun muuYhteystieto(kayttooikeustaso: Kayttooikeustaso) =
+        muuYhteystieto(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA, kayttooikeustaso))
+
+    fun muuYhteystieto(
+        first: HankekayttajaEntity,
+        vararg yhteyshenkilot: HankekayttajaEntity
+    ): HankeYhteystietoEntity = muuYhteystieto(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
+
+    private fun addYhteyshenkilo(
+        yhteystietoEntity: HankeYhteystietoEntity,
+        kayttaja: HankekayttajaEntity
+    ) {
+        hankeYhteyshenkiloRepository.save(
+            HankeYhteyshenkiloEntity(hankeKayttaja = kayttaja, hankeYhteystieto = yhteystietoEntity)
+        )
+    }
+
+    private fun saveYhteystieto(
+        tyyppi: ContactType,
+        yhteystieto: HankeYhteystieto,
+        yhteyshenkilot: List<HankekayttajaEntity>,
+    ): HankeYhteystietoEntity {
         val yhteystietoEntity =
             HankeYhteystietoEntity.fromDomain(yhteystieto, tyyppi, userId, hankeEntity).let {
                 hankeYhteystietoRepository.save(it)
             }
-
-        hankeYhteyshenkiloRepository.save(
-            HankeYhteyshenkiloEntity(hankeKayttaja = kayttaja, hankeYhteystieto = yhteystietoEntity)
-        )
-
-        return this
+        yhteyshenkilot.forEach { addYhteyshenkilo(yhteystietoEntity, it) }
+        return yhteystietoEntity
     }
 }

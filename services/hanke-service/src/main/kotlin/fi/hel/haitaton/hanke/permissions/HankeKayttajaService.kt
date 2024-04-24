@@ -1,12 +1,14 @@
 package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeIdentifier
+import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
+import fi.hel.haitaton.hanke.email.AccessRightsUpdateNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
@@ -33,13 +35,24 @@ class HankeKayttajaService(
     private val profiiliClient: ProfiiliClient,
 ) {
     @Transactional(readOnly = true)
-    fun getKayttaja(kayttajaId: UUID): HankeKayttajaDto =
-        hankekayttajaRepository.findByIdOrNull(kayttajaId)?.toDto()
+    fun getKayttaja(kayttajaId: UUID): HankeKayttaja =
+        hankekayttajaRepository.findByIdOrNull(kayttajaId)?.toDomain()
             ?: throw HankeKayttajaNotFoundException(kayttajaId)
 
     @Transactional(readOnly = true)
     fun getKayttajatByHankeId(hankeId: Int): List<HankeKayttajaDto> =
         hankekayttajaRepository.findByHankeId(hankeId).map { it.toDto() }
+
+    @Transactional(readOnly = true)
+    fun getKayttajaForHanke(kayttajaId: UUID, hankeId: Int): HankekayttajaEntity {
+        val kayttaja =
+            hankekayttajaRepository.findByIdOrNull(kayttajaId)
+                ?: throw HankeKayttajaNotFoundException(kayttajaId)
+        if (kayttaja.hankeId != hankeId) {
+            throw HankeKayttajaNotFoundException(kayttajaId)
+        }
+        return kayttaja
+    }
 
     @Transactional(readOnly = true)
     fun getKayttajaByUserId(hankeId: Int, userId: String): HankekayttajaEntity? {
@@ -97,9 +110,7 @@ class HankeKayttajaService(
         currentUserId: String,
         currentKayttaja: HankekayttajaEntity? = null,
     ) {
-        logger.info {
-            "Creating users and user tokens for application ${application.id}, alluid=${application.alluid}}"
-        }
+        logger.info { "Creating users and user tokens for application. ${application.logString()}" }
 
         val kayttajaInput =
             application.applicationData
@@ -183,16 +194,32 @@ class HankeKayttajaService(
         }
 
         validateAdminRemains(hankeIdentifier)
+
+        getKayttajaByUserId(hankeIdentifier.id, userId)?.let { updater ->
+            sendAccessRightsUpdateNotificationEmails(
+                hankeIdentifier,
+                kayttajat.map { Pair(it, updates[it.id]!!) },
+                updater
+            )
+        }
     }
 
     @Transactional
-    fun createPermissionFromToken(userId: String, tunniste: String): HankeKayttaja {
+    fun createPermissionFromToken(
+        userId: String,
+        tunniste: String,
+        securityContext: SecurityContext
+    ): HankeKayttaja {
         logger.info { "Trying to activate token $tunniste for user $userId" }
         val tunnisteEntity =
             kayttajakutsuRepository.findByTunniste(tunniste)
                 ?: throw TunnisteNotFoundException(userId, tunniste)
 
         val kayttaja = tunnisteEntity.hankekayttaja
+
+        if (updateVerifiedName(kayttaja, securityContext)) {
+            logger.info { "Updated user's name from Profiili. userId = $userId" }
+        }
 
         permissionService.findPermission(kayttaja.hankeId, userId)?.let { permission ->
             throw UserAlreadyHasPermissionException(userId, kayttaja.id, permission.id)
@@ -217,6 +244,18 @@ class HankeKayttajaService(
         return kayttaja.toDomain()
     }
 
+    private fun updateVerifiedName(
+        kayttaja: HankekayttajaEntity,
+        securityContext: SecurityContext
+    ): Boolean {
+        val (_, lastName, givenName) = profiiliClient.getVerifiedName(securityContext)
+        return if (givenName != kayttaja.etunimi || lastName != kayttaja.sukunimi) {
+            kayttaja.etunimi = givenName
+            kayttaja.sukunimi = lastName
+            true
+        } else false
+    }
+
     @Transactional
     fun resendInvitation(kayttajaId: UUID, currentUserId: String) {
         // Re-get the kayttaja under the transaction
@@ -231,6 +270,53 @@ class HankeKayttajaService(
         recreateKutsu(kayttaja, currentUserId)
         val hanke = hankeRepository.getReferenceById(kayttaja.hankeId)
         sendHankeInvitation(hanke.hankeTunnus, hanke.nimi, inviter, kayttaja)
+    }
+
+    @Transactional
+    fun updateOwnContactInfo(
+        hankeTunnus: String,
+        update: ContactUpdate,
+        currentUserId: String
+    ): HankeKayttaja {
+        hankeRepository
+            .findOneByHankeTunnus(hankeTunnus)
+            ?.let { getKayttajaByUserId(it.id, currentUserId) }
+            ?.let {
+                it.sahkoposti = update.sahkoposti
+                it.puhelin = update.puhelinnumero
+                return it.toDomain()
+            } ?: throw HankeNotFoundException(hankeTunnus)
+    }
+
+    @Transactional
+    fun updateKayttajaInfo(
+        hankeTunnus: String,
+        update: KayttajaUpdate,
+        userId: UUID
+    ): HankeKayttaja {
+        val hankeKayttajaEntity =
+            hankeRepository.findOneByHankeTunnus(hankeTunnus)?.let {
+                getKayttajaForHanke(userId, it.id)
+            } ?: throw HankeNotFoundException(hankeTunnus)
+
+        // changing name is not allowed if the user is identified (has a permission)
+        if (
+            hankeKayttajaEntity.permission != null &&
+                (!update.etunimi.isNullOrBlank() || !update.sukunimi.isNullOrBlank())
+        ) {
+            throw UserAlreadyHasPermissionException(
+                userId.toString(),
+                hankeKayttajaEntity.id,
+                hankeKayttajaEntity.permission!!.id
+            )
+        }
+
+        hankeKayttajaEntity.sahkoposti = update.sahkoposti
+        hankeKayttajaEntity.puhelin = update.puhelinnumero
+        if (!update.etunimi.isNullOrBlank()) hankeKayttajaEntity.etunimi = update.etunimi
+        if (!update.sukunimi.isNullOrBlank()) hankeKayttajaEntity.sukunimi = update.sukunimi
+
+        return hankeKayttajaEntity.toDomain()
     }
 
     /** Check that every user an update was requested for was found as a user of the hanke. */
@@ -461,6 +547,29 @@ class HankeKayttajaService(
 
     private fun hankeExistingEmails(hankeId: Int, emails: List<String>): List<String> =
         hankekayttajaRepository.findByHankeIdAndSahkopostiIn(hankeId, emails).map { it.sahkoposti }
+
+    private fun sendAccessRightsUpdateNotificationEmails(
+        hankeIdentifier: HankeIdentifier,
+        usersAndPermissions: List<Pair<HankekayttajaEntity, Kayttooikeustaso>>,
+        updater: HankekayttajaEntity
+    ) {
+        logger.info { "Sending access rights update notification." }
+        val hanke =
+            hankeRepository.findByIdOrNull(hankeIdentifier.id)
+                ?: throw HankeNotFoundException(hankeIdentifier.hankeTunnus)
+        usersAndPermissions.forEach { (kayttaja, kayttooikeustaso) ->
+            val notificationData =
+                AccessRightsUpdateNotificationData(
+                    kayttaja.sahkoposti,
+                    hanke.hankeTunnus,
+                    hanke.nimi,
+                    updater.fullName(),
+                    updater.sahkoposti,
+                    kayttooikeustaso
+                )
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(notificationData)
+        }
+    }
 }
 
 class UserAlreadyExistsException(hankeIdentifier: HankeIdentifier, sahkoposti: String) :

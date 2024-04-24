@@ -1,0 +1,40 @@
+<mjml>
+    <mj-head>
+        <mj-include path="common/attributes.partial"/>
+    </mj-head>
+    <mj-body>
+        <mj-include path="common/header-content.partial"/>
+        <mj-section>
+            <mj-column>
+                <mj-text mj-class="header-txt">
+                    Käyttöoikeustasoasi on muutettu ({{hankeTunnus}}) / Dina användarrättigheter har förändrats ({{hankeTunnus}}) / Your access right level has been changed ({{hankeTunnus}})
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    {{updatedByName}} ({{updatedByEmail}}) on muuttanut käyttöoikeustasoasi hankkeella <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
+                    Uusi käyttöoikeutesi on <b>{{newAccessRights.fi}}</b>.
+                    Tarkastele hanketta täällä: <a href="{{baseUrl}}/fi/hankesalkku/{{hankeTunnus}}">{{baseUrl}}/fi/hankesalkku/{{hankeTunnus}}</a>.
+                </mj-text>
+                <mj-include path="common/signature-fi.partial"/>
+
+                <mj-divider mj-class="language-separator" />
+
+                <mj-text mj-class="basic-txt">
+                    {{updatedByName}} ({{updatedByEmail}}) har ändrat dina användarrättigheter på projektet <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
+                    Din nya användarrättighet är <b>{{newAccessRights.sv}}</b>.
+                    Granska projektet här: <a href="{{baseUrl}}/sv/projektportfolj/{{hankeTunnus}}">{{baseUrl}}/sv/projektportfolj/{{hankeTunnus}}</a>.
+                </mj-text>
+                <mj-include path="common/signature-sv.partial"/>
+
+                <mj-divider mj-class="language-separator" />
+
+                <mj-text mj-class="basic-txt">
+                    {{updatedByName}} ({{updatedByEmail}}) has changed your access right level for the project <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
+                    Your new access right level is <b>{{newAccessRights.en}}</b>.
+                    View the project here: <a href="{{baseUrl}}/en/projectportfolio/{{hankeTunnus}}">{{baseUrl}}/en/projectportfolio/{{hankeTunnus}}</a>.
+                </mj-text>
+                <mj-include path="common/signature-en.partial"/>
+            </mj-column>
+        </mj-section>
+        <mj-include path="common/footer-content.partial"/>
+    </mj-body>
+</mjml>

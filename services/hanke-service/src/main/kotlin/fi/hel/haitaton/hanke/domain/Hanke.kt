@@ -130,10 +130,6 @@ data class Hanke(
     @field:Schema(description = "Collision review result, set by the service.")
     var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
 
-    fun toLogString(): String {
-        return toString()
-    }
-
     override fun extractYhteystiedot(): List<HankeYhteystieto> =
         listOfNotNull(omistajat, rakennuttajat, toteuttajat, muut).flatten()
 }

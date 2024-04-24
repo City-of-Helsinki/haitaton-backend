@@ -40,6 +40,9 @@ enum class HankeError(val errorMessage: String) {
     HAI2007("Application geometry not inside any hankealue"),
     HAI2008("Application contains invalid data"),
     HAI2009("Application is already sent to Allu, operation prohibited."),
+    HAI2010("Application contains invalid customer"),
+    HAI2011("Application contains invalid contact"),
+    HAI2012("User is not a contact on the application, operation forbidden"),
     HAI3001("Attachment upload failed"),
     HAI3002("Loading attachment failed"),
     HAI3003("Attachment limit reached"),
@@ -49,6 +52,7 @@ enum class HankeError(val errorMessage: String) {
     HAI4004("Kayttajatunniste not found"),
     HAI4005("Could not verify user identity"),
     HAI4006("Duplicate hankekayttaja"),
+    HAI4007("Verified name not found in Profiili"),
     ;
 
     val errorCode: String
@@ -77,8 +81,10 @@ class HankeNotFoundException(val hankeTunnus: String?) :
 
 class HankeArgumentException(message: String) : RuntimeException(message)
 
-class HankeYhteystietoNotFoundException(val hankeId: Int, ytId: Int) :
-    RuntimeException("HankeYhteystiedot $ytId not found for Hanke $hankeId")
+class HankeYhteystietoNotFoundException(val hanke: HankeIdentifier, ytId: Int) :
+    RuntimeException(
+        "HankeYhteystieto not found for Hanke, yhteystieto: $ytId, ${hanke.logString()}"
+    )
 
 class HankeAlluConflictException(message: String) : RuntimeException(message)
 

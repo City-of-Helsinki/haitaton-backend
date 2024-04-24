@@ -16,10 +16,12 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.geometriat
+import fi.hel.haitaton.hanke.factory.HankeBuilder.Companion.toModifyRequest
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.Called
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -37,11 +39,9 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 
-private const val username = "testuser"
-
 @ExtendWith(SpringExtension::class)
 @Import(HankeControllerTest.TestConfiguration::class)
-@WithMockUser(username)
+@WithMockUser(USERNAME)
 class HankeControllerTest {
 
     @Configuration
@@ -91,7 +91,7 @@ class HankeControllerTest {
     fun `test that the getHankeByTunnus returns ok`() {
         val hankeId = 1234
 
-        every { permissionService.hasPermission(hankeId, username, PermissionCode.VIEW) }
+        every { permissionService.hasPermission(hankeId, USERNAME, PermissionCode.VIEW) }
             .returns(true)
         every { hankeService.loadHanke(mockedHankeTunnus) }
             .returns(
@@ -118,7 +118,7 @@ class HankeControllerTest {
 
         assertThat(response).isNotNull()
         assertThat(response.nimi).isNotEmpty()
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(USERNAME)) }
     }
 
     @Test
@@ -154,7 +154,7 @@ class HankeControllerTest {
                     HankeStatus.DRAFT
                 )
             )
-        every { permissionService.getAllowedHankeIds(username, PermissionCode.VIEW) }
+        every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
             .returns(listOf(1234, 50))
         every { hankeService.loadHankkeetByIds(listOf(1234, 50)) }.returns(listOfHanke)
 
@@ -164,7 +164,7 @@ class HankeControllerTest {
         assertThat(hankeList[1].nimi).isEqualTo("Hämeenlinnanväylän uudistus")
         assertThat(hankeList[0].alueet.geometriat()).isEmpty()
         assertThat(hankeList[1].alueet.geometriat()).isEmpty()
-        verify { disclosureLogService.saveDisclosureLogsForHankkeet(any(), eq(username)) }
+        verify { disclosureLogService.saveDisclosureLogsForHankkeet(any(), eq(USERNAME)) }
     }
 
     @Test
@@ -185,44 +185,25 @@ class HankeControllerTest {
                 modifiedAt = null,
                 status = HankeStatus.DRAFT
             )
+        val request = partialHanke.toModifyRequest()
+        every { hankeService.updateHanke(hanketunnus, request) }
+            .returns(partialHanke.copy(modifiedBy = USERNAME, modifiedAt = getCurrentTimeUTC()))
+        every { permissionService.hasPermission(123, USERNAME, PermissionCode.EDIT) }.returns(true)
 
-        // mock HankeService response
-        every { hankeService.updateHanke(partialHanke) }
-            .returns(partialHanke.copy(modifiedBy = username, modifiedAt = getCurrentTimeUTC()))
-        every { permissionService.hasPermission(123, username, PermissionCode.EDIT) }.returns(true)
-
-        // Actual call
-        val response: Hanke = hankeController.updateHanke(partialHanke, hanketunnus)
+        val response: Hanke = hankeController.updateHanke(request, hanketunnus)
 
         assertThat(response).isNotNull()
         assertThat(response.nimi).isEqualTo("hankkeen nimi")
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
-    }
-
-    @Test
-    fun `test that the updateHanke will throw if mismatch in hanke tunnus payload vs path`() {
-        val hankeUpdate = HankeFactory.create()
-        val existingHanke = HankeFactory.create(hankeTunnus = "wrong")
-        every { permissionService.hasPermission(existingHanke.id, username, PermissionCode.EDIT) }
-            .returns(true)
-        every { hankeAuthorizer.authorizeHankeTunnus("wrong", PermissionCode.EDIT) } returns true
-
-        val failure = assertFailure { hankeController.updateHanke(hankeUpdate, "wrong") }
-
-        failure.all {
-            hasClass(HankeArgumentException::class)
-            messageContains(
-                "Hanketunnus mismatch. (In payload=${hankeUpdate.hankeTunnus}, In path=wrong)"
-            )
-        }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(USERNAME)) }
     }
 
     @Test
     fun `test that the updateHanke will give validation errors from invalid hanke data for name`() {
+        val hanketunnus = "id123"
         val partialHanke =
             Hanke(
                 id = 0,
-                hankeTunnus = "id123",
+                hankeTunnus = hanketunnus,
                 nimi = "",
                 kuvaus = "",
                 onYKTHanke = false,
@@ -234,15 +215,15 @@ class HankeControllerTest {
                 modifiedAt = null,
                 status = HankeStatus.DRAFT
             )
+        val request = partialHanke.toModifyRequest()
+        every { hankeService.loadHanke(hanketunnus) }.returns(HankeFactory.create())
+        every { hankeService.updateHanke(hanketunnus, request) }.returns(partialHanke)
 
-        every { hankeService.loadHanke("id123") }.returns(HankeFactory.create())
-        every { hankeService.updateHanke(partialHanke) }.returns(partialHanke)
-
-        val failure = assertFailure { hankeController.updateHanke(partialHanke, "id123") }
+        val failure = assertFailure { hankeController.updateHanke(request, "id123") }
 
         failure.all {
             hasClass(ConstraintViolationException::class)
-            messageContains("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
+            messageContains("updateHanke.hankeUpdate.nimi: " + HankeError.HAI1002.toString())
         }
         verify { disclosureLogService wasNot Called }
     }

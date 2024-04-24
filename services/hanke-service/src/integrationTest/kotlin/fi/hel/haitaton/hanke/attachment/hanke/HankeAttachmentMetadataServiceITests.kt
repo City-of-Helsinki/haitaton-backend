@@ -14,12 +14,11 @@ import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
-import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
@@ -27,24 +26,19 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
+import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
 class HankeAttachmentMetadataServiceITests(
     @Autowired private val hankeAttachmentMetadataService: HankeAttachmentMetadataService,
     @Autowired private val hankeAttachmentRepository: HankeAttachmentRepository,
     @Autowired private val hankeFactory: HankeFactory,
-) : DatabaseTest() {
+) : IntegrationTest() {
 
     @Nested
     inner class GetMetadataList {

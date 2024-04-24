@@ -6,37 +6,31 @@ import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.isTrue
 import assertk.assertions.messageContains
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.CreateHakemusRequestFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.test.USERNAME
 import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
-private const val USERNAME = "test7358"
-
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
 class ApplicationAuthorizerITest(
     @Autowired private val authorizer: ApplicationAuthorizer,
     @Autowired private val applicationFactory: ApplicationFactory,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val permissionService: PermissionService,
     @Autowired private val applicationAttachmentFactory: ApplicationAttachmentFactory,
-) : DatabaseTest() {
+) : IntegrationTest() {
 
     val applicationId = 987654321L
 
@@ -56,7 +50,7 @@ class ApplicationAuthorizerITest(
             val hanke = hankeFactory.saveMinimal()
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
-            assertFailure { authorizer.authorizeApplicationId(application.id!!, VIEW.name) }
+            assertFailure { authorizer.authorizeApplicationId(application.id, VIEW.name) }
                 .all {
                     hasClass(ApplicationNotFoundException::class)
                     messageContains(application.id.toString())
@@ -70,7 +64,7 @@ class ApplicationAuthorizerITest(
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
-                    authorizer.authorizeApplicationId(application.id!!, PermissionCode.DELETE.name)
+                    authorizer.authorizeApplicationId(application.id, PermissionCode.DELETE.name)
                 }
                 .all {
                     hasClass(ApplicationNotFoundException::class)
@@ -84,7 +78,7 @@ class ApplicationAuthorizerITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 
-            assertThat(authorizer.authorizeApplicationId(application.id!!, VIEW.name)).isTrue()
+            assertThat(authorizer.authorizeApplicationId(application.id, VIEW.name)).isTrue()
         }
     }
 
@@ -127,6 +121,47 @@ class ApplicationAuthorizerITest(
     }
 
     @Nested
+    inner class AuthorizeCreateHakemus {
+        private val hankeTunnus = "HAI23-1414"
+
+        @Test
+        fun `throws exception if hanketunnus not found`() {
+            val request =
+                CreateHakemusRequestFactory.johtoselvitysRequest(hankeTunnus = hankeTunnus)
+
+            assertFailure { authorizer.authorizeCreate(request) }
+                .all {
+                    hasClass(HankeNotFoundException::class)
+                    messageContains("hankeTunnus $hankeTunnus")
+                }
+        }
+
+        @Test
+        fun `throws exception if user doesn't have EDIT_APPLICATIONS permission`() {
+            val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
+            val request =
+                CreateHakemusRequestFactory.johtoselvitysRequest(hankeTunnus = hankeTunnus)
+            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
+
+            assertFailure { authorizer.authorizeCreate(request) }
+                .all {
+                    hasClass(HankeNotFoundException::class)
+                    messageContains("hankeTunnus $hankeTunnus")
+                }
+        }
+
+        @Test
+        fun `returns true if user has EDIT_APPLICATIONS permission`() {
+            val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
+            val request =
+                CreateHakemusRequestFactory.johtoselvitysRequest(hankeTunnus = hankeTunnus)
+            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
+
+            assertThat(authorizer.authorizeCreate(request)).isTrue()
+        }
+    }
+
+    @Nested
     inner class AuthorizeAttachment {
         private val attachmentId = UUID.fromString("1f163338-93ed-409c-8230-ab7041565c70")
 
@@ -145,11 +180,11 @@ class ApplicationAuthorizerITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
             assertFailure {
-                    authorizer.authorizeAttachment(application.id!!, attachmentId, VIEW.name)
+                    authorizer.authorizeAttachment(application.id, attachmentId, VIEW.name)
                 }
                 .all {
                     hasClass(ApplicationNotFoundException::class)
-                    messageContains(application.id!!.toString())
+                    messageContains(application.id.toString())
                 }
         }
 
@@ -160,11 +195,11 @@ class ApplicationAuthorizerITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
             assertFailure {
-                    authorizer.authorizeAttachment(application.id!!, attachmentId, EDIT.name)
+                    authorizer.authorizeAttachment(application.id, attachmentId, EDIT.name)
                 }
                 .all {
                     hasClass(ApplicationNotFoundException::class)
-                    messageContains(application.id!!.toString())
+                    messageContains(application.id.toString())
                 }
         }
 
@@ -175,7 +210,7 @@ class ApplicationAuthorizerITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
             assertFailure {
-                    authorizer.authorizeAttachment(application.id!!, attachmentId, VIEW.name)
+                    authorizer.authorizeAttachment(application.id, attachmentId, VIEW.name)
                 }
                 .all {
                     hasClass(AttachmentNotFoundException::class)
@@ -194,7 +229,7 @@ class ApplicationAuthorizerITest(
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
             assertFailure {
-                    authorizer.authorizeAttachment(application.id!!, attachment.id!!, VIEW.name)
+                    authorizer.authorizeAttachment(application.id, attachment.id!!, VIEW.name)
                 }
                 .all {
                     hasClass(AttachmentNotFoundException::class)
@@ -210,7 +245,7 @@ class ApplicationAuthorizerITest(
                 applicationAttachmentFactory.save(application = application).withContent().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
-            assertThat(authorizer.authorizeAttachment(application.id!!, attachment.id!!, VIEW.name))
+            assertThat(authorizer.authorizeAttachment(application.id, attachment.id!!, VIEW.name))
                 .isTrue()
         }
 

@@ -1,44 +1,112 @@
 package fi.hel.haitaton.hanke.allu
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+import fi.hel.haitaton.hanke.application.ApplicationContactType
 import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 
+@JsonInclude(Include.NON_NULL)
 sealed interface AlluApplicationData {
-    val name: String
+    val identificationNumber: String
     val pendingOnClient: Boolean
+    val name: String
+    val startTime: ZonedDateTime
+    val endTime: ZonedDateTime
+    val geometry: GeometryCollection
+    val area: Double?
+    val customerWithContacts: CustomerWithContacts
+    val representativeWithContacts: CustomerWithContacts?
+    val postalAddress: PostalAddress?
+    val invoicingCustomer: Customer?
+    val customerReference: String?
+    val trafficArrangementImages: List<Int>?
+    val clientApplicationKind: String
+
+    fun customersByRole(): Map<ApplicationContactType, CustomerWithContacts>
 }
 
 data class AlluCableReportApplicationData(
-    // Common, required
-    override val name: String,
-    val customerWithContacts: CustomerWithContacts,
-    val geometry: GeometryCollection,
-    val startTime: ZonedDateTime,
-    val endTime: ZonedDateTime,
+    override val identificationNumber: String,
     override val pendingOnClient: Boolean,
-    val identificationNumber: String,
-
-    // CableReport specific, required
-    val clientApplicationKind: String,
-    val workDescription: String,
-    val contractorWithContacts: CustomerWithContacts, // työn suorittaja
-
-    // Common, not required
-    val postalAddress: PostalAddress? = null,
-    val representativeWithContacts: CustomerWithContacts? = null,
-    val invoicingCustomer: Customer? = null,
-    val customerReference: String? = null,
-    val area: Double? = null,
-
-    // CableReport specific, not required
-    val propertyDeveloperWithContacts: CustomerWithContacts? = null, // rakennuttaja
+    override val name: String,
+    override val postalAddress: PostalAddress? = null,
     val constructionWork: Boolean = false,
     val maintenanceWork: Boolean = false,
+    val propertyConnectivity: Boolean = false,
     val emergencyWork: Boolean = false,
-    val propertyConnectivity: Boolean = false, // tontti-/kiinteistöliitos
-) : AlluApplicationData
+    val workDescription: String,
+    override val clientApplicationKind: String,
+    override val startTime: ZonedDateTime,
+    override val endTime: ZonedDateTime,
+    override val geometry: GeometryCollection,
+    override val area: Double? = null,
+    override val customerWithContacts: CustomerWithContacts,
+    val contractorWithContacts: CustomerWithContacts,
+    val propertyDeveloperWithContacts: CustomerWithContacts? = null,
+    override val representativeWithContacts: CustomerWithContacts? = null,
+    override val invoicingCustomer: Customer? = null,
+    override val customerReference: String? = null,
+    override val trafficArrangementImages: List<Int>? = null,
+) : AlluApplicationData {
+    override fun customersByRole(): Map<ApplicationContactType, CustomerWithContacts> =
+        listOfNotNull(
+                customerWithContacts.let { ApplicationContactType.HAKIJA to it },
+                contractorWithContacts.let { ApplicationContactType.TYON_SUORITTAJA to it },
+                representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
+                propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
+            )
+            .toMap()
+}
 
 data class CableReportInformationRequestResponse(
     val applicationData: AlluCableReportApplicationData,
     val updatedFields: List<InformationRequestFieldKey>
 )
+
+data class AlluExcavationNotificationData(
+    override val identificationNumber: String,
+    override val pendingOnClient: Boolean,
+    override val name: String,
+    val workPurpose: String,
+    override val clientApplicationKind: String,
+    val constructionWork: Boolean? = null,
+    val maintenanceWork: Boolean? = null,
+    val emergencyWork: Boolean? = null,
+    val cableReports: List<String>? = null,
+    val placementContracts: List<String>? = null,
+    override val startTime: ZonedDateTime,
+    override val endTime: ZonedDateTime,
+    override val geometry: GeometryCollection,
+    override val area: Double? = null,
+    override val postalAddress: PostalAddress? = null,
+    override val customerWithContacts: CustomerWithContacts,
+    val contractorWithContacts: CustomerWithContacts,
+    val propertyDeveloperWithContacts: CustomerWithContacts? = null,
+    override val representativeWithContacts: CustomerWithContacts? = null,
+    override val invoicingCustomer: Customer? = null,
+    override val customerReference: String? = null,
+    val additionalInfo: String? = null,
+    val pksCard: Boolean? = null,
+    val selfSupervision: Boolean? = null,
+    val propertyConnectivity: Boolean? = null,
+    override val trafficArrangementImages: List<Int>? = null,
+    val trafficArrangements: String? = null,
+    val trafficArrangementImpediment: TrafficArrangementImpediment? = null,
+) : AlluApplicationData {
+    override fun customersByRole(): Map<ApplicationContactType, CustomerWithContacts> =
+        listOfNotNull(
+                customerWithContacts.let { ApplicationContactType.HAKIJA to it },
+                contractorWithContacts.let { ApplicationContactType.TYON_SUORITTAJA to it },
+                representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
+                propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
+            )
+            .toMap()
+}
+
+enum class TrafficArrangementImpediment {
+    NO_IMPEDIMENT,
+    SIGNIFICANT_IMPEDIMENT,
+    IMPEDIMENT_FOR_HEAVY_TRAFFIC,
+    INSIGNIFICANT_IMPEDIMENT,
+}

@@ -16,3 +16,10 @@ object TestUtils {
 
     fun nextYear(): Int = getCurrentTimeUTC().year + 1
 }
+
+/**
+ * Exception to use as a stand-in for communication errors etc. that can occur when calling the Allu
+ * API. This needs to be a specific exception and not RuntimeException, because things like Mockk
+ * errors are inherit RuntimeException, which can cause unexpected behaviour in tests.
+ */
+class AlluException : RuntimeException()

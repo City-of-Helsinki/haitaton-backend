@@ -11,6 +11,7 @@ import assertk.assertions.prop
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
+import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -22,8 +23,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
-
-private const val USERNAME = "tester"
 
 @ExtendWith(SpringExtension::class)
 @WithMockUser(USERNAME)

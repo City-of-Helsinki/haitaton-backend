@@ -2,17 +2,22 @@ package fi.hel.haitaton.hanke.permissions
 
 import assertk.all
 import assertk.assertThat
+import assertk.assertions.containsExactly
+import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import assertk.assertions.prop
+import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeIdentifierFactory
@@ -24,10 +29,15 @@ import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaController.Tunnistautuminen
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaController.TunnistautuminenResponse
+import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService.DeleteInfo
+import fi.hel.haitaton.hanke.permissions.PermissionCode.DELETE_USER
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_EDIT_PERMISSIONS
+import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_USER
 import fi.hel.haitaton.hanke.permissions.PermissionCode.RESEND_INVITATION
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
+import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
+import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -53,20 +63,21 @@ import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private const val USERNAME = "testUser"
 private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
 
 @WebMvcTest(HankeKayttajaController::class)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
-class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : ControllerTest {
-
-    @Autowired private lateinit var hankeKayttajaService: HankeKayttajaService
-    @Autowired private lateinit var hankeService: HankeService
-    @Autowired private lateinit var permissionService: PermissionService
-    @Autowired private lateinit var disclosureLogService: DisclosureLogService
-    @Autowired private lateinit var authorizer: HankeKayttajaAuthorizer
+class HankeKayttajaControllerITest(
+    @Autowired override val mockMvc: MockMvc,
+    @Autowired private val hankeKayttajaService: HankeKayttajaService,
+    @Autowired private val deleteService: HankekayttajaDeleteService,
+    @Autowired private val hankeService: HankeService,
+    @Autowired private val permissionService: PermissionService,
+    @Autowired private val disclosureLogService: DisclosureLogService,
+    @Autowired private val authorizer: HankeKayttajaAuthorizer,
+) : ControllerTest {
 
     @BeforeEach
     fun clearMocks() {
@@ -228,7 +239,11 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     @Nested
     inner class GetHankeKayttaja {
         private val kayttajaId = HankeKayttajaFactory.KAYTTAJA_ID
-        private val kayttaja = HankeKayttajaFactory.createDto(id = kayttajaId)
+        private val kayttaja =
+            HankeKayttajaFactory.create(
+                id = kayttajaId,
+                roolit = listOf(ContactType.OMISTAJA, ContactType.TOTEUTTAJA)
+            )
         private val url = "/kayttajat/$kayttajaId"
 
         @Test
@@ -255,18 +270,20 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 
             assertThat(response).all {
                 prop(HankeKayttajaDto::id).isEqualTo(kayttajaId)
-                prop(HankeKayttajaDto::sahkoposti).isEqualTo("email.1.address.com")
-                prop(HankeKayttajaDto::etunimi).isEqualTo("test1")
-                prop(HankeKayttajaDto::sukunimi).isEqualTo("name1")
-                prop(HankeKayttajaDto::nimi).isEqualTo("test1 name1")
-                prop(HankeKayttajaDto::puhelinnumero).isEqualTo("0405551111")
+                prop(HankeKayttajaDto::sahkoposti).isEqualTo(HankeKayttajaFactory.KAKE_EMAIL)
+                prop(HankeKayttajaDto::etunimi).isEqualTo(HankeKayttajaFactory.KAKE)
+                prop(HankeKayttajaDto::sukunimi).isEqualTo(HankeKayttajaFactory.KATSELIJA)
+                prop(HankeKayttajaDto::puhelinnumero).isEqualTo(HankeKayttajaFactory.KAKE_PUHELIN)
                 prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
-                prop(HankeKayttajaDto::tunnistautunut).isEqualTo(false)
+                prop(HankeKayttajaDto::tunnistautunut).isEqualTo(true)
+                prop(HankeKayttajaDto::roolit)
+                    .containsExactly(ContactType.OMISTAJA, ContactType.TOTEUTTAJA)
+                prop(HankeKayttajaDto::kutsuttu).isEqualTo(HankeKayttajaFactory.INVITATION_DATE)
             }
             verifySequence {
                 authorizer.authorizeKayttajaId(kayttajaId, "VIEW")
                 hankeKayttajaService.getKayttaja(kayttajaId)
-                disclosureLogService.saveDisclosureLogsForHankeKayttaja(kayttaja, USERNAME)
+                disclosureLogService.saveDisclosureLogsForHankeKayttaja(kayttaja.toDto(), USERNAME)
             }
         }
     }
@@ -277,7 +294,16 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         @Test
         fun `With valid request returns users of given hanke and logs audit`() {
             val hanke = HankeFactory.create()
-            val testData = HankeKayttajaFactory.generateHankeKayttajat()
+            val testData =
+                listOf(
+                    HankeKayttajaFactory.createHankeKayttaja(
+                        1,
+                        ContactType.OMISTAJA,
+                        ContactType.MUU
+                    ),
+                    HankeKayttajaFactory.createHankeKayttaja(2),
+                    HankeKayttajaFactory.createHankeKayttaja(3),
+                )
             every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
             every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hanke.identifier()
             every { hankeKayttajaService.getKayttajatByHankeId(hanke.id) } returns testData
@@ -290,10 +316,11 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 assertThat(id).isNotNull()
                 assertThat(etunimi).isEqualTo("test1")
                 assertThat(sukunimi).isEqualTo("name1")
-                assertThat(nimi).isEqualTo("test1 name1")
                 assertThat(puhelinnumero).isEqualTo("0405551111")
                 assertThat(sahkoposti).isEqualTo("email.1.address.com")
                 assertThat(tunnistautunut).isEqualTo(false)
+                assertThat(kutsuttu).isEqualTo(HankeKayttajaFactory.INVITATION_DATE)
+                assertThat(roolit).containsExactlyInAnyOrder(ContactType.OMISTAJA, ContactType.MUU)
             }
             assertThat(response.kayttajat).hasSameElementsAs(testData)
             verifyOrder {
@@ -627,8 +654,9 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         fun `Returns 200 with information on success`() {
             val kayttaja = HankeKayttajaFactory.create(id = kayttajaId)
             val hanke = HankeFactory.create(id = kayttaja.hankeId)
-            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } returns
-                kayttaja
+            every {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+            } returns kayttaja
             every { hankeService.loadHankeById(kayttaja.hankeId) } returns hanke
 
             val response: TunnistautuminenResponse =
@@ -640,45 +668,65 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 prop(TunnistautuminenResponse::hankeNimi).isEqualTo(hanke.nimi)
             }
             verify {
-                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste)
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
                 hankeService.loadHankeById(kayttaja.hankeId)
             }
         }
 
         @Test
+        fun `Returns 500 when cannot retrieve verified name from Profiil`() {
+            every {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+            } throws VerifiedNameNotFound("Verified name not found from profile.")
+
+            post(url, Tunnistautuminen(tunniste))
+                .andExpect(status().isInternalServerError)
+                .andExpect(hankeError(HankeError.HAI4007))
+
+            verify {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+                hankeService wasNot Called
+            }
+        }
+
+        @Test
         fun `Returns 404 when tunniste not found`() {
-            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
-                TunnisteNotFoundException(USERNAME, tunniste)
+            every {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+            } throws TunnisteNotFoundException(USERNAME, tunniste)
 
             post(url, Tunnistautuminen(tunniste))
                 .andExpect(status().isNotFound)
                 .andExpect(hankeError(HankeError.HAI4004))
 
-            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any()) }
         }
 
         @Test
         fun `Returns 409 when user already has a permission`() {
-            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
-                UserAlreadyHasPermissionException(USERNAME, tunnisteId, permissionId)
+            every {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+            } throws UserAlreadyHasPermissionException(USERNAME, tunnisteId, permissionId)
 
             post(url, Tunnistautuminen(tunniste))
                 .andExpect(status().isConflict)
                 .andExpect(hankeError(HankeError.HAI4003))
 
-            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any()) }
         }
 
         @Test
         fun `Returns 409 when other user already has a permission for the hanke kayttaja`() {
-            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
+            every {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+            } throws
                 PermissionAlreadyExistsException(USERNAME, "Other user", kayttajaId, permissionId)
 
             post(url, Tunnistautuminen(tunniste))
                 .andExpect(status().isConflict)
                 .andExpect(hankeError(HankeError.HAI4003))
 
-            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any()) }
         }
     }
 
@@ -741,6 +789,317 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             }
         }
     }
+
+    @Nested
+    inner class UpdateOwnContactInfo {
+        private val hanketunnus = "HAI98-AAA"
+        private val url = "/hankkeet/$hanketunnus/kayttajat/self"
+        private val update = ContactUpdate("updated@email.test", "9991111")
+
+        @Test
+        fun `Returns 400 when email is blank`() {
+            val incompleteUpdate = update.copy(sahkoposti = " ")
+
+            put(url, incompleteUpdate)
+                .andExpect(status().isBadRequest)
+                .andExpect(hankeError(HankeError.HAI0003))
+        }
+
+        @Test
+        fun `Returns 400 when phone number is empty`() {
+            val incompleteUpdate = update.copy(puhelinnumero = "")
+
+            put(url, incompleteUpdate)
+                .andExpect(status().isBadRequest)
+                .andExpect(hankeError(HankeError.HAI0003))
+        }
+
+        @Test
+        fun `Returns 404 if hanke not found or user doesn't have permission for it`() {
+            every { authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name) } throws
+                HankeNotFoundException(hanketunnus)
+
+            put(url, update)
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence { authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name) }
+        }
+
+        @Test
+        fun `Returns updated info when update successful`() {
+            every { authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name) } returns true
+            every {
+                hankeKayttajaService.updateOwnContactInfo(hanketunnus, update, USERNAME)
+            } returns
+                HankeKayttajaFactory.create(
+                    sahkoposti = update.sahkoposti,
+                    puhelinnumero = update.puhelinnumero
+                )
+
+            val response: HankeKayttajaDto =
+                put(url, update).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(HankeKayttajaDto::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankeKayttajaDto::puhelinnumero).isEqualTo(update.puhelinnumero)
+            }
+            verifySequence {
+                authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name)
+                hankeKayttajaService.updateOwnContactInfo(hanketunnus, update, USERNAME)
+            }
+        }
+    }
+
+    @Nested
+    inner class UpdateKayttajaInfo {
+        private val hanketunnus = "HAI98-AAA"
+        private val userId = UUID.fromString("5d67712f-ea0b-490c-957f-9b30bddb848c")
+        private val url = "/hankkeet/$hanketunnus/kayttajat/$userId"
+        private val update = KayttajaUpdate("updated@email.test", "9991111")
+
+        @Test
+        fun `Returns 400 if invalid data`() {
+            val update = KayttajaUpdate("updated@email.test", "")
+
+            put(url, update)
+                .andExpect(status().isBadRequest)
+                .andExpect(hankeError(HankeError.HAI0003))
+        }
+
+        @Test
+        fun `Returns 404 if hanke not found or user doesn't have permission for it`() {
+            every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } throws
+                HankeNotFoundException(hanketunnus)
+
+            put(url, update)
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) }
+        }
+
+        @Test
+        fun `Returns 404 if user is not in hanke`() {
+            every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } returns true
+            every { hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId) } throws
+                HankeKayttajaNotFoundException(userId)
+
+            put(url, update)
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI4001))
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
+                hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
+            }
+        }
+
+        @Test
+        fun `Returns 409 if user is identified and try to change name`() {
+            val update = KayttajaUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+            every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } returns true
+            every { hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId) } throws
+                UserAlreadyHasPermissionException(userId.toString(), userId, 1)
+
+            put(url, update)
+                .andExpect(status().isConflict)
+                .andExpect(hankeError(HankeError.HAI4003))
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
+                hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
+            }
+        }
+
+        @Test
+        fun `Returns updated info when all info update successful`() {
+            val update = KayttajaUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+            every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } returns true
+            every { hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId) } returns
+                HankeKayttajaFactory.create(
+                    etunimi = update.etunimi!!,
+                    sukunimi = update.sukunimi!!,
+                    sahkoposti = update.sahkoposti,
+                    puhelinnumero = update.puhelinnumero
+                )
+
+            val response: HankeKayttajaDto =
+                put(url, update).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(HankeKayttajaDto::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankeKayttajaDto::puhelinnumero).isEqualTo(update.puhelinnumero)
+                prop(HankeKayttajaDto::etunimi).isEqualTo(update.etunimi)
+                prop(HankeKayttajaDto::sukunimi).isEqualTo(update.sukunimi)
+            }
+            verifySequence {
+                authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
+                hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
+            }
+        }
+
+        @Test
+        fun `Returns updated info when contact info update successful`() {
+            every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } returns true
+            every { hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId) } returns
+                HankeKayttajaFactory.create(
+                    sahkoposti = update.sahkoposti,
+                    puhelinnumero = update.puhelinnumero
+                )
+
+            val response: HankeKayttajaDto =
+                put(url, update).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(HankeKayttajaDto::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankeKayttajaDto::puhelinnumero).isEqualTo(update.puhelinnumero)
+            }
+            verifySequence {
+                authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
+                hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
+            }
+        }
+    }
+
+    @Nested
+    inner class CheckForDelete {
+        private val kayttajaId = UUID.fromString("294af703-7982-47f8-bc08-f08ace485a2b")
+        private val url = "/kayttajat/$kayttajaId/deleteInfo"
+
+        @Test
+        fun `Returns not found when the call is not authorized`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } throws
+                HankeKayttajaNotFoundException(kayttajaId)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI4001))
+
+            verifySequence { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) }
+        }
+
+        @Test
+        fun `Returns not found when hankekayttaja is not found`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            every { deleteService.checkForDelete(kayttajaId) } throws
+                HankeKayttajaNotFoundException(kayttajaId)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI4001))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.checkForDelete(kayttajaId)
+            }
+        }
+
+        @Test
+        fun `Returns delete info`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            val draftInfo = DeleteInfo.HakemusDetails("Draft", null, null)
+            val pendingInfo =
+                DeleteInfo.HakemusDetails("Pending", "JS230001", ApplicationStatus.PENDING)
+            val decisionInfo =
+                DeleteInfo.HakemusDetails("Decision", "JS230002", ApplicationStatus.DECISION)
+            every { deleteService.checkForDelete(kayttajaId) } returns
+                DeleteInfo(listOf(pendingInfo, decisionInfo), listOf(draftInfo), true)
+
+            val response: DeleteInfo = get(url).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(DeleteInfo::onlyOmistajanYhteyshenkilo).isTrue()
+                prop(DeleteInfo::activeHakemukset).containsExactly(pendingInfo, decisionInfo)
+                prop(DeleteInfo::draftHakemukset).containsExactly(draftInfo)
+            }
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.checkForDelete(kayttajaId)
+            }
+        }
+    }
+
+    @Nested
+    inner class Delete {
+        private val kayttajaId = UUID.fromString("294af703-7982-47f8-bc08-f08ace485a2b")
+        private val url = "/kayttajat/$kayttajaId"
+
+        @Test
+        fun `Returns not found when the call is not authorized`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } throws
+                HankeKayttajaNotFoundException(kayttajaId)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI4001))
+
+            verifySequence { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) }
+        }
+
+        @Test
+        fun `Returns not found when hankekayttaja is not found`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            every { deleteService.delete(kayttajaId, USERNAME) } throws
+                HankeKayttajaNotFoundException(kayttajaId)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI4001))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.delete(kayttajaId, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns 409 when hankekayttaja is the only one with Kaikki Oikeudet`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            every { deleteService.delete(kayttajaId, USERNAME) } throws
+                NoAdminRemainingException(TestHankeIdentifier(132, "JS44-11"))
+
+            delete(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI4003))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.delete(kayttajaId, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns 409 when hankekayttaja is the only contact for an omistaja`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            every { deleteService.delete(kayttajaId, USERNAME) } throws
+                OnlyOmistajaContactException(kayttajaId, listOf(13, 15))
+
+            delete(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI4003))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.delete(kayttajaId, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns 409 when hankekayttaja is an yhteyshenkilo on an active hakemus`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            every { deleteService.delete(kayttajaId, USERNAME) } throws
+                HasActiveApplicationsException(kayttajaId, listOf(13, 15))
+
+            delete(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI4003))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.delete(kayttajaId, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns 204 when hankekayttaja was deleted`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            justRun { deleteService.delete(kayttajaId, USERNAME) }
+
+            delete(url).andExpect(status().isNoContent).andExpect(content().string(""))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.delete(kayttajaId, USERNAME)
+            }
+        }
+    }
 }
 
 @WebMvcTest(
@@ -778,6 +1137,17 @@ class HankeKayttajaControllerFeatureDisabledITest(@Autowired override val mockMv
 
         @Test
         fun `Returns not found when feature disabled`() {
+            post(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI0004))
+        }
+    }
+
+    @Nested
+    inner class CheckForDelete {
+        private val kayttajaId = UUID.fromString("294af703-7982-47f8-bc08-f08ace485a2b")
+        private val url = "/kayttajat/$kayttajaId/kutsu"
+
+        @Test
+        fun `Returns not found when the feature is disabled`() {
             post(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI0004))
         }
     }

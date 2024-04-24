@@ -6,27 +6,20 @@ import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.isTrue
 import assertk.assertions.messageContains
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeAuthorizer
 import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
-private const val USERNAME = "test7358"
-
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
 class HankeAuthorizerITest(
     @Autowired private val authorizer: HankeAuthorizer,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val permissionService: PermissionService,
-) : DatabaseTest() {
+) : IntegrationTest() {
 
     val hankeTunnus = "HAI24-14"
 

@@ -18,25 +18,18 @@ import assertk.assertions.prop
 import assertk.assertions.single
 import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
-import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.allu.AlluException
-import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.ApplicationStatus.HANDLING
-import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
-import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.LIIKENNEJARJESTELY
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
@@ -44,44 +37,33 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadResponse
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
-import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
-import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.Asserts.isSameInstantAs
+import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
-import io.mockk.every
-import io.mockk.justRun
 import io.mockk.verify
-import io.mockk.verifyOrder
 import java.util.UUID
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
 private const val ALLU_ID = 42
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
 class ApplicationAttachmentServiceITest(
     @Autowired private val cableReportService: CableReportService,
     @Autowired private val attachmentService: ApplicationAttachmentService,
@@ -89,7 +71,7 @@ class ApplicationAttachmentServiceITest(
     @Autowired private val applicationFactory: ApplicationFactory,
     @Autowired private val attachmentFactory: ApplicationAttachmentFactory,
     @Autowired private val fileClient: MockFileClient,
-) : DatabaseTest() {
+) : IntegrationTest() {
     private lateinit var mockClamAv: MockWebServer
 
     @BeforeEach
@@ -122,7 +104,7 @@ class ApplicationAttachmentServiceITest(
         fun `Returns empty when application doesn't have attachments`() {
             val application = applicationFactory.saveApplicationEntity(USERNAME)
 
-            val result = attachmentService.getMetadataList(application.id!!)
+            val result = attachmentService.getMetadataList(application.id)
 
             assertThat(result).isEmpty()
         }
@@ -133,7 +115,7 @@ class ApplicationAttachmentServiceITest(
             attachmentFactory.save(application = application).withContent()
             attachmentFactory.save(application = application).withContent()
 
-            val result = attachmentService.getMetadataList(application.id!!)
+            val result = attachmentService.getMetadataList(application.id)
 
             assertThat(result).hasSize(2)
             assertThat(result).each {
@@ -180,7 +162,6 @@ class ApplicationAttachmentServiceITest(
         }
 
         @Nested
-        @ExtendWith(MockFileClientExtension::class)
         inner class FromCloud {
             @Test
             fun `Returns the attachment content, filename and type`() {
@@ -207,7 +188,7 @@ class ApplicationAttachmentServiceITest(
 
             val result =
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = typeInput,
                     attachment = testFile(),
                 )
@@ -233,7 +214,7 @@ class ApplicationAttachmentServiceITest(
                 prop(ApplicationAttachmentEntity::attachmentType).isEqualTo(typeInput)
                 prop(ApplicationAttachmentEntity::blobLocation)
                     .isNotNull()
-                    .startsWith("${application.id!!}/")
+                    .startsWith("${application.id}/")
             }
 
             val content = fileClient.download(HAKEMUS_LIITTEET, attachments.first().blobLocation)
@@ -254,7 +235,7 @@ class ApplicationAttachmentServiceITest(
 
             val result =
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = MUU,
                     attachment = testFile(fileName = "exa*mple.pdf"),
                 )
@@ -269,14 +250,14 @@ class ApplicationAttachmentServiceITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME)
             val attachments =
                 (1..ALLOWED_ATTACHMENT_COUNT).map {
-                    ApplicationAttachmentFactory.createEntity(applicationId = application.id!!)
+                    ApplicationAttachmentFactory.createEntity(applicationId = application.id)
                 }
             attachmentRepository.saveAll(attachments)
             mockClamAv.enqueue(response(body(results = successResult())))
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = VALTAKIRJA,
                     attachment = testFile()
                 )
@@ -296,7 +277,7 @@ class ApplicationAttachmentServiceITest(
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = VALTAKIRJA,
                     attachment = testFile(contentType = null)
                 )
@@ -309,53 +290,25 @@ class ApplicationAttachmentServiceITest(
         }
 
         @Test
-        fun `Throws exception when allu handling has started`() {
+        fun `Throws exception when application already sent to Allu`() {
             val application =
                 applicationFactory.saveApplicationEntity(username = USERNAME, alluId = ALLU_ID)
-            every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-                AlluFactory.createAlluApplicationResponse(status = HANDLING)
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = MUU,
                     attachment = testFile(),
                 )
             }
 
             failure.all {
-                hasClass(ApplicationAlreadyProcessingException::class)
+                hasClass(ApplicationInAlluException::class)
                 hasMessage(
-                    "Application is no longer pending in Allu, id=${application.id!!}, alluid=${application.alluid!!}"
+                    "Application is already sent to Allu, applicationId=${application.id}, alluId=${application.alluid}"
                 )
             }
-            verify { cableReportService.getApplicationInformation(ALLU_ID) }
-        }
-
-        @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
-        @ParameterizedTest
-        fun `Sends attachment to Allu when application is pending`(status: ApplicationStatus) {
-            justRun { cableReportService.addAttachment(ALLU_ID, any()) }
-            mockClamAv.enqueue(response(body(results = successResult())))
-            val application =
-                applicationFactory.saveApplicationEntity(
-                    username = USERNAME,
-                    alluId = ALLU_ID,
-                    alluStatus = PENDING
-                )
-            every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-                AlluFactory.createAlluApplicationResponse(status = status)
-
-            attachmentService.addAttachment(
-                applicationId = application.id!!,
-                attachmentType = LIIKENNEJARJESTELY,
-                attachment = testFile(),
-            )
-
-            verifyOrder {
-                cableReportService.getApplicationInformation(ALLU_ID)
-                cableReportService.addAttachment(ALLU_ID, any())
-            }
+            assertThat(attachmentRepository.countByApplicationId(application.id)).isEqualTo(0)
         }
 
         @Test
@@ -379,7 +332,7 @@ class ApplicationAttachmentServiceITest(
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = VALTAKIRJA,
                     attachment = testFile(fileName = invalidFilename)
                 )
@@ -393,44 +346,13 @@ class ApplicationAttachmentServiceITest(
         }
 
         @Test
-        fun `Clean DB and throws exception when Allu upload fails`() {
-            mockClamAv.enqueue(response(body(results = successResult())))
-            val application =
-                applicationFactory.saveApplicationEntity(
-                    username = USERNAME,
-                    alluId = ALLU_ID,
-                    alluStatus = PENDING
-                )
-            every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-                AlluFactory.createAlluApplicationResponse(status = PENDING)
-            every { cableReportService.addAttachment(ALLU_ID, any()) } throws
-                AlluException(listOf())
-
-            assertFailure {
-                    attachmentService.addAttachment(
-                        applicationId = application.id!!,
-                        attachmentType = LIIKENNEJARJESTELY,
-                        attachment = testFile(),
-                    )
-                }
-                .hasClass(AlluException::class)
-
-            assertThat(attachmentRepository.findAll()).isEmpty()
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).isEmpty()
-            verifyOrder {
-                cableReportService.getApplicationInformation(ALLU_ID)
-                cableReportService.addAttachment(ALLU_ID, any())
-            }
-        }
-
-        @Test
         fun `Throws exception when virus scan fails`() {
             mockClamAv.enqueue(response(body(results = failResult())))
             val application = applicationFactory.saveApplicationEntity(USERNAME)
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = VALTAKIRJA,
                     attachment = testFile()
                 )

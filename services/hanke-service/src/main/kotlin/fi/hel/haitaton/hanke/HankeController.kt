@@ -1,8 +1,8 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -119,28 +119,6 @@ class HankeController(
         return hankeList
     }
 
-    @GetMapping("/{hankeTunnus}/hakemukset")
-    @Operation(
-        summary = "Get hanke applications",
-        description = "Returns list of applications belonging to a given hanke."
-    )
-    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
-    fun getHankeHakemukset(@PathVariable hankeTunnus: String): ApplicationsResponse {
-        logger.info { "Finding applications for hanke $hankeTunnus" }
-
-        val userId = currentUserId()
-
-        hankeService.getHankeApplications(hankeTunnus).let { hakemukset ->
-            if (hakemukset.isNotEmpty()) {
-                disclosureLogService.saveDisclosureLogsForApplications(hakemukset, userId)
-            }
-
-            return ApplicationsResponse(hakemukset).also {
-                logger.info { "Found ${it.applications.size} applications for hanke $hankeTunnus" }
-            }
-        }
-    }
-
     @PostMapping
     @Operation(
         summary = "Create new hanke",
@@ -220,13 +198,12 @@ On update following will happen automatically:
             "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'EDIT')"
     )
     fun updateHanke(
-        @ValidHanke @RequestBody hanke: Hanke,
+        @ValidHanke @RequestBody hankeUpdate: ModifyHankeRequest,
         @PathVariable hankeTunnus: String
     ): Hanke {
-        logger.info { "Updating Hanke: ${hanke.toLogString()}" }
-        validateUpdatable(hanke, hankeTunnus)
+        logger.info { "Updating Hanke: $hankeTunnus" }
 
-        val updatedHanke = hankeService.updateHanke(hanke)
+        val updatedHanke = hankeService.updateHanke(hankeTunnus, hankeUpdate)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
         disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, updatedHanke.modifiedBy!!)
         return updatedHanke
@@ -277,13 +254,5 @@ On update following will happen automatically:
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
         logger.warn { ex.message }
         return ex.toHankeError(HankeError.HAI1002)
-    }
-
-    private fun validateUpdatable(hankeUpdate: Hanke, hankeTunnusFromPath: String) {
-        if (hankeUpdate.hankeTunnus != hankeTunnusFromPath) {
-            throw HankeArgumentException(
-                "Hanketunnus mismatch. (In payload=${hankeUpdate.hankeTunnus}, In path=$hankeTunnusFromPath)"
-            )
-        }
     }
 }

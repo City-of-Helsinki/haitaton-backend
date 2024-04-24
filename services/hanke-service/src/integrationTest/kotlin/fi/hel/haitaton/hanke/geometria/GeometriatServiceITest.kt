@@ -3,9 +3,7 @@ package fi.hel.haitaton.hanke.geometria
 import assertk.all
 import assertk.assertAll
 import assertk.assertThat
-import assertk.assertions.each
-import assertk.assertions.hasClass
-import assertk.assertions.hasSize
+import assertk.assertions.extracting
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
@@ -13,28 +11,23 @@ import assertk.assertions.isNotSameInstanceAs
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DATABASE_TIMESTAMP_FORMAT
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.domain.geometriat
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
-import org.geojson.Point
+import fi.hel.haitaton.hanke.test.USERNAME
+import org.geojson.Polygon
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(username = "test")
-internal class GeometriatServiceITest : DatabaseTest() {
+internal class GeometriatServiceITest : IntegrationTest() {
 
     @Autowired private lateinit var hankeService: HankeService
 
@@ -55,7 +48,7 @@ internal class GeometriatServiceITest : DatabaseTest() {
         // they must be picked from the created hanke-instance.
         val hankeTunnus =
             hankeFactory
-                .builder("test")
+                .builder(USERNAME)
                 .withHankealue(HankealueFactory.createMinimal(geometriat = geometriat))
                 .save()
                 .hankeTunnus
@@ -77,11 +70,11 @@ internal class GeometriatServiceITest : DatabaseTest() {
             assertThat(loadedGeometriat!!.createdByUserId).isEqualTo(username)
             assertThat(loadedGeometriat!!.modifiedByUserId).isNull()
             assertThat(loadedGeometriat!!.modifiedAt).isNull()
-            assertThat(loadedGeometriat!!.featureCollection!!.features.size).isEqualTo(2)
-            assertThat(loadedGeometriat!!.featureCollection!!.features[0].geometry is Point)
-            val loadedPoint = loadedGeometriat!!.featureCollection!!.features[0].geometry as Point
-            val point = geometriat.featureCollection!!.features[0].geometry as Point
-            assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
+            assertThat(loadedGeometriat!!.featureCollection!!.features.size).isEqualTo(1)
+            val loadedPolygon =
+                loadedGeometriat!!.featureCollection!!.features[0].geometry as Polygon
+            val polygon = geometriat.featureCollection!!.features[0].geometry as Polygon
+            assertThat(loadedPolygon.coordinates).isEqualTo(polygon.coordinates)
             assertThat(loadedGeometriat!!.featureCollection!!.features[0].properties["hankeTunnus"])
                 .isEqualTo(hankeTunnus)
         }
@@ -102,11 +95,11 @@ internal class GeometriatServiceITest : DatabaseTest() {
             assertThat(loadedGeometriat.modifiedAt!!).isNotNull() // this has changed
             assertThat(loadedGeometriat.modifiedByUserId).isEqualTo(username)
             assertThat(loadedGeometriat.featureCollection!!.features.size)
-                .isEqualTo(3) // this has increased
-            assertThat(loadedGeometriat.featureCollection!!.features[0].geometry is Point)
-            val loadedPoint = loadedGeometriat.featureCollection!!.features[0].geometry as Point
-            val point = geometriat.featureCollection!!.features[0].geometry as Point
-            assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
+                .isEqualTo(2) // this has increased
+            assertThat(loadedGeometriat.featureCollection!!.features[0].geometry is Polygon)
+            val loadedPolygon = loadedGeometriat.featureCollection!!.features[0].geometry as Polygon
+            val polygon = geometriat.featureCollection!!.features[0].geometry as Polygon
+            assertThat(loadedPolygon.coordinates).isEqualTo(polygon.coordinates)
             assertThat(loadedGeometriat.featureCollection!!.features[0].properties["hankeTunnus"])
                 .isEqualTo(hankeTunnus)
         }
@@ -118,7 +111,7 @@ internal class GeometriatServiceITest : DatabaseTest() {
                 jdbcTemplate.query("SELECT id, hankegeometriatid FROM HankeGeometria") { rs, _ ->
                     Pair(rs.getInt(1), rs.getInt(2))
                 }
-            assertThat(ids.size).isEqualTo(3)
+            assertThat(ids.size).isEqualTo(2)
             ids.forEach { idPair ->
                 assertThat(idPair.first).isNotNull()
                 assertThat(idPair.second).isEqualTo(loadedGeometriat!!.id)
@@ -158,7 +151,7 @@ internal class GeometriatServiceITest : DatabaseTest() {
             assertThat(savedGeometriat).isNotNull().all {
                 prop(Geometriat::version).isEqualTo(0)
                 prop(Geometriat::createdAt).isRecentZDT()
-                prop(Geometriat::createdByUserId).isEqualTo("test")
+                prop(Geometriat::createdByUserId).isEqualTo(USERNAME)
                 prop(Geometriat::modifiedAt).isNull()
                 prop(Geometriat::modifiedByUserId).isNull()
                 prop(Geometriat::featureCollection).isNotNull().all {
@@ -177,21 +170,15 @@ internal class GeometriatServiceITest : DatabaseTest() {
             val savedGeometriat = geometriatService.getGeometriat(result.id!!)
             assertThat(savedGeometriat).isNotNull().all {
                 isNotSameInstanceAs(geometriat)
-                transform("points") { getPoints(it) }
-                    .all {
-                        hasSize(2)
-                        each {
-                            it.hasClass(Point::class)
-                            it.prop(Point::getCoordinates)
-                                .isEqualTo(getPoints(geometriat)[0].coordinates)
-                        }
-                    }
+                transform("polygons") { getPolygons(it) }
+                    .extracting(Polygon::getCoordinates)
+                    .isEqualTo(getPolygons(geometriat).map { it.coordinates })
             }
         }
     }
 
-    private fun getPoints(geometriat: Geometriat): List<Point> =
-        geometriat.featureCollection!!.features.map { it.geometry as Point }
+    private fun getPolygons(geometriat: Geometriat): List<Polygon> =
+        geometriat.featureCollection!!.features.map { it.geometry as Polygon }
 
     private fun getGeometriaCount(): Int? =
         jdbcTemplate.queryForObject("SELECT COUNT(*) FROM geometriat") { rs, _ -> rs.getInt(1) }

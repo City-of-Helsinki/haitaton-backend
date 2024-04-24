@@ -4,13 +4,14 @@ import assertk.Assert
 import assertk.assertions.contains
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.extracting
-import assertk.assertions.first
 import assertk.assertions.isBetween
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import assertk.assertions.single
+import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasFeatures
 import fi.hel.haitaton.hanke.zonedDateTime
@@ -27,22 +28,18 @@ import org.geojson.Geometry
 
 object Asserts {
 
-    fun Assert<OffsetDateTime?>.isRecent(offset: TemporalAmount = Duration.ofMinutes(1)) =
-        given { actual ->
-            if (actual == null) return
-            val now = OffsetDateTime.now()
-            assertThat(actual).isBetween(now.minus(offset), now)
-        }
+    fun Assert<OffsetDateTime?>.isRecent(offset: TemporalAmount = Duration.ofMinutes(1)) {
+        val now = OffsetDateTime.now()
+        isNotNull().isBetween(now.minus(offset), now)
+    }
 
-    fun Assert<ZonedDateTime?>.isRecentZDT(offset: TemporalAmount = Duration.ofMinutes(1)) =
-        given { actual ->
-            if (actual == null) return
-            val now = ZonedDateTime.now()
-            assertThat(actual).isBetween(now.minus(offset), now)
-        }
+    fun Assert<ZonedDateTime?>.isRecentZDT(offset: TemporalAmount = Duration.ofMinutes(1)) {
+        val now = ZonedDateTime.now()
+        isNotNull().isBetween(now.minus(offset), now)
+    }
 
-    fun Assert<LocalDateTime>.isRecentUTC(offset: TemporalAmount = Duration.ofMinutes(1)) =
-        prop(LocalDateTime::zonedDateTime).isRecentZDT(offset)
+    fun Assert<LocalDateTime?>.isRecentUTC(offset: TemporalAmount = Duration.ofMinutes(1)) =
+        isNotNull().prop(LocalDateTime::zonedDateTime).isRecentZDT(offset)
 
     fun Assert<OffsetDateTime>.isSameInstantAs(expected: OffsetDateTime) {
         this.prop(OffsetDateTime::toInstant).isEqualTo(expected.toInstant())
@@ -80,4 +77,10 @@ object Asserts {
         assertThat(idPart.toLongOrNull()).isEqualTo(id.toLong())
         assertThat(UUID.fromString(uuidPart)).isNotNull()
     }
+
+    fun Assert<PostalAddress?>.hasStreetName(street: String) =
+        isNotNull()
+            .prop(PostalAddress::streetAddress)
+            .prop(StreetAddress::streetName)
+            .isEqualTo(street)
 }

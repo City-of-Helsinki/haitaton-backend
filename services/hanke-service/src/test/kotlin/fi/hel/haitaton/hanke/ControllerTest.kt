@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.test.JacksonTestExtension
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.http.MediaType
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
 import org.springframework.test.web.servlet.MockMvc
@@ -7,18 +9,24 @@ import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 
+@ExtendWith(JacksonTestExtension::class)
 interface ControllerTest {
     val mockMvc: MockMvc
 
     /** Send a GET request to the given URL. */
     fun get(
         url: String,
-        resultType: MediaType = MediaType.APPLICATION_JSON,
+        resultType: MediaType? = MediaType.APPLICATION_JSON,
     ): ResultActions {
-        return mockMvc
-            .perform(MockMvcRequestBuilders.get(url).accept(MediaType.APPLICATION_JSON))
-            .andExpect(content().contentType(resultType))
+        val actions =
+            mockMvc.perform(MockMvcRequestBuilders.get(url).accept(MediaType.APPLICATION_JSON))
+        return if (resultType != null) {
+            actions.andExpect(content().contentType(resultType))
+        } else {
+            actions.andExpect(header().doesNotExist("content-type"))
+        }
     }
 
     /**

@@ -1,7 +1,12 @@
 package fi.hel.haitaton.hanke.permissions
 
+import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.ChangeLogView
+import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeYhteyshenkiloEntity
+import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
@@ -12,6 +17,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToMany
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -21,9 +27,7 @@ data class HankekayttajaInput(
     val sukunimi: String,
     val email: String,
     val puhelin: String,
-) {
-    fun fullName(): String = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
-}
+)
 
 @Schema(description = "Api response of user data of given Hanke")
 data class HankeKayttajaResponse(
@@ -36,33 +40,34 @@ data class HankeKayttajaDto(
     @field:Schema(description = "Email address") val sahkoposti: String,
     @field:Schema(description = "First name") val etunimi: String,
     @field:Schema(description = "Last name") val sukunimi: String,
-    @Deprecated("Use etunimi and sukunimi instead.")
-    @field:Schema(description = "Full name", deprecated = true)
-    val nimi: String,
     @field:Schema(description = "Phone number") val puhelinnumero: String,
     @field:Schema(description = "Access level in Hanke") val kayttooikeustaso: Kayttooikeustaso?,
+    @field:Schema(description = "User roles in Hanke") val roolit: List<ContactType>,
     @field:Schema(description = "Has user logged in to view Hanke") val tunnistautunut: Boolean,
+    @field:Schema(description = "When their latest invitation was sent")
+    val kutsuttu: OffsetDateTime?,
 )
 
 @Entity
 @Table(name = "hankekayttaja")
+@JsonView(NotInChangeLogView::class)
 class HankekayttajaEntity(
-    @Id val id: UUID = UUID.randomUUID(),
+    @JsonView(ChangeLogView::class) @Id val id: UUID = UUID.randomUUID(),
 
     /** Related Hanke. */
     @Column(name = "hanke_id") val hankeId: Int,
 
     /** First name. */
-    val etunimi: String,
+    var etunimi: String,
 
     /** Last name. */
-    val sukunimi: String,
+    var sukunimi: String,
 
     /** Phone number. */
-    val puhelin: String,
+    var puhelin: String,
 
     /** Email address. */
-    val sahkoposti: String,
+    var sahkoposti: String,
 
     /** Users first name used in a Hanke invitation. */
     @Column(name = "kutsuttu_etunimi") val kutsuttuEtunimi: String? = null,
@@ -79,7 +84,7 @@ class HankekayttajaEntity(
     @OneToOne(mappedBy = "hankekayttaja") var kayttajakutsu: KayttajakutsuEntity? = null,
 
     /** Identifier of the inviter. */
-    @Column(name = "kutsuja_id") val kutsujaId: UUID? = null,
+    @Column(name = "kutsuja_id") var kutsujaId: UUID? = null,
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hankeKayttaja",
@@ -87,6 +92,13 @@ class HankekayttajaEntity(
         orphanRemoval = true
     )
     var yhteyshenkilot: MutableList<HankeYhteyshenkiloEntity> = mutableListOf(),
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "hankekayttaja",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    var hakemusyhteyshenkilot: MutableList<HakemusyhteyshenkiloEntity> = mutableListOf(),
 ) {
     fun toDto(): HankeKayttajaDto =
         HankeKayttajaDto(
@@ -94,20 +106,26 @@ class HankekayttajaEntity(
             sahkoposti = sahkoposti,
             etunimi = etunimi,
             sukunimi = sukunimi,
-            nimi = fullName(),
             puhelinnumero = puhelin,
             kayttooikeustaso = deriveKayttooikeustaso(),
+            roolit = deriveRoolit(),
             tunnistautunut = permission != null,
+            kutsuttu = kayttajakutsu?.createdAt,
         )
 
     fun toDomain(): HankeKayttaja =
         HankeKayttaja(
             id = id,
             hankeId = hankeId,
-            nimi = fullName(),
+            etunimi = etunimi,
+            sukunimi = sukunimi,
             sahkoposti = sahkoposti,
+            puhelinnumero = puhelin,
+            kayttooikeustaso = deriveKayttooikeustaso(),
+            roolit = deriveRoolit(),
             permissionId = permission?.id,
             kayttajaTunnisteId = kayttajakutsu?.id,
+            kutsuttu = kayttajakutsu?.createdAt,
         )
 
     /**
@@ -119,17 +137,43 @@ class HankekayttajaEntity(
     fun deriveKayttooikeustaso(): Kayttooikeustaso? =
         permission?.kayttooikeustaso ?: kayttajakutsu?.kayttooikeustaso
 
+    /**
+     * Roles of the user are derived from the related [HankeYhteyshenkiloEntity]s. If there are no
+     * related [HankeYhteyshenkiloEntity]s, the user has no roles. This means that the user is not a
+     * contact person in any of the Hanke contacts.
+     */
+    private fun deriveRoolit(): List<ContactType> =
+        yhteyshenkilot.map { it.hankeYhteystieto.contactType }
+
     fun fullName() = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
 }
 
 data class HankeKayttaja(
     override val id: UUID,
     val hankeId: Int,
-    val nimi: String,
+    val etunimi: String,
+    val sukunimi: String,
     val sahkoposti: String,
+    val puhelinnumero: String,
+    val kayttooikeustaso: Kayttooikeustaso?,
+    val roolit: List<ContactType>,
     val permissionId: Int?,
-    val kayttajaTunnisteId: UUID?
-) : HasId<UUID>
+    val kayttajaTunnisteId: UUID?,
+    val kutsuttu: OffsetDateTime?,
+) : HasId<UUID> {
+    fun toDto(): HankeKayttajaDto =
+        HankeKayttajaDto(
+            id = id,
+            sahkoposti = sahkoposti,
+            etunimi = etunimi,
+            sukunimi = sukunimi,
+            puhelinnumero = puhelinnumero,
+            kayttooikeustaso = kayttooikeustaso,
+            roolit = roolit,
+            tunnistautunut = permissionId != null,
+            kutsuttu = kutsuttu,
+        )
+}
 
 @Repository
 interface HankekayttajaRepository : JpaRepository<HankekayttajaEntity, UUID> {
@@ -143,4 +187,8 @@ interface HankekayttajaRepository : JpaRepository<HankekayttajaEntity, UUID> {
     ): List<HankekayttajaEntity>
 
     fun findByPermissionId(permissionId: Int): HankekayttajaEntity?
+
+    fun findByPermissionIdIn(permissionIds: Collection<Int>): List<HankekayttajaEntity>
+
+    fun findByKutsujaId(kutsujaId: UUID): List<HankekayttajaEntity>
 }

@@ -22,6 +22,7 @@ import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.ZonedDateTime
@@ -64,7 +65,20 @@ class HankeFactory(
         return hankeService.loadHanke(hankeTunnus)!!
     }
 
-    fun builder(userId: String): HankeBuilder {
+    /** Convenience method for storing a hanke with a hankealue. */
+    fun saveWithAlue(userId: String = USERNAME): HankeEntity =
+        builder(userId).withHankealue().saveEntity()
+
+    /**
+     * Save a hanke that has the generated field set. The hanke is created like it would be created
+     * for a stand-alone johtoselvityshakemus.
+     */
+    fun saveGenerated(
+        createRequest: CreateHankeRequest = createRequest(),
+        userId: String = USERNAME,
+    ): HankeEntity = builder(userId).saveGenerated(createRequest)
+
+    fun builder(userId: String = USERNAME): HankeBuilder {
         val hanke =
             create(
                 nimi = defaultNimi,
@@ -83,6 +97,19 @@ class HankeFactory(
             hankeYhteystietoRepository,
             hankeYhteyshenkiloRepository,
         )
+    }
+
+    fun yhteystietoBuilderFrom(hanke: HankeEntity): HankeYhteystietoBuilder =
+        HankeYhteystietoBuilder(
+            hanke,
+            hanke.createdByUserId!!,
+            hankeKayttajaFactory,
+            hankeYhteystietoRepository,
+            hankeYhteyshenkiloRepository
+        )
+
+    fun addYhteystiedotTo(hanke: HankeEntity, f: HankeYhteystietoBuilder.() -> Unit) {
+        yhteystietoBuilderFrom(hanke).f()
     }
 
     companion object {
@@ -153,7 +180,7 @@ class HankeFactory(
                     generated = false,
                 )
                 .apply {
-                    listOfHankeYhteystieto =
+                    yhteystiedot =
                         mutableListOf(
                             HankeYhteystietoFactory.createEntity(1, OMISTAJA, this),
                             HankeYhteystietoFactory.createEntity(2, TOTEUTTAJA, this),
