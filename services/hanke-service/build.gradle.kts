@@ -93,7 +93,7 @@ dependencies {
     }
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
-    testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.0")
+    testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
     testImplementation("com.squareup.okhttp3:mockwebserver")
     testImplementation("com.icegreen:greenmail-junit5:2.0.1")
 
