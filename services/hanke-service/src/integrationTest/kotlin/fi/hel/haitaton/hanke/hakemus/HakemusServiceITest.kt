@@ -575,21 +575,23 @@ class HakemusServiceITest(
     @Nested
     inner class UpdateHakemus {
 
-        private val intersectingArea =
-            ApplicationFactory.createApplicationArea(
-                name = "area",
-                geometry =
-                    "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json".asJsonResource()
-            )
-
-        private val notInHankeArea =
-            ApplicationFactory.createApplicationArea(
-                name = "area",
-                geometry = GeometriaFactory.polygon
-            )
-
         @Nested
         inner class WithJohtoselvitys {
+
+            private val intersectingArea =
+                ApplicationFactory.createCableReportApplicationArea(
+                    name = "area",
+                    geometry =
+                        "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json"
+                            .asJsonResource()
+                )
+
+            private val notInHankeArea =
+                ApplicationFactory.createCableReportApplicationArea(
+                    name = "area",
+                    geometry = GeometriaFactory.polygon
+                )
+
             @Test
             fun `throws exception when the application does not exist`() {
                 assertThat(applicationRepository.findAll()).isEmpty()
@@ -925,6 +927,20 @@ class HakemusServiceITest(
 
         @Nested
         inner class WithKaivuilmoitus {
+
+            private val intersectingArea =
+                ApplicationFactory.createExcavationNotificationArea(
+                    name = "area",
+                    geometry =
+                        "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json"
+                            .asJsonResource()
+                )
+
+            private val notInHankeArea =
+                ApplicationFactory.createExcavationNotificationArea(
+                    name = "area",
+                    geometry = GeometriaFactory.polygon
+                )
 
             @Test
             fun `throws exception when the application does not exist`() {
@@ -1310,7 +1326,9 @@ class HakemusServiceITest(
         private val alluId = 35124
 
         private val areaOutsideDefaultHanke: ApplicationArea =
-            ApplicationFactory.createApplicationArea(geometry = GeometriaFactory.thirdPolygon)
+            ApplicationFactory.createCableReportApplicationArea(
+                geometry = GeometriaFactory.thirdPolygon
+            )
 
         @Test
         fun `throws exception when the application doesn't exist`() {

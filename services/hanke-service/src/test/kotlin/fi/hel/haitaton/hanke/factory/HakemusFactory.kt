@@ -3,11 +3,12 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportApplicationArea
+import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.HankePerustaja
@@ -118,7 +119,8 @@ class HakemusFactory(
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
-            areas: List<ApplicationArea>? = listOf(ApplicationFactory.createApplicationArea()),
+            areas: List<CableReportApplicationArea>? =
+                listOf(ApplicationFactory.createCableReportApplicationArea()),
             customerWithContacts: Hakemusyhteystieto? = null,
             contractorWithContacts: Hakemusyhteystieto? = null,
             representativeWithContacts: Hakemusyhteystieto? = null,
@@ -153,7 +155,8 @@ class HakemusFactory(
             workDescription: String = "Work description.",
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-            areas: List<ApplicationArea>? = listOf(ApplicationFactory.createApplicationArea()),
+            areas: List<ExcavationNotificationArea>? =
+                listOf(ApplicationFactory.createExcavationNotificationArea()),
             customerWithContacts: Hakemusyhteystieto? = null,
             contractorWithContacts: Hakemusyhteystieto? = null,
             representativeWithContacts: Hakemusyhteystieto? = null,

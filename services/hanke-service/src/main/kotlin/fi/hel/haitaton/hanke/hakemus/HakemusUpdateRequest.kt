@@ -10,7 +10,9 @@ import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.application.InvoicingCustomer
 import fi.hel.haitaton.hanke.application.PostalAddress
@@ -84,7 +86,7 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Työn arvioitu loppupäivä */
     override val endTime: ZonedDateTime? = null,
     /** Työalueet */
-    override val areas: List<ApplicationArea>? = null,
+    override val areas: List<CableReportApplicationArea>? = null,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
     override val customerWithContacts: CustomerWithContactsRequest? = null,
@@ -186,7 +188,7 @@ data class KaivuilmoitusUpdateRequest(
     /** Työn arvioitu loppupäivä */
     override val endTime: ZonedDateTime? = null,
     /** Työalueet */
-    override val areas: List<ApplicationArea>? = null,
+    override val areas: List<ExcavationNotificationArea>? = null,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
     override val customerWithContacts: CustomerWithContactsRequest? = null,
