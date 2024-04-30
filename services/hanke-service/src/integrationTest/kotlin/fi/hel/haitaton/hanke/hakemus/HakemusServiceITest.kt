@@ -64,6 +64,7 @@ import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.CreateHakemusRequestFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
@@ -1156,6 +1157,7 @@ class HakemusServiceITest(
                 val kayttaja = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
                 val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
                 val originalAuditLogSize = auditLogRepository.findByType(ObjectType.HAKEMUS).size
+                val area = createExcavationNotificationArea()
                 val request =
                     hakemus
                         .toUpdateRequest()
@@ -1166,6 +1168,7 @@ class HakemusServiceITest(
                             newKayttaja.id
                         )
                         .withWorkDescription("New work description")
+                        .withArea(area)
 
                 val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
@@ -1179,6 +1182,7 @@ class HakemusServiceITest(
                             .prop(CustomerWithContactsResponse::contacts)
                             .extracting { it.hankekayttajaId }
                             .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
+                        prop(KaivuilmoitusDataResponse::areas).isNotNull().single().isEqualTo(area)
                     }
 
                 val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
