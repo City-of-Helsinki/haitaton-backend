@@ -316,7 +316,6 @@ Responds with information about the activated user and the hanke associated with
     }
 
     @PostMapping("/kayttajat/{kayttajaId}/kutsu")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(
         summary = "Resend an invitation email",
         description =
@@ -327,6 +326,8 @@ hanke as a contact person.
 Regenerates the invitation token and link. This means that the link in the
 original email will not work anymore. It also means that the period of validity
 of the token and link will be reset.
+
+Returns the updated hankekayttaja.
 """
     )
     @ApiResponses(
@@ -352,9 +353,8 @@ of the token and link will be reset.
         "@featureService.isEnabled('USER_MANAGEMENT') && " +
             "@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'RESEND_INVITATION')"
     )
-    fun resendInvitations(@PathVariable kayttajaId: UUID) {
-        hankeKayttajaService.resendInvitation(kayttajaId, currentUserId())
-    }
+    fun resendInvitations(@PathVariable kayttajaId: UUID): HankeKayttajaDto =
+        hankeKayttajaService.resendInvitation(kayttajaId, currentUserId()).toDto()
 
     @PutMapping("/hankkeet/{hankeTunnus}/kayttajat/self")
     @Operation(
