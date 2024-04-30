@@ -2,8 +2,9 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportApplicationArea
+import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
@@ -54,7 +55,8 @@ object HakemusResponseFactory {
         workDescription: String = ApplicationFactory.DEFAULT_WORK_DESCRIPTION,
         startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
         endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-        areas: List<ApplicationArea> = listOf(ApplicationFactory.createApplicationArea()),
+        areas: List<CableReportApplicationArea> =
+            listOf(ApplicationFactory.createCableReportApplicationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
                 createCompanyCustomerResponse(),
@@ -98,7 +100,8 @@ object HakemusResponseFactory {
         requiredCompetence: Boolean = false,
         startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
         endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-        areas: List<ApplicationArea> = listOf(ApplicationFactory.createApplicationArea()),
+        areas: List<ExcavationNotificationArea> =
+            listOf(ApplicationFactory.createExcavationNotificationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
                 createCompanyCustomerResponse(),
