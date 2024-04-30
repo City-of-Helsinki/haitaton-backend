@@ -13,7 +13,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.FileClient
-import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_APPLICATION_ID
 import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.OffsetDateTime
@@ -116,12 +115,12 @@ class ApplicationAttachmentFactory(
                 applicationId = applicationId,
             )
 
-        fun createMetadata(
+        fun createDto(
             attachmentId: UUID = defaultAttachmentId,
             fileName: String = FILE_NAME,
             contentType: String = APPLICATION_PDF_VALUE,
             size: Long = DEFAULT_SIZE,
-            createdBy: String = currentUserId(),
+            createdBy: String = USERNAME,
             createdAt: OffsetDateTime = OffsetDateTime.now(),
             applicationId: Long = 1L,
             attachmentType: ApplicationAttachmentType = MUU,

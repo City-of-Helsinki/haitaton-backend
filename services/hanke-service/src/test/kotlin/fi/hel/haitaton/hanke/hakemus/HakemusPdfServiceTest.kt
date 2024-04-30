@@ -7,6 +7,7 @@ import assertk.assertions.doesNotContain
 import com.lowagie.text.pdf.PdfReader
 import com.lowagie.text.pdf.parser.PdfTextExtractor
 import fi.hel.haitaton.hanke.application.CableReportApplicationArea
+import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createPostalAddress
 import fi.hel.haitaton.hanke.factory.HakemusFactory
@@ -26,7 +27,7 @@ class HakemusPdfServiceTest {
         fun `created PDF contains title and section headers`() {
             val hakemusData = HakemusFactory.createJohtoselvityshakemusData()
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 1f, listOf())
+            val pdfData = HakemusPdfService.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData))
                 .contains("Johtoselvityshakemus", "Perustiedot", "Alueet", "Yhteystiedot")
@@ -36,7 +37,7 @@ class HakemusPdfServiceTest {
         fun `created PDF contains headers for basic information`() {
             val hakemusData = HakemusFactory.createJohtoselvityshakemusData()
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf())
+            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Työn nimi")
@@ -59,7 +60,7 @@ class HakemusPdfServiceTest {
                     propertyConnectivity = true,
                 )
 
-            val pdfData = HakemusPdfService.createPdf(applicationData, 1f, listOf())
+            val pdfData = HakemusPdfService.createPdf(applicationData, 1f, listOf(), listOf())
 
             val pdfText = getPdfAsText(pdfData)
             assertThat(pdfText).all {
@@ -102,7 +103,7 @@ class HakemusPdfServiceTest {
                     propertyConnectivity = false,
                 )
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 1f, listOf())
+            val pdfData = HakemusPdfService.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 doesNotContain("Uuden rakenteen tai johdon rakentamisesta")
@@ -116,7 +117,7 @@ class HakemusPdfServiceTest {
         fun `created PDF contains headers for area information`() {
             val hakemusData = HakemusFactory.createJohtoselvityshakemusData()
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf())
+            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Työn arvioitu alkupäivä")
@@ -140,7 +141,8 @@ class HakemusPdfServiceTest {
                         )
                 )
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf(185f, 231f, 198f))
+            val pdfData =
+                HakemusPdfService.createPdf(hakemusData, 614f, listOf(185f, 231f, 198f), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("18.11.2022")
@@ -167,7 +169,7 @@ class HakemusPdfServiceTest {
                         HakemusyhteystietoFactory.create().withYhteyshenkilo()
                 )
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 1f, listOf())
+            val pdfData = HakemusPdfService.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Työstä vastaavat")
@@ -188,7 +190,7 @@ class HakemusPdfServiceTest {
                     propertyDeveloperWithContacts = null,
                 )
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf())
+            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Työstä vastaavat")
@@ -262,7 +264,7 @@ class HakemusPdfServiceTest {
                     propertyDeveloperWithContacts = rakennuttaja,
                 )
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf())
+            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Company Ltd")
@@ -293,6 +295,30 @@ class HakemusPdfServiceTest {
                 contains("Denise Developer")
                 contains("denise@developer.test")
                 contains("0502222222")
+            }
+        }
+
+        @Test
+        fun `created PDF contains attachment information`() {
+            val hakemusData =
+                HakemusFactory.createJohtoselvityshakemusData(
+                    startTime = ZonedDateTime.parse("2022-11-17T22:00:00.000Z"),
+                    endTime = ZonedDateTime.parse("2022-11-28T21:59:59.999Z"),
+                    areas = listOf()
+                )
+            val attachments =
+                listOf(
+                    ApplicationAttachmentFactory.create(fileName = "first.pdf"),
+                    ApplicationAttachmentFactory.create(fileName = "second.png"),
+                    ApplicationAttachmentFactory.create(fileName = "third.gt"),
+                )
+
+            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf(), attachments)
+
+            assertThat(getPdfAsText(pdfData)).all {
+                contains("first.pdf")
+                contains("second.png")
+                contains("third.gt")
             }
         }
     }
