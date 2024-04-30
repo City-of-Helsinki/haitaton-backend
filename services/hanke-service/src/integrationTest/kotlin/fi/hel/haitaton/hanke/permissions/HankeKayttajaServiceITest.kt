@@ -642,7 +642,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                     .withPerustaja(KAYTTAJA_INPUT_HAKIJA)
                     .saveAsGenerated(applicationData)
             val applicationEntity =
-                applicationRepository.getReferenceById(application.id!!).apply {
+                applicationRepository.getReferenceById(application.id).apply {
                     applicationIdentifier = DEFAULT_APPLICATION_IDENTIFIER
                 }
             val inviter = findKayttaja(hanke.id, KAYTTAJA_INPUT_HAKIJA.email)

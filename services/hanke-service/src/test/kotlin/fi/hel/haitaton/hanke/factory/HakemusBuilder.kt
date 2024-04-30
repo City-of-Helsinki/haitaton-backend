@@ -7,7 +7,9 @@ import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusService
@@ -83,10 +85,10 @@ data class HakemusBuilder(
             { copy(pendingOnClient = pendingOnClient) },
         )
 
-    fun withArea(area: ApplicationArea = ApplicationFactory.createApplicationArea()) =
+    fun withArea(area: ApplicationArea = ApplicationFactory.createCableReportApplicationArea()) =
         updateApplicationData(
-            { copy(areas = (areas ?: listOf()).plus(area)) },
-            { copy(areas = (areas ?: listOf()).plus(area)) },
+            { copy(areas = (areas ?: listOf()).plus(area as CableReportApplicationArea)) },
+            { copy(areas = (areas ?: listOf()).plus(area as ExcavationNotificationArea)) },
         )
 
     fun withStartTime(time: ZonedDateTime? = DateFactory.getStartDatetime()) =
