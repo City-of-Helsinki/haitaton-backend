@@ -776,13 +776,20 @@ class HankeKayttajaControllerITest(
         }
 
         @Test
-        fun `Returns 204 if invitation resent`() {
+        fun `Returns 200 if invitation resent`() {
             every { authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name) } returns
                 true
-            justRun { hankeKayttajaService.resendInvitation(kayttajaId, USERNAME) }
+            val hankekayttaja = HankeKayttajaFactory.create()
+            every { hankeKayttajaService.resendInvitation(kayttajaId, USERNAME) } returns
+                hankekayttaja
 
-            post(url).andExpect(status().isNoContent).andExpect(content().string(""))
+            val response: HankeKayttajaDto = post(url).andExpect(status().isOk).andReturnBody()
 
+            assertThat(response).all {
+                prop(HankeKayttajaDto::id).isEqualTo(hankekayttaja.id)
+                prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(hankekayttaja.kayttooikeustaso)
+                prop(HankeKayttajaDto::kutsuttu).isEqualTo(hankekayttaja.kutsuttu)
+            }
             verifySequence {
                 authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name)
                 hankeKayttajaService.resendInvitation(kayttajaId, USERNAME)
