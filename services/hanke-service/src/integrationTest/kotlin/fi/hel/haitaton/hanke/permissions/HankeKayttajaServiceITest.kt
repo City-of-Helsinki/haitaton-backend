@@ -80,6 +80,7 @@ import fi.hel.haitaton.hanke.userId
 import io.mockk.every
 import io.mockk.mockk
 import jakarta.mail.internet.MimeMessage
+import java.time.OffsetDateTime
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -1500,9 +1501,10 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             val kayttaja = kayttajaFactory.saveUser(hanke.id)
             assertThat(kayttajakutsuRepository.findAll()).isEmpty()
 
-            hankeKayttajaService.resendInvitation(kayttaja.id, USERNAME)
+            val result = hankeKayttajaService.resendInvitation(kayttaja.id, USERNAME)
 
             assertThat(kayttajakutsuRepository.findAll()).single().hasKayttajaWithId(kayttaja.id)
+            assertThat(result.kutsuttu).isNotNull().isRecent()
         }
 
         @Test
@@ -1525,6 +1527,21 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                 prop(KayttajakutsuEntity::id).isNotEqualTo(tunnisteId)
                 prop(KayttajakutsuEntity::tunniste).isNotEqualTo(tunniste)
             }
+        }
+
+        @Test
+        fun `Returns the hankekayttaja with the updated invitation date`() {
+            val hanke = hankeFactory.saveWithAlue()
+            val pastDate = OffsetDateTime.parse("2024-01-23T08:41:14Z")
+            val kayttaja = kayttajaFactory.saveUnidentifiedUser(hanke.id, kutsuttu = pastDate)
+
+            val result = hankeKayttajaService.resendInvitation(kayttaja.id, USERNAME)
+
+            assertThat(result.kutsuttu).isNotNull().isRecent()
+            assertThat(kayttajakutsuRepository.findAll())
+                .single()
+                .prop(KayttajakutsuEntity::createdAt)
+                .isRecent()
         }
 
         @Test

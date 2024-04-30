@@ -38,6 +38,7 @@ class HankeKayttajaFactory(
         puhelin: String = KAKE_PUHELIN,
         kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
         tunniste: String = "existing",
+        kutsuttu: OffsetDateTime = INVITATION_DATE,
     ): HankekayttajaEntity =
         addToken(
             hankeKayttaja =
@@ -51,6 +52,7 @@ class HankeKayttajaFactory(
                 ),
             tunniste = tunniste,
             kayttooikeustaso = kayttooikeustaso,
+            kutsuttu = kutsuttu,
         )
 
     fun saveIdentifiedUser(
@@ -117,19 +119,21 @@ class HankeKayttajaFactory(
         hankeKayttaja: HankekayttajaEntity,
         tunniste: String = "existing",
         kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
+        kutsuttu: OffsetDateTime = INVITATION_DATE,
     ): HankekayttajaEntity {
-        hankeKayttaja.kayttajakutsu = hankeKayttaja.saveToken(tunniste, kayttooikeustaso)
+        hankeKayttaja.kayttajakutsu = hankeKayttaja.saveToken(tunniste, kayttooikeustaso, kutsuttu)
         return hankeKayttajaRepository.save(hankeKayttaja)
     }
 
     private fun HankekayttajaEntity.saveToken(
         tunniste: String = "existing",
         kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
+        createdAt: OffsetDateTime = INVITATION_DATE,
     ) =
         kayttajakutsuRepository.save(
             KayttajakutsuEntity(
                 tunniste = tunniste,
-                createdAt = INVITATION_DATE,
+                createdAt = createdAt,
                 kayttooikeustaso = kayttooikeustaso,
                 hankekayttaja = this,
             )
