@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
 import fi.hel.haitaton.hanke.hakemus.ContactRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
@@ -123,7 +124,12 @@ object HakemusUpdateRequestFactory {
             startTime = ZonedDateTime.now(TZ_UTC),
             endTime = ZonedDateTime.now(TZ_UTC).plusDays(5),
             areas =
-                listOf(createExcavationNotificationArea("Hankealue 1", GeometriaFactory.polygon)),
+                listOf(
+                    createExcavationNotificationArea(
+                        "Hankealue 1",
+                        tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon))
+                    )
+                ),
             customerWithContacts =
                 createCustomerWithContactsRequest(
                     CustomerType.COMPANY,

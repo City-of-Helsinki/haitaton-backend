@@ -178,9 +178,8 @@ class ApplicationFactory(
 
         fun createExcavationNotificationArea(
             name: String = "Alue",
-            geometry: Polygon = GeometriaFactory.secondPolygon,
             hankealueId: Int = 0,
-            tyoalueet: List<Tyoalue> = listOf(createTyoalue(geometry)),
+            tyoalueet: List<Tyoalue> = listOf(createTyoalue()),
             katuosoite: String = "Katu 1",
             tyonTarkoitukset: Set<TyomaaTyyppi> = setOf(TyomaaTyyppi.VESI),
             lisatiedot: String = "Lisätiedot",
@@ -188,7 +187,6 @@ class ApplicationFactory(
         ): ExcavationNotificationArea =
             ExcavationNotificationArea(
                 name,
-                geometry,
                 hankealueId,
                 tyoalueet,
                 katuosoite,

@@ -39,7 +39,6 @@ import fi.hel.haitaton.hanke.application.ALLU_INITIAL_ATTACHMENT_CANCELLATION_MS
 import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
-import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
 import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
 import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
@@ -53,6 +52,7 @@ import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeExcept
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
@@ -65,6 +65,7 @@ import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.CreateHakemusRequestFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
@@ -930,17 +931,21 @@ class HakemusServiceITest(
         inner class WithKaivuilmoitus {
 
             private val intersectingArea =
-                ApplicationFactory.createExcavationNotificationArea(
+                createExcavationNotificationArea(
                     name = "area",
-                    geometry =
-                        "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json"
-                            .asJsonResource()
+                    tyoalueet =
+                        listOf(
+                            createTyoalue(
+                                "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json"
+                                    .asJsonResource()
+                            )
+                        ),
                 )
 
             private val notInHankeArea =
-                ApplicationFactory.createExcavationNotificationArea(
+                createExcavationNotificationArea(
                     name = "area",
-                    geometry = GeometriaFactory.polygon
+                    tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon)),
                 )
 
             @Test
@@ -1139,16 +1144,19 @@ class HakemusServiceITest(
                     hasClass(ApplicationGeometryNotInsideHankeException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains(hanke.logString())
-                    messageContains("geometry=${notInHankeArea.geometry.toJsonString()}")
+                    messageContains(
+                        "geometry=${notInHankeArea.tyoalueet.single().geometry.toJsonString()}"
+                    )
                 }
             }
 
             @Test
             fun `saves updated data and creates an audit log`() {
-                val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+                val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+                val hankeEntity = hankeRepository.findAll().single()
                 val entity =
                     hakemusFactory
-                        .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                        .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
                         .withWorkDescription("Old work description")
                         .hakija()
                         .saveEntity()
@@ -1157,7 +1165,8 @@ class HakemusServiceITest(
                 val kayttaja = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
                 val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
                 val originalAuditLogSize = auditLogRepository.findByType(ObjectType.HAKEMUS).size
-                val area = createExcavationNotificationArea()
+                val area =
+                    createExcavationNotificationArea(hankealueId = hanke.alueet.single().id!!)
                 val request =
                     hakemus
                         .toUpdateRequest()
@@ -1329,7 +1338,7 @@ class HakemusServiceITest(
     inner class SendHakemus {
         private val alluId = 35124
 
-        private val areaOutsideDefaultHanke: ApplicationArea =
+        private val areaOutsideDefaultHanke: CableReportApplicationArea =
             ApplicationFactory.createCableReportApplicationArea(
                 geometry = GeometriaFactory.thirdPolygon
             )
@@ -1378,7 +1387,13 @@ class HakemusServiceITest(
             val areas = application.applicationData.areas!!
             val hanke = hankeRepository.findAll().single()
             hankeRepository.save(hanke.apply { alueet = mutableListOf() })
-            assertThat(geometriatDao.isInsideHankeAlueet(hanke.id, areas[0].geometry)).isFalse()
+            assertThat(
+                    geometriatDao.isInsideHankeAlueet(
+                        hanke.id,
+                        areas.single().geometries().single()
+                    )
+                )
+                .isFalse()
             every { alluClient.create(any()) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
             every { alluClient.getApplicationInformation(alluId) } returns
