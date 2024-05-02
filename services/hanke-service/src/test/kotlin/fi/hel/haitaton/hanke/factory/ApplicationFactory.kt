@@ -1,12 +1,6 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.Haitat
-import fi.hel.haitaton.hanke.HaittaAutoliikenteelle
-import fi.hel.haitaton.hanke.HaittaLinjaautojenPaikallisliikenteelle
-import fi.hel.haitaton.hanke.HaittaPyoraliikenteelle
-import fi.hel.haitaton.hanke.HaittaRaitioliikenteelle
 import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.MuuHaitta
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
@@ -33,15 +27,10 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INP
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_SUORITTAJA
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
-import fi.hel.haitaton.hanke.tormaystarkastelu.HaittaAjanKestoLuokittelu
-import fi.hel.haitaton.hanke.tormaystarkastelu.Liikennemaaraluokittelu
-import fi.hel.haitaton.hanke.tormaystarkastelu.Linjaautoliikenneluokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.Pyoraliikenneluokittelu
-import fi.hel.haitaton.hanke.tormaystarkastelu.Raitioliikenneluokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluKatuluokka
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.ZonedDateTime
 import org.geojson.Polygon
@@ -182,8 +171,14 @@ class ApplicationFactory(
             tyoalueet: List<Tyoalue> = listOf(createTyoalue()),
             katuosoite: String = "Katu 1",
             tyonTarkoitukset: Set<TyomaaTyyppi> = setOf(TyomaaTyyppi.VESI),
+            meluhaitta: Meluhaitta = Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
+            polyhaitta: Polyhaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
+            tarinahaitta: Tarinahaitta = Tarinahaitta.SATUNNAINEN_HAITTA,
+            kaistahaitta: VaikutusAutoliikenteenKaistamaariin =
+                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+            kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus =
+                AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA,
             lisatiedot: String = "Lisätiedot",
-            haitat: Haitat = createHaitat(),
         ): ExcavationNotificationArea =
             ExcavationNotificationArea(
                 name,
@@ -191,50 +186,20 @@ class ApplicationFactory(
                 tyoalueet,
                 katuosoite,
                 tyonTarkoitukset,
+                meluhaitta,
+                polyhaitta,
+                tarinahaitta,
+                kaistahaitta,
+                kaistahaittojenPituus,
                 lisatiedot,
-                haitat
             )
 
         fun createTyoalue(
             geometry: Polygon = GeometriaFactory.secondPolygon,
             area: Double = 100.0,
-            haittaindeksi: Float = 1.0f
-        ) = Tyoalue(geometry, area, haittaindeksi)
-
-        fun createHaitat(
-            pyoraliikenne: HaittaPyoraliikenteelle =
-                HaittaPyoraliikenteelle(
-                    Pyoraliikenneluokittelu.PAAREITTI_TAI_PAAREITIN_OSANA_TOIMIVA_KATU,
-                    "Pyöräilyhaittojen hallintasuunnitelma"
-                ),
-            autoliikenne: HaittaAutoliikenteelle =
-                HaittaAutoliikenteelle(
-                    HaittaAjanKestoLuokittelu.KAKSI_VIIKKOA_VIIVA_KOLME_KUUKAUTTA,
-                    TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU,
-                    Liikennemaaraluokittelu.LIIKENNEMAARA_1500_4999,
-                    VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
-                    AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA,
-                    "Autoliikennehaittojen hallintasuunnitelma"
-                ),
-            linjaautojenPaikallisliikenne: HaittaLinjaautojenPaikallisliikenteelle =
-                HaittaLinjaautojenPaikallisliikenteelle(
-                    Linjaautoliikenneluokittelu.RUNKOLINJA,
-                    "Linja-autojen paikallisliikennehaittojen hallintasuunnitelma"
-                ),
-            raitioliikenne: HaittaRaitioliikenteelle =
-                HaittaRaitioliikenteelle(
-                    Raitioliikenneluokittelu
-                        .RAITIOTIEVERKON_RATAOSA_JOLLA_SAANNOLLISTA_LINJALIIKENNETTA,
-                    "Raitioliikennehaittojen hallintasuunnitelma"
-                ),
-            muu: MuuHaitta =
-                MuuHaitta(
-                    Meluhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
-                    Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
-                    Tarinahaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
-                    "Muiden haittojen hallintasuunnitelma"
-                )
-        ) = Haitat(pyoraliikenne, autoliikenne, linjaautojenPaikallisliikenne, raitioliikenne, muu)
+            tormaystarkasteluTulos: TormaystarkasteluTulos =
+                TormaystarkasteluTulos(1.0f, 3.0f, 5.0f, 5.0f),
+        ) = Tyoalue(geometry, area, tormaystarkasteluTulos)
 
         fun Application.withApplicationData(
             type: ApplicationType = ApplicationType.CABLE_REPORT,

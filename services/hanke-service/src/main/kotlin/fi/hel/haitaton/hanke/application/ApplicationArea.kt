@@ -1,7 +1,12 @@
 package fi.hel.haitaton.hanke.application
 
-import fi.hel.haitaton.hanke.Haitat
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import org.geojson.Polygon
 
 sealed interface ApplicationArea {
@@ -21,8 +26,12 @@ data class ExcavationNotificationArea(
     val tyoalueet: List<Tyoalue>,
     val katuosoite: String,
     val tyonTarkoitukset: Set<TyomaaTyyppi>,
+    val meluhaitta: Meluhaitta,
+    val polyhaitta: Polyhaitta,
+    val tarinahaitta: Tarinahaitta,
+    val kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
+    val kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus,
     val lisatiedot: String,
-    val haitat: Haitat,
 ) : ApplicationArea {
     override fun geometries(): List<Polygon> = tyoalueet.map { it.geometry }
 }
@@ -30,5 +39,5 @@ data class ExcavationNotificationArea(
 data class Tyoalue(
     val geometry: Polygon,
     val area: Double,
-    val haittaindeksi: Float,
+    val tormaystarkasteluTulos: TormaystarkasteluTulos,
 )
