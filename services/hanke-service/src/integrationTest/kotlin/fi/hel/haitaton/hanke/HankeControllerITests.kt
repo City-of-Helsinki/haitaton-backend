@@ -508,9 +508,9 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             alue.kaistaHaitta =
                 VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
             alue.kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA
-            alue.meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA
-            alue.polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA
-            alue.tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA
+            alue.meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA
+            alue.polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA
+            alue.tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA
             hankeToBeUpdated.alueet.add(alue)
             // Prepare the expected result/return
             // Note, "pvm" values should have become truncated to begin of the day

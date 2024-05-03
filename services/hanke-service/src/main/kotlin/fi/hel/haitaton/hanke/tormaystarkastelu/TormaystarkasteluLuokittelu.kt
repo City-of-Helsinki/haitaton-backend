@@ -31,24 +31,27 @@ enum class AutoliikenteenKaistavaikutustenPituus(override val value: Int) : Luok
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class Meluhaitta {
-    SATUNNAINEN_HAITTA,
-    LYHYTAIKAINEN_TOISTUVA_HAITTA,
-    PITKAKESTOINEN_TOISTUVA_HAITTA
+enum class Meluhaitta(override val value: Int) : Luokittelu {
+    EI_MELUHAITTAA(0),
+    SATUNNAINEN_MELUHAITTA(1),
+    TOISTUVA_MELUHAITTA(3),
+    JATKUVA_MELUHAITTA(5),
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class Polyhaitta {
-    SATUNNAINEN_HAITTA,
-    LYHYTAIKAINEN_TOISTUVA_HAITTA,
-    PITKAKESTOINEN_TOISTUVA_HAITTA
+enum class Polyhaitta(override val value: Int) : Luokittelu {
+    EI_POLYHAITTAA(0),
+    SATUNNAINEN_POLYHAITTA(1),
+    TOISTUVA_POLYHAITTA(3),
+    JATKUVA_POLYHAITTA(5),
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class Tarinahaitta {
-    SATUNNAINEN_HAITTA,
-    LYHYTAIKAINEN_TOISTUVA_HAITTA,
-    PITKAKESTOINEN_TOISTUVA_HAITTA
+enum class Tarinahaitta(override val value: Int) : Luokittelu {
+    EI_TARINAHAITTAA(0),
+    SATUNNAINEN_TARINAHAITTA(1),
+    TOISTUVA_TARINAHAITTA(3),
+    JATKUVA_TARINAHAITTA(5),
 }
 
 enum class HaittaAjanKestoLuokittelu(override val value: Int) : Luokittelu {
