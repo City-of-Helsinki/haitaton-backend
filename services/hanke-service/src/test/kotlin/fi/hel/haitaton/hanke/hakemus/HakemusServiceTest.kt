@@ -144,6 +144,7 @@ class HakemusServiceTest {
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
+            every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
             justRun { alluClient.addAttachment(alluId, any()) }
             justRun { attachmentService.sendInitialAttachments(alluId, any()) }
             val applicationCapturingSlot = slot<AlluCableReportApplicationData>()
@@ -232,6 +233,7 @@ class HakemusServiceTest {
                 geometriatDao.isInsideHankeAlueet(1, any())
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
+                attachmentService.getMetadataList(applicationEntity.id)
                 alluClient.create(any())
                 disclosureLogService.saveDisclosureLogsForAllu(3, any(), Status.SUCCESS)
                 alluClient.addAttachment(alluId, any())
@@ -247,6 +249,7 @@ class HakemusServiceTest {
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
+            every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
             every { alluClient.create(any()) } throws AlluException()
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
@@ -257,6 +260,7 @@ class HakemusServiceTest {
                 geometriatDao.isInsideHankeAlueet(1, any())
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
+                attachmentService.getMetadataList(applicationEntity.id)
                 alluClient.create(any())
                 disclosureLogService.saveDisclosureLogsForAllu(
                     3,
@@ -274,6 +278,7 @@ class HakemusServiceTest {
             every { geometriatDao.isInsideHankeAlueet(any(), any()) } returns true
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
+            every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
             every { alluClient.create(any()) } throws AlluLoginException(RuntimeException())
 
             assertThrows<AlluLoginException> { hakemusService.sendHakemus(3, USERNAME) }
@@ -283,6 +288,7 @@ class HakemusServiceTest {
                 geometriatDao.isInsideHankeAlueet(any(), any())
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
+                attachmentService.getMetadataList(applicationEntity.id)
                 alluClient.create(any())
             }
             verify { disclosureLogService wasNot called }
@@ -304,6 +310,7 @@ class HakemusServiceTest {
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
+            every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
             val applicationCapturingSlot = slot<AlluCableReportApplicationData>()
             every { alluClient.create(capture(applicationCapturingSlot)) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
@@ -322,6 +329,7 @@ class HakemusServiceTest {
                 geometriatDao.isInsideHankeAlueet(1, any())
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
+                attachmentService.getMetadataList(applicationEntity.id)
                 alluClient.create(any())
                 disclosureLogService.saveDisclosureLogsForAllu(3, any(), Status.SUCCESS)
                 alluClient.addAttachment(alluId, any())

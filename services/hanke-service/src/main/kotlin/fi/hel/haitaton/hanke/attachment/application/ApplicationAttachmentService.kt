@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
@@ -31,7 +32,7 @@ class ApplicationAttachmentService(
     private val scanClient: FileScanClient,
 ) {
     /** Authorization in controller throws exception if application ID is unknown. */
-    fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadataDto> =
+    fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadata> =
         metadataService.getMetadataList(applicationId)
 
     fun getContent(attachmentId: UUID): AttachmentContent {
