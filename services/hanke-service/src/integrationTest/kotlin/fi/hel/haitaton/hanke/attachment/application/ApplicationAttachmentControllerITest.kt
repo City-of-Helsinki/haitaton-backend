@@ -94,9 +94,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         @Test
         fun `when valid request should return metadata list`() {
             val data =
-                (1..3).map {
-                    ApplicationAttachmentFactory.createMetadata(fileName = "${it}file.pdf")
-                }
+                (1..3).map { ApplicationAttachmentFactory.create(fileName = "$it$FILE_NAME_PDF") }
             every { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) } returns true
             every { applicationAttachmentService.getMetadataList(APPLICATION_ID) } returns data
             val result: List<ApplicationAttachmentMetadataDto> =
@@ -168,7 +166,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
                 authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name)
             } returns true
             every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } returns
-                ApplicationAttachmentFactory.createMetadata()
+                ApplicationAttachmentFactory.createDto()
 
             val result: ApplicationAttachmentMetadataDto =
                 postAttachment(file = file).andExpect(status().isOk).andReturnBody()

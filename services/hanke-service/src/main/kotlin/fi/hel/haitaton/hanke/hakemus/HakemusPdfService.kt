@@ -11,6 +11,7 @@ import com.lowagie.text.Rectangle
 import com.lowagie.text.pdf.PdfPTable
 import com.lowagie.text.pdf.PdfWriter
 import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import java.io.ByteArrayOutputStream
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -91,6 +92,7 @@ object HakemusPdfService {
         data: JohtoselvityshakemusData,
         totalArea: Float?,
         areas: List<Float?>,
+        attachments: List<ApplicationAttachmentMetadata>,
     ): ByteArray {
         val outputStream = ByteArrayOutputStream()
         val document = Document(PageSize.A4)
@@ -100,6 +102,7 @@ object HakemusPdfService {
             data,
             totalArea,
             areas,
+            attachments,
         )
         return outputStream.toByteArray()
     }
@@ -109,6 +112,7 @@ object HakemusPdfService {
         data: JohtoselvityshakemusData,
         totalArea: Float?,
         areas: List<Float?>,
+        attachments: List<ApplicationAttachmentMetadata>,
     ) {
         document.open()
 
@@ -160,7 +164,12 @@ object HakemusPdfService {
         document.newPage()
 
         document.section("Liitteet") { table ->
-            // TODO: Attachments
+            if (attachments.isNotEmpty()) {
+                table.row(
+                    "Lisätyt liitetiedostot",
+                    attachments.map { it.fileName }.joinToString("\n")
+                )
+            }
         }
 
         document.close()

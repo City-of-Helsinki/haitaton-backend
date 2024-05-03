@@ -463,7 +463,7 @@ class HakemusService(
     ): Int {
         val alluData = hakemusData.toAlluData(hankeTunnus)
 
-        return withFormDataPdfUploading(hakemusData) {
+        return withFormDataPdfUploading(applicationId, hakemusData) {
             withDisclosureLogging(applicationId, alluData) { alluClient.create(alluData) }
         }
     }
@@ -481,10 +481,14 @@ class HakemusService(
      *
      * @param alluAction The action to perform in Allu. Must return the application's Allu ID.
      */
-    private fun withFormDataPdfUploading(cableReport: HakemusData, alluAction: () -> Int): Int {
+    private fun withFormDataPdfUploading(
+        applicationId: Long,
+        cableReport: HakemusData,
+        alluAction: () -> Int,
+    ): Int {
         val formAttachment =
             when (cableReport) {
-                is JohtoselvityshakemusData -> getApplicationDataAsPdf(cableReport)
+                is JohtoselvityshakemusData -> getApplicationDataAsPdf(applicationId, cableReport)
                 else -> {
                     logger.warn(
                         "No PDF created for hakemus with type ${cableReport.applicationType}."
@@ -506,11 +510,16 @@ class HakemusService(
         return alluId
     }
 
-    private fun getApplicationDataAsPdf(data: JohtoselvityshakemusData): Attachment {
+    private fun getApplicationDataAsPdf(
+        applicationId: Long,
+        data: JohtoselvityshakemusData,
+    ): Attachment {
         logger.info { "Creating a PDF from the hakemus data for data attachment." }
         val totalArea =
             geometriatDao.calculateCombinedArea(data.areas?.map { it.geometry } ?: listOf())
         val areas = data.areas?.map { geometriatDao.calculateArea(it.geometry) } ?: listOf()
+        val attachments = attachmentService.getMetadataList(applicationId)
+        val pdfData = HakemusPdfService.createPdf(data, totalArea, areas, attachments)
         val attachmentMetadata =
             AttachmentMetadata(
                 id = null,
@@ -518,7 +527,6 @@ class HakemusService(
                 name = "haitaton-form-data.pdf",
                 description = "Original form data from Haitaton, dated ${LocalDateTime.now()}.",
             )
-        val pdfData = HakemusPdfService.createPdf(data, totalArea, areas)
         logger.info { "Created the PDF for data attachment." }
         return Attachment(attachmentMetadata, pdfData)
     }
