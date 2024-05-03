@@ -7,6 +7,9 @@ import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.StreetAddress
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationArea
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
 import fi.hel.haitaton.hanke.hakemus.ContactRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
@@ -96,7 +99,8 @@ object HakemusUpdateRequestFactory {
             workDescription = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
             startTime = ZonedDateTime.now(TZ_UTC),
             endTime = ZonedDateTime.now(TZ_UTC).plusDays(5),
-            areas = listOf(CableReportApplicationArea("Hankealue 1", GeometriaFactory.polygon)),
+            areas =
+                listOf(createCableReportApplicationArea("Hankealue 1", GeometriaFactory.polygon)),
             customerWithContacts =
                 createCustomerWithContactsRequest(
                     CustomerType.COMPANY,
@@ -119,7 +123,13 @@ object HakemusUpdateRequestFactory {
             rockExcavation = false,
             startTime = ZonedDateTime.now(TZ_UTC),
             endTime = ZonedDateTime.now(TZ_UTC).plusDays(5),
-            areas = listOf(ExcavationNotificationArea("Hankealue 1", GeometriaFactory.polygon)),
+            areas =
+                listOf(
+                    createExcavationNotificationArea(
+                        "Hankealue 1",
+                        tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon))
+                    )
+                ),
             customerWithContacts =
                 createCustomerWithContactsRequest(
                     CustomerType.COMPANY,

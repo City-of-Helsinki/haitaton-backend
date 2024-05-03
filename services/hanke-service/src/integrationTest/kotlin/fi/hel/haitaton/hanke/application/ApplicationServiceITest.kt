@@ -694,7 +694,8 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(areas).isNotEmpty()
             val entity = hankeRepository.getReferenceById(hanke.id)
             hankeRepository.save(entity.apply { alueet = mutableListOf() })
-            assertThat(geometriatDao.isInsideHankeAlueet(hanke.id, areas[0].geometry)).isFalse()
+            assertThat(geometriatDao.isInsideHankeAlueet(hanke.id, areas[0].geometries().single()))
+                .isFalse()
             val alluIdMock = 123
             every { cableReportServiceAllu.create(any()) } returns alluIdMock
             every { cableReportServiceAllu.getApplicationInformation(alluIdMock) } returns

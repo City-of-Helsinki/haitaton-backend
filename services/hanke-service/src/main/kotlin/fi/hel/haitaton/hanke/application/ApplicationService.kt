@@ -35,6 +35,7 @@ import fi.hel.haitaton.hanke.validation.ApplicationDataValidator.ensureValidForS
 import java.time.LocalDateTime
 import kotlin.reflect.KClass
 import mu.KotlinLogging
+import org.geojson.Polygon
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -94,9 +95,9 @@ class ApplicationService(
 
         if (!hanke.generated) {
             application.applicationData.areas?.let { areas ->
-                checkApplicationAreasInsideHankealue(hanke.id, areas) { applicationArea ->
+                checkApplicationAreasInsideHankealue(hanke.id, areas) { geometry ->
                     "Application geometry doesn't match any hankealue when creating a new application for user $userId, " +
-                        "hankeId = ${hanke.id}, application geometry = ${applicationArea.geometry.toJsonString()}"
+                        "hankeId = ${hanke.id}, application geometry = ${geometry.toJsonString()}"
                 }
             }
         }
@@ -168,10 +169,10 @@ class ApplicationService(
         val hanke = application.hanke
         if (!hanke.generated) {
             newApplicationData.areas?.let { areas ->
-                checkApplicationAreasInsideHankealue(hanke.id, areas) { applicationArea ->
+                checkApplicationAreasInsideHankealue(hanke.id, areas) { geometry ->
                     "Application geometry doesn't match any hankealue when updating application for user $userId, " +
                         "hankeId = ${hanke.id}, applicationId = ${application.id}, " +
-                        "application geometry = ${applicationArea.geometry.toJsonString()}"
+                        "application geometry = ${geometry.toJsonString()}"
                 }
             }
         } else {
@@ -197,10 +198,10 @@ class ApplicationService(
         val hanke = application.hanke
         if (!hanke.generated) {
             application.applicationData.areas?.let { areas ->
-                checkApplicationAreasInsideHankealue(hanke.id, areas) { applicationArea ->
+                checkApplicationAreasInsideHankealue(hanke.id, areas) { geometry ->
                     "Application geometry doesn't match any hankealue when sending application for user $userId, " +
                         "hankeId = ${hanke.id}, applicationId = ${application.id}, " +
-                        "application geometry = ${applicationArea.geometry.toJsonString()}"
+                        "application geometry = ${geometry.toJsonString()}"
                 }
             }
         }
@@ -429,7 +430,7 @@ class ApplicationService(
     ) {
         val areas = newApplicationData.areas
         if (areas != null) {
-            geometriatDao.validateGeometriat(areas.map { it.geometry })?.let {
+            geometriatDao.validateGeometriat(areas.flatMap { it.geometries() })?.let {
                 throw ApplicationGeometryException(customMessageOnFailure(it))
             }
         }
@@ -438,11 +439,25 @@ class ApplicationService(
     fun checkApplicationAreasInsideHankealue(
         hankeId: Int,
         areas: List<ApplicationArea>,
-        customMessageOnFailure: (ApplicationArea) -> String
+        customMessageOnFailure: (Polygon) -> String
     ) {
         areas.forEach { area ->
-            if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
-                throw ApplicationGeometryNotInsideHankeException(customMessageOnFailure(area))
+            when (area) {
+                is CableReportApplicationArea -> {
+                    if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
+                        throw ApplicationGeometryNotInsideHankeException(
+                            customMessageOnFailure(area.geometry)
+                        )
+                }
+                is ExcavationNotificationArea -> {
+                    area.tyoalueet.forEach { tyoalue ->
+                        if (!geometriatDao.isInsideHankeAlue(area.hankealueId, tyoalue.geometry))
+                            throw ApplicationGeometryNotInsideHankeException(
+                                customMessageOnFailure(tyoalue.geometry)
+                            )
+                    }
+                }
+            }
         }
     }
 
