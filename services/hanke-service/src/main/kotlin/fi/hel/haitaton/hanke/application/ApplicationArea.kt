@@ -31,7 +31,7 @@ data class ExcavationNotificationArea(
     val tarinahaitta: Tarinahaitta,
     val kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
     val kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus,
-    val lisatiedot: String,
+    val lisatiedot: String?,
 ) : ApplicationArea {
     override fun geometries(): List<Polygon> = tyoalueet.map { it.geometry }
 }
@@ -39,5 +39,5 @@ data class ExcavationNotificationArea(
 data class Tyoalue(
     val geometry: Polygon,
     val area: Double,
-    val tormaystarkasteluTulos: TormaystarkasteluTulos,
+    val tormaystarkasteluTulos: TormaystarkasteluTulos?,
 )
