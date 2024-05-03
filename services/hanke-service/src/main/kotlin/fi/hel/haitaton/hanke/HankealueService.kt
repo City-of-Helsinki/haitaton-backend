@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.ApplicationArea
+import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.ModifyHankealueRequest
@@ -120,7 +120,7 @@ class HankealueService(
             )
 
         fun createHankealueetFromApplicationAreas(
-            areas: List<ApplicationArea>?,
+            areas: List<CableReportApplicationArea>?,
             startTime: ZonedDateTime?,
             endTime: ZonedDateTime?,
         ): List<NewHankealue> =
