@@ -95,19 +95,21 @@ object HakemusDataMapper {
         } else {
             // Check that all polygons have the coordinate reference system Haitaton understands
             areas!!
-                .map { it.geometry.crs?.properties?.get("name") }
+                .flatMap { area -> area.geometries().map { it.crs?.properties?.get("name") } }
                 .find { it.toString() != COORDINATE_SYSTEM_URN }
                 ?.let { throw UnsupportedCoordinateSystemException(it.toString()) }
 
             return GeometryCollection().apply {
                 // Read coordinate reference system from the first polygon. Remove the CRS from
                 // all polygons and add it to the GeometryCollection.
-                this.crs = areas!!.first().geometry.crs!!
+                this.crs = areas!!.first().geometries().first().crs!!
                 this.geometries =
-                    areas!!.map { area ->
-                        Polygon(area.geometry.exteriorRing).apply {
-                            this.crs = null
-                            area.geometry.interiorRings.forEach { this.addInteriorRing(it) }
+                    areas!!.flatMap { area ->
+                        area.geometries().map { polygon ->
+                            Polygon(polygon.exteriorRing).apply {
+                                this.crs = null
+                                polygon.interiorRings.forEach { this.addInteriorRing(it) }
+                            }
                         }
                     }
             }

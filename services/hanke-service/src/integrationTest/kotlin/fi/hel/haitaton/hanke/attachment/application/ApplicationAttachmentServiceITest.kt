@@ -27,7 +27,7 @@ import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
@@ -119,16 +119,15 @@ class ApplicationAttachmentServiceITest(
 
             assertThat(result).hasSize(2)
             assertThat(result).each {
-                it.prop(ApplicationAttachmentMetadataDto::id).isNotNull()
-                it.prop(ApplicationAttachmentMetadataDto::fileName).endsWith("file.pdf")
-                it.prop(ApplicationAttachmentMetadataDto::contentType)
-                    .isEqualTo(APPLICATION_PDF_VALUE)
-                it.prop(ApplicationAttachmentMetadataDto::size).isEqualTo(DEFAULT_SIZE)
-                it.prop(ApplicationAttachmentMetadataDto::createdByUserId).isEqualTo(USERNAME)
-                it.prop(ApplicationAttachmentMetadataDto::createdAt)
+                it.prop(ApplicationAttachmentMetadata::id).isNotNull()
+                it.prop(ApplicationAttachmentMetadata::fileName).endsWith("file.pdf")
+                it.prop(ApplicationAttachmentMetadata::contentType).isEqualTo(APPLICATION_PDF_VALUE)
+                it.prop(ApplicationAttachmentMetadata::size).isEqualTo(DEFAULT_SIZE)
+                it.prop(ApplicationAttachmentMetadata::createdByUserId).isEqualTo(USERNAME)
+                it.prop(ApplicationAttachmentMetadata::createdAt)
                     .isSameInstantAs(ApplicationAttachmentFactory.CREATED_AT)
-                it.prop(ApplicationAttachmentMetadataDto::applicationId).isEqualTo(application.id)
-                it.prop(ApplicationAttachmentMetadataDto::attachmentType).isEqualTo(MUU)
+                it.prop(ApplicationAttachmentMetadata::applicationId).isEqualTo(application.id)
+                it.prop(ApplicationAttachmentMetadata::attachmentType).isEqualTo(MUU)
             }
         }
     }

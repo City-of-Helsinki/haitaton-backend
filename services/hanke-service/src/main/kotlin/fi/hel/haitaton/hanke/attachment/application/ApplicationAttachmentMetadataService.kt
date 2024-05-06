@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.attachment.application
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
@@ -13,7 +12,6 @@ import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import java.time.OffsetDateTime
 import java.util.UUID
 import mu.KotlinLogging
-import org.springframework.data.jpa.domain.AbstractPersistable_.id
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -25,8 +23,8 @@ class ApplicationAttachmentMetadataService(
     private val attachmentRepository: ApplicationAttachmentRepository,
 ) {
     @Transactional(readOnly = true)
-    fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadataDto> =
-        attachmentRepository.findByApplicationId(applicationId).map { it.toDto() }
+    fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadata> =
+        attachmentRepository.findByApplicationId(applicationId).map { it.toDomain() }
 
     @Transactional(readOnly = true)
     fun findAttachment(attachmentId: UUID): ApplicationAttachmentMetadata =

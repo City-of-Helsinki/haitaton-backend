@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeEntity
@@ -14,6 +15,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 
 @Schema(description = "Collision review result")
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class TormaystarkasteluTulos(
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Car traffic index result")

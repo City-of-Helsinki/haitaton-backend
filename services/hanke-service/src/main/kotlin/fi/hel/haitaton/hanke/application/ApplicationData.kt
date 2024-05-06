@@ -80,7 +80,7 @@ data class CableReportApplicationData(
     val workDescription: String,
     override val startTime: ZonedDateTime?,
     override val endTime: ZonedDateTime?,
-    override val areas: List<ApplicationArea>?,
+    override val areas: List<CableReportApplicationArea>?,
     override val customerWithContacts: CustomerWithContacts?,
     val contractorWithContacts: CustomerWithContacts?,
     val propertyDeveloperWithContacts: CustomerWithContacts? = null,
@@ -151,7 +151,7 @@ data class ExcavationNotificationData(
     val requiredCompetence: Boolean? = false, // oltava true, jotta voi lähettää
     override val startTime: ZonedDateTime?,
     override val endTime: ZonedDateTime?,
-    override val areas: List<ApplicationArea>?,
+    override val areas: List<ExcavationNotificationArea>?,
     override val customerWithContacts: CustomerWithContacts?,
     val contractorWithContacts: CustomerWithContacts?,
     val propertyDeveloperWithContacts: CustomerWithContacts? = null,

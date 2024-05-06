@@ -58,7 +58,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.asianHoitajaCustomerContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplication
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationArea
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.expectedRecipients
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.hakijaCustomerContact
@@ -369,7 +369,7 @@ class ApplicationServiceITest : IntegrationTest() {
             val newApplicationData =
                 createCableReportApplicationData(
                     name = "Uudistettu johtoselvitys",
-                    areas = application.applicationData.areas
+                    areas = (application.applicationData as CableReportApplicationData).areas
                 )
 
             val exception = assertFailure {
@@ -430,7 +430,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 createCableReportApplicationData(
                     pendingOnClient = true,
                     name = "Uudistettu johtoselvitys",
-                    areas = listOf(createApplicationArea(geometry = newGeometry))
+                    areas = listOf(createCableReportApplicationArea(geometry = newGeometry))
                 )
 
             val response =
@@ -481,7 +481,7 @@ class ApplicationServiceITest : IntegrationTest() {
             val newApplicationData =
                 createCableReportApplicationData(
                     name = "Uudistettu johtoselvitys",
-                    areas = application.applicationData.areas
+                    areas = (application.applicationData as CableReportApplicationData).areas
                 )
 
             val response =
@@ -516,7 +516,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 createCableReportApplicationData(
                     name = "Päivitetty hakemus",
                     pendingOnClient = true,
-                    areas = application.applicationData.areas
+                    areas = (application.applicationData as CableReportApplicationData).areas
                 )
 
             val response =
@@ -694,7 +694,8 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(areas).isNotEmpty()
             val entity = hankeRepository.getReferenceById(hanke.id)
             hankeRepository.save(entity.apply { alueet = mutableListOf() })
-            assertThat(geometriatDao.isInsideHankeAlueet(hanke.id, areas[0].geometry)).isFalse()
+            assertThat(geometriatDao.isInsideHankeAlueet(hanke.id, areas[0].geometries().single()))
+                .isFalse()
             val alluIdMock = 123
             every { cableReportServiceAllu.create(any()) } returns alluIdMock
             every { cableReportServiceAllu.getApplicationInformation(alluIdMock) } returns
@@ -1408,18 +1409,18 @@ class ApplicationServiceITest : IntegrationTest() {
     private fun initializedHanke(): HankeEntity =
         hankeRepository.findByHankeTunnus("HAI23-5") ?: throw NoSuchElementException()
 
-    private val aleksanterinpatsas: ApplicationArea =
-        createApplicationArea(
+    private val aleksanterinpatsas =
+        createCableReportApplicationArea(
             geometry = "/fi/hel/haitaton/hanke/geometria/aleksanterin-patsas.json".asJsonResource()
         )
 
-    private val havisAmanda: ApplicationArea =
-        createApplicationArea(
+    private val havisAmanda =
+        createCableReportApplicationArea(
             geometry = "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
         )
 
     private val intersectingArea =
-        createApplicationArea(
+        createCableReportApplicationArea(
             name = "area",
             geometry = "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json".asJsonResource()
         )
