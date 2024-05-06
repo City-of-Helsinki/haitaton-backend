@@ -31,7 +31,9 @@ import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeExcept
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
@@ -52,6 +54,7 @@ import java.time.OffsetDateTime
 import java.util.*
 import kotlin.reflect.KClass
 import mu.KotlinLogging
+import org.geojson.Polygon
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -175,13 +178,13 @@ class HakemusService(
         val hankeEntity = applicationEntity.hanke
         if (!hankeEntity.generated) {
             request.areas?.let { areas ->
-                assertGeometryCompatibility(hankeEntity.id, areas) { area ->
+                assertGeometryCompatibility(hankeEntity.id, areas) { geometry ->
                     "Hakemus geometry doesn't match any hankealue when updating hakemus. " +
                         "${applicationEntity.logString()}, ${hankeEntity.logString()}, " +
-                        "hakemus geometry=${area.geometry.toJsonString()}"
+                        "hakemus geometry=${geometry.toJsonString()}"
                 }
             }
-        } else {
+        } else if (request is JohtoselvityshakemusUpdateRequest) {
             updateHankealueet(hankeEntity, request)
         }
 
@@ -202,10 +205,10 @@ class HakemusService(
         val hanke = hakemus.hanke
         if (!hanke.generated) {
             hakemus.applicationData.areas?.let { areas ->
-                assertGeometryCompatibility(hanke.id, areas) { applicationArea ->
+                assertGeometryCompatibility(hanke.id, areas) { geometry ->
                     "Hakemus geometry doesn't match any hankealue when sending hakemus, " +
                         "${hanke.logString()}, ${hakemus.logString()}, " +
-                        "hakemus geometry=${applicationArea.geometry.toJsonString()}"
+                        "hakemus geometry=${geometry.toJsonString()}"
                 }
             }
         }
@@ -463,7 +466,7 @@ class HakemusService(
     ): Int {
         val alluData = hakemusData.toAlluData(hankeTunnus)
 
-        return withFormDataPdfUploading(hakemusData) {
+        return withFormDataPdfUploading(applicationId, hakemusData) {
             withDisclosureLogging(applicationId, alluData) { alluClient.create(alluData) }
         }
     }
@@ -481,10 +484,14 @@ class HakemusService(
      *
      * @param alluAction The action to perform in Allu. Must return the application's Allu ID.
      */
-    private fun withFormDataPdfUploading(cableReport: HakemusData, alluAction: () -> Int): Int {
+    private fun withFormDataPdfUploading(
+        applicationId: Long,
+        cableReport: HakemusData,
+        alluAction: () -> Int,
+    ): Int {
         val formAttachment =
             when (cableReport) {
-                is JohtoselvityshakemusData -> getApplicationDataAsPdf(cableReport)
+                is JohtoselvityshakemusData -> getApplicationDataAsPdf(applicationId, cableReport)
                 else -> {
                     logger.warn(
                         "No PDF created for hakemus with type ${cableReport.applicationType}."
@@ -506,11 +513,16 @@ class HakemusService(
         return alluId
     }
 
-    private fun getApplicationDataAsPdf(data: JohtoselvityshakemusData): Attachment {
+    private fun getApplicationDataAsPdf(
+        applicationId: Long,
+        data: JohtoselvityshakemusData,
+    ): Attachment {
         logger.info { "Creating a PDF from the hakemus data for data attachment." }
         val totalArea =
             geometriatDao.calculateCombinedArea(data.areas?.map { it.geometry } ?: listOf())
         val areas = data.areas?.map { geometriatDao.calculateArea(it.geometry) } ?: listOf()
+        val attachments = attachmentService.getMetadataList(applicationId)
+        val pdfData = HakemusPdfService.createPdf(data, totalArea, areas, attachments)
         val attachmentMetadata =
             AttachmentMetadata(
                 id = null,
@@ -518,7 +530,6 @@ class HakemusService(
                 name = "haitaton-form-data.pdf",
                 description = "Original form data from Haitaton, dated ${LocalDateTime.now()}.",
             )
-        val pdfData = HakemusPdfService.createPdf(data, totalArea, areas)
         logger.info { "Created the PDF for data attachment." }
         return Attachment(attachmentMetadata, pdfData)
     }
@@ -583,7 +594,7 @@ class HakemusService(
         customMessageOnFailure: (GeometriatDao.InvalidDetail) -> String
     ) {
         if (areas != null) {
-            geometriatDao.validateGeometriat(areas.map { it.geometry })?.let {
+            geometriatDao.validateGeometriat(areas.flatMap { it.geometries() })?.let {
                 throw ApplicationGeometryException(customMessageOnFailure(it))
             }
         }
@@ -666,16 +677,36 @@ class HakemusService(
     private fun assertGeometryCompatibility(
         hankeId: Int,
         areas: List<ApplicationArea>,
-        customMessageOnFailure: (ApplicationArea) -> String
+        customMessageOnFailure: (Polygon) -> String
     ) {
         areas.forEach { area ->
-            if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
-                throw ApplicationGeometryNotInsideHankeException(customMessageOnFailure(area))
+            when (area) {
+                // for cable report we check that the geometry is inside any of the hanke areas
+                is CableReportApplicationArea -> {
+                    if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
+                        throw ApplicationGeometryNotInsideHankeException(
+                            customMessageOnFailure(area.geometry)
+                        )
+                }
+                // for excavation notification we check that all the tyoalue geometries are inside
+                // the same hanke area
+                is ExcavationNotificationArea -> {
+                    area.tyoalueet.forEach { tyoalue ->
+                        if (!geometriatDao.isInsideHankeAlue(area.hankealueId, tyoalue.geometry))
+                            throw ApplicationGeometryNotInsideHankeException(
+                                customMessageOnFailure(tyoalue.geometry)
+                            )
+                    }
+                }
+            }
         }
     }
 
-    /** Update the hanke areas based on the update request work areas. */
-    private fun updateHankealueet(hankeEntity: HankeEntity, updateRequest: HakemusUpdateRequest) {
+    /** Update the hanke areas based on the update request areas. */
+    private fun updateHankealueet(
+        hankeEntity: HankeEntity,
+        updateRequest: JohtoselvityshakemusUpdateRequest
+    ) {
         val hankealueet =
             HankealueService.createHankealueetFromApplicationAreas(
                 updateRequest.areas,

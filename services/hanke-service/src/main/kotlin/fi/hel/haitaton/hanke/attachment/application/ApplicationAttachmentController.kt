@@ -55,7 +55,7 @@ class ApplicationAttachmentController(
     fun getApplicationAttachments(
         @PathVariable applicationId: Long
     ): List<ApplicationAttachmentMetadataDto> {
-        return applicationAttachmentService.getMetadataList(applicationId)
+        return applicationAttachmentService.getMetadataList(applicationId).map { it.toDto() }
     }
 
     @GetMapping("/{attachmentId}/content")

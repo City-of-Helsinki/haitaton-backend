@@ -241,6 +241,22 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
             .any { it }
     }
 
+    /** Check if the given geometry is inside the given hankealue. */
+    fun isInsideHankeAlue(hankealueId: Int, geometria: GeoJsonObject): Boolean {
+        val query =
+            """
+            SELECT ST_Covers(hg.geometria, ST_GeomFromGeoJSON(?))
+            FROM hankealue ha
+            INNER JOIN hankegeometria hg ON hg.hankegeometriatid = ha.geometriat
+            WHERE ha.id = ?
+            """
+                .trimIndent()
+
+        return jdbcOperations
+            .queryForList(query, Boolean::class.java, geometria.toJsonString(), hankealueId)
+            .any { it }
+    }
+
     fun calculateArea(geometria: GeoJsonObject): Float? {
         val areaQuery = "select ST_Area(ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID))"
 

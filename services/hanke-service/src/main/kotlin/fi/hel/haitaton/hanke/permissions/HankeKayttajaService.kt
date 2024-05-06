@@ -257,7 +257,7 @@ class HankeKayttajaService(
     }
 
     @Transactional
-    fun resendInvitation(kayttajaId: UUID, currentUserId: String) {
+    fun resendInvitation(kayttajaId: UUID, currentUserId: String): HankeKayttaja {
         // Re-get the kayttaja under the transaction
         val kayttaja = hankekayttajaRepository.getReferenceById(kayttajaId)
         kayttaja.permission?.let {
@@ -270,6 +270,7 @@ class HankeKayttajaService(
         recreateKutsu(kayttaja, currentUserId)
         val hanke = hankeRepository.getReferenceById(kayttaja.hankeId)
         sendHankeInvitation(hanke.hankeTunnus, hanke.nimi, inviter, kayttaja)
+        return hankekayttajaRepository.getReferenceById(kayttajaId).toDomain()
     }
 
     @Transactional

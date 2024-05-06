@@ -9,19 +9,29 @@ import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
+import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.application.InvoicingCustomer
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
+import fi.hel.haitaton.hanke.application.Tyoalue
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_SUORITTAJA
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.springframework.stereotype.Component
@@ -150,15 +160,58 @@ class ApplicationFactory(
             orderer: Boolean = false
         ) = Contact(firstName, lastName, email, phone, orderer)
 
-        fun createApplicationArea(
+        fun createCableReportApplicationArea(
             name: String = "Alue",
             geometry: Polygon = GeometriaFactory.secondPolygon,
-        ): ApplicationArea = ApplicationArea(name, geometry)
+        ): CableReportApplicationArea = CableReportApplicationArea(name, geometry)
+
+        fun createExcavationNotificationArea(
+            name: String = "Alue",
+            hankealueId: Int = 0,
+            tyoalueet: List<Tyoalue> = listOf(createTyoalue()),
+            katuosoite: String = "Katu 1",
+            tyonTarkoitukset: Set<TyomaaTyyppi> = setOf(TyomaaTyyppi.VESI),
+            meluhaitta: Meluhaitta = Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
+            polyhaitta: Polyhaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
+            tarinahaitta: Tarinahaitta = Tarinahaitta.SATUNNAINEN_HAITTA,
+            kaistahaitta: VaikutusAutoliikenteenKaistamaariin =
+                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+            kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus =
+                AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA,
+            lisatiedot: String = "Lisätiedot",
+        ): ExcavationNotificationArea =
+            ExcavationNotificationArea(
+                name,
+                hankealueId,
+                tyoalueet,
+                katuosoite,
+                tyonTarkoitukset,
+                meluhaitta,
+                polyhaitta,
+                tarinahaitta,
+                kaistahaitta,
+                kaistahaittojenPituus,
+                lisatiedot,
+            )
+
+        fun createTyoalue(
+            geometry: Polygon = GeometriaFactory.secondPolygon,
+            area: Double = 100.0,
+            tormaystarkasteluTulos: TormaystarkasteluTulos =
+                TormaystarkasteluTulos(1.0f, 3.0f, 5.0f, 5.0f),
+        ) = Tyoalue(geometry, area, tormaystarkasteluTulos)
 
         fun Application.withApplicationData(
             type: ApplicationType = ApplicationType.CABLE_REPORT,
             name: String = DEFAULT_APPLICATION_NAME,
-            areas: List<ApplicationArea>? = listOf(createApplicationArea()),
+            areas: List<ApplicationArea>? =
+                listOf(
+                    when (applicationType) {
+                        ApplicationType.CABLE_REPORT -> createCableReportApplicationArea()
+                        ApplicationType.EXCAVATION_NOTIFICATION ->
+                            createExcavationNotificationArea()
+                    }
+                ),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
@@ -175,7 +228,7 @@ class ApplicationFactory(
                 ApplicationType.CABLE_REPORT ->
                     withCableReportApplicationData(
                         name,
-                        areas,
+                        areas?.map { it as CableReportApplicationArea },
                         startTime,
                         endTime,
                         pendingOnClient,
@@ -199,7 +252,7 @@ class ApplicationFactory(
                         true,
                         emptyList(),
                         emptyList(),
-                        areas,
+                        areas?.map { it as ExcavationNotificationArea },
                         startTime,
                         endTime,
                         customerWithContacts,
@@ -213,7 +266,7 @@ class ApplicationFactory(
 
         fun Application.withCableReportApplicationData(
             name: String = DEFAULT_APPLICATION_NAME,
-            areas: List<ApplicationArea>? = listOf(createApplicationArea()),
+            areas: List<CableReportApplicationArea>? = listOf(createCableReportApplicationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
@@ -256,7 +309,7 @@ class ApplicationFactory(
             requiredCompetence: Boolean = true,
             cableReports: List<String> = emptyList(),
             placementContracts: List<String> = emptyList(),
-            areas: List<ApplicationArea>? = listOf(createApplicationArea()),
+            areas: List<ExcavationNotificationArea>? = listOf(createExcavationNotificationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             customerWithContacts: CustomerWithContacts =
@@ -307,7 +360,7 @@ class ApplicationFactory(
 
         fun createCableReportApplicationData(
             name: String = DEFAULT_APPLICATION_NAME,
-            areas: List<ApplicationArea>? = listOf(createApplicationArea()),
+            areas: List<CableReportApplicationArea>? = listOf(createCableReportApplicationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
@@ -364,7 +417,7 @@ class ApplicationFactory(
             cableReports: List<String>? = null,
             placementContracts: List<String>? = null,
             requiredCompetence: Boolean = false,
-            areas: List<ApplicationArea>? = listOf(createApplicationArea()),
+            areas: List<ExcavationNotificationArea>? = listOf(createExcavationNotificationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             customerWithContacts: CustomerWithContacts? =
@@ -464,7 +517,7 @@ class ApplicationFactory(
         ) = this.copy(postalAddress = PostalAddress(StreetAddress(streetAddress), postalCode, city))
 
         fun CableReportApplicationData.withArea(name: String, geometry: Polygon) =
-            this.copy(areas = (areas ?: listOf()) + ApplicationArea(name, geometry))
+            this.copy(areas = (areas ?: listOf()) + CableReportApplicationArea(name, geometry))
 
         fun cableReportWithoutHanke(
             applicationData: CableReportApplicationData = createCableReportApplicationData(),

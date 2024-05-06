@@ -175,7 +175,7 @@ internal class ApplicationDataMapperTest {
         fun `uses areas if they are present`() {
             val applicationData =
                 ApplicationFactory.createCableReportApplicationData(
-                    areas = listOf(ApplicationArea(areaName, polygon)),
+                    areas = listOf(CableReportApplicationArea(areaName, polygon)),
                 )
 
             val geometry = ApplicationDataMapper.getGeometry(applicationData)
@@ -204,9 +204,9 @@ internal class ApplicationDataMapperTest {
                 ApplicationFactory.createCableReportApplicationData(
                     areas =
                         listOf(
-                            ApplicationArea(areaName, polygon),
-                            ApplicationArea("other area", otherPolygon),
-                            ApplicationArea("third area", thirdPolygon),
+                            CableReportApplicationArea(areaName, polygon),
+                            CableReportApplicationArea("other area", otherPolygon),
+                            CableReportApplicationArea("third area", thirdPolygon),
                         ),
                 )
 
@@ -227,7 +227,7 @@ internal class ApplicationDataMapperTest {
         fun `remove crs from the geometries`() {
             val applicationData =
                 ApplicationFactory.createCableReportApplicationData(
-                    areas = listOf(ApplicationArea(areaName, polygon))
+                    areas = listOf(CableReportApplicationArea(areaName, polygon))
                 )
             assertThat(polygon.crs).isNotNull()
 
@@ -240,7 +240,7 @@ internal class ApplicationDataMapperTest {
         fun `add crs to the geometry collection`() {
             val applicationData =
                 ApplicationFactory.createCableReportApplicationData(
-                    areas = listOf(ApplicationArea(areaName, polygon))
+                    areas = listOf(CableReportApplicationArea(areaName, polygon))
                 )
 
             val geometry = ApplicationDataMapper.getGeometry(applicationData)
@@ -255,7 +255,7 @@ internal class ApplicationDataMapperTest {
             polygon.crs = polygon.crs.apply { this.properties["name"] = "InvalidCode" }
             val applicationData =
                 ApplicationFactory.createCableReportApplicationData(
-                    areas = listOf(ApplicationArea(areaName, polygon))
+                    areas = listOf(CableReportApplicationArea(areaName, polygon))
                 )
 
             val exception = assertFailure { ApplicationDataMapper.getGeometry(applicationData) }

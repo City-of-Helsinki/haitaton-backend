@@ -4,7 +4,12 @@ import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportApplicationArea
+import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.StreetAddress
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationArea
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
 import fi.hel.haitaton.hanke.hakemus.ContactRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
@@ -94,7 +99,8 @@ object HakemusUpdateRequestFactory {
             workDescription = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
             startTime = ZonedDateTime.now(TZ_UTC),
             endTime = ZonedDateTime.now(TZ_UTC).plusDays(5),
-            areas = listOf(ApplicationArea("Hankealue 1", GeometriaFactory.polygon)),
+            areas =
+                listOf(createCableReportApplicationArea("Hankealue 1", GeometriaFactory.polygon)),
             customerWithContacts =
                 createCustomerWithContactsRequest(
                     CustomerType.COMPANY,
@@ -117,7 +123,13 @@ object HakemusUpdateRequestFactory {
             rockExcavation = false,
             startTime = ZonedDateTime.now(TZ_UTC),
             endTime = ZonedDateTime.now(TZ_UTC).plusDays(5),
-            areas = listOf(ApplicationArea("Hankealue 1", GeometriaFactory.polygon)),
+            areas =
+                listOf(
+                    createExcavationNotificationArea(
+                        "Hankealue 1",
+                        tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon))
+                    )
+                ),
             customerWithContacts =
                 createCustomerWithContactsRequest(
                     CustomerType.COMPANY,
@@ -258,8 +270,10 @@ object HakemusUpdateRequestFactory {
 
     fun HakemusUpdateRequest.withAreas(areas: List<ApplicationArea>?) =
         when (this) {
-            is JohtoselvityshakemusUpdateRequest -> this.copy(areas = areas)
-            is KaivuilmoitusUpdateRequest -> this.copy(areas = areas)
+            is JohtoselvityshakemusUpdateRequest ->
+                this.copy(areas = areas?.map { it as CableReportApplicationArea })
+            is KaivuilmoitusUpdateRequest ->
+                this.copy(areas = areas?.map { it as ExcavationNotificationArea })
         }
 
     fun HakemusUpdateRequest.withTimes(startTime: ZonedDateTime?, endTime: ZonedDateTime?) =
