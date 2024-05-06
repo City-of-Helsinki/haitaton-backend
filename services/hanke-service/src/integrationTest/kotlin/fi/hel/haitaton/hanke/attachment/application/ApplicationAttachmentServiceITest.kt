@@ -217,7 +217,6 @@ class ApplicationAttachmentServiceITest(
             }
 
             val content = fileClient.download(HAKEMUS_LIITTEET, attachments.first().blobLocation)
-
             assertThat(content)
                 .isNotNull()
                 .prop(DownloadResponse::content)
@@ -340,6 +339,28 @@ class ApplicationAttachmentServiceITest(
             failure.all {
                 hasClass(AttachmentInvalidException::class)
                 hasMessage("Attachment upload exception: File 'hello.html' not supported")
+            }
+            assertThat(attachmentRepository.findAll()).isEmpty()
+        }
+
+        @Test
+        fun `Throws exception when file type is not supported for attachment type`() {
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
+            val invalidFilename = "hello.jpeg"
+
+            val failure = assertFailure {
+                attachmentService.addAttachment(
+                    applicationId = application.id,
+                    attachmentType = VALTAKIRJA,
+                    attachment = testFile(fileName = invalidFilename)
+                )
+            }
+
+            failure.all {
+                hasClass(AttachmentInvalidException::class)
+                messageContains("File extension is not valid for attachment type")
+                messageContains("filename=$invalidFilename")
+                messageContains("attachmentType=$VALTAKIRJA")
             }
             assertThat(attachmentRepository.findAll()).isEmpty()
         }
