@@ -51,7 +51,7 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
-import java.util.*
+import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.geojson.Polygon
@@ -847,25 +847,27 @@ class HakemusService(
         excludedUserIds: Set<UUID>,
         userId: String,
     ) {
-        applicationEntity.allContactUsers().toMutableList().apply {
-            removeIf { excludedUserIds.contains(it.id) }
-            if (isNotEmpty()) {
-                val inviter =
-                    hankeKayttajaService.getKayttajaByUserId(applicationEntity.hanke.id, userId)
-                        ?: throw CurrentUserWithoutKayttajaException(userId)
-                forEach {
-                    emailSenderService.sendApplicationNotificationEmail(
-                        ApplicationNotificationData(
-                            inviter.fullName(),
-                            inviter.sahkoposti,
-                            it.sahkoposti,
-                            applicationEntity.applicationType,
-                            applicationEntity.hanke.hankeTunnus,
-                            applicationEntity.hanke.nimi,
-                        )
-                    )
-                }
-            }
+        val newContacts =
+            applicationEntity.allContactUsers().filterNot { excludedUserIds.contains(it.id) }
+        if (newContacts.isEmpty()) {
+            return
+        }
+
+        val inviter =
+            hankeKayttajaService.getKayttajaByUserId(applicationEntity.hanke.id, userId)
+                ?: throw CurrentUserWithoutKayttajaException(userId)
+
+        for (newContact in newContacts.filter { it.sahkoposti != inviter.sahkoposti }) {
+            val data =
+                ApplicationNotificationData(
+                    inviter.fullName(),
+                    inviter.sahkoposti,
+                    newContact.sahkoposti,
+                    applicationEntity.applicationType,
+                    applicationEntity.hanke.hankeTunnus,
+                    applicationEntity.hanke.nimi,
+                )
+            emailSenderService.sendApplicationNotificationEmail(data)
         }
     }
 
