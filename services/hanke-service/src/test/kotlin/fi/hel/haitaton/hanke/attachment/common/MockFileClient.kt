@@ -16,6 +16,9 @@ class MockFileClient : FileClient {
 
     private val subfolderRegex = Regex("/.*/")
 
+    /** Mock client can simulate being connected or disconnected. */
+    var connected = true
+
     fun recreateContainers() {
         Container.entries.forEach { fileMap[it] = mutableMapOf() }
     }
@@ -53,6 +56,7 @@ class MockFileClient : FileClient {
         fileMap[container]!!.remove(path) != null
 
     override fun deleteAllByPrefix(container: Container, prefix: String) {
+        if (!connected) throw IllegalStateException("Not connected")
         val files = fileMap[container]!!
         val paths = files.keys.filter { it.startsWith(prefix) }
         paths

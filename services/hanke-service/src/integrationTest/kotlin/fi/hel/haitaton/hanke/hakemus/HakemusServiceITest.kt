@@ -1807,6 +1807,37 @@ class HakemusServiceITest(
         }
 
         @Test
+        fun `deletes all attachment metadata even when deleting attachment content fails`() {
+            val hakemus = hakemusFactory.builderWithGeneratedHanke().withNoAlluFields().saveEntity()
+            attachmentFactory.save(application = hakemus).withContent()
+            attachmentFactory.save(application = hakemus).withContent()
+            assertThat(applicationAttachmentRepository.findByApplicationId(hakemus.id)).hasSize(2)
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(hakemus.id)
+                    )
+                )
+                .hasSize(2)
+            fileClient.connected = false
+
+            val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
+
+            fileClient.connected = true
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hankeRepository.findAll()).isEmpty()
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(hakemus.id)
+                    )
+                )
+                .hasSize(2)
+            assertThat(applicationAttachmentRepository.findByApplicationId(hakemus.id)).isEmpty()
+        }
+
+        @Test
         fun `doesn't delete hanke when hanke is not generated`() {
             val hakemus = hakemusFactory.builder().withNoAlluFields().save()
 
@@ -1953,6 +1984,37 @@ class HakemusServiceITest(
                     )
                 )
                 .isEmpty()
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
+                .isEmpty()
+        }
+
+        @Test
+        fun `deletes application attachment metadata even when attachment content deletion fails`() {
+            val application = hakemusFactory.builder().withNoAlluFields().saveEntity()
+            attachmentFactory.save(application = application).withContent()
+            attachmentFactory.save(application = application).withContent()
+            val hakemus = hakemusService.getById(application.id)
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(application.id)
+                    )
+                )
+                .hasSize(2)
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
+                .hasSize(2)
+            fileClient.connected = false
+
+            hakemusService.cancelAndDelete(hakemus, USERNAME)
+
+            fileClient.connected = true
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(application.id)
+                    )
+                )
+                .hasSize(2)
             assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
                 .isEmpty()
         }
