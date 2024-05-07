@@ -6,6 +6,7 @@ import assertk.assertions.endsWith
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.ControllerTest
+import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeError.HAI0001
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
@@ -18,10 +19,12 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.hakemus.HakemusAuthorizer
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
+import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -152,6 +155,25 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         @WithAnonymousUser
         fun `unauthorized should return error`() {
             getAttachmentContent(resultType = APPLICATION_JSON).andExpectError(HAI0001)
+        }
+
+        @Test
+        fun `returns 403 when asking for valtakirja`() {
+            val attachmentId = UUID.fromString("afc778b1-eb7c-4bad-951c-de70e173a757")
+            every {
+                authorizer.authorizeAttachment(APPLICATION_ID, attachmentId, VIEW.name)
+            } returns true
+            every { applicationAttachmentService.getContent(attachmentId) } throws
+                ValtakirjaForbiddenException(attachmentId)
+
+            get("/hakemukset/$APPLICATION_ID/liitteet/$attachmentId/content")
+                .andExpect(status().isForbidden)
+                .andExpect(hankeError(HankeError.HAI3004))
+
+            verifySequence {
+                authorizer.authorizeAttachment(APPLICATION_ID, attachmentId, VIEW.name)
+                applicationAttachmentService.getContent(attachmentId)
+            }
         }
     }
 

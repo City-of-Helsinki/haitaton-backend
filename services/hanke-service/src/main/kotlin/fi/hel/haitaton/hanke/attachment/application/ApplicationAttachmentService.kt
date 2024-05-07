@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.attachment.common.hasInfected
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import fi.hel.haitaton.hanke.hakemus.HakemusMetaData
@@ -37,6 +38,11 @@ class ApplicationAttachmentService(
 
     fun getContent(attachmentId: UUID): AttachmentContent {
         val attachment = metadataService.findAttachment(attachmentId)
+
+        if (attachment.attachmentType == ApplicationAttachmentType.VALTAKIRJA) {
+            throw ValtakirjaForbiddenException(attachmentId)
+        }
+
         val content = attachmentContentService.find(attachment)
 
         return AttachmentContent(attachment.fileName, attachment.contentType, content)
