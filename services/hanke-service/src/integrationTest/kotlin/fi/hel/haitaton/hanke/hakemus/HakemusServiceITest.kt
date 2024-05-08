@@ -2095,6 +2095,20 @@ class HakemusServiceITest(
             assertThat(hankekayttajaRepository.count())
                 .isEqualTo(5) // Hanke founder + one kayttaja for each role
         }
+
+        @Test
+        fun `deletes application when application is already cancelled`() {
+            val application =
+                hakemusFactory
+                    .builder()
+                    .withStatus(ApplicationStatus.CANCELLED, alluId)
+                    .saveEntity()
+            val hakemus = hakemusService.getById(application.id)
+
+            hakemusService.cancelAndDelete(hakemus, USERNAME)
+
+            assertThat(applicationRepository.findAll()).isEmpty()
+        }
     }
 
     @Nested
