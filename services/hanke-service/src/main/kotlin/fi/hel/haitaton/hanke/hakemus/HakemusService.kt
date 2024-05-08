@@ -235,6 +235,14 @@ class HakemusService(
     /**
      * Deletes an application. Cancels the application in Allu if it's still pending. Refuses to
      * delete, if the application is in Allu, and it's beyond the pending status.
+     */
+    @Transactional
+    fun delete(applicationId: Long, userId: String) =
+        with(getById(applicationId)) { cancelAndDelete(this, userId) }
+
+    /**
+     * Deletes an application. Cancels the application in Allu if it's still pending. Refuses to
+     * delete, if the application is in Allu, and it's beyond the pending status.
      *
      * Furthermore, if the owning Hanke is generated and has no more applications, also deletes the
      * Hanke.
@@ -933,8 +941,7 @@ class HakemusService(
         }
     }
 
-    private fun isCancelled(alluStatus: ApplicationStatus?) =
-        alluStatus == ApplicationStatus.CANCELLED
+    fun isCancelled(alluStatus: ApplicationStatus?) = alluStatus == ApplicationStatus.CANCELLED
 }
 
 class IncompatibleHakemusUpdateRequestException(
