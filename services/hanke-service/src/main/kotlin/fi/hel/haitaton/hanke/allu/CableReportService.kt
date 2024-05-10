@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.allu
 
-import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
 import java.time.Duration.ofSeconds
 import java.time.ZonedDateTime
 import kotlinx.coroutines.CoroutineDispatcher
@@ -279,7 +279,7 @@ class CableReportService(
                     { httpStatus -> httpStatus.value() == 404 },
                     {
                         Mono.error(
-                            ApplicationDecisionNotFoundException(
+                            HakemusDecisionNotFoundException(
                                 "Decision not found in Allu. alluApplicationId=$alluApplicationId"
                             )
                         )

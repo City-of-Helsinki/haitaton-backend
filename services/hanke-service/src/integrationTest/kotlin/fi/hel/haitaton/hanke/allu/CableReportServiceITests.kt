@@ -10,12 +10,12 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
-import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
+import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
 import java.time.ZonedDateTime
 import okhttp3.MultipartReader
 import okhttp3.mockwebserver.MockResponse
@@ -199,7 +199,7 @@ class CableReportServiceITests {
             )
 
             val exception =
-                assertThrows<ApplicationDecisionNotFoundException> { service.getDecisionPdf(12) }
+                assertThrows<HakemusDecisionNotFoundException> { service.getDecisionPdf(12) }
 
             assertThat(exception).hasMessage("Decision not found in Allu. alluApplicationId=12")
         }

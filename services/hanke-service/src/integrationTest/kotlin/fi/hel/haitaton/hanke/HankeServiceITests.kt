@@ -29,7 +29,6 @@ import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
@@ -66,6 +65,7 @@ import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.hakemus.ALLU_USER_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity

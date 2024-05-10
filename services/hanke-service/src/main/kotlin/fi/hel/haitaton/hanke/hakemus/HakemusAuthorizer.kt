@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.HankeRepository
-import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
@@ -24,7 +23,7 @@ class HakemusAuthorizer(
 ) : Authorizer(permissionService, hankeRepository) {
     private fun authorizeHakemusId(hakemusId: Long, permissionCode: PermissionCode): Boolean {
         val hankeId = applicationRepository.findOneById(hakemusId)?.hanke?.id
-        authorize(hankeId, permissionCode) { ApplicationNotFoundException(hakemusId) }
+        authorize(hankeId, permissionCode) { HakemusNotFoundException(hakemusId) }
         return true
     }
 
