@@ -15,20 +15,11 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ALLU_APPLICATION_ERROR_MSG
-import fi.hel.haitaton.hanke.application.ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG
-import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
-import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
 import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationGeometryException
-import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
-import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationArea
@@ -60,6 +51,11 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
+
+const val ALLU_APPLICATION_ERROR_MSG = "Error sending application to Allu"
+const val ALLU_USER_CANCELLATION_MSG = "Käyttäjä perui hakemuksen Haitattomassa."
+const val ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG =
+    "Haitaton ei saanut lisättyä hakemuksen liitteitä. Hakemus peruttu."
 
 @Service
 class HakemusService(
@@ -277,7 +273,7 @@ class HakemusService(
         val hakemus = getById(hakemusId)
         val alluid =
             hakemus.alluid
-                ?: throw ApplicationDecisionNotFoundException(
+                ?: throw HakemusDecisionNotFoundException(
                     "Hakemus not in Allu, so it doesn't have a decision. ${hakemus.logString()}"
                 )
         val filename = hakemus.applicationIdentifier ?: "paatos"
@@ -410,7 +406,7 @@ class HakemusService(
 
     /** Find the application entity or throw an exception. */
     private fun getEntityById(id: Long): ApplicationEntity =
-        applicationRepository.findOneById(id) ?: throw ApplicationNotFoundException(id)
+        applicationRepository.findOneById(id) ?: throw HakemusNotFoundException(id)
 
     private fun setOrderedOnSend(hakemus: ApplicationEntity, currentUserId: String) {
         val yhteyshenkilo: HakemusyhteyshenkiloEntity =
@@ -431,7 +427,7 @@ class HakemusService(
     /** Assert that the application has not been sent to Allu. */
     private fun assertNotSent(applicationEntity: ApplicationEntity) {
         if (applicationEntity.alluid != null) {
-            throw ApplicationAlreadySentException(
+            throw HakemusAlreadySentException(
                 applicationEntity.id,
                 applicationEntity.alluid,
                 applicationEntity.alluStatus
@@ -603,7 +599,7 @@ class HakemusService(
     ) {
         if (areas != null) {
             geometriatDao.validateGeometriat(areas.flatMap { it.geometries() })?.let {
-                throw ApplicationGeometryException(customMessageOnFailure(it))
+                throw HakemusGeometryException(customMessageOnFailure(it))
             }
         }
     }
@@ -692,7 +688,7 @@ class HakemusService(
                 // for cable report we check that the geometry is inside any of the hanke areas
                 is CableReportApplicationArea -> {
                     if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
-                        throw ApplicationGeometryNotInsideHankeException(
+                        throw HakemusGeometryNotInsideHankeException(
                             customMessageOnFailure(area.geometry)
                         )
                 }
@@ -701,7 +697,7 @@ class HakemusService(
                 is ExcavationNotificationArea -> {
                     area.tyoalueet.forEach { tyoalue ->
                         if (!geometriatDao.isInsideHankeAlue(area.hankealueId, tyoalue.geometry))
-                            throw ApplicationGeometryNotInsideHankeException(
+                            throw HakemusGeometryNotInsideHankeException(
                                 customMessageOnFailure(tyoalue.geometry)
                             )
                     }
@@ -911,7 +907,7 @@ class HakemusService(
                 "Hakemus is already cancelled, proceeding to delete it. id=$id alluid=${alluId}"
             }
         } else {
-            throw ApplicationAlreadyProcessingException(id, alluId)
+            throw HakemusAlreadyProcessingException(id, alluId)
         }
     }
 
@@ -967,3 +963,17 @@ class InvalidHakemusyhteyshenkiloException(message: String) : RuntimeException(m
 
 class UserNotInContactsException(application: HakemusIdentifier) :
     RuntimeException("Sending user is not a contact on the hakemus. ${application.logString()}")
+
+class HakemusNotFoundException(id: Long) : RuntimeException("Hakemus not found with id $id")
+
+class HakemusAlreadySentException(id: Long?, alluid: Int?, status: ApplicationStatus?) :
+    RuntimeException("Hakemus is already sent to Allu, id=$id, alluId=$alluid, status=$status")
+
+class HakemusAlreadyProcessingException(id: Long?, alluid: Int?) :
+    RuntimeException("Hakemus is no longer pending in Allu, id=$id, alluId=$alluid")
+
+class HakemusGeometryException(message: String) : RuntimeException(message)
+
+class HakemusGeometryNotInsideHankeException(message: String) : RuntimeException(message)
+
+class HakemusDecisionNotFoundException(message: String) : RuntimeException(message)

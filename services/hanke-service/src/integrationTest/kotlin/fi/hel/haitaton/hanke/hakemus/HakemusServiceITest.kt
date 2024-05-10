@@ -35,21 +35,13 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG
-import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
-import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
 import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
 import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
 import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationGeometryException
-import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
-import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationArea
@@ -176,7 +168,7 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.getById(1234) }
 
             failure.all {
-                hasClass(ApplicationNotFoundException::class)
+                hasClass(HakemusNotFoundException::class)
                 messageContains("id 1234")
             }
         }
@@ -218,7 +210,7 @@ class HakemusServiceITest(
 
             val exception = assertFailure { hakemusService.hakemusResponse(1234) }
 
-            exception.hasClass(ApplicationNotFoundException::class)
+            exception.hasClass(HakemusNotFoundException::class)
         }
 
         @Nested
@@ -605,7 +597,7 @@ class HakemusServiceITest(
                     hakemusService.updateHakemus(1234, request, USERNAME)
                 }
 
-                exception.hasClass(ApplicationNotFoundException::class)
+                exception.hasClass(HakemusNotFoundException::class)
             }
 
             @Test
@@ -619,7 +611,7 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationAlreadySentException::class)
+                    hasClass(HakemusAlreadySentException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains("alluId=21")
                 }
@@ -653,7 +645,7 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationGeometryException::class)
+                    hasClass(HakemusGeometryException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains("reason=Self-intersection")
                     messageContains(
@@ -743,7 +735,7 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationGeometryNotInsideHankeException::class)
+                    hasClass(HakemusGeometryNotInsideHankeException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains(hanke.logString())
                     messageContains("geometry=${notInHankeArea.geometry.toJsonString()}")
@@ -976,7 +968,7 @@ class HakemusServiceITest(
                     hakemusService.updateHakemus(1234, request, USERNAME)
                 }
 
-                exception.hasClass(ApplicationNotFoundException::class)
+                exception.hasClass(HakemusNotFoundException::class)
             }
 
             @Test
@@ -997,7 +989,7 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationAlreadySentException::class)
+                    hasClass(HakemusAlreadySentException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains("alluId=21")
                 }
@@ -1043,7 +1035,7 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationGeometryException::class)
+                    hasClass(HakemusGeometryException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains("reason=Self-intersection")
                     messageContains(
@@ -1160,7 +1152,7 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationGeometryNotInsideHankeException::class)
+                    hasClass(HakemusGeometryNotInsideHankeException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains(hanke.logString())
                     messageContains(
@@ -1390,7 +1382,7 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.sendHakemus(1234, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationNotFoundException::class)
+                hasClass(HakemusNotFoundException::class)
                 messageContains("id 1234")
             }
         }
@@ -1403,7 +1395,7 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.sendHakemus(application.id, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationAlreadySentException::class)
+                hasClass(HakemusAlreadySentException::class)
                 messageContains("id=${application.id}")
                 messageContains("alluId=$alluId")
                 messageContains("status=PENDING")
@@ -1498,7 +1490,7 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.sendHakemus(application.id, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationAlreadySentException::class)
+                hasClass(HakemusAlreadySentException::class)
                 messageContains("id=${application.id}")
                 messageContains("alluId=$alluId")
                 messageContains("status=HANDLING")
@@ -1550,7 +1542,7 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.sendHakemus(hakemus.id, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationGeometryNotInsideHankeException::class)
+                hasClass(HakemusGeometryNotInsideHankeException::class)
                 messageContains(hakemus.logString())
                 messageContains(hanke.logString())
                 messageContains(
@@ -1940,7 +1932,7 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.downloadDecision(1234, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationNotFoundException::class)
+                hasClass(HakemusNotFoundException::class)
                 messageContains("id 1234")
             }
         }
@@ -1952,7 +1944,7 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.downloadDecision(hakemus.id, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationDecisionNotFoundException::class)
+                hasClass(HakemusDecisionNotFoundException::class)
                 messageContains("id=${hakemus.id}")
             }
             verify { alluClient wasNot Called }
@@ -1962,11 +1954,11 @@ class HakemusServiceITest(
         fun `when no decision in Allu should throw`() {
             val hakemus = hakemusFactory.builder().inHandling(alluId = alluId).save()
             every { alluClient.getDecisionPdf(alluId) }
-                .throws(ApplicationDecisionNotFoundException(""))
+                .throws(HakemusDecisionNotFoundException(""))
 
             val failure = assertFailure { hakemusService.downloadDecision(hakemus.id, USERNAME) }
 
-            failure.hasClass(ApplicationDecisionNotFoundException::class)
+            failure.hasClass(HakemusDecisionNotFoundException::class)
             verify { alluClient.getDecisionPdf(alluId) }
         }
 
@@ -2109,7 +2101,7 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.cancelAndDelete(hakemus, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationAlreadyProcessingException::class)
+                hasClass(HakemusAlreadyProcessingException::class)
                 messageContains("id=${hakemus.id}")
                 messageContains("alluId=$alluId")
             }

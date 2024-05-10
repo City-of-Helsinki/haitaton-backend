@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.attachment.application
 
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.Application
-import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
@@ -13,6 +12,7 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.hasInfected
+import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import java.util.UUID
 import mu.KotlinLogging
@@ -144,7 +144,7 @@ class ApplicationAttachmentService(
 
     private fun findApplication(applicationId: Long): Application =
         applicationRepository.findByIdOrNull(applicationId)?.toApplication()
-            ?: throw ApplicationNotFoundException(applicationId)
+            ?: throw HakemusNotFoundException(applicationId)
 
     private fun scanAttachment(filename: String, content: ByteArray) {
         val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))

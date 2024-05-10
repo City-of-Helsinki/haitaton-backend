@@ -9,7 +9,6 @@ import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError.HAI0001
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
-import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.APPLICATION_ID
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
@@ -21,6 +20,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
+import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import fi.hel.haitaton.hanke.hakemus.HakemusAuthorizer
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
@@ -82,7 +82,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         @Test
         fun `when application not found should return 404`() {
             every { authorizer.authorizeHakemusId(APPLICATION_ID, VIEW.name) } throws
-                ApplicationNotFoundException(APPLICATION_ID)
+                HakemusNotFoundException(APPLICATION_ID)
 
             get("/hakemukset/$APPLICATION_ID/liitteet").andExpect(status().isNotFound)
 
@@ -201,7 +201,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         @Test
         fun `when no rights for hanke should fail`() {
             every { authorizer.authorizeHakemusId(APPLICATION_ID, EDIT_APPLICATIONS.name) } throws
-                ApplicationNotFoundException(APPLICATION_ID)
+                HakemusNotFoundException(APPLICATION_ID)
 
             postAttachment().andExpect(status().isNotFound)
 
