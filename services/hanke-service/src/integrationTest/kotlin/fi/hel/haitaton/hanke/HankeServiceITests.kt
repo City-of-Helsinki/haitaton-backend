@@ -1571,7 +1571,16 @@ class HankeServiceITests(
         }
 
         @Test
-        fun `when hakemus is not pending should throw`() {
+        fun `when hakemus is cancelled should delete hanke`() {
+            val hanke = initHankeWithHakemus(123, ApplicationStatus.CANCELLED)
+
+            hankeService.deleteHanke(hanke.hankeTunnus, USERNAME)
+
+            assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
+        }
+
+        @Test
+        fun `when hakemus is not pending or cancelled should throw`() {
             val hakemusAlluId = 123
             val hanke = initHankeWithHakemus(hakemusAlluId)
             every { cableReportService.getApplicationInformation(hakemusAlluId) } returns
@@ -1757,13 +1766,16 @@ class HankeServiceITests(
         }
     }
 
-    private fun initHankeWithHakemus(alluId: Int): HankeEntity {
+    private fun initHankeWithHakemus(
+        alluId: Int,
+        alluStatus: ApplicationStatus = ApplicationStatus.PENDING
+    ): HankeEntity {
         val hanke = hankeFactory.saveMinimal(hankeTunnus = "HAI23-1")
         val application =
             applicationRepository.save(
                 ApplicationFactory.createApplicationEntity(
                     hanke = hanke,
-                    alluStatus = ApplicationStatus.PENDING,
+                    alluStatus = alluStatus,
                     alluid = alluId,
                     userId = USERNAME
                 )
