@@ -914,6 +914,24 @@ class HakemusServiceITest(
             }
 
             @Test
+            fun `doesn't send email when the caller adds themself as contact`() {
+                val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+                val hakemus = hakemusFactory.builder(USERNAME, hanke).save()
+                val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
+                assertThat(founder.permission?.userId).isNotNull().isEqualTo(USERNAME)
+                val request =
+                    hakemus
+                        .toResponse()
+                        .toUpdateRequest()
+                        .withCustomer(CustomerType.COMPANY, null, founder.id)
+                        .withContractor(CustomerType.COMPANY, null, founder.id)
+
+                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                assertThat(greenMail.receivedMessages).isEmpty()
+            }
+
+            @Test
             fun `updates project name when application name is changed`() {
                 val entity = hakemusFactory.builderWithGeneratedHanke().saveEntity()
                 val hakemus = hakemusService.hakemusResponse(entity.id)
@@ -1314,6 +1332,27 @@ class HakemusServiceITest(
                     .contains(
                         "laatimassa kaivuilmoitusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})"
                     )
+            }
+
+            @Test
+            fun `doesn't send email when the caller adds themself as contact`() {
+                val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+                val hakemus =
+                    hakemusFactory
+                        .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                        .save()
+                val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
+                assertThat(founder.permission?.userId).isNotNull().isEqualTo(USERNAME)
+                val request =
+                    hakemus
+                        .toResponse()
+                        .toUpdateRequest()
+                        .withCustomer(CustomerType.COMPANY, null, founder.id)
+                        .withContractor(CustomerType.COMPANY, null, founder.id)
+
+                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                assertThat(greenMail.receivedMessages).isEmpty()
             }
 
             @Test
