@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
-import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentAuthorizer
@@ -54,8 +53,6 @@ class IntegrationTestConfiguration {
     @Bean fun hanketunnusService(): HanketunnusService = mockk()
 
     @Bean fun hankeService(): HankeService = mockk()
-
-    @Bean fun applicationService(): ApplicationService = mockk()
 
     @Bean fun hakemusService(): HakemusService = mockk()
 

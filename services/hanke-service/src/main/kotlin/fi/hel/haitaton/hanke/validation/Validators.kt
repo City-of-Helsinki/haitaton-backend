@@ -9,7 +9,6 @@ import java.time.ZonedDateTime
  * Keeps track of the paths of validation failures, but not the errors that occurred.
  *
  * @see HankePublicValidator for examples on usage.
- * @see ApplicationValidator for examples on usage.
  */
 object Validators {
 
@@ -25,9 +24,6 @@ object Validators {
      * [ValidationResult.whenNotNull] or similar are needed.
      */
     fun validate(): ValidationResult = ValidationResult.success()
-
-    fun validateTrue(condition: Boolean, path: String): ValidationResult =
-        if (condition) ValidationResult.success() else ValidationResult.failure(path)
 
     fun validateTrue(condition: Boolean?, path: String): ValidationResult =
         if (condition == true) ValidationResult.success() else ValidationResult.failure(path)

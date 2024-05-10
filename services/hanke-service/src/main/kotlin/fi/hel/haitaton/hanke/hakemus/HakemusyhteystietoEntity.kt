@@ -41,15 +41,6 @@ class HakemusyhteystietoEntity(
     @BatchSize(size = 100)
     val yhteyshenkilot: MutableList<HakemusyhteyshenkiloEntity> = mutableListOf(),
 ) {
-    fun toCustomerResponse(): CustomerResponse =
-        CustomerResponse(
-            id,
-            tyyppi,
-            nimi,
-            sahkoposti,
-            puhelinnumero,
-            ytunnus,
-        )
 
     fun toDomain() =
         Hakemusyhteystieto(
@@ -86,17 +77,7 @@ class HakemusyhteyshenkiloEntity(
     @JoinColumn(name = "hankekayttaja_id")
     var hankekayttaja: HankekayttajaEntity,
     var tilaaja: Boolean
-) {
-    fun toContactResponse(): ContactResponse =
-        ContactResponse(
-            hankekayttaja.id,
-            hankekayttaja.etunimi,
-            hankekayttaja.sukunimi,
-            hankekayttaja.sahkoposti,
-            hankekayttaja.puhelin,
-            tilaaja
-        )
-}
+)
 
 interface HakemusyhteystietoRepository : JpaRepository<HakemusyhteystietoEntity, UUID>
 

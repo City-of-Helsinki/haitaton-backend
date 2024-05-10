@@ -38,18 +38,7 @@ data class Application(
 data class CableReportWithoutHanke(
     override val applicationType: ApplicationType,
     override val applicationData: CableReportApplicationData,
-) : BaseApplication {
-    fun toNewApplication(hankeTunnus: String) =
-        Application(
-            id = 0,
-            alluid = null,
-            alluStatus = null,
-            applicationIdentifier = null,
-            applicationType = applicationType,
-            applicationData = applicationData,
-            hankeTunnus = hankeTunnus,
-        )
-}
+) : BaseApplication
 
 /** Without application data, just the identifiers and metadata. */
 data class ApplicationMetaData(

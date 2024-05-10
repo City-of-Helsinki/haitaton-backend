@@ -34,7 +34,6 @@ haitaton:
     # Disable endpoints that are e.g. in development and should not be in production.
   features:
     hanke-editing: ${HAITATON_FEATURE_HANKE_EDITING:false}
-    user-management: ${HAITATON_FEATURE_USER_MANAGEMENT:false}
     # GDPR API is disabled by default for tests and local running.
     # Spring Security will otherwise try to call the issuer's openid-configuration URL,
     # which will fail, unless the developer has also started profile-gdpr-api-tester.

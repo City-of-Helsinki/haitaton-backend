@@ -11,7 +11,6 @@ import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
-import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.APPLICATION_ID
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
@@ -65,7 +64,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: MockMvc) :
     ControllerTest {
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
-    @Autowired private lateinit var applicationService: ApplicationService
     @Autowired private lateinit var authorizer: ApplicationAuthorizer
 
     @BeforeEach
@@ -76,7 +74,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     @AfterEach
     fun checkMocks() {
         checkUnnecessaryStub()
-        confirmVerified(applicationAttachmentService, applicationService, authorizer)
+        confirmVerified(applicationAttachmentService, authorizer)
     }
 
     @Nested

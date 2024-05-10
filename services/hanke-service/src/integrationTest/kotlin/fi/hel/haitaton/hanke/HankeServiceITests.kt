@@ -33,9 +33,7 @@ import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
@@ -49,8 +47,6 @@ import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withArea
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
@@ -89,7 +85,6 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
-import fi.hel.haitaton.hanke.test.Asserts.hasSingleGeometryWithCoordinates
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.Asserts.isRecentUTC
 import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
@@ -1071,155 +1066,6 @@ class HankeServiceITests(
         assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.SATUNNAINEN_POLYHAITTA)
         assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_TARINAHAITTA)
         assertThat(alue.geometriat).isNotNull()
-    }
-
-    @Nested
-    inner class GenerateHankeWithApplication {
-
-        @Test
-        fun `generates hanke based on application`() {
-            val inputApplication = ApplicationFactory.cableReportWithoutHanke()
-
-            val application =
-                hankeService.generateHankeWithApplication(inputApplication, setUpProfiiliMocks())
-
-            assertThat(application.applicationData.name)
-                .isEqualTo(inputApplication.applicationData.name)
-            val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
-            assertThat(hanke.generated).isTrue()
-            assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
-            assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
-            assertThat(hanke.nimi).isEqualTo(application.applicationData.name)
-        }
-
-        @Test
-        fun `generates hankekayttaja for founder based on application`() {
-            val inputApplication = ApplicationFactory.cableReportWithoutHanke()
-            val orderer =
-                inputApplication.applicationData
-                    .customersWithContacts()
-                    .flatMap { it.contacts }
-                    .find { it.orderer }
-            assertThat(orderer).isNotNull().all {
-                prop(Contact::firstName).isEqualTo(ApplicationFactory.TEPPO)
-                prop(Contact::lastName).isEqualTo(ApplicationFactory.TESTIHENKILO)
-                prop(Contact::email).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
-                prop(Contact::phone).isEqualTo(ApplicationFactory.TEPPO_PHONE)
-            }
-
-            val application =
-                hankeService.generateHankeWithApplication(inputApplication, setUpProfiiliMocks())
-
-            val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
-            val users = hankekayttajaRepository.findByHankeId(hanke.id)
-            assertThat(users.first()).all {
-                prop(HankekayttajaEntity::id).isNotNull()
-                prop(HankekayttajaEntity::sahkoposti).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
-                prop(HankekayttajaEntity::puhelin).isEqualTo(ApplicationFactory.TEPPO_PHONE)
-                prop(HankekayttajaEntity::etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
-                prop(HankekayttajaEntity::sukunimi).isEqualTo(DEFAULT_LAST_NAME)
-                prop(HankekayttajaEntity::permission)
-                    .isNotNull()
-                    .prop(PermissionEntity::kayttooikeustaso)
-                    .isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
-                prop(HankekayttajaEntity::kayttajakutsu).isNull() // no token for creator
-                prop(HankekayttajaEntity::kutsujaId).isNull() // no inviter for creator
-                prop(HankekayttajaEntity::kutsuttuEtunimi).isNull() // no name in invitation
-                prop(HankekayttajaEntity::kutsuttuSukunimi).isNull() // no name in invitation
-            }
-        }
-
-        @Test
-        fun `sets hanke name according to limit and saves successfully`() {
-            val expectedName = "a".repeat(MAXIMUM_HANKE_NIMI_LENGTH)
-            val tooLongName = expectedName + "bbb"
-            val inputApplication =
-                ApplicationFactory.cableReportWithoutHanke()
-                    .copy(
-                        applicationData =
-                            ApplicationFactory.createCableReportApplicationData(name = tooLongName)
-                    )
-
-            val application =
-                hankeService.generateHankeWithApplication(inputApplication, setUpProfiiliMocks())
-
-            val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
-            assertThat(hanke.nimi).isEqualTo(expectedName)
-            assertThat(hanke.generated).isTrue()
-            assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
-            assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
-        }
-
-        @Test
-        fun `creates hankealueet from the application areas`() {
-            val inputApplication =
-                ApplicationFactory.cableReportWithoutHanke(
-                    ApplicationFactory.createCableReportApplicationData(areas = null)
-                        .withArea(name = "Area", geometry = GeometriaFactory.secondPolygon)
-                )
-
-            val application =
-                hankeService.generateHankeWithApplication(inputApplication, setUpProfiiliMocks())
-
-            val hanke = hankeService.loadHanke(application.hankeTunnus)!!
-            assertThat(hanke.alueet).single().all {
-                prop(SavedHankealue::nimi).isEqualTo("Hankealue 1")
-                hasSingleGeometryWithCoordinates(GeometriaFactory.secondPolygon)
-            }
-        }
-
-        @Test
-        fun `rolls back when application service throws an exception`() {
-            // Use an intersecting geometry so that ApplicationService will throw an exception
-            val inputApplication =
-                ApplicationFactory.cableReportWithoutHanke {
-                    withArea(
-                        "area",
-                        "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json"
-                            .asJsonResource()
-                    )
-                }
-
-            assertThrows<ApplicationGeometryException> {
-                hankeService.generateHankeWithApplication(inputApplication, setUpProfiiliMocks())
-            }
-
-            assertThat(hankeRepository.findAll()).isEmpty()
-        }
-
-        @Test
-        fun `should throw if no founder can be deduced from application`() {
-            val data =
-                ApplicationFactory.createCableReportApplicationData(
-                    customerWithContacts =
-                        ApplicationFactory.createCompanyCustomer().withContacts() // no orderer
-                )
-            val application = ApplicationFactory.cableReportWithoutHanke(applicationData = data)
-            val securityContext: SecurityContext = mockk()
-
-            val exception =
-                assertThrows<HankeArgumentException> {
-                    hankeService.generateHankeWithApplication(application, securityContext)
-                }
-
-            assertThat(exception).hasMessage("Orderer not found.")
-        }
-
-        @Test
-        fun `writes to audit logs`() {
-            val inputApplication = ApplicationFactory.cableReportWithoutHanke()
-
-            hankeService.generateHankeWithApplication(inputApplication, setUpProfiiliMocks())
-
-            assertThat(auditLogRepository.findAll())
-                .extracting { it.message.auditEvent.target.type }
-                .containsExactlyInAnyOrder(
-                    ObjectType.APPLICATION,
-                    ObjectType.HANKE,
-                    ObjectType.HANKE_KAYTTAJA,
-                    ObjectType.PERMISSION,
-                )
-        }
     }
 
     @Nested

@@ -43,10 +43,8 @@ import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 
-@SpringBootTest(properties = ["haitaton.features.user-management=true"])
-class KortistoGdprServiceITest(
+class GdprServiceITest(
     @Autowired val gdprService: GdprService,
     @Autowired val hankeKayttajaService: HankeKayttajaService,
     @Autowired val hankekayttajaRepository: HankekayttajaRepository,
@@ -61,7 +59,7 @@ class KortistoGdprServiceITest(
 
     @Test
     fun `Test class loads correct service`() {
-        assertThat(gdprService).isInstanceOf(KortistoGdprService::class)
+        assertThat(gdprService).isInstanceOf(GdprService::class)
     }
 
     @Nested

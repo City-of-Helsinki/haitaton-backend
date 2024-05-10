@@ -24,7 +24,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -48,10 +47,6 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @Validated
 @SecurityRequirement(name = "bearerAuth")
-@ConditionalOnProperty(
-    name = ["haitaton.features.user-management"],
-    havingValue = "true",
-)
 class HakemusController(
     private val hakemusService: HakemusService,
     private val hankeService: HankeService,

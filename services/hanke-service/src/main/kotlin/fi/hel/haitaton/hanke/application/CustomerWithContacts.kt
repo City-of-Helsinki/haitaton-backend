@@ -4,14 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
-import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.allu.Contact as AlluContact
 import fi.hel.haitaton.hanke.allu.Customer as AlluCustomer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts as AlluCustomerWithContacts
 import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
-import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 
 const val DEFAULT_COUNTRY = "FI"
@@ -49,18 +47,6 @@ data class Contact(
         return names.filter { !it.isNullOrBlank() }.joinToString(" ")
     }
 
-    /**
-     * A cable report can be created without a Hanke. In such case, an application contact (orderer)
-     * is used as founder.
-     */
-    fun toHankePerustaja(): HankePerustaja {
-        if (phone.isNullOrBlank() || email.isNullOrBlank()) {
-            throw HankeArgumentException("Invalid contact $this for Hanke founder")
-        }
-
-        return HankePerustaja(sahkoposti = email, puhelinnumero = phone)
-    }
-
     fun toHankekayttajaInput(): HankekayttajaInput? =
         if (
             firstName.isNullOrBlank() ||
@@ -83,18 +69,6 @@ data class Customer(
     val phone: String?,
     val registryKey: String?, // y-tunnus
 ) {
-    /**
-     * Check if this customer contains any actual personal information.
-     *
-     * Country alone isn't considered personal information when it's dissociated from other
-     * information, so it's not checked here.
-     */
-    fun hasPersonalInformation() =
-        !(name.isBlank() &&
-            email.isNullOrBlank() &&
-            phone.isNullOrBlank() &&
-            registryKey.isNullOrBlank())
-
     fun toAlluData(path: String): AlluCustomer =
         AlluCustomer(
             type ?: throw AlluDataException("$path.type", AlluDataError.NULL),
