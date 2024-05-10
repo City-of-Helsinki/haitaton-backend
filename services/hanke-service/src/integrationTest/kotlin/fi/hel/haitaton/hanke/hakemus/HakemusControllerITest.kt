@@ -17,7 +17,6 @@ import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.andReturnContent
 import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
-import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
@@ -84,7 +83,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
     @Autowired private lateinit var hakemusService: HakemusService
     @Autowired private lateinit var hankeService: HankeService
-    @Autowired private lateinit var authorizer: ApplicationAuthorizer
+    @Autowired private lateinit var authorizer: HakemusAuthorizer
     @Autowired private lateinit var disclosureLogService: DisclosureLogService
 
     private val id = 1234L
@@ -114,18 +113,18 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
         @Test
         fun `when application does not exist should return 404`() {
-            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } throws
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } throws
                 ApplicationNotFoundException(id)
 
             get(url).andExpect(status().isNotFound)
 
-            verifySequence { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) }
+            verifySequence { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) }
         }
 
         @ParameterizedTest
         @EnumSource(ApplicationType::class)
         fun `when application exists should return it`(applicationType: ApplicationType) {
-            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } returns true
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
             every { hakemusService.hakemusResponse(id) } returns
                 HakemusResponseFactory.create(
                     applicationType = applicationType,
@@ -142,7 +141,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 )
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
                 hakemusService.hakemusResponse(id)
             }
         }
@@ -424,7 +423,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                         endTime = ZonedDateTime.now().minusDays(1)
                     )
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
 
             val response = put(url, request).andExpect(status().isBadRequest).andReturnContent()
@@ -432,7 +431,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             assertThat(response)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, listOf("endTime")).toJsonString())
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService wasNot Called
             }
         }
@@ -443,13 +442,13 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
                     .withRegistryKey("281192-937W")
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
 
             put(url, request).andExpect(status().isBadRequest)
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService wasNot Called
             }
         }
@@ -461,7 +460,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
                     .withWorkDescription(" ")
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
 
             val response = put(url, request).andExpect(status().isBadRequest).andReturnContent()
@@ -469,7 +468,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             assertThat(response)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService wasNot Called
             }
         }
@@ -479,7 +478,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val request =
                 HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } throws ApplicationNotFoundException(id)
 
             put(url, request)
@@ -487,7 +486,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(hankeError(HankeError.HAI2001))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             }
         }
 
@@ -496,7 +495,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val request =
                 HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 ApplicationAlreadySentException(id, 21, ApplicationStatus.HANDLING)
@@ -506,7 +505,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(hankeError(HankeError.HAI2009))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.updateHakemus(id, request, USERNAME)
             }
         }
@@ -516,7 +515,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val request =
                 HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 IncompatibleHakemusUpdateRequestException(
@@ -531,7 +530,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(hankeError(HankeError.HAI2002))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.updateHakemus(id, request, USERNAME)
             }
         }
@@ -541,7 +540,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val request =
                 HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 ApplicationGeometryException("Invalid geometry")
@@ -551,7 +550,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(hankeError(HankeError.HAI2005))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.updateHakemus(id, request, USERNAME)
             }
         }
@@ -561,7 +560,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val request =
                 HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 ApplicationGeometryNotInsideHankeException("Message")
@@ -571,7 +570,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(hankeError(HankeError.HAI2007))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.updateHakemus(id, request, USERNAME)
             }
         }
@@ -581,7 +580,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val request =
                 HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 InvalidHakemusyhteystietoException(
@@ -596,7 +595,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(hankeError(HankeError.HAI2010))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.updateHakemus(id, request, USERNAME)
             }
         }
@@ -606,7 +605,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val request =
                 HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 InvalidHakemusyhteyshenkiloException("Invalid contact")
@@ -616,7 +615,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(hankeError(HankeError.HAI2011))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.updateHakemus(id, request, USERNAME)
             }
         }
@@ -628,7 +627,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val request = expectedResponse.toUpdateRequest()
 
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } returns expectedResponse
 
@@ -640,7 +639,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 JSONCompareMode.NON_EXTENSIBLE
             )
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.updateHakemus(id, request, USERNAME)
             }
         }
@@ -661,20 +660,20 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @Test
         fun `returns 404 when missing permission`() {
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } throws ApplicationNotFoundException(id)
 
             post(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2001))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             }
         }
 
         @Test
         fun `returns 404 when application not found`() {
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.sendHakemus(id, USERNAME) } throws
                 ApplicationNotFoundException(id)
@@ -682,7 +681,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             post(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2001))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.sendHakemus(id, USERNAME)
             }
         }
@@ -690,7 +689,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @Test
         fun `returns 403 when user not a contact on the hakemus`() {
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.sendHakemus(id, USERNAME) } throws
                 UserNotInContactsException(HakemusFactory.create(id = id))
@@ -698,7 +697,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             post(url).andExpect(status().isForbidden).andExpect(hankeError(HankeError.HAI2012))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.sendHakemus(id, USERNAME)
             }
         }
@@ -706,7 +705,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @Test
         fun `returns 400 when geometry outside hankealue`() {
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.sendHakemus(id, USERNAME) } throws
                 ApplicationGeometryNotInsideHankeException("Message")
@@ -714,7 +713,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             post(url).andExpect(status().isBadRequest).andExpect(hankeError(HankeError.HAI2007))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.sendHakemus(id, USERNAME)
             }
         }
@@ -722,7 +721,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @Test
         fun `returns 409 when application has been sent already`() {
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.sendHakemus(id, USERNAME) } throws
                 ApplicationAlreadySentException(id, 414, ApplicationStatus.PENDING)
@@ -730,7 +729,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI2009))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.sendHakemus(id, USERNAME)
             }
         }
@@ -738,7 +737,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @Test
         fun `returns 400 when application fails validation`() {
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.sendHakemus(id, USERNAME) } throws
                 InvalidHakemusDataException(listOf("rockExcavation"))
@@ -750,7 +749,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(jsonPath("$.errorPaths[0]").value("rockExcavation"))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.sendHakemus(id, USERNAME)
             }
         }
@@ -764,7 +763,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                     applicationIdentifier = "JS001"
                 )
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.sendHakemus(id, USERNAME) } returns sentHakemus
 
@@ -776,7 +775,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 JSONCompareMode.NON_EXTENSIBLE,
             )
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.sendHakemus(id, USERNAME)
             }
         }
@@ -797,12 +796,12 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @Test
         fun `returns 404 when no application or no permission`() {
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } throws ApplicationNotFoundException(id)
 
             delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2001))
 
-            verify { authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name) }
+            verify { authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name) }
         }
 
         @ParameterizedTest
@@ -812,7 +811,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         ) {
             val expectedResponseBody = ApplicationDeletionResultDto(hankeDeleted)
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME) } returns
                 expectedResponseBody
@@ -824,7 +823,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 )
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME)
             }
         }
@@ -832,7 +831,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @Test
         fun `returns 409 when application is no longer pending in Allu`() {
             every {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME) } throws
                 ApplicationAlreadyProcessingException(id, 41)
@@ -840,7 +839,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             delete(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI2003))
 
             verify {
-                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME)
             }
         }
@@ -860,7 +859,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
         @Test
         fun `when no application should return 404`() {
-            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } throws
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } throws
                 ApplicationNotFoundException(id)
 
             get(url)
@@ -868,19 +867,19 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(jsonPath("errorCode").value("HAI2001"))
                 .andExpect(jsonPath("errorMessage").value("Application not found"))
 
-            verify { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) }
+            verify { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) }
         }
 
         @Test
         fun `when application has no decision should return 404`() {
-            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } returns true
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
             every { hakemusService.downloadDecision(id, USERNAME) } throws
                 ApplicationDecisionNotFoundException("Decision not found in Allu. alluid=23")
 
             get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2006))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
                 hakemusService.downloadDecision(id, USERNAME)
             }
         }
@@ -889,7 +888,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         fun `when decision exists should return bytes and correct headers`() {
             val applicationIdentifier = "JS230001"
             val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
-            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } returns true
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
             every { hakemusService.downloadDecision(id, USERNAME) } returns
                 Pair(applicationIdentifier, pdfBytes)
             every { hakemusService.getById(id) } returns
@@ -904,7 +903,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(MockMvcResultMatchers.content().bytes(pdfBytes))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
                 hakemusService.downloadDecision(id, USERNAME)
                 hakemusService.getById(id)
             }
@@ -915,7 +914,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val applicationIdentifier = "JS230001"
             val hakemus = HakemusFactory.create(applicationIdentifier = applicationIdentifier)
             val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
-            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } returns true
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
             every { hakemusService.downloadDecision(id, USERNAME) } returns
                 Pair(applicationIdentifier, pdfBytes)
             every { hakemusService.getById(id) } returns hakemus
@@ -923,7 +922,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             get(url, MediaType.APPLICATION_PDF).andExpect(status().isOk)
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name)
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
                 hakemusService.downloadDecision(id, USERNAME)
                 hakemusService.getById(id)
                 disclosureLogService.saveDisclosureLogsForCableReport(
@@ -935,12 +934,12 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
         @Test
         fun `when no hanke permission should return 404`() {
-            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } throws
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } throws
                 ApplicationNotFoundException(id)
 
             get(url).andExpect(status().isNotFound)
 
-            verify { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) }
+            verify { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) }
         }
     }
 }

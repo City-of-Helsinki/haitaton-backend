@@ -9,7 +9,6 @@ import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError.HAI0001
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
-import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.APPLICATION_ID
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
@@ -22,6 +21,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
+import fi.hel.haitaton.hanke.hakemus.HakemusAuthorizer
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -64,7 +64,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: MockMvc) :
     ControllerTest {
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
-    @Autowired private lateinit var authorizer: ApplicationAuthorizer
+    @Autowired private lateinit var authorizer: HakemusAuthorizer
 
     @BeforeEach
     fun clearMocks() {
@@ -81,19 +81,19 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     inner class GetAttachments {
         @Test
         fun `when application not found should return 404`() {
-            every { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) } throws
+            every { authorizer.authorizeHakemusId(APPLICATION_ID, VIEW.name) } throws
                 ApplicationNotFoundException(APPLICATION_ID)
 
             get("/hakemukset/$APPLICATION_ID/liitteet").andExpect(status().isNotFound)
 
-            verifySequence { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) }
+            verifySequence { authorizer.authorizeHakemusId(APPLICATION_ID, VIEW.name) }
         }
 
         @Test
         fun `when valid request should return metadata list`() {
             val data =
                 (1..3).map { ApplicationAttachmentFactory.create(fileName = "$it$FILE_NAME_PDF") }
-            every { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) } returns true
+            every { authorizer.authorizeHakemusId(APPLICATION_ID, VIEW.name) } returns true
             every { applicationAttachmentService.getMetadataList(APPLICATION_ID) } returns data
             val result: List<ApplicationAttachmentMetadataDto> =
                 get("/hakemukset/$APPLICATION_ID/liitteet").andExpect(status().isOk).andReturnBody()
@@ -109,7 +109,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
                 d.transform { it.size }.isEqualTo(DEFAULT_SIZE)
             }
             verifySequence {
-                authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name)
+                authorizer.authorizeHakemusId(APPLICATION_ID, VIEW.name)
                 applicationAttachmentService.getMetadataList(APPLICATION_ID)
             }
         }
@@ -160,9 +160,8 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         @Test
         fun `when valid request should succeed`() {
             val file = testFile()
-            every {
-                authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name)
-            } returns true
+            every { authorizer.authorizeHakemusId(APPLICATION_ID, EDIT_APPLICATIONS.name) } returns
+                true
             every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } returns
                 ApplicationAttachmentFactory.createDto()
 
@@ -178,7 +177,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
                 assertThat(attachmentType).isEqualTo(MUU)
             }
             verifyOrder {
-                authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(APPLICATION_ID, EDIT_APPLICATIONS.name)
                 applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file)
             }
         }
@@ -186,31 +185,27 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         @Test
         fun `when application is sent to Allu should return conflict`() {
             val file = testFile()
-            every {
-                authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name)
-            } returns true
+            every { authorizer.authorizeHakemusId(APPLICATION_ID, EDIT_APPLICATIONS.name) } returns
+                true
             every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } throws
                 ApplicationInAlluException(APPLICATION_ID, 123)
 
             postAttachment(file = file).andExpect(status().isConflict)
 
             verifyOrder {
-                authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name)
+                authorizer.authorizeHakemusId(APPLICATION_ID, EDIT_APPLICATIONS.name)
                 applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file)
             }
         }
 
         @Test
         fun `when no rights for hanke should fail`() {
-            every {
-                authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name)
-            } throws ApplicationNotFoundException(APPLICATION_ID)
+            every { authorizer.authorizeHakemusId(APPLICATION_ID, EDIT_APPLICATIONS.name) } throws
+                ApplicationNotFoundException(APPLICATION_ID)
 
             postAttachment().andExpect(status().isNotFound)
 
-            verifyOrder {
-                authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name)
-            }
+            verifyOrder { authorizer.authorizeHakemusId(APPLICATION_ID, EDIT_APPLICATIONS.name) }
         }
 
         @Test

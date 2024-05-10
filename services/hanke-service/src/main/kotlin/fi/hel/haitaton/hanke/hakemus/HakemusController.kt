@@ -68,7 +68,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
     fun getById(@PathVariable(name = "id") id: Long): HakemusResponse {
         logger.info { "Finding application $id" }
         val response = hakemusService.hakemusResponse(id)
@@ -95,7 +95,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankkeenHakemukset(@PathVariable hankeTunnus: String): HankkeenHakemuksetResponse {
         logger.info { "Finding applications for hanke $hankeTunnus" }
         val response = hakemusService.hankkeenHakemuksetResponse(hankeTunnus)
@@ -121,7 +121,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeCreate(#createHakemusRequest)")
+    @PreAuthorize("@hakemusAuthorizer.authorizeCreate(#createHakemusRequest)")
     fun create(
         @ValidCreateHakemusRequest @RequestBody createHakemusRequest: CreateHakemusRequest
     ): HakemusResponse {
@@ -213,7 +213,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun update(
         @PathVariable(name = "id") id: Long,
         @ValidHakemusUpdateRequest @RequestBody request: HakemusUpdateRequest
@@ -251,7 +251,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun delete(@PathVariable(name = "id") id: Long): ApplicationDeletionResultDto {
         val userId = currentUserId()
         logger.info { "Received request to delete application id=$id, userId=$userId" }
@@ -291,7 +291,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun sendHakemus(@PathVariable(name = "id") id: Long): HakemusResponse =
         hakemusService.sendHakemus(id, currentUserId()).toResponse()
 
@@ -316,7 +316,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
     fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
         val userId = currentUserId()
         val (filename, pdfBytes) = hakemusService.downloadDecision(id, userId)

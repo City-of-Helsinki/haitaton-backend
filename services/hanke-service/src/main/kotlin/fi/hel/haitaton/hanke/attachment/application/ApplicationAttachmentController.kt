@@ -52,7 +52,7 @@ class ApplicationAttachmentController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#applicationId, 'VIEW')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#applicationId, 'VIEW')")
     fun getApplicationAttachments(
         @PathVariable applicationId: Long
     ): List<ApplicationAttachmentMetadataDto> {
@@ -72,9 +72,7 @@ class ApplicationAttachmentController(
                 ),
             ]
     )
-    @PreAuthorize(
-        "@applicationAuthorizer.authorizeAttachment(#applicationId, #attachmentId, 'VIEW')"
-    )
+    @PreAuthorize("@hakemusAuthorizer.authorizeAttachment(#applicationId, #attachmentId, 'VIEW')")
     fun getApplicationAttachmentContent(
         @PathVariable applicationId: Long,
         @PathVariable attachmentId: UUID,
@@ -113,9 +111,7 @@ class ApplicationAttachmentController(
                 ),
             ]
     )
-    @PreAuthorize(
-        "@applicationAuthorizer.authorizeApplicationId(#applicationId, 'EDIT_APPLICATIONS')"
-    )
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#applicationId, 'EDIT_APPLICATIONS')")
     fun postAttachment(
         @PathVariable applicationId: Long,
         @RequestParam("tyyppi") tyyppi: ApplicationAttachmentType,
@@ -147,7 +143,7 @@ class ApplicationAttachmentController(
             ]
     )
     @PreAuthorize(
-        "@applicationAuthorizer.authorizeAttachment(#applicationId, #attachmentId, 'EDIT_APPLICATIONS')"
+        "@hakemusAuthorizer.authorizeAttachment(#applicationId, #attachmentId, 'EDIT_APPLICATIONS')"
     )
     fun removeAttachment(@PathVariable applicationId: Long, @PathVariable attachmentId: UUID) {
         logger.info { "Deleting attachment $attachmentId from application $applicationId." }
