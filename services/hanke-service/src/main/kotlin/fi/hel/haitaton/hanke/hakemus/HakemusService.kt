@@ -898,6 +898,10 @@ class HakemusService(
             alluClient.cancel(alluId)
             alluClient.sendSystemComment(alluId, ALLU_USER_CANCELLATION_MSG)
             logger.info { "Hakemus canceled, proceeding to delete it. id=$id alluid=${alluId}" }
+        } else if (isCancelled(alluStatus)) {
+            logger.info {
+                "Hakemus is already cancelled, proceeding to delete it. id=$id alluid=${alluId}"
+            }
         } else {
             throw ApplicationAlreadyProcessingException(id, alluId)
         }
@@ -928,6 +932,9 @@ class HakemusService(
             else -> false
         }
     }
+
+    private fun isCancelled(alluStatus: ApplicationStatus?) =
+        alluStatus == ApplicationStatus.CANCELLED
 }
 
 class IncompatibleHakemusUpdateRequestException(
