@@ -40,6 +40,7 @@ class MockFileClientExtension : BeforeEachCallback, BeforeAllCallback, AfterAllC
 
     override fun beforeEach(context: ExtensionContext?) {
         client.clearContainers()
+        client.connected = true
     }
 
     override fun beforeAll(context: ExtensionContext) {
