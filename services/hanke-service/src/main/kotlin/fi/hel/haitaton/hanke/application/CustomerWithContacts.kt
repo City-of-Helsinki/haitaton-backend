@@ -4,14 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
-import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.allu.Contact as AlluContact
 import fi.hel.haitaton.hanke.allu.Customer as AlluCustomer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts as AlluCustomerWithContacts
 import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
-import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 
 const val DEFAULT_COUNTRY = "FI"
@@ -47,18 +45,6 @@ data class Contact(
             return null
         }
         return names.filter { !it.isNullOrBlank() }.joinToString(" ")
-    }
-
-    /**
-     * A cable report can be created without a Hanke. In such case, an application contact (orderer)
-     * is used as founder.
-     */
-    fun toHankePerustaja(): HankePerustaja {
-        if (phone.isNullOrBlank() || email.isNullOrBlank()) {
-            throw HankeArgumentException("Invalid contact $this for Hanke founder")
-        }
-
-        return HankePerustaja(sahkoposti = email, puhelinnumero = phone)
     }
 
     fun toHankekayttajaInput(): HankekayttajaInput? =

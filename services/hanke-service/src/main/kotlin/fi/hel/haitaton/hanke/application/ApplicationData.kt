@@ -183,9 +183,6 @@ data class ExcavationNotificationData(
             propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
         )
 
-    fun findOrderer(): Contact? =
-        customersWithContacts().flatMap { it.contacts }.find { it.orderer }
-
     fun toHakemusData(yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>): HakemusData =
         KaivuilmoitusData(
             pendingOnClient = pendingOnClient,
@@ -210,8 +207,6 @@ data class ExcavationNotificationData(
             additionalInfo = additionalInfo,
         )
 }
-
-fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }
 
 fun InvoicingCustomer?.toLaskutusyhteystieto(customerReference: String?): Laskutusyhteystieto? =
     this?.let {

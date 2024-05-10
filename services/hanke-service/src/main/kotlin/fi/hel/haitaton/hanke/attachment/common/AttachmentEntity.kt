@@ -121,17 +121,6 @@ class ApplicationAttachmentEntity(
     @Column(name = "attachment_type")
     var attachmentType: ApplicationAttachmentType,
 ) : AttachmentEntity(id, fileName, contentType, size, blobLocation, createdByUserId, createdAt) {
-    fun toDto(): ApplicationAttachmentMetadataDto =
-        ApplicationAttachmentMetadataDto(
-            id = id!!,
-            fileName = fileName,
-            contentType = contentType,
-            size = size,
-            attachmentType = attachmentType,
-            createdAt = createdAt,
-            createdByUserId = createdByUserId,
-            applicationId = applicationId,
-        )
 
     fun toDomain(): ApplicationAttachmentMetadata =
         ApplicationAttachmentMetadata(

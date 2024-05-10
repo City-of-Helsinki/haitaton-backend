@@ -11,7 +11,6 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
@@ -495,36 +494,6 @@ class ApplicationFactory(
                     )
             )
 
-        fun Application.withCustomerContacts(vararg contacts: Contact): Application =
-            this.withCustomer(
-                (applicationData as CableReportApplicationData)
-                    .customerWithContacts!!
-                    .copy(contacts = contacts.asList())
-            )
-
-        fun Application.withInvoicingCustomer(customer: InvoicingCustomer?): Application =
-            this.copy(
-                applicationData =
-                    (applicationData as ExcavationNotificationData).copy(
-                        invoicingCustomer = customer
-                    )
-            )
-
-        fun CableReportApplicationData.withPostalAddress(
-            streetAddress: String = "Katu 1",
-            postalCode: String = "00100",
-            city: String = "Helsinki",
-        ) = this.copy(postalAddress = PostalAddress(StreetAddress(streetAddress), postalCode, city))
-
-        fun CableReportApplicationData.withArea(name: String, geometry: Polygon) =
-            this.copy(areas = (areas ?: listOf()) + CableReportApplicationArea(name, geometry))
-
-        fun cableReportWithoutHanke(
-            applicationData: CableReportApplicationData = createCableReportApplicationData(),
-            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-            f: CableReportApplicationData.() -> CableReportApplicationData = { this },
-        ): CableReportWithoutHanke = CableReportWithoutHanke(applicationType, applicationData.f())
-
         fun createApplications(
             n: Long,
             mapper: (Long, Application) -> Application = { _, app -> app },
@@ -663,32 +632,5 @@ class ApplicationFactory(
                 hanke = hanke,
             )
         return applicationRepository.save(applicationEntity)
-    }
-
-    /**
-     * Save several applications to database. The mutator can be used to mutate the entities before
-     * saving them.
-     */
-    fun saveApplicationEntities(
-        n: Long,
-        username: String,
-        hanke: HankeEntity,
-        mutator: (Int, ApplicationEntity) -> Unit = { _, _ -> },
-    ): List<ApplicationEntity> {
-        val entities =
-            createApplications(n).map { application ->
-                ApplicationEntity(
-                    id = 0,
-                    alluid = application.alluid,
-                    alluStatus = null,
-                    applicationIdentifier = null,
-                    userId = username,
-                    applicationType = application.applicationType,
-                    applicationData = application.applicationData,
-                    hanke = hanke,
-                )
-            }
-        entities.forEachIndexed { i, application -> mutator(i, application) }
-        return applicationRepository.saveAll(entities)
     }
 }
