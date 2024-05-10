@@ -163,13 +163,13 @@ class HankeService(
         val hanke = loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
         val hakemukset = getHankeApplications(hankeTunnus)
 
-        if (anyHakemusProcessingInAllu(hakemukset)) {
+        if (anyNonCancelledHakemusProcessingInAllu(hakemukset)) {
             throw HankeAlluConflictException(
                 "Hanke ${hanke.hankeTunnus} has hakemus in Allu processing. Cannot delete."
             )
         }
 
-        hakemukset.forEach { hakemus -> applicationService.delete(hakemus.id, userId) }
+        hakemukset.forEach { hakemus -> hakemusService.delete(hakemus.id, userId) }
 
         hankeAttachmentService.deleteAllAttachments(hanke)
 
@@ -177,10 +177,11 @@ class HankeService(
         hankeLoggingService.logDelete(hanke, userId)
     }
 
-    private fun anyHakemusProcessingInAllu(hakemukset: List<Application>): Boolean =
+    private fun anyNonCancelledHakemusProcessingInAllu(hakemukset: List<Application>): Boolean =
         hakemukset.any {
             logger.info { "Hakemus ${it.id} has alluStatus ${it.alluStatus}" }
-            !applicationService.isStillPending(it.alluid, it.alluStatus)
+            !hakemusService.isStillPending(it.alluid, it.alluStatus) &&
+                !hakemusService.isCancelled(it.alluStatus)
         }
 
     private fun calculateTormaystarkastelu(
