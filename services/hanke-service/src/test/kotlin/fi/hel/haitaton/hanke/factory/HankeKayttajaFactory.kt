@@ -2,10 +2,10 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.factory.KayttajaTunnisteFactory.TUNNISTE_ID
 import fi.hel.haitaton.hanke.factory.PermissionFactory.PERMISSION_ID
+import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
+import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.permissions.HankeKayttaja
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity

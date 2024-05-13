@@ -7,7 +7,6 @@ import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.hasClass
 import assertk.assertions.isTrue
-import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomer
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withInvoicingCustomer
@@ -15,6 +14,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequestValidator
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
 import fi.hel.haitaton.hanke.hakemus.InvoicingPostalAddressRequest
 import fi.hel.haitaton.hanke.hakemus.PostalAddressRequest
+import fi.hel.haitaton.hanke.hakemus.StreetAddress
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

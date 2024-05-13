@@ -10,10 +10,10 @@ import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import assertk.assertions.single
-import fi.hel.haitaton.hanke.application.PostalAddress
-import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasFeatures
+import fi.hel.haitaton.hanke.hakemus.PostalAddress
+import fi.hel.haitaton.hanke.hakemus.StreetAddress
 import fi.hel.haitaton.hanke.zonedDateTime
 import jakarta.mail.internet.MimeMessage
 import java.time.Duration
