@@ -5,7 +5,7 @@ import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
-import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.CollectionTable
@@ -92,7 +92,7 @@ class HankeEntity(
     var tormaystarkasteluTulokset: MutableList<TormaystarkasteluTulosEntity> = mutableListOf()
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke")
-    var hakemukset: MutableSet<ApplicationEntity> = mutableSetOf()
+    var hakemukset: MutableSet<HakemusEntity> = mutableSetOf()
 
     // ==================  Helper functions ================
 

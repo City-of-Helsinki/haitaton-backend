@@ -14,7 +14,7 @@ data class HankkeenHakemusResponse(
     val applicationData: HankkeenHakemusDataResponse,
 ) {
     constructor(
-        application: ApplicationEntity
+        application: HakemusEntity
     ) : this(
         application.id,
         application.alluid,

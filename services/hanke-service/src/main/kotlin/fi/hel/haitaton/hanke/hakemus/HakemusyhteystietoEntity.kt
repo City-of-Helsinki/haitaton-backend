@@ -29,7 +29,7 @@ class HakemusyhteystietoEntity(
     @Column(name = "y_tunnus") var ytunnus: String?,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id")
-    var application: ApplicationEntity,
+    var application: HakemusEntity,
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hakemusyhteystieto",

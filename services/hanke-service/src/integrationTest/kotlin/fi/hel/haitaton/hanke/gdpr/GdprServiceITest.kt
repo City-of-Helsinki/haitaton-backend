@@ -30,8 +30,8 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.PermissionFactory
-import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
 import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
@@ -352,7 +352,7 @@ class GdprServiceITest(
             assertThat(hankeRepository.findAll()).single().prop(HankeEntity::id).isEqualTo(hanke.id)
             assertThat(applicationRepository.findAll())
                 .single()
-                .prop(ApplicationEntity::id)
+                .prop(HakemusEntity::id)
                 .isEqualTo(hakemus.id)
             assertThat(hankeKayttajaService.getKayttajatByHankeId(hanke.id)).single().all {
                 prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.HAKEMUSASIOINTI)
@@ -403,7 +403,7 @@ class GdprServiceITest(
             assertThat(hankeRepository.findAll()).single().prop(HankeEntity::id).isEqualTo(hanke.id)
             assertThat(applicationRepository.findAll())
                 .single()
-                .prop(ApplicationEntity::id)
+                .prop(HakemusEntity::id)
                 .isEqualTo(hakemus.id)
             assertThat(hankeKayttajaService.getKayttajatByHankeId(hanke.id)).single().all {
                 prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
@@ -431,7 +431,7 @@ class GdprServiceITest(
             assertThat(hankeRepository.findAll()).single().prop(HankeEntity::id).isEqualTo(hanke.id)
             assertThat(applicationRepository.findAll())
                 .single()
-                .prop(ApplicationEntity::id)
+                .prop(HakemusEntity::id)
                 .isEqualTo(hakemus.id)
             assertThat(hankeKayttajaService.getKayttajatByHankeId(hanke.id))
                 .single()
