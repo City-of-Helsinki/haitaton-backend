@@ -2,8 +2,6 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
@@ -14,6 +12,8 @@ import fi.hel.haitaton.hanke.hakemus.HakemusDataResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.InvoicingCustomerResponse
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusDataResponse
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusDataResponse
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -55,7 +55,7 @@ object HakemusResponseFactory {
         workDescription: String = ApplicationFactory.DEFAULT_WORK_DESCRIPTION,
         startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
         endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-        areas: List<CableReportApplicationArea> =
+        areas: List<JohtoselvitysHakemusalue> =
             listOf(ApplicationFactory.createCableReportApplicationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
@@ -100,7 +100,7 @@ object HakemusResponseFactory {
         requiredCompetence: Boolean = false,
         startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
         endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-        areas: List<ExcavationNotificationArea> =
+        areas: List<KaivuilmoitusAlue> =
             listOf(ApplicationFactory.createExcavationNotificationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(

@@ -2,22 +2,22 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusService
+import fi.hel.haitaton.hanke.hakemus.Hakemusalue
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
@@ -85,10 +85,10 @@ data class HakemusBuilder(
             { copy(pendingOnClient = pendingOnClient) },
         )
 
-    fun withArea(area: ApplicationArea = ApplicationFactory.createCableReportApplicationArea()) =
+    fun withArea(area: Hakemusalue = ApplicationFactory.createCableReportApplicationArea()) =
         updateApplicationData(
-            { copy(areas = (areas ?: listOf()).plus(area as CableReportApplicationArea)) },
-            { copy(areas = (areas ?: listOf()).plus(area as ExcavationNotificationArea)) },
+            { copy(areas = (areas ?: listOf()).plus(area as JohtoselvitysHakemusalue)) },
+            { copy(areas = (areas ?: listOf()).plus(area as KaivuilmoitusAlue)) },
         )
 
     fun withStartTime(time: ZonedDateTime? = DateFactory.getStartDatetime()) =
