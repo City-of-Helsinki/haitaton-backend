@@ -9,9 +9,9 @@ import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.email.EmailSenderService.Companion.translations
 import fi.hel.haitaton.hanke.firstReceivedMessage
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import org.apache.commons.text.StringEscapeUtils
 import org.junit.jupiter.api.Nested

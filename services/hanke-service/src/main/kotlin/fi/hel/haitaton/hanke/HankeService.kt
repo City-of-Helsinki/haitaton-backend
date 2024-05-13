@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
@@ -12,6 +11,7 @@ import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.Yhteystieto
 import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusMetaData
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
@@ -43,9 +43,9 @@ class HankeService(
         hankeRepository.findOneByHankeTunnus(hankeTunnus)
 
     @Transactional(readOnly = true)
-    fun getHankeApplications(hankeTunnus: String): List<Application> =
+    fun getHankeApplications(hankeTunnus: String): List<HakemusMetaData> =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let { entity ->
-            entity.hakemukset.map { hakemus -> hakemus.toApplication() }
+            entity.hakemukset.map { hakemus -> hakemus.toMetadata() }
         } ?: throw HankeNotFoundException(hankeTunnus)
 
     @Transactional(readOnly = true)
@@ -154,7 +154,7 @@ class HankeService(
         hankeLoggingService.logDelete(hanke, userId)
     }
 
-    private fun anyNonCancelledHakemusProcessingInAllu(hakemukset: List<Application>): Boolean =
+    private fun anyNonCancelledHakemusProcessingInAllu(hakemukset: List<HakemusMetaData>): Boolean =
         hakemukset.any {
             logger.info { "Hakemus ${it.id} has alluStatus ${it.alluStatus}" }
             !hakemusService.isStillPending(it.alluid, it.alluStatus) &&
