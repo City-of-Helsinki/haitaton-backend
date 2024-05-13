@@ -130,8 +130,6 @@ class HankeEntity(
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
-    @Query("select h.id from HankeEntity h") fun getAllIds(): List<Int>
-
     fun findOneById(id: Int): HankeIdentifier?
 
     fun findOneByHankeTunnus(hankeTunnus: String): HankeIdentifier?
