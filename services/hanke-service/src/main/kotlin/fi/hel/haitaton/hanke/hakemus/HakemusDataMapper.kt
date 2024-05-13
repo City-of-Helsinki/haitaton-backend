@@ -20,16 +20,18 @@ object HakemusDataMapper {
 
     fun HakemusData.toAlluData(hankeTunnus: String): AlluApplicationData =
         when (this) {
-            is JohtoselvityshakemusData -> toAlluData(hankeTunnus)
-            is KaivuilmoitusData -> toAlluData(hankeTunnus)
+            is JohtoselvityshakemusData -> toAlluCableReportData(hankeTunnus)
+            is KaivuilmoitusData -> toAlluExcavationNotificationData(hankeTunnus)
         }
 
-    fun JohtoselvityshakemusData.toAlluData(hankeTunnus: String): AlluCableReportApplicationData {
+    fun JohtoselvityshakemusData.toAlluCableReportData(
+        hankeTunnus: String
+    ): AlluCableReportApplicationData {
         val description = workDescription()
         return AlluCableReportApplicationData(
             name = name,
             customerWithContacts =
-                customerWithContacts.orThrow(path("customerWithContacts")).toAlluData(),
+                customerWithContacts.orThrow(path("customerWithContacts")).toAlluCustomer(),
             geometry = this.getGeometries(),
             startTime = startTime.orThrow(path("startTime")),
             endTime = endTime.orThrow(path("endTime")),
@@ -38,13 +40,13 @@ object HakemusDataMapper {
             clientApplicationKind = description, // intentionally copied here
             workDescription = description,
             contractorWithContacts =
-                contractorWithContacts.orThrow(path("contractorWithContacts")).toAlluData(),
+                contractorWithContacts.orThrow(path("contractorWithContacts")).toAlluCustomer(),
             postalAddress = postalAddress?.toAlluData(),
-            representativeWithContacts = representativeWithContacts?.toAlluData(),
+            representativeWithContacts = representativeWithContacts?.toAlluCustomer(),
             invoicingCustomer = null,
             customerReference = null,
             area = null,
-            propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toAlluData(),
+            propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toAlluCustomer(),
             constructionWork = constructionWork,
             maintenanceWork = maintenanceWork,
             emergencyWork = emergencyWork,
@@ -52,7 +54,9 @@ object HakemusDataMapper {
         )
     }
 
-    fun KaivuilmoitusData.toAlluData(hankeTunnus: String): AlluExcavationNotificationData {
+    fun KaivuilmoitusData.toAlluExcavationNotificationData(
+        hankeTunnus: String
+    ): AlluExcavationNotificationData {
         return AlluExcavationNotificationData(
             postalAddress =
                 PostalAddress(
@@ -63,8 +67,8 @@ object HakemusDataMapper {
                 ),
             name = name,
             customerWithContacts =
-                customerWithContacts.orThrow(path("customerWithContacts")).toAlluData(),
-            representativeWithContacts = representativeWithContacts?.toAlluData(),
+                customerWithContacts.orThrow(path("customerWithContacts")).toAlluCustomer(),
+            representativeWithContacts = representativeWithContacts?.toAlluCustomer(),
             invoicingCustomer = invoicingCustomer?.toAlluData(),
             geometry = getGeometries(),
             startTime = startTime.orThrow(path("startTime")),
@@ -75,8 +79,8 @@ object HakemusDataMapper {
             area = null, // currently area is not given nor calculated in Haitaton
             clientApplicationKind = workDescription.orThrow(path("workDescription")),
             contractorWithContacts =
-                contractorWithContacts.orThrow(path("contractorWithContacts")).toAlluData(),
-            propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toAlluData(),
+                contractorWithContacts.orThrow(path("contractorWithContacts")).toAlluCustomer(),
+            propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toAlluCustomer(),
             pksCard = null,
             constructionWork = constructionWork,
             maintenanceWork = maintenanceWork,
@@ -116,7 +120,7 @@ object HakemusDataMapper {
         }
     }
 
-    private fun Hakemusyhteystieto.toAlluData(): CustomerWithContacts =
+    fun Hakemusyhteystieto.toAlluCustomer(): CustomerWithContacts =
         CustomerWithContacts(
             Customer(
                 type = tyyppi,
@@ -130,10 +134,10 @@ object HakemusDataMapper {
                 invoicingOperator = null,
                 sapCustomerNumber = null,
             ),
-            yhteyshenkilot.map { it.toAlluData() }
+            yhteyshenkilot.map { it.toAlluContact() }
         )
 
-    private fun Hakemusyhteyshenkilo.toAlluData() =
+    fun Hakemusyhteyshenkilo.toAlluContact() =
         Contact("$etunimi $sukunimi".trim(), sahkoposti, puhelin, tilaaja)
 
     private fun Laskutusyhteystieto.toAlluData(): Customer =

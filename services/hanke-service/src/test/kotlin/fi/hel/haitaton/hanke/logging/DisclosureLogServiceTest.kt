@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
 import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
+import fi.hel.haitaton.hanke.application.toLaskutusyhteystieto
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
@@ -19,8 +20,11 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
+import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusResponseFactory
 import fi.hel.haitaton.hanke.factory.HakemusResponseFactory.withContacts
+import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
+import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
@@ -33,6 +37,10 @@ import fi.hel.haitaton.hanke.gdpr.StringNode
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCableReportData
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluContact
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCustomer
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluExcavationNotificationData
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.reformatJson
 import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.hasAlluActor
@@ -352,25 +360,36 @@ internal class DisclosureLogServiceTest {
         @EnumSource(Status::class)
         fun `saves logs with the given status`(expectedStatus: Status) {
             val applicationId = 41L
-            val application = ApplicationFactory.createCableReportApplicationData()
-            val firstContact = application.customerWithContacts!!.contacts[0].toAlluData()
-            val secondContact = application.contractorWithContacts!!.contacts[0].toAlluData()
+            val hakija = HakemusyhteystietoFactory.create().withYhteyshenkilo()
+            val rakennuttaja = HakemusyhteystietoFactory.create().withYhteyshenkilo()
+            val hakemusData =
+                HakemusFactory.createJohtoselvityshakemusData(
+                    customerWithContacts = hakija,
+                    contractorWithContacts = rakennuttaja,
+                )
             val expectedLogs =
-                listOf(HAKIJA to firstContact, TYON_SUORITTAJA to secondContact).map {
-                    (role, contact) ->
-                    AuditLogEntryFactory.createReadEntryForContact(applicationId, contact, role)
-                        .copy(
-                            status = expectedStatus,
-                            userId = ALLU_AUDIT_LOG_USERID,
-                            userRole = UserRole.SERVICE,
-                        )
-                }
+                listOf(
+                        HAKIJA to hakija.yhteyshenkilot[0],
+                        TYON_SUORITTAJA to rakennuttaja.yhteyshenkilot[0]
+                    )
+                    .map { (role, contact) ->
+                        AuditLogEntryFactory.createReadEntryForContact(
+                                applicationId,
+                                contact.toAlluContact(),
+                                role
+                            )
+                            .copy(
+                                status = expectedStatus,
+                                userId = ALLU_AUDIT_LOG_USERID,
+                                userRole = UserRole.SERVICE,
+                            )
+                    }
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
-                application.toAlluData(hankeTunnus),
+                hakemusData.toAlluCableReportData(hankeTunnus),
                 expectedStatus
             )
 
@@ -381,10 +400,10 @@ internal class DisclosureLogServiceTest {
         @Test
         fun `saves logs for person customers`() {
             val applicationId = 41L
-            val personCustomer = ApplicationFactory.createPersonCustomer().withContacts()
-            val companyCustomer = ApplicationFactory.createCompanyCustomer().withContacts()
-            val application =
-                ApplicationFactory.createCableReportApplicationData(
+            val personCustomer = HakemusyhteystietoFactory.createPerson()
+            val companyCustomer = HakemusyhteystietoFactory.create()
+            val hakemusData =
+                HakemusFactory.createJohtoselvityshakemusData(
                     customerWithContacts = personCustomer,
                     contractorWithContacts = companyCustomer
                 )
@@ -393,7 +412,7 @@ internal class DisclosureLogServiceTest {
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
-                application.toAlluData(hankeTunnus),
+                hakemusData.toAlluCableReportData(hankeTunnus),
                 Status.SUCCESS
             )
 
@@ -403,7 +422,7 @@ internal class DisclosureLogServiceTest {
                 prop(AuditLogEntry::objectAfter).isNull()
                 prop(AuditLogEntry::objectBefore)
                     .isEqualTo(
-                        AlluCustomerWithRole(HAKIJA, personCustomer.customer.toAlluData(""))
+                        AlluCustomerWithRole(HAKIJA, personCustomer.toAlluCustomer().customer)
                             .toJsonString()
                     )
             }
@@ -414,23 +433,22 @@ internal class DisclosureLogServiceTest {
         fun `skips person customers when they have no personal data`() {
             val applicationId = 41L
             val personCustomer =
-                ApplicationFactory.createPersonCustomer(
-                        name = "",
-                        phone = "",
-                        email = "",
-                        registryKey = ""
-                    )
-                    .withContacts()
-            val companyCustomer = ApplicationFactory.createCompanyCustomer().withContacts()
-            val application =
-                ApplicationFactory.createCableReportApplicationData(
+                HakemusyhteystietoFactory.createPerson(
+                    nimi = "",
+                    puhelinnumero = "",
+                    sahkoposti = "",
+                    ytunnus = ""
+                )
+            val companyCustomer = HakemusyhteystietoFactory.create()
+            val hakemusData =
+                HakemusFactory.createJohtoselvityshakemusData(
                     customerWithContacts = personCustomer,
-                    contractorWithContacts = companyCustomer,
+                    contractorWithContacts = companyCustomer
                 )
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
-                application.toAlluData(hankeTunnus),
+                hakemusData.toAlluCableReportData(hankeTunnus),
                 Status.SUCCESS
             )
 
@@ -441,9 +459,11 @@ internal class DisclosureLogServiceTest {
         fun `saves logs with invoicing customer when invoicing customer is a person`() {
             val applicationId = 41L
             val invoicingCustomer = ApplicationFactory.createPersonInvoicingCustomer()
-            val applicationData =
-                ApplicationFactory.createExcavationNotificationData(
-                    invoicingCustomer = invoicingCustomer
+            val hakemusData =
+                HakemusFactory.createKaivuilmoitusData(
+                    customerWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
+                    contractorWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
+                    invoicingCustomer = invoicingCustomer.toLaskutusyhteystieto(null),
                 )
             val expectedLog =
                 AuditLogEntryFactory.createReadEntry(
@@ -463,7 +483,7 @@ internal class DisclosureLogServiceTest {
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
-                applicationData.toAlluData(hankeTunnus),
+                hakemusData.toAlluExcavationNotificationData(hankeTunnus),
                 Status.SUCCESS
             )
 
@@ -477,16 +497,18 @@ internal class DisclosureLogServiceTest {
         fun `saves logs without invoicing customer when invoicing customer is a company`() {
             val applicationId = 41L
             val invoicingCustomer = ApplicationFactory.createCompanyInvoicingCustomer()
-            val applicationData =
-                ApplicationFactory.createExcavationNotificationData(
-                    invoicingCustomer = invoicingCustomer
+            val hakemusData =
+                HakemusFactory.createKaivuilmoitusData(
+                    customerWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
+                    contractorWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
+                    invoicingCustomer = invoicingCustomer.toLaskutusyhteystieto(null),
                 )
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
-                applicationData.toAlluData(hankeTunnus),
+                hakemusData.toAlluExcavationNotificationData(hankeTunnus),
                 Status.SUCCESS
             )
 
