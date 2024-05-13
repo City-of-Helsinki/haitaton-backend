@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.logging
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.containsAtLeast
-import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
@@ -13,20 +12,19 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
 import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
-import fi.hel.haitaton.hanke.application.Contact
-import fi.hel.haitaton.hanke.application.Customer
-import fi.hel.haitaton.hanke.application.CustomerWithContacts
+import fi.hel.haitaton.hanke.application.toLaskutusyhteystieto
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCableReportApplicationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withExcavationNotificationData
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
+import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusResponseFactory
 import fi.hel.haitaton.hanke.factory.HakemusResponseFactory.withContacts
+import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
+import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
@@ -39,6 +37,9 @@ import fi.hel.haitaton.hanke.gdpr.StringNode
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCableReportData
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluContact
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.reformatJson
 import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.hasAlluActor
@@ -220,136 +221,6 @@ internal class DisclosureLogServiceTest {
         verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
 
-    @Test
-    fun `saveDisclosureLogsForApplication with null application does nothing`() {
-        disclosureLogService.saveDisclosureLogsForApplication(null, userId)
-
-        verify { auditLogService wasNot Called }
-    }
-
-    @Test
-    fun `saveDisclosureLogsForApplication with company customers and no contacts does nothing`() {
-        val customerWithoutContacts =
-            ApplicationFactory.createCompanyCustomer(name = "First").withContacts()
-        val contractorWithoutContacts =
-            ApplicationFactory.createCompanyCustomer(name = "Second").withContacts()
-        val application =
-            ApplicationFactory.createApplication(
-                applicationData =
-                    ApplicationFactory.createCableReportApplicationData(
-                        customerWithContacts = customerWithoutContacts,
-                        contractorWithContacts = contractorWithoutContacts
-                    ),
-                hankeTunnus = hankeTunnus,
-            )
-
-        disclosureLogService.saveDisclosureLogsForApplication(application, userId)
-
-        verify { auditLogService wasNot Called }
-    }
-
-    @Test
-    fun `saveDisclosureLogsForApplication doesn't save entries for blank contacts`() {
-        val customerWithoutContacts =
-            ApplicationFactory.createCompanyCustomer(name = "First").withContacts()
-        val contractorWithoutContacts =
-            ApplicationFactory.createCompanyCustomer(name = "Second")
-                .withContacts(Contact("", "", "", ""))
-        val application =
-            ApplicationFactory.createApplication(
-                applicationData =
-                    ApplicationFactory.createCableReportApplicationData(
-                        customerWithContacts = customerWithoutContacts,
-                        contractorWithContacts = contractorWithoutContacts
-                    ),
-                hankeTunnus = hankeTunnus,
-            )
-
-        disclosureLogService.saveDisclosureLogsForApplication(application, userId)
-
-        verify { auditLogService wasNot Called }
-    }
-
-    @Test
-    fun `saveDisclosureLogsForApplication doesn't save entries for blank customers`() {
-        val blankCustomer = Customer(type = CustomerType.PERSON, "", null, null, null)
-        val blankCustomerWithCountry = Customer(type = CustomerType.PERSON, "", null, null, null)
-        val customerWithoutContacts = CustomerWithContacts(blankCustomer, listOf())
-        val contractorWithoutContacts = CustomerWithContacts(blankCustomerWithCountry, listOf())
-        val application =
-            ApplicationFactory.createApplication(
-                applicationData =
-                    ApplicationFactory.createCableReportApplicationData(
-                        customerWithContacts = customerWithoutContacts,
-                        contractorWithContacts = contractorWithoutContacts
-                    ),
-                hankeTunnus = hankeTunnus,
-            )
-
-        disclosureLogService.saveDisclosureLogsForApplication(application, userId)
-
-        verify { auditLogService wasNot Called }
-    }
-
-    @Test
-    fun `saveDisclosureLogsForApplication with identical person customers logs every instance`() {
-        val customerWithoutContacts =
-            CustomerWithContacts(ApplicationFactory.createPersonCustomer(), listOf())
-        val application =
-            ApplicationFactory.createApplication(
-                applicationData =
-                    ApplicationFactory.createCableReportApplicationData(
-                        customerWithContacts = customerWithoutContacts,
-                        contractorWithContacts = customerWithoutContacts,
-                    ),
-                hankeTunnus = hankeTunnus,
-            )
-        val capturedLogs = slot<Collection<AuditLogEntry>>()
-        every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
-
-        disclosureLogService.saveDisclosureLogsForApplication(application, userId)
-
-        val expectedLogs =
-            listOf(HAKIJA, TYON_SUORITTAJA).map {
-                AuditLogEntryFactory.createReadEntryForCustomer(
-                    application.id,
-                    customerWithoutContacts.customer,
-                    it
-                )
-            }
-        assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
-        verify(exactly = 1) { auditLogService.createAll(any()) }
-    }
-
-    @Test
-    fun `saveDisclosureLogsForApplication with contacts logs contacts`() {
-        val applicationId = 41L
-        val cableReportApplication = ApplicationFactory.createCableReportApplicationData()
-        val firstContact = cableReportApplication.customerWithContacts!!.contacts[0]
-        val secondContact = cableReportApplication.contractorWithContacts!!.contacts[0]
-        val application =
-            ApplicationFactory.createApplication(
-                id = applicationId,
-                applicationData = cableReportApplication,
-                hankeTunnus = hankeTunnus
-            )
-        val capturedLogs = slot<Collection<AuditLogEntry>>()
-        every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
-
-        disclosureLogService.saveDisclosureLogsForApplication(application, userId)
-
-        assertThat(capturedLogs.captured)
-            .containsAtLeast(
-                AuditLogEntryFactory.createReadEntryForContact(applicationId, firstContact, HAKIJA),
-                AuditLogEntryFactory.createReadEntryForContact(
-                    applicationId,
-                    secondContact,
-                    TYON_SUORITTAJA
-                ),
-            )
-        verify(exactly = 1) { auditLogService.createAll(any()) }
-    }
-
     @Nested
     inner class SaveDisclosureLogsForHakemusResponse {
         @Test
@@ -488,25 +359,36 @@ internal class DisclosureLogServiceTest {
         @EnumSource(Status::class)
         fun `saves logs with the given status`(expectedStatus: Status) {
             val applicationId = 41L
-            val application = ApplicationFactory.createCableReportApplicationData()
-            val firstContact = application.customerWithContacts!!.contacts[0].toAlluData()
-            val secondContact = application.contractorWithContacts!!.contacts[0].toAlluData()
+            val hakija = HakemusyhteystietoFactory.create().withYhteyshenkilo()
+            val rakennuttaja = HakemusyhteystietoFactory.create().withYhteyshenkilo()
+            val hakemusData =
+                HakemusFactory.createJohtoselvityshakemusData(
+                    customerWithContacts = hakija,
+                    contractorWithContacts = rakennuttaja,
+                )
             val expectedLogs =
-                listOf(HAKIJA to firstContact, TYON_SUORITTAJA to secondContact).map {
-                    (role, contact) ->
-                    AuditLogEntryFactory.createReadEntryForContact(applicationId, contact, role)
-                        .copy(
-                            status = expectedStatus,
-                            userId = ALLU_AUDIT_LOG_USERID,
-                            userRole = UserRole.SERVICE,
-                        )
-                }
+                listOf(
+                        HAKIJA to hakija.yhteyshenkilot[0],
+                        TYON_SUORITTAJA to rakennuttaja.yhteyshenkilot[0]
+                    )
+                    .map { (role, contact) ->
+                        AuditLogEntryFactory.createReadEntryForContact(
+                                applicationId,
+                                contact.toAlluContact(),
+                                role
+                            )
+                            .copy(
+                                status = expectedStatus,
+                                userId = ALLU_AUDIT_LOG_USERID,
+                                userRole = UserRole.SERVICE,
+                            )
+                    }
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
-                application.toAlluData(hankeTunnus),
+                hakemusData.toAlluCableReportData(hankeTunnus),
                 expectedStatus
             )
 
@@ -517,10 +399,10 @@ internal class DisclosureLogServiceTest {
         @Test
         fun `saves logs for person customers`() {
             val applicationId = 41L
-            val personCustomer = ApplicationFactory.createPersonCustomer().withContacts()
-            val companyCustomer = ApplicationFactory.createCompanyCustomer().withContacts()
-            val application =
-                ApplicationFactory.createCableReportApplicationData(
+            val personCustomer = HakemusyhteystietoFactory.createPerson()
+            val companyCustomer = HakemusyhteystietoFactory.create()
+            val hakemusData =
+                HakemusFactory.createJohtoselvityshakemusData(
                     customerWithContacts = personCustomer,
                     contractorWithContacts = companyCustomer
                 )
@@ -529,7 +411,7 @@ internal class DisclosureLogServiceTest {
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
-                application.toAlluData(hankeTunnus),
+                hakemusData.toAlluCableReportData(hankeTunnus),
                 Status.SUCCESS
             )
 
@@ -539,7 +421,7 @@ internal class DisclosureLogServiceTest {
                 prop(AuditLogEntry::objectAfter).isNull()
                 prop(AuditLogEntry::objectBefore)
                     .isEqualTo(
-                        AlluCustomerWithRole(HAKIJA, personCustomer.customer.toAlluData(""))
+                        AlluCustomerWithRole(HAKIJA, personCustomer.toAlluData().customer)
                             .toJsonString()
                     )
             }
@@ -550,23 +432,22 @@ internal class DisclosureLogServiceTest {
         fun `skips person customers when they have no personal data`() {
             val applicationId = 41L
             val personCustomer =
-                ApplicationFactory.createPersonCustomer(
-                        name = "",
-                        phone = "",
-                        email = "",
-                        registryKey = ""
-                    )
-                    .withContacts()
-            val companyCustomer = ApplicationFactory.createCompanyCustomer().withContacts()
-            val application =
-                ApplicationFactory.createCableReportApplicationData(
+                HakemusyhteystietoFactory.createPerson(
+                    nimi = "",
+                    puhelinnumero = "",
+                    sahkoposti = "",
+                    ytunnus = ""
+                )
+            val companyCustomer = HakemusyhteystietoFactory.create()
+            val hakemusData =
+                HakemusFactory.createJohtoselvityshakemusData(
                     customerWithContacts = personCustomer,
-                    contractorWithContacts = companyCustomer,
+                    contractorWithContacts = companyCustomer
                 )
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
-                application.toAlluData(hankeTunnus),
+                hakemusData.toAlluCableReportData(hankeTunnus),
                 Status.SUCCESS
             )
 
@@ -577,9 +458,11 @@ internal class DisclosureLogServiceTest {
         fun `saves logs with invoicing customer when invoicing customer is a person`() {
             val applicationId = 41L
             val invoicingCustomer = ApplicationFactory.createPersonInvoicingCustomer()
-            val applicationData =
-                ApplicationFactory.createExcavationNotificationData(
-                    invoicingCustomer = invoicingCustomer
+            val hakemusData =
+                HakemusFactory.createKaivuilmoitusData(
+                    customerWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
+                    contractorWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
+                    invoicingCustomer = invoicingCustomer.toLaskutusyhteystieto(null),
                 )
             val expectedLog =
                 AuditLogEntryFactory.createReadEntry(
@@ -599,7 +482,7 @@ internal class DisclosureLogServiceTest {
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
-                applicationData.toAlluData(hankeTunnus),
+                hakemusData.toAlluData(hankeTunnus),
                 Status.SUCCESS
             )
 
@@ -613,16 +496,18 @@ internal class DisclosureLogServiceTest {
         fun `saves logs without invoicing customer when invoicing customer is a company`() {
             val applicationId = 41L
             val invoicingCustomer = ApplicationFactory.createCompanyInvoicingCustomer()
-            val applicationData =
-                ApplicationFactory.createExcavationNotificationData(
-                    invoicingCustomer = invoicingCustomer
+            val hakemusData =
+                HakemusFactory.createKaivuilmoitusData(
+                    customerWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
+                    contractorWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
+                    invoicingCustomer = invoicingCustomer.toLaskutusyhteystieto(null),
                 )
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
-                applicationData.toAlluData(hankeTunnus),
+                hakemusData.toAlluData(hankeTunnus),
                 Status.SUCCESS
             )
 
@@ -631,69 +516,6 @@ internal class DisclosureLogServiceTest {
             assertThat(customerLogs).isEmpty()
             verifySequence { auditLogService.createAll(any()) }
         }
-    }
-
-    @Test
-    fun `saveDisclosureLogsForApplications logs customers and contacts from all applications while ignoring duplicates`() {
-        val contacts =
-            (1..8).map { ApplicationFactory.createContact(firstName = "Contact", lastName = "$it") }
-        val customers =
-            (1..4).map { ApplicationFactory.createPersonCustomer(name = "Customer $it") }
-        val customersWithContacts =
-            customers.withIndex().map { (i, customer) ->
-                CustomerWithContacts(
-                    customer,
-                    listOf(contacts[2 * i], contacts[2 * i + 1], contacts[0])
-                )
-            }
-        val invoicingCustomer = ApplicationFactory.createPersonInvoicingCustomer()
-        val applications =
-            listOf(
-                ApplicationFactory.createApplication(id = 1, hankeTunnus = hankeTunnus)
-                    .withCableReportApplicationData(
-                        customerWithContacts = customersWithContacts[0],
-                        contractorWithContacts = customersWithContacts[1],
-                    ),
-                ApplicationFactory.createApplication(id = 2, hankeTunnus = hankeTunnus)
-                    .withExcavationNotificationData(
-                        customerWithContacts = customersWithContacts[2],
-                        contractorWithContacts = customersWithContacts[3],
-                        invoicingCustomer = invoicingCustomer,
-                    )
-            )
-        val capturedLogs = slot<Collection<AuditLogEntry>>()
-        every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
-
-        disclosureLogService.saveDisclosureLogsForApplications(applications, userId)
-
-        assertThat(capturedLogs.captured)
-            .containsExactlyInAnyOrder(
-                AuditLogEntryFactory.createReadEntryForCustomer(1, customers[0], HAKIJA),
-                // The first contact is added twice for the first customer, but identical entries
-                // are logged only once
-                AuditLogEntryFactory.createReadEntryForContact(1, contacts[0], HAKIJA),
-                AuditLogEntryFactory.createReadEntryForContact(1, contacts[1], HAKIJA),
-                AuditLogEntryFactory.createReadEntryForCustomer(1, customers[1], TYON_SUORITTAJA),
-                AuditLogEntryFactory.createReadEntryForContact(1, contacts[0], TYON_SUORITTAJA),
-                AuditLogEntryFactory.createReadEntryForContact(1, contacts[2], TYON_SUORITTAJA),
-                AuditLogEntryFactory.createReadEntryForContact(1, contacts[3], TYON_SUORITTAJA),
-                AuditLogEntryFactory.createReadEntryForCustomer(2, customers[2], HAKIJA),
-                AuditLogEntryFactory.createReadEntryForContact(2, contacts[0], HAKIJA),
-                AuditLogEntryFactory.createReadEntryForContact(2, contacts[4], HAKIJA),
-                AuditLogEntryFactory.createReadEntryForContact(2, contacts[5], HAKIJA),
-                AuditLogEntryFactory.createReadEntryForCustomer(2, customers[3], TYON_SUORITTAJA),
-                AuditLogEntryFactory.createReadEntryForContact(2, contacts[0], TYON_SUORITTAJA),
-                AuditLogEntryFactory.createReadEntryForContact(2, contacts[6], TYON_SUORITTAJA),
-                AuditLogEntryFactory.createReadEntryForContact(2, contacts[7], TYON_SUORITTAJA),
-            )
-        verify(exactly = 1) { auditLogService.createAll(any()) }
-    }
-
-    @Test
-    fun `saveDisclosureLogsForApplications with company customers and no contacts does nothing`() {
-        disclosureLogService.saveDisclosureLogsForApplications(listOf(), userId)
-
-        verify { auditLogService wasNot Called }
     }
 
     @Nested

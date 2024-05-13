@@ -20,8 +20,8 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
-import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import fi.hel.haitaton.hanke.hakemus.HakemusAuthorizer
+import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.test.USERNAME

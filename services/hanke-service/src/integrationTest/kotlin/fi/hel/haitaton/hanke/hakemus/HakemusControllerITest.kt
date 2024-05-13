@@ -669,8 +669,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { hakemusService.sendHakemus(id, USERNAME) } throws
-                HakemusNotFoundException(id)
+            every { hakemusService.sendHakemus(id, USERNAME) } throws HakemusNotFoundException(id)
 
             post(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2001))
 

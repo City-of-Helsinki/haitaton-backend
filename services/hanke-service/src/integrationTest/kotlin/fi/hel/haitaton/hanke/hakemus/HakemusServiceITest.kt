@@ -80,7 +80,7 @@ import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.getResourceAsBytes
-import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCableReportData
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AlluContactWithRole
 import fi.hel.haitaton.hanke.logging.AlluCustomerWithRole
@@ -518,7 +518,6 @@ class HakemusServiceITest(
                             .isEqualTo(ApplicationType.CABLE_REPORT)
                         prop(ApplicationData::pendingOnClient).isTrue()
                         prop(ApplicationData::areas).isNull()
-                        prop(ApplicationData::customersWithContacts).isEmpty()
                         prop(CableReportApplicationData::startTime).isNull()
                         prop(CableReportApplicationData::endTime).isNull()
                     }
@@ -1455,7 +1454,7 @@ class HakemusServiceITest(
             val applicationData =
                 (hakemus.applicationData as JohtoselvityshakemusData)
                     .setOrdererForContractor(founder.id)
-                    .toAlluData(hanke.hankeTunnus)
+                    .toAlluCableReportData(hanke.hankeTunnus)
                     .copy(pendingOnClient = false)
             every { alluClient.create(applicationData) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
@@ -1605,7 +1604,8 @@ class HakemusServiceITest(
             val hakemusData = hakemus.applicationData as JohtoselvityshakemusData
             val expectedDataAfterSend =
                 hakemusData.copy(pendingOnClient = false).setOrdererForContractor(founder.id)
-            val expectedAlluRequest = expectedDataAfterSend.toAlluData(hakemus.hankeTunnus)
+            val expectedAlluRequest =
+                expectedDataAfterSend.toAlluCableReportData(hakemus.hankeTunnus)
             every { alluClient.create(expectedAlluRequest) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
             justRun { alluClient.addAttachments(alluId, any(), any()) }
@@ -1653,7 +1653,8 @@ class HakemusServiceITest(
             val hakemusData = hakemus.applicationData as JohtoselvityshakemusData
             val expectedDataAfterSend =
                 hakemusData.copy(pendingOnClient = false).setOrdererForCustomer(founder.id)
-            val expectedAlluRequest = expectedDataAfterSend.toAlluData(hakemus.hankeTunnus)
+            val expectedAlluRequest =
+                expectedDataAfterSend.toAlluCableReportData(hakemus.hankeTunnus)
             every { alluClient.create(expectedAlluRequest) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
             every { alluClient.getApplicationInformation(alluId) } returns
@@ -1953,8 +1954,7 @@ class HakemusServiceITest(
         @Test
         fun `when no decision in Allu should throw`() {
             val hakemus = hakemusFactory.builder().inHandling(alluId = alluId).save()
-            every { alluClient.getDecisionPdf(alluId) }
-                .throws(HakemusDecisionNotFoundException(""))
+            every { alluClient.getDecisionPdf(alluId) }.throws(HakemusDecisionNotFoundException(""))
 
             val failure = assertFailure { hakemusService.downloadDecision(hakemus.id, USERNAME) }
 

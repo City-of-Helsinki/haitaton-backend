@@ -132,14 +132,6 @@ class ApplicationFactory(
                 invoicingOperator = null,
             )
 
-        fun ApplicationEntity.withCustomer(customer: CustomerWithContacts): ApplicationEntity {
-            applicationData =
-                (applicationData as CableReportApplicationData).copy(
-                    customerWithContacts = customer
-                )
-            return this
-        }
-
         fun Customer.withContacts(vararg contacts: Contact): CustomerWithContacts =
             CustomerWithContacts(this, contacts.asList())
 

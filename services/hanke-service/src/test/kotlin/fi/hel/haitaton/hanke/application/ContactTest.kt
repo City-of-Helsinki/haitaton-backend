@@ -1,16 +1,8 @@
 package fi.hel.haitaton.hanke.application
 
 import assertk.assertThat
-import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
-import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createContact
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import java.util.stream.Stream
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -57,46 +49,6 @@ class ContactTest {
         val contact =
             Contact(firstName = null, lastName = null, email = DUMMY_EMAIL, phone = DUMMY_PHONE)
         assertThat(contact.fullName()).isNull()
-    }
-
-    @Test
-    fun `findOrderer when orderer contact exists should return it`() {
-        val applicationData =
-            ApplicationFactory.createCableReportApplicationData(
-                representativeWithContacts =
-                    ApplicationFactory.createCompanyCustomer().withContacts(createContact()),
-                propertyDeveloperWithContacts =
-                    ApplicationFactory.createCompanyCustomer().withContacts(createContact()),
-            )
-
-        val result = applicationData.findOrderer()
-
-        val allContacts = applicationData.customersWithContacts().flatMap { it.contacts }
-        assertThat(allContacts).hasSize(4)
-        val expectedResult =
-            Contact(
-                firstName = TEPPO,
-                lastName = TESTIHENKILO,
-                email = TEPPO_EMAIL,
-                phone = TEPPO_PHONE,
-                orderer = true,
-            )
-        assertThat(result).isEqualTo(expectedResult)
-    }
-
-    @Test
-    fun `findOrderer when no orderer contact exists should return null`() {
-        val applicationData =
-            ApplicationFactory.createCableReportApplicationData(
-                customerWithContacts =
-                    ApplicationFactory.createCompanyCustomer().withContacts(createContact())
-            )
-
-        val result = applicationData.findOrderer()
-
-        val allContacts = applicationData.customersWithContacts().flatMap { it.contacts }
-        assertThat(allContacts).hasSize(2)
-        assertThat(result).isNull()
     }
 
     @ParameterizedTest

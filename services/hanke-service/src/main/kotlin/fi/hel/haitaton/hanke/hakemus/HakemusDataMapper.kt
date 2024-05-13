@@ -20,11 +20,13 @@ object HakemusDataMapper {
 
     fun HakemusData.toAlluData(hankeTunnus: String): AlluApplicationData =
         when (this) {
-            is JohtoselvityshakemusData -> toAlluData(hankeTunnus)
+            is JohtoselvityshakemusData -> toAlluCableReportData(hankeTunnus)
             is KaivuilmoitusData -> toAlluData(hankeTunnus)
         }
 
-    fun JohtoselvityshakemusData.toAlluData(hankeTunnus: String): AlluCableReportApplicationData {
+    fun JohtoselvityshakemusData.toAlluCableReportData(
+        hankeTunnus: String
+    ): AlluCableReportApplicationData {
         val description = workDescription()
         return AlluCableReportApplicationData(
             name = name,
@@ -116,7 +118,7 @@ object HakemusDataMapper {
         }
     }
 
-    private fun Hakemusyhteystieto.toAlluData(): CustomerWithContacts =
+    fun Hakemusyhteystieto.toAlluData(): CustomerWithContacts =
         CustomerWithContacts(
             Customer(
                 type = tyyppi,
@@ -130,10 +132,10 @@ object HakemusDataMapper {
                 invoicingOperator = null,
                 sapCustomerNumber = null,
             ),
-            yhteyshenkilot.map { it.toAlluData() }
+            yhteyshenkilot.map { it.toAlluContact() }
         )
 
-    private fun Hakemusyhteyshenkilo.toAlluData() =
+    fun Hakemusyhteyshenkilo.toAlluContact() =
         Contact("$etunimi $sukunimi".trim(), sahkoposti, puhelin, tilaaja)
 
     private fun Laskutusyhteystieto.toAlluData(): Customer =
