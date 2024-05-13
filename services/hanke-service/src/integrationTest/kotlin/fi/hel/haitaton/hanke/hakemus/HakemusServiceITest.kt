@@ -497,13 +497,13 @@ class HakemusServiceITest(
             hakemusService.createJohtoselvitys(hanke, USERNAME)
 
             assertThat(applicationRepository.findAll()).single().all {
-                prop(ApplicationEntity::id).isNotNull()
-                prop(ApplicationEntity::alluid).isNull()
-                prop(ApplicationEntity::alluStatus).isNull()
-                prop(ApplicationEntity::applicationIdentifier).isNull()
-                prop(ApplicationEntity::userId).isEqualTo(USERNAME)
-                prop(ApplicationEntity::applicationType).isEqualTo(ApplicationType.CABLE_REPORT)
-                prop(ApplicationEntity::applicationData)
+                prop(HakemusEntity::id).isNotNull()
+                prop(HakemusEntity::alluid).isNull()
+                prop(HakemusEntity::alluStatus).isNull()
+                prop(HakemusEntity::applicationIdentifier).isNull()
+                prop(HakemusEntity::userId).isEqualTo(USERNAME)
+                prop(HakemusEntity::applicationType).isEqualTo(ApplicationType.CABLE_REPORT)
+                prop(HakemusEntity::applicationData)
                     .isInstanceOf(CableReportApplicationData::class)
                     .all {
                         prop(ApplicationData::name).isEqualTo(hakemusNimi)
@@ -1508,10 +1508,10 @@ class HakemusServiceITest(
                 prop(Hakemus::alluStatus).isNull()
             }
             assertThat(applicationRepository.getReferenceById(application.id)).all {
-                prop(ApplicationEntity::alluid).isEqualTo(alluId)
-                prop(ApplicationEntity::applicationData).isEqualTo(expectedDataAfterSend)
-                prop(ApplicationEntity::applicationIdentifier).isNull()
-                prop(ApplicationEntity::alluStatus).isNull()
+                prop(HakemusEntity::alluid).isEqualTo(alluId)
+                prop(HakemusEntity::applicationData).isEqualTo(expectedDataAfterSend)
+                prop(HakemusEntity::applicationIdentifier).isNull()
+                prop(HakemusEntity::alluStatus).isNull()
             }
 
             verifySequence {
@@ -1615,10 +1615,10 @@ class HakemusServiceITest(
                 prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
             }
             assertThat(applicationRepository.getReferenceById(hakemus.id)).all {
-                prop(ApplicationEntity::alluid).isEqualTo(alluId)
-                prop(ApplicationEntity::applicationIdentifier)
+                prop(HakemusEntity::alluid).isEqualTo(alluId)
+                prop(HakemusEntity::applicationIdentifier)
                     .isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_IDENTIFIER)
-                prop(ApplicationEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+                prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
             }
             verifySequence {
                 alluClient.create(expectedAlluRequest)
@@ -1888,7 +1888,7 @@ class HakemusServiceITest(
             assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
             assertThat(applicationRepository.findAll())
                 .single()
-                .prop(ApplicationEntity::id)
+                .prop(HakemusEntity::id)
                 .isEqualTo(hakemus2.id)
             assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus)).isNotNull()
         }
@@ -2243,7 +2243,7 @@ class HakemusServiceITest(
             val application = applicationRepository.getOneByAlluid(alluId)
             assertThat(application)
                 .isNotNull()
-                .prop("alluStatus", ApplicationEntity::alluStatus)
+                .prop("alluStatus", HakemusEntity::alluStatus)
                 .isEqualTo(ApplicationStatus.HANDLING)
             assertThat(application!!.applicationIdentifier).isEqualTo(identifier)
         }

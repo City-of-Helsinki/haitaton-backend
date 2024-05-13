@@ -6,11 +6,11 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.hakemus.ApplicationData
-import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
 import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
@@ -53,11 +53,11 @@ class HakemusFactory(
 
     private fun builder(
         userId: String,
-        applicationEntity: ApplicationEntity,
+        hakemusEntity: HakemusEntity,
         hankeId: Int,
     ): HakemusBuilder =
         HakemusBuilder(
-            applicationEntity,
+            hakemusEntity,
             hankeId,
             userId,
             this,
@@ -188,8 +188,8 @@ class HakemusFactory(
             applicationData: ApplicationData =
                 ApplicationFactory.createBlankApplicationData(applicationType),
             hanke: HankeEntity,
-        ): ApplicationEntity =
-            ApplicationEntity(
+        ): HakemusEntity =
+            HakemusEntity(
                 id = id,
                 alluid = alluid,
                 alluStatus = alluStatus,
