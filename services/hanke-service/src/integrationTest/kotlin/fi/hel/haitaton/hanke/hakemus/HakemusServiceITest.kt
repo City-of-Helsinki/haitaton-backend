@@ -40,7 +40,6 @@ import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
 import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.CableReportApplicationData

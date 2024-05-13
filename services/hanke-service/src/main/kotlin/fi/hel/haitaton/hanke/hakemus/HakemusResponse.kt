@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.PostalAddress
-import fi.hel.haitaton.hanke.application.isNullOrBlank
 import java.time.ZonedDateTime
 import java.util.UUID
 
