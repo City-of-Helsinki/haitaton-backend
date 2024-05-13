@@ -43,7 +43,6 @@ import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
@@ -1370,7 +1369,7 @@ class HakemusServiceITest(
     inner class SendHakemus {
         private val alluId = 35124
 
-        private val areaOutsideDefaultHanke: CableReportApplicationArea =
+        private val areaOutsideDefaultHanke: JohtoselvitysHakemusalue =
             ApplicationFactory.createCableReportApplicationArea(
                 geometry = GeometriaFactory.thirdPolygon
             )

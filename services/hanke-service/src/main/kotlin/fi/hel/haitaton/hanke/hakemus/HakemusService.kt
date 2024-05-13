@@ -15,15 +15,12 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
@@ -587,7 +584,7 @@ class HakemusService(
 
     /** Assert that the geometries are valid. */
     private fun assertGeometryValidity(
-        areas: List<ApplicationArea>?,
+        areas: List<Hakemusalue>?,
         customMessageOnFailure: (GeometriatDao.InvalidDetail) -> String
     ) {
         if (areas != null) {
@@ -673,13 +670,13 @@ class HakemusService(
     /** Assert that the geometries are compatible with the hanke area geometries. */
     private fun assertGeometryCompatibility(
         hankeId: Int,
-        areas: List<ApplicationArea>,
+        areas: List<Hakemusalue>,
         customMessageOnFailure: (Polygon) -> String
     ) {
         areas.forEach { area ->
             when (area) {
                 // for cable report we check that the geometry is inside any of the hanke areas
-                is CableReportApplicationArea -> {
+                is JohtoselvitysHakemusalue -> {
                     if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
                         throw HakemusGeometryNotInsideHankeException(
                             customMessageOnFailure(area.geometry)
@@ -687,7 +684,7 @@ class HakemusService(
                 }
                 // for excavation notification we check that all the tyoalue geometries are inside
                 // the same hanke area
-                is ExcavationNotificationArea -> {
+                is KaivuilmoitusAlue -> {
                     area.tyoalueet.forEach { tyoalue ->
                         if (!geometriatDao.isInsideHankeAlue(area.hankealueId, tyoalue.geometry))
                             throw HakemusGeometryNotInsideHankeException(

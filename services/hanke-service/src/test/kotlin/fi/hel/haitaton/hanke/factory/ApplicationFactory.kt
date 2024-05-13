@@ -6,16 +6,16 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.application.InvoicingCustomer
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
-import fi.hel.haitaton.hanke.application.Tyoalue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
+import fi.hel.haitaton.hanke.hakemus.Tyoalue
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
@@ -90,7 +90,7 @@ class ApplicationFactory(
         fun createCableReportApplicationArea(
             name: String = "Alue",
             geometry: Polygon = GeometriaFactory.secondPolygon,
-        ): CableReportApplicationArea = CableReportApplicationArea(name, geometry)
+        ): JohtoselvitysHakemusalue = JohtoselvitysHakemusalue(name, geometry)
 
         fun createExcavationNotificationArea(
             name: String = "Alue",
@@ -106,8 +106,8 @@ class ApplicationFactory(
             kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus =
                 AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA,
             lisatiedot: String = "Lisätiedot",
-        ): ExcavationNotificationArea =
-            ExcavationNotificationArea(
+        ): KaivuilmoitusAlue =
+            KaivuilmoitusAlue(
                 name,
                 hankealueId,
                 tyoalueet,
@@ -142,7 +142,7 @@ class ApplicationFactory(
 
         fun createCableReportApplicationData(
             name: String = DEFAULT_APPLICATION_NAME,
-            areas: List<CableReportApplicationArea>? = listOf(createCableReportApplicationArea()),
+            areas: List<JohtoselvitysHakemusalue>? = listOf(createCableReportApplicationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
@@ -185,7 +185,7 @@ class ApplicationFactory(
             cableReports: List<String>? = null,
             placementContracts: List<String>? = null,
             requiredCompetence: Boolean = false,
-            areas: List<ExcavationNotificationArea>? = listOf(createExcavationNotificationArea()),
+            areas: List<KaivuilmoitusAlue>? = listOf(createExcavationNotificationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             invoicingCustomer: InvoicingCustomer? = createCompanyInvoicingCustomer(),

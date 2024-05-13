@@ -8,8 +8,11 @@ import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
+import fi.hel.haitaton.hanke.hakemus.Hakemusalue
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
 import java.time.ZonedDateTime
@@ -38,7 +41,7 @@ sealed interface ApplicationData {
     val name: String
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
-    val areas: List<ApplicationArea>?
+    val areas: List<Hakemusalue>?
 
     fun copy(pendingOnClient: Boolean): ApplicationData
 }
@@ -57,7 +60,7 @@ data class CableReportApplicationData(
     val workDescription: String,
     override val startTime: ZonedDateTime?,
     override val endTime: ZonedDateTime?,
-    override val areas: List<CableReportApplicationArea>?,
+    override val areas: List<JohtoselvitysHakemusalue>?,
 ) : ApplicationData {
     override fun copy(pendingOnClient: Boolean): CableReportApplicationData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
@@ -101,7 +104,7 @@ data class ExcavationNotificationData(
     val requiredCompetence: Boolean? = false, // oltava true, jotta voi lähettää
     override val startTime: ZonedDateTime?,
     override val endTime: ZonedDateTime?,
-    override val areas: List<ExcavationNotificationArea>?,
+    override val areas: List<KaivuilmoitusAlue>?,
     val invoicingCustomer: InvoicingCustomer? = null,
     val customerReference: String? = null,
     val additionalInfo: String? = null,

@@ -1,9 +1,6 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.domain.HasId
 import java.time.ZonedDateTime
@@ -51,7 +48,7 @@ sealed interface HakemusData {
     val pendingOnClient: Boolean
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
-    val areas: List<ApplicationArea>?
+    val areas: List<Hakemusalue>?
     val customerWithContacts: Hakemusyhteystieto?
 
     fun toResponse(): HakemusDataResponse
@@ -72,7 +69,7 @@ data class JohtoselvityshakemusData(
     override val startTime: ZonedDateTime? = null,
     override val endTime: ZonedDateTime? = null,
     override val pendingOnClient: Boolean,
-    override val areas: List<CableReportApplicationArea>? = null,
+    override val areas: List<JohtoselvitysHakemusalue>? = null,
     override val customerWithContacts: Hakemusyhteystieto? = null,
     val contractorWithContacts: Hakemusyhteystieto? = null,
     val propertyDeveloperWithContacts: Hakemusyhteystieto? = null,
@@ -123,7 +120,7 @@ data class KaivuilmoitusData(
     val requiredCompetence: Boolean = false,
     override val startTime: ZonedDateTime? = null,
     override val endTime: ZonedDateTime? = null,
-    override val areas: List<ExcavationNotificationArea>? = null,
+    override val areas: List<KaivuilmoitusAlue>? = null,
     override val customerWithContacts: Hakemusyhteystieto? = null,
     val contractorWithContacts: Hakemusyhteystieto? = null,
     val propertyDeveloperWithContacts: Hakemusyhteystieto? = null,

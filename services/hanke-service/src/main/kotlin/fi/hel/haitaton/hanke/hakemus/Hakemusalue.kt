@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.application
+package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
@@ -9,18 +9,18 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import org.geojson.Polygon
 
-sealed interface ApplicationArea {
+sealed interface Hakemusalue {
     val name: String
 
     fun geometries(): List<Polygon>
 }
 
-data class CableReportApplicationArea(override val name: String, val geometry: Polygon) :
-    ApplicationArea {
+data class JohtoselvitysHakemusalue(override val name: String, val geometry: Polygon) :
+    Hakemusalue {
     override fun geometries(): List<Polygon> = listOf(geometry)
 }
 
-data class ExcavationNotificationArea(
+data class KaivuilmoitusAlue(
     override val name: String,
     val hankealueId: Int,
     val tyoalueet: List<Tyoalue>,
@@ -32,7 +32,7 @@ data class ExcavationNotificationArea(
     val kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
     val kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus,
     val lisatiedot: String?,
-) : ApplicationArea {
+) : Hakemusalue {
     override fun geometries(): List<Polygon> = tyoalueet.map { it.geometry }
 }
 

@@ -4,10 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.isNullOrBlank
 import java.time.ZonedDateTime
@@ -29,7 +26,7 @@ sealed interface HakemusDataResponse {
     val name: String
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
-    val areas: List<ApplicationArea>
+    val areas: List<Hakemusalue>
     val customerWithContacts: CustomerWithContactsResponse?
 
     fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsResponse>
@@ -64,7 +61,7 @@ data class JohtoselvitysHakemusDataResponse(
     /** Työn arvioitu loppupäivä */
     override val endTime: ZonedDateTime?,
     /** Työalueet */
-    override val areas: List<CableReportApplicationArea>,
+    override val areas: List<JohtoselvitysHakemusalue>,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
     override val customerWithContacts: CustomerWithContactsResponse?,
@@ -120,7 +117,7 @@ data class KaivuilmoitusDataResponse(
     /** Työn loppupäivämäärä */
     override val endTime: ZonedDateTime?,
     /** Työalueet */
-    override val areas: List<ExcavationNotificationArea>,
+    override val areas: List<KaivuilmoitusAlue>,
     // 3. sivu Haittojen hallinta - included in areas
     // 4. sivu Yhteystiedot
     /** Hakijan tiedot */

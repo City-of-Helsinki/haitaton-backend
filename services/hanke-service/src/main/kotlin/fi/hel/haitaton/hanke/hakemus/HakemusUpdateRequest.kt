@@ -5,13 +5,10 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.application.InvoicingCustomer
 import fi.hel.haitaton.hanke.application.PostalAddress
@@ -37,7 +34,7 @@ sealed interface HakemusUpdateRequest {
     val workDescription: String
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
-    val areas: List<ApplicationArea>?
+    val areas: List<Hakemusalue>?
     val customerWithContacts: CustomerWithContactsRequest?
     val representativeWithContacts: CustomerWithContactsRequest?
 
@@ -85,7 +82,7 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Työn arvioitu loppupäivä */
     override val endTime: ZonedDateTime? = null,
     /** Työalueet */
-    override val areas: List<CableReportApplicationArea>? = null,
+    override val areas: List<JohtoselvitysHakemusalue>? = null,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
     override val customerWithContacts: CustomerWithContactsRequest? = null,
@@ -187,7 +184,7 @@ data class KaivuilmoitusUpdateRequest(
     /** Työn arvioitu loppupäivä */
     override val endTime: ZonedDateTime? = null,
     /** Työalueet */
-    override val areas: List<ExcavationNotificationArea>? = null,
+    override val areas: List<KaivuilmoitusAlue>? = null,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
     override val customerWithContacts: CustomerWithContactsRequest? = null,

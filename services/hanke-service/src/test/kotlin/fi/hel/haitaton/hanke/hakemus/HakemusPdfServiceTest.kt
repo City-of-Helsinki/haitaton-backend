@@ -6,7 +6,6 @@ import assertk.assertions.contains
 import assertk.assertions.doesNotContain
 import com.lowagie.text.pdf.PdfReader
 import com.lowagie.text.pdf.parser.PdfTextExtractor
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createPostalAddress
@@ -135,9 +134,9 @@ class HakemusPdfServiceTest {
                     endTime = ZonedDateTime.parse("2022-11-28T21:59:59.999Z"),
                     areas =
                         listOf(
-                            CableReportApplicationArea("Ensimmäinen työalue", Polygon()),
-                            CableReportApplicationArea("Toinen alue", Polygon()),
-                            CableReportApplicationArea("", Polygon()),
+                            JohtoselvitysHakemusalue("Ensimmäinen työalue", Polygon()),
+                            JohtoselvitysHakemusalue("Toinen alue", Polygon()),
+                            JohtoselvitysHakemusalue("", Polygon()),
                         )
                 )
 
