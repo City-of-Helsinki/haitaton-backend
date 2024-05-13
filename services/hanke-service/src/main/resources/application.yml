@@ -44,14 +44,12 @@ haitaton:
     disabled: ${HAITATON_GDPR_DISABLED:true}
     issuer: ${HAITATON_GDPR_ISSUER:http://gdpr-api-tester:8888/}
     query-scope: ${HAITATON_GDPR_QUERY_SCOPE:haitaton.gdprquery}
-    # For dev and test environments, enable the testdata controller for resetting data
-  migration:
-    enabled: ${HAITATON_MIGRATION_ENABLED:false}
   profiili-api:
     api-tokens-url: ${PROFIILI_API_TOKENS_URL:https://tunnistamo.test.hel.ninja/api-tokens/}
     graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
     audience: ${PROFIILI_AUDIENCE:https://api.hel.fi/auth/helsinkiprofile}
   testdata:
+    # For dev and test environments, enable the testdata controller for resetting data
     enabled: ${HAITATON_TESTDATA_ENABLED:false}
 
 info:
