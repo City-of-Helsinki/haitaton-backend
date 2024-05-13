@@ -8,8 +8,6 @@ import fi.hel.haitaton.hanke.allu.Customer as AlluCustomer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
-import fi.hel.haitaton.hanke.application.AlluDataError
-import fi.hel.haitaton.hanke.application.AlluDataException
 
 const val DEFAULT_COUNTRY = "FI"
 

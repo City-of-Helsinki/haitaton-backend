@@ -9,10 +9,9 @@ import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
 import fi.hel.haitaton.hanke.allu.PostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress
-import fi.hel.haitaton.hanke.application.AlluDataError.EMPTY_OR_NULL
-import fi.hel.haitaton.hanke.application.AlluDataError.NULL
-import fi.hel.haitaton.hanke.application.AlluDataException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
+import fi.hel.haitaton.hanke.hakemus.AlluDataError.EMPTY_OR_NULL
+import fi.hel.haitaton.hanke.hakemus.AlluDataError.NULL
 import org.geojson.GeometryCollection
 import org.geojson.Polygon
 
