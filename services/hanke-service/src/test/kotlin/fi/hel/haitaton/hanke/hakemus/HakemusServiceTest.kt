@@ -611,12 +611,7 @@ class HakemusServiceTest {
 
     companion object {
         private val applicationData: CableReportApplicationData =
-            ApplicationFactory.createCableReportApplicationData(
-                customerWithContacts = null,
-                contractorWithContacts = null,
-                propertyDeveloperWithContacts = null,
-                representativeWithContacts = null,
-            )
+            ApplicationFactory.createCableReportApplicationData()
 
         @JvmStatic
         private fun invalidData(): Stream<Arguments> =

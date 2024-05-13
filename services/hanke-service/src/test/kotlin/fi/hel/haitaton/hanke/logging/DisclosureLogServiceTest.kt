@@ -18,7 +18,6 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusResponseFactory
@@ -227,7 +226,6 @@ internal class DisclosureLogServiceTest {
         fun `with company customers and no contacts does nothing`() {
             val customerWithoutContacts =
                 HakemusResponseFactory.companyCustomer(name = "First").withContacts()
-            ApplicationFactory.createCompanyCustomer(name = "First").withContacts()
             val contractorWithoutContacts =
                 HakemusResponseFactory.companyCustomer(name = "Second").withContacts()
             val hakemusResponse =

@@ -121,8 +121,6 @@ class HakemusService(
                 applicationType = ApplicationType.CABLE_REPORT,
                 pendingOnClient = true,
                 areas = null,
-                customerWithContacts = null,
-                contractorWithContacts = null,
                 startTime = null,
                 endTime = null,
                 rockExcavation = null,
@@ -315,8 +313,6 @@ class HakemusService(
             startTime = null,
             endTime = null,
             areas = null,
-            customerWithContacts = null,
-            contractorWithContacts = null,
         )
 
     private fun CreateKaivuilmoitusRequest.newExcavationNotificationData() =
@@ -336,8 +332,6 @@ class HakemusService(
             startTime = null,
             endTime = null,
             areas = null,
-            customerWithContacts = null,
-            contractorWithContacts = null,
         )
 
     private fun handleHakemusUpdate(applicationHistory: ApplicationHistory) {

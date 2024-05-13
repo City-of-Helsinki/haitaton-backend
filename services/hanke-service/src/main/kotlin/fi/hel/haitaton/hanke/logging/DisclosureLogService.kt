@@ -7,8 +7,6 @@ import fi.hel.haitaton.hanke.allu.Customer as AlluCustomer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationMetaData
-import fi.hel.haitaton.hanke.application.Contact
-import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
@@ -338,11 +336,6 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     }
 }
 
-data class CustomerWithRole(
-    val role: ApplicationContactType,
-    @JsonUnwrapped val customer: Customer,
-)
-
 data class AlluCustomerWithRole(
     val role: ApplicationContactType,
     @JsonUnwrapped val customer: AlluCustomer,
@@ -356,11 +349,6 @@ data class AlluMetaCustomerWithRole(
 data class CustomerResponseWithRole(
     val role: ApplicationContactType,
     @JsonUnwrapped val customer: CustomerResponse,
-)
-
-data class ContactWithRole(
-    val role: ApplicationContactType,
-    @JsonUnwrapped val contact: Contact,
 )
 
 data class AlluContactWithRole(
