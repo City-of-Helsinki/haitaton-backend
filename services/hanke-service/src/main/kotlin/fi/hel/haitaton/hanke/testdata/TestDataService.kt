@@ -21,7 +21,7 @@ class TestDataService(
             it.alluid = null
             it.alluStatus = null
             it.applicationIdentifier = null
-            it.applicationData = it.applicationData.copy(pendingOnClient = true)
+            it.hakemusEntityData = it.hakemusEntityData.copy(pendingOnClient = true)
         }
     }
 }

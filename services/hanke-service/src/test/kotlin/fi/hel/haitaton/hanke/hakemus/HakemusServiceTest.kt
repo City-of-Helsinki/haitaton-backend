@@ -295,8 +295,8 @@ class HakemusServiceTest {
             expectedSuffix: String
         ) {
             val applicationEntity = applicationEntity()
-            applicationEntity.applicationData =
-                (applicationEntity.applicationData as CableReportApplicationData).copy(
+            applicationEntity.hakemusEntityData =
+                (applicationEntity.hakemusEntityData as JohtoselvityshakemusEntityData).copy(
                     rockExcavation = rockExcavation
                 )
             every { hakemusRepository.findOneById(3) } returns applicationEntity
@@ -336,11 +336,11 @@ class HakemusServiceTest {
         @ParameterizedTest(name = "{1}")
         @MethodSource("fi.hel.haitaton.hanke.hakemus.HakemusServiceTest#invalidData")
         fun `throws exception when application has invalid data`(
-            applicationData: ApplicationData,
+            hakemusEntityData: HakemusEntityData,
             path: String,
         ) {
             val applicationEntity = applicationEntity()
-            applicationEntity.applicationData = applicationData
+            applicationEntity.hakemusEntityData = hakemusEntityData
             every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
@@ -465,7 +465,7 @@ class HakemusServiceTest {
             val applicationEntity =
                 ApplicationFactory.createApplicationEntity(
                     userId = USERNAME,
-                    applicationData = applicationData,
+                    hakemusEntityData = applicationData,
                     hanke = hankeEntity,
                 )
             applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA] =
@@ -603,7 +603,7 @@ class HakemusServiceTest {
     }
 
     companion object {
-        private val applicationData: CableReportApplicationData =
+        private val applicationData: JohtoselvityshakemusEntityData =
             ApplicationFactory.createCableReportApplicationData()
 
         @JvmStatic

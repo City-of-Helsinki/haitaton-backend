@@ -62,10 +62,10 @@ import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.hakemus.ALLU_USER_CANCELLATION_MSG
-import fi.hel.haitaton.hanke.hakemus.ApplicationData
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -1094,8 +1094,8 @@ class HankeServiceITests(
 
             assertThat(hakemusRepository.findAll())
                 .single()
-                .prop(HakemusEntity::applicationData)
-                .prop(ApplicationData::name)
+                .prop(HakemusEntity::hakemusEntityData)
+                .prop(HakemusEntityData::name)
                 .isEqualTo(hakemusNimi)
         }
 

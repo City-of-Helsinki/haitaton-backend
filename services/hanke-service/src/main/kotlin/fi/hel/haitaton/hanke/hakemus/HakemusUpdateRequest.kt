@@ -37,11 +37,11 @@ sealed interface HakemusUpdateRequest {
     fun hasChanges(hakemusEntity: HakemusEntity): Boolean
 
     /**
-     * Converts this update request to an [ApplicationData] object using the given [baseData] as a
+     * Converts this update request to an [HakemusEntityData] object using the given [baseData] as a
      * basis. This means that we take the values in [baseData] and replace only the ones that are
      * defined in this request.
      */
-    fun toApplicationData(baseData: ApplicationData): ApplicationData
+    fun toEntityData(baseData: HakemusEntityData): HakemusEntityData
 
     fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsRequest?>
 }
@@ -89,7 +89,7 @@ data class JohtoselvityshakemusUpdateRequest(
 ) : HakemusUpdateRequest {
 
     override fun hasChanges(hakemusEntity: HakemusEntity): Boolean {
-        val applicationData = hakemusEntity.applicationData as CableReportApplicationData
+        val applicationData = hakemusEntity.hakemusEntityData as JohtoselvityshakemusEntityData
         return name != applicationData.name ||
             (postalAddress?.streetAddress?.streetName ?: "") !=
                 (applicationData.postalAddress?.streetAddress?.streetName ?: "") ||
@@ -116,8 +116,8 @@ data class JohtoselvityshakemusUpdateRequest(
             )
     }
 
-    override fun toApplicationData(baseData: ApplicationData) =
-        (baseData as CableReportApplicationData).copy(
+    override fun toEntityData(baseData: HakemusEntityData) =
+        (baseData as JohtoselvityshakemusEntityData).copy(
             name = this.name,
             postalAddress =
                 PostalAddress(StreetAddress(this.postalAddress?.streetAddress?.streetName), "", ""),
@@ -194,7 +194,7 @@ data class KaivuilmoitusUpdateRequest(
 ) : HakemusUpdateRequest {
 
     override fun hasChanges(hakemusEntity: HakemusEntity): Boolean {
-        val applicationData = hakemusEntity.applicationData as ExcavationNotificationData
+        val applicationData = hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData
         return name != applicationData.name ||
             workDescription != applicationData.workDescription ||
             constructionWork != applicationData.constructionWork ||
@@ -227,8 +227,8 @@ data class KaivuilmoitusUpdateRequest(
             additionalInfo != applicationData.additionalInfo
     }
 
-    override fun toApplicationData(baseData: ApplicationData) =
-        (baseData as ExcavationNotificationData).copy(
+    override fun toEntityData(baseData: HakemusEntityData) =
+        (baseData as KaivuilmoitusEntityData).copy(
             name = this.name,
             workDescription = this.workDescription,
             constructionWork = this.constructionWork,

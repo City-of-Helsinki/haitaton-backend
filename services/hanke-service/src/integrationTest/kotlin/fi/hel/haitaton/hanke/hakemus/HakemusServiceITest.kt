@@ -501,16 +501,16 @@ class HakemusServiceITest(
                 prop(HakemusEntity::applicationIdentifier).isNull()
                 prop(HakemusEntity::userId).isEqualTo(USERNAME)
                 prop(HakemusEntity::applicationType).isEqualTo(ApplicationType.CABLE_REPORT)
-                prop(HakemusEntity::applicationData)
-                    .isInstanceOf(CableReportApplicationData::class)
+                prop(HakemusEntity::hakemusEntityData)
+                    .isInstanceOf(JohtoselvityshakemusEntityData::class)
                     .all {
-                        prop(ApplicationData::name).isEqualTo(hakemusNimi)
-                        prop(ApplicationData::applicationType)
+                        prop(HakemusEntityData::name).isEqualTo(hakemusNimi)
+                        prop(HakemusEntityData::applicationType)
                             .isEqualTo(ApplicationType.CABLE_REPORT)
-                        prop(ApplicationData::pendingOnClient).isTrue()
-                        prop(ApplicationData::areas).isNull()
-                        prop(CableReportApplicationData::startTime).isNull()
-                        prop(CableReportApplicationData::endTime).isNull()
+                        prop(HakemusEntityData::pendingOnClient).isTrue()
+                        prop(HakemusEntityData::areas).isNull()
+                        prop(JohtoselvityshakemusEntityData::startTime).isNull()
+                        prop(JohtoselvityshakemusEntityData::endTime).isNull()
                     }
             }
         }
@@ -1458,7 +1458,7 @@ class HakemusServiceITest(
             assertThat(responseApplicationData.pendingOnClient).isFalse()
             val savedApplication = hakemusRepository.findById(hakemus.id).get()
             val savedApplicationData =
-                savedApplication.applicationData as CableReportApplicationData
+                savedApplication.hakemusEntityData as JohtoselvityshakemusEntityData
             assertThat(savedApplicationData.pendingOnClient).isFalse()
             verifySequence {
                 alluClient.create(applicationData)
@@ -1492,7 +1492,7 @@ class HakemusServiceITest(
             val hanke = hankeFactory.saveWithAlue()
             val application =
                 hakemusFactory.builder(hankeEntity = hanke).withMandatoryFields().saveEntity()
-            val applicationData = application.applicationData as CableReportApplicationData
+            val applicationData = application.hakemusEntityData as JohtoselvityshakemusEntityData
             val expectedDataAfterSend = applicationData.copy(pendingOnClient = false)
             every { alluClient.create(any()) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
@@ -1507,7 +1507,7 @@ class HakemusServiceITest(
             }
             assertThat(hakemusRepository.getReferenceById(application.id)).all {
                 prop(HakemusEntity::alluid).isEqualTo(alluId)
-                prop(HakemusEntity::applicationData).isEqualTo(expectedDataAfterSend)
+                prop(HakemusEntity::hakemusEntityData).isEqualTo(expectedDataAfterSend)
                 prop(HakemusEntity::applicationIdentifier).isNull()
                 prop(HakemusEntity::alluStatus).isNull()
             }
@@ -1794,7 +1794,7 @@ class HakemusServiceITest(
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = true))
             assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             val auditLogEntry = auditLogRepository.findByType(ObjectType.HANKE)
@@ -1819,7 +1819,7 @@ class HakemusServiceITest(
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = true))
             assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             assertThat(
@@ -1850,7 +1850,7 @@ class HakemusServiceITest(
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
             fileClient.connected = true
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = true))
             assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             assertThat(
@@ -1869,7 +1869,7 @@ class HakemusServiceITest(
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = false))
             assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)).isNotNull()
         }
@@ -1883,7 +1883,7 @@ class HakemusServiceITest(
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus1.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = false))
             assertThat(hakemusRepository.findAll())
                 .single()
                 .prop(HakemusEntity::id)

@@ -40,7 +40,7 @@ class TestDataServiceITest : IntegrationTest() {
                     alluStatus = ApplicationStatus.entries[i + 4],
                     alluId = i,
                     applicationIdentifier = "JS00$i",
-                    applicationData = applicationData.copy(pendingOnClient = false),
+                    hakemusEntityData = applicationData.copy(pendingOnClient = false),
                 )
 
                 applicationFactory.saveApplicationEntity(
@@ -49,7 +49,7 @@ class TestDataServiceITest : IntegrationTest() {
                     alluStatus = null,
                     alluId = null,
                     applicationIdentifier = null,
-                    applicationData = applicationData.copy(pendingOnClient = true),
+                    hakemusEntityData = applicationData.copy(pendingOnClient = true),
                 )
             }
 
@@ -61,7 +61,7 @@ class TestDataServiceITest : IntegrationTest() {
                 application.transform { it.alluid }.isNull()
                 application.transform { it.applicationIdentifier }.isNull()
                 application.transform { it.alluStatus }.isNull()
-                application.transform { it.applicationData.pendingOnClient }.isTrue()
+                application.transform { it.hakemusEntityData.pendingOnClient }.isTrue()
             }
         }
     }

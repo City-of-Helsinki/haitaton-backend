@@ -4,8 +4,6 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
-import fi.hel.haitaton.hanke.hakemus.CableReportApplicationData
-import fi.hel.haitaton.hanke.hakemus.ExcavationNotificationData
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
@@ -17,7 +15,9 @@ import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusEntityData
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
@@ -110,16 +110,17 @@ data class HakemusBuilder(
         )
 
     private fun updateApplicationData(
-        onCableReport: CableReportApplicationData.() -> CableReportApplicationData,
-        onExcavationNotification: ExcavationNotificationData.() -> ExcavationNotificationData,
+        onCableReport: JohtoselvityshakemusEntityData.() -> JohtoselvityshakemusEntityData,
+        onExcavationNotification: KaivuilmoitusEntityData.() -> KaivuilmoitusEntityData,
     ) = apply {
-        hakemusEntity.applicationData =
+        hakemusEntity.hakemusEntityData =
             when (hakemusEntity.applicationType) {
                 ApplicationType.CABLE_REPORT -> {
-                    (hakemusEntity.applicationData as CableReportApplicationData).onCableReport()
+                    (hakemusEntity.hakemusEntityData as JohtoselvityshakemusEntityData)
+                        .onCableReport()
                 }
                 ApplicationType.EXCAVATION_NOTIFICATION -> {
-                    (hakemusEntity.applicationData as ExcavationNotificationData)
+                    (hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData)
                         .onExcavationNotification()
                 }
             }

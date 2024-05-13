@@ -29,7 +29,9 @@ data class HakemusEntity(
     override var applicationIdentifier: String?,
     var userId: String?,
     @Enumerated(EnumType.STRING) val applicationType: ApplicationType,
-    @Type(JsonType::class) @Column(columnDefinition = "jsonb") var applicationData: ApplicationData,
+    @Type(JsonType::class)
+    @Column(columnDefinition = "jsonb", name = "applicationdata")
+    var hakemusEntityData: HakemusEntityData,
     @ManyToOne @JoinColumn(updatable = false, nullable = false) var hanke: HankeEntity,
     @OneToMany(
         fetch = FetchType.LAZY,
@@ -53,11 +55,13 @@ data class HakemusEntity(
     fun toHakemus(): Hakemus {
         val yhteystiedot = yhteystiedot.mapValues { it.value.toDomain() }
         val applicationData =
-            when (applicationData) {
-                is CableReportApplicationData ->
-                    (this.applicationData as CableReportApplicationData).toHakemusData(yhteystiedot)
-                is ExcavationNotificationData ->
-                    (this.applicationData as ExcavationNotificationData).toHakemusData(yhteystiedot)
+            when (hakemusEntityData) {
+                is JohtoselvityshakemusEntityData ->
+                    (this.hakemusEntityData as JohtoselvityshakemusEntityData).toHakemusData(
+                        yhteystiedot
+                    )
+                is KaivuilmoitusEntityData ->
+                    (this.hakemusEntityData as KaivuilmoitusEntityData).toHakemusData(yhteystiedot)
             }
         return Hakemus(
             id = id,
