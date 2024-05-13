@@ -3,12 +3,12 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
-import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.CableReportApplicationData
 import fi.hel.haitaton.hanke.hakemus.ExcavationNotificationData
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.Hakemusalue
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
@@ -31,7 +31,7 @@ data class HakemusBuilder(
     private val hakemusFactory: HakemusFactory,
     private val hakemusService: HakemusService,
     private val hankeKayttajaService: HankeKayttajaService,
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val hankeRepository: HankeRepository,
     private val hankeKayttajaFactory: HankeKayttajaFactory,
     private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
@@ -40,7 +40,7 @@ data class HakemusBuilder(
     fun save(): Hakemus = hakemusService.getById(saveEntity().id)
 
     fun saveEntity(): HakemusEntity {
-        val savedApplication = applicationRepository.save(hakemusEntity)
+        val savedApplication = hakemusRepository.save(hakemusEntity)
         savedApplication.yhteystiedot.forEach { (_, yhteystieto) ->
             yhteystieto.yhteyshenkilot.forEach { yhteyshenkilo ->
                 hakemusyhteyshenkiloRepository.save(yhteyshenkilo)

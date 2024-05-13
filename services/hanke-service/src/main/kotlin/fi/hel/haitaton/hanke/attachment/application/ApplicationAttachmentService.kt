@@ -10,10 +10,10 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.hasInfected
-import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import fi.hel.haitaton.hanke.hakemus.HakemusMetaData
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
@@ -27,7 +27,7 @@ private val logger = KotlinLogging.logger {}
 class ApplicationAttachmentService(
     private val cableReportService: CableReportService,
     private val metadataService: ApplicationAttachmentMetadataService,
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) {
@@ -143,7 +143,7 @@ class ApplicationAttachmentService(
     }
 
     private fun findHakemus(applicationId: Long): HakemusMetaData =
-        applicationRepository.findByIdOrNull(applicationId)?.toMetadata()
+        hakemusRepository.findByIdOrNull(applicationId)?.toMetadata()
             ?: throw HakemusNotFoundException(applicationId)
 
     private fun scanAttachment(filename: String, content: ByteArray) {

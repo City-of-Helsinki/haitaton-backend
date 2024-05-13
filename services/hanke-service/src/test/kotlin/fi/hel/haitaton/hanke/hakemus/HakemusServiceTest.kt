@@ -69,7 +69,7 @@ import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
 
 class HakemusServiceTest {
-    private val applicationRepository: ApplicationRepository = mockk()
+    private val hakemusRepository: HakemusRepository = mockk()
     private val hankeRepository: HankeRepository = mockk()
     private val geometriatDao: GeometriatDao = mockk()
     private val hankealueService: HankealueService = mockk()
@@ -84,7 +84,7 @@ class HakemusServiceTest {
 
     private val hakemusService =
         HakemusService(
-            applicationRepository,
+            hakemusRepository,
             hankeRepository,
             geometriatDao,
             hankealueService,
@@ -107,7 +107,7 @@ class HakemusServiceTest {
     fun checkMocks() {
         checkUnnecessaryStub()
         confirmVerified(
-            applicationRepository,
+            hakemusRepository,
             hankeRepository,
             geometriatDao,
             hankealueService,
@@ -130,8 +130,8 @@ class HakemusServiceTest {
             val hakija = applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]!!
             val suorittaja =
                 applicationEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]!!
-            every { applicationRepository.findOneById(3) } returns applicationEntity
-            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluClient.create(any()) } returns alluId
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse()
@@ -223,7 +223,7 @@ class HakemusServiceTest {
             assertThat(sent.trafficArrangementImages).isNull()
 
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
@@ -233,14 +233,14 @@ class HakemusServiceTest {
                 alluClient.addAttachment(alluId, any())
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
-                applicationRepository.save(any())
+                hakemusRepository.save(any())
             }
         }
 
         @Test
         fun `saves disclosure logs when sending fails`() {
             val applicationEntity = applicationEntity()
-            every { applicationRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
             every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
@@ -250,7 +250,7 @@ class HakemusServiceTest {
             assertThrows<AlluException> { hakemusService.sendHakemus(3, USERNAME) }
 
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
@@ -268,7 +268,7 @@ class HakemusServiceTest {
         @Test
         fun `does not save disclosure logs when allu login fails`() {
             val applicationEntity = applicationEntity()
-            every { applicationRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.isInsideHankeAlueet(any(), any()) } returns true
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
@@ -278,7 +278,7 @@ class HakemusServiceTest {
             assertThrows<AlluLoginException> { hakemusService.sendHakemus(3, USERNAME) }
 
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(any(), any())
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
@@ -299,8 +299,8 @@ class HakemusServiceTest {
                 (applicationEntity.applicationData as CableReportApplicationData).copy(
                     rockExcavation = rockExcavation
                 )
-            every { applicationRepository.findOneById(3) } returns applicationEntity
-            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.save(any()) } answers { firstArg() }
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
@@ -319,7 +319,7 @@ class HakemusServiceTest {
             assertThat(sent.workDescription).isEqualTo(expectedDescription)
             assertThat(sent.clientApplicationKind).isEqualTo(expectedDescription)
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
@@ -329,7 +329,7 @@ class HakemusServiceTest {
                 alluClient.addAttachment(alluId, any())
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
-                applicationRepository.save(any())
+                hakemusRepository.save(any())
             }
         }
 
@@ -341,7 +341,7 @@ class HakemusServiceTest {
         ) {
             val applicationEntity = applicationEntity()
             applicationEntity.applicationData = applicationData
-            every { applicationRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
@@ -351,7 +351,7 @@ class HakemusServiceTest {
                 }
 
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
             }
         }
@@ -360,7 +360,7 @@ class HakemusServiceTest {
         fun `throws exception when application has invalid customer`() {
             val applicationEntity = applicationEntity()
             applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]!!.nimi = ""
-            every { applicationRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
@@ -372,7 +372,7 @@ class HakemusServiceTest {
                 }
 
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
             }
         }
@@ -384,7 +384,7 @@ class HakemusServiceTest {
             val hankekayttaja = yhteystieto!!.yhteyshenkilot[0].hankekayttaja
             hankekayttaja.etunimi = ""
             hankekayttaja.sukunimi = ""
-            every { applicationRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
@@ -397,7 +397,7 @@ class HakemusServiceTest {
                 }
 
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
             }
         }
@@ -413,7 +413,7 @@ class HakemusServiceTest {
                     .withYhteyshenkilo(
                         permission = PermissionFactory.createEntity(userId = USERNAME)
                     )
-            every { applicationRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
@@ -426,7 +426,7 @@ class HakemusServiceTest {
                 }
 
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
             }
         }
@@ -442,7 +442,7 @@ class HakemusServiceTest {
                     .withYhteyshenkilo(
                         permission = PermissionFactory.createEntity(userId = USERNAME)
                     )
-            every { applicationRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
@@ -455,7 +455,7 @@ class HakemusServiceTest {
                 }
 
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
             }
         }
@@ -494,8 +494,7 @@ class HakemusServiceTest {
 
         @Test
         fun `sends email to the contacts when hakemus gets a decision`() {
-            every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer()
+            every { hakemusRepository.getOneByAlluid(42) } returns applicationEntityWithCustomer()
             justRun {
                 emailSenderService.sendJohtoselvitysCompleteEmail(
                     receiver,
@@ -503,20 +502,20 @@ class HakemusServiceTest {
                     identifier
                 )
             }
-            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { alluStatusRepository.save(any()) } answers { firstArg() }
 
             hakemusService.handleHakemusUpdates(historiesWithDecision(), updateTime)
 
             verifySequence {
-                applicationRepository.getOneByAlluid(42)
+                hakemusRepository.getOneByAlluid(42)
                 emailSenderService.sendJohtoselvitysCompleteEmail(
                     receiver,
                     applicationId,
                     identifier
                 )
-                applicationRepository.save(any())
+                hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
             }
@@ -524,9 +523,8 @@ class HakemusServiceTest {
 
         @Test
         fun `doesn't send email when status is not decision`() {
-            every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer()
-            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { hakemusRepository.getOneByAlluid(42) } returns applicationEntityWithCustomer()
+            every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { alluStatusRepository.save(any()) } answers { firstArg() }
             val histories =
@@ -543,8 +541,8 @@ class HakemusServiceTest {
             hakemusService.handleHakemusUpdates(histories, updateTime)
 
             verifySequence {
-                applicationRepository.getOneByAlluid(42)
-                applicationRepository.save(any())
+                hakemusRepository.getOneByAlluid(42)
+                hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
             }
@@ -552,9 +550,9 @@ class HakemusServiceTest {
 
         @Test
         fun `logs error when there are no receivers`(output: CapturedOutput) {
-            every { applicationRepository.getOneByAlluid(42) } returns
+            every { hakemusRepository.getOneByAlluid(42) } returns
                 applicationEntityWithoutCustomer()
-            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { alluStatusRepository.save(any()) } answers { firstArg() }
 
@@ -563,8 +561,8 @@ class HakemusServiceTest {
             assertThat(output)
                 .contains("No receivers found for decision ready email, not sending any.")
             verifySequence {
-                applicationRepository.getOneByAlluid(42)
-                applicationRepository.save(any())
+                hakemusRepository.getOneByAlluid(42)
+                hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
             }

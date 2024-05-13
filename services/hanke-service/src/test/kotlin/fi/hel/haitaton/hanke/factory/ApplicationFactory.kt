@@ -5,11 +5,11 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.hakemus.ApplicationData
-import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.CableReportApplicationData
 import fi.hel.haitaton.hanke.hakemus.ExcavationNotificationData
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.hakemus.InvoicingCustomer
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
@@ -30,7 +30,7 @@ const val TEPPO_TESTI = "Teppo Testihenkilö"
 
 @Component
 class ApplicationFactory(
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val hankeFactory: HankeFactory,
 ) {
     companion object {
@@ -274,6 +274,6 @@ class ApplicationFactory(
                 applicationData = applicationData,
                 hanke = hanke,
             )
-        return applicationRepository.save(hakemusEntity)
+        return hakemusRepository.save(hakemusEntity)
     }
 }
