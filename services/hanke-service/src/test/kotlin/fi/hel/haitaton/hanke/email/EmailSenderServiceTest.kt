@@ -6,7 +6,7 @@ import assertk.assertions.containsMatch
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.startsWith
-import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import io.mockk.clearAllMocks
 import io.mockk.every

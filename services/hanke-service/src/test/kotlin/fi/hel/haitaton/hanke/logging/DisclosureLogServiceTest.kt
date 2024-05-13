@@ -524,8 +524,8 @@ internal class DisclosureLogServiceTest {
             val alluId = 2
             val alluStatus = ApplicationStatus.DECISION
             val applicationIdentifier = "JS2300050-2"
-            val application =
-                ApplicationFactory.createApplication(
+            val hakemus =
+                HakemusFactory.create(
                     id = applicationId,
                     alluid = alluId,
                     alluStatus = alluStatus,
@@ -546,11 +546,11 @@ internal class DisclosureLogServiceTest {
                 AuditLogEntryFactory.createReadEntry(
                     userId,
                     objectType = ObjectType.CABLE_REPORT,
-                    objectId = application.id,
+                    objectId = hakemus.id,
                     objectBefore = expectedObject
                 )
 
-            disclosureLogService.saveDisclosureLogsForCableReport(application.toMetadata(), userId)
+            disclosureLogService.saveDisclosureLogsForCableReport(hakemus.toMetadata(), userId)
 
             verify { auditLogService.create(expectedLog) }
         }

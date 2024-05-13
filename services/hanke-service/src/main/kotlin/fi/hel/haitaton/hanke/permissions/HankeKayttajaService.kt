@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.permissions
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
-import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.email.AccessRightsUpdateNotificationData
@@ -27,7 +26,6 @@ class HankeKayttajaService(
     private val kayttajakutsuRepository: KayttajakutsuRepository,
     private val hankeRepository: HankeRepository,
     private val permissionService: PermissionService,
-    private val featureFlags: FeatureFlags,
     private val logService: HankeKayttajaLoggingService,
     private val emailSenderService: EmailSenderService,
     private val profiiliClient: ProfiiliClient,

@@ -2,8 +2,10 @@ package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
+import fi.hel.haitaton.hanke.hakemus.HakemusMetaData
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import io.hypersistence.utils.hibernate.type.json.JsonType
@@ -43,15 +45,14 @@ data class ApplicationEntity(
     @MapKey(name = "rooli")
     var yhteystiedot: MutableMap<ApplicationContactType, HakemusyhteystietoEntity> = mutableMapOf(),
 ) : HakemusIdentifier {
-    fun toApplication() =
-        Application(
-            id,
-            alluid,
-            alluStatus,
-            applicationIdentifier,
-            applicationType,
-            applicationData,
-            hanke.hankeTunnus,
+    fun toMetadata(): HakemusMetaData =
+        HakemusMetaData(
+            id = id,
+            alluid = alluid,
+            alluStatus = alluStatus,
+            applicationIdentifier = applicationIdentifier,
+            applicationType = applicationType,
+            hankeTunnus = hanke.hankeTunnus,
         )
 
     fun toHakemus(): Hakemus {

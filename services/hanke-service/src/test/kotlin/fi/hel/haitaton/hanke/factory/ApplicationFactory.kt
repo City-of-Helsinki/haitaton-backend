@@ -3,11 +3,9 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
@@ -17,6 +15,7 @@ import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.application.Tyoalue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
@@ -222,40 +221,6 @@ class ApplicationFactory(
                 endTime = null,
                 additionalInfo = null
             )
-
-        fun createApplication(
-            id: Long = 1,
-            alluid: Int? = null,
-            alluStatus: ApplicationStatus? = null,
-            applicationIdentifier: String? = null,
-            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-            applicationData: ApplicationData = createApplicationData(applicationType),
-            hankeTunnus: String = "HAI-1234",
-        ): Application =
-            Application(
-                id = id,
-                alluid = alluid,
-                alluStatus = alluStatus,
-                applicationIdentifier = applicationIdentifier,
-                applicationType = applicationType,
-                applicationData = applicationData,
-                hankeTunnus = hankeTunnus
-            )
-
-        fun createApplications(
-            n: Long,
-            mapper: (Long, Application) -> Application = { _, app -> app },
-        ) =
-            (1..n)
-                .map { i ->
-                    createApplication(
-                        id = i,
-                        hankeTunnus = "HAI-1234",
-                        applicationData =
-                            createCableReportApplicationData(name = "$DEFAULT_APPLICATION_NAME #$i")
-                    )
-                }
-                .map { application -> mapper(application.id, application) }
 
         fun createApplicationEntity(
             id: Long = 3,

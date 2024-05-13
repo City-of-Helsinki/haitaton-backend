@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.gdpr
 
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
@@ -214,14 +213,7 @@ class GdprController(
     data class GdprErrorResponse(val errors: List<GdprError>)
 }
 
-data class DeleteForbiddenException(val errors: List<GdprError>) : RuntimeException() {
-    companion object {
-        fun fromSentApplications(applications: List<Application>) =
-            DeleteForbiddenException(
-                applications.map { GdprError.fromSentApplication(it.applicationIdentifier) }
-            )
-    }
-}
+data class DeleteForbiddenException(val errors: List<GdprError>) : RuntimeException()
 
 data class GdprError(val code: String, val message: LocalizedMessage) {
     companion object {
