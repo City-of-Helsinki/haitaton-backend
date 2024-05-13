@@ -41,7 +41,7 @@ import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.identifier
-import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -86,7 +86,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
     @Autowired private lateinit var hankeKayttajaRepository: HankekayttajaRepository
     @Autowired private lateinit var permissionRepository: PermissionRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
-    @Autowired private lateinit var applicationRepository: ApplicationRepository
+    @Autowired private lateinit var hakemusRepository: HakemusRepository
 
     @Autowired private lateinit var profiiliClient: ProfiiliClient
 

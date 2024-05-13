@@ -9,7 +9,7 @@ import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired
 class TestDataServiceITest : IntegrationTest() {
 
     @Autowired private lateinit var testDataService: TestDataService
-    @Autowired private lateinit var applicationRepository: ApplicationRepository
+    @Autowired private lateinit var hakemusRepository: HakemusRepository
     @Autowired private lateinit var applicationFactory: ApplicationFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
 
@@ -40,7 +40,7 @@ class TestDataServiceITest : IntegrationTest() {
                     alluStatus = ApplicationStatus.entries[i + 4],
                     alluId = i,
                     applicationIdentifier = "JS00$i",
-                    applicationData = applicationData.copy(pendingOnClient = false),
+                    hakemusEntityData = applicationData.copy(pendingOnClient = false),
                 )
 
                 applicationFactory.saveApplicationEntity(
@@ -49,19 +49,19 @@ class TestDataServiceITest : IntegrationTest() {
                     alluStatus = null,
                     alluId = null,
                     applicationIdentifier = null,
-                    applicationData = applicationData.copy(pendingOnClient = true),
+                    hakemusEntityData = applicationData.copy(pendingOnClient = true),
                 )
             }
 
             testDataService.unlinkApplicationsFromAllu()
 
-            val applications = applicationRepository.findAll()
+            val applications = hakemusRepository.findAll()
             assertThat(applications).hasSize(8)
             assertThat(applications).each { application ->
                 application.transform { it.alluid }.isNull()
                 application.transform { it.applicationIdentifier }.isNull()
                 application.transform { it.alluStatus }.isNull()
-                application.transform { it.applicationData.pendingOnClient }.isTrue()
+                application.transform { it.hakemusEntityData.pendingOnClient }.isTrue()
             }
         }
     }

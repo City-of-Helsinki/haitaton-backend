@@ -30,8 +30,8 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.PermissionFactory
-import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
@@ -50,7 +50,7 @@ class GdprServiceITest(
     @Autowired val hankekayttajaRepository: HankekayttajaRepository,
     @Autowired val permissionRepository: PermissionRepository,
     @Autowired val hankeRepository: HankeRepository,
-    @Autowired val applicationRepository: ApplicationRepository,
+    @Autowired val hakemusRepository: HakemusRepository,
     @Autowired val hakemusFactory: HakemusFactory,
     @Autowired val hankeFactory: HankeFactory,
     @Autowired val hankekayttajaFactory: HankeKayttajaFactory,
@@ -333,7 +333,7 @@ class GdprServiceITest(
             gdprService.deleteInfo(USERNAME)
 
             assertThat(hankeRepository.findAll()).isEmpty()
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
         }
 
         @Test
@@ -350,7 +350,7 @@ class GdprServiceITest(
             gdprService.deleteInfo(USERNAME)
 
             assertThat(hankeRepository.findAll()).single().prop(HankeEntity::id).isEqualTo(hanke.id)
-            assertThat(applicationRepository.findAll())
+            assertThat(hakemusRepository.findAll())
                 .single()
                 .prop(HakemusEntity::id)
                 .isEqualTo(hakemus.id)
@@ -401,7 +401,7 @@ class GdprServiceITest(
             gdprService.deleteInfo(USERNAME)
 
             assertThat(hankeRepository.findAll()).single().prop(HankeEntity::id).isEqualTo(hanke.id)
-            assertThat(applicationRepository.findAll())
+            assertThat(hakemusRepository.findAll())
                 .single()
                 .prop(HakemusEntity::id)
                 .isEqualTo(hakemus.id)
@@ -429,7 +429,7 @@ class GdprServiceITest(
             gdprService.deleteInfo(USERNAME)
 
             assertThat(hankeRepository.findAll()).single().prop(HankeEntity::id).isEqualTo(hanke.id)
-            assertThat(applicationRepository.findAll())
+            assertThat(hakemusRepository.findAll())
                 .single()
                 .prop(HakemusEntity::id)
                 .isEqualTo(hakemus.id)
@@ -516,7 +516,7 @@ class GdprServiceITest(
                     oneAdminHanke.id,
                     // No soloHanke
                 )
-            assertThat(applicationRepository.findAll())
+            assertThat(hakemusRepository.findAll())
                 .extracting { it.id }
                 .containsExactlyInAnyOrder(
                     unrelatedHakemus.id,

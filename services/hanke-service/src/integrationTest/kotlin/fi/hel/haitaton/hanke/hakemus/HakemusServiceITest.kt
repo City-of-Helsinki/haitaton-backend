@@ -118,7 +118,7 @@ import org.springframework.beans.factory.annotation.Autowired
 
 class HakemusServiceITest(
     @Autowired private val hakemusService: HakemusService,
-    @Autowired private val applicationRepository: ApplicationRepository,
+    @Autowired private val hakemusRepository: HakemusRepository,
     @Autowired private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     @Autowired private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
     @Autowired private val hankeRepository: HankeRepository,
@@ -199,7 +199,7 @@ class HakemusServiceITest(
     inner class HakemusResponse {
         @Test
         fun `when application does not exist should throw`() {
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
 
             val exception = assertFailure { hakemusService.hakemusResponse(1234) }
 
@@ -323,8 +323,7 @@ class HakemusServiceITest(
 
                 val result = hakemusService.hankkeenHakemuksetResponse(hakemus.hankeTunnus)
 
-                val expectedHakemus =
-                    HankkeenHakemusResponse(applicationRepository.findAll().single())
+                val expectedHakemus = HankkeenHakemusResponse(hakemusRepository.findAll().single())
                 assertThat(result.applications).hasSameElementsAs(listOf(expectedHakemus))
             }
         }
@@ -341,8 +340,7 @@ class HakemusServiceITest(
 
                 val result = hakemusService.hankkeenHakemuksetResponse(hanke.hankeTunnus)
 
-                val expectedHakemus =
-                    HankkeenHakemusResponse(applicationRepository.findAll().single())
+                val expectedHakemus = HankkeenHakemusResponse(hakemusRepository.findAll().single())
                 assertThat(result.applications).hasSameElementsAs(listOf(expectedHakemus))
             }
         }
@@ -496,23 +494,23 @@ class HakemusServiceITest(
 
             hakemusService.createJohtoselvitys(hanke, USERNAME)
 
-            assertThat(applicationRepository.findAll()).single().all {
+            assertThat(hakemusRepository.findAll()).single().all {
                 prop(HakemusEntity::id).isNotNull()
                 prop(HakemusEntity::alluid).isNull()
                 prop(HakemusEntity::alluStatus).isNull()
                 prop(HakemusEntity::applicationIdentifier).isNull()
                 prop(HakemusEntity::userId).isEqualTo(USERNAME)
                 prop(HakemusEntity::applicationType).isEqualTo(ApplicationType.CABLE_REPORT)
-                prop(HakemusEntity::applicationData)
-                    .isInstanceOf(CableReportApplicationData::class)
+                prop(HakemusEntity::hakemusEntityData)
+                    .isInstanceOf(JohtoselvityshakemusEntityData::class)
                     .all {
-                        prop(ApplicationData::name).isEqualTo(hakemusNimi)
-                        prop(ApplicationData::applicationType)
+                        prop(HakemusEntityData::name).isEqualTo(hakemusNimi)
+                        prop(HakemusEntityData::applicationType)
                             .isEqualTo(ApplicationType.CABLE_REPORT)
-                        prop(ApplicationData::pendingOnClient).isTrue()
-                        prop(ApplicationData::areas).isNull()
-                        prop(CableReportApplicationData::startTime).isNull()
-                        prop(CableReportApplicationData::endTime).isNull()
+                        prop(HakemusEntityData::pendingOnClient).isTrue()
+                        prop(HakemusEntityData::areas).isNull()
+                        prop(JohtoselvityshakemusEntityData::startTime).isNull()
+                        prop(JohtoselvityshakemusEntityData::endTime).isNull()
                     }
             }
         }
@@ -581,7 +579,7 @@ class HakemusServiceITest(
 
             @Test
             fun `throws exception when the application does not exist`() {
-                assertThat(applicationRepository.findAll()).isEmpty()
+                assertThat(hakemusRepository.findAll()).isEmpty()
                 val request =
                     HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
 
@@ -953,7 +951,7 @@ class HakemusServiceITest(
 
             @Test
             fun `throws exception when the application does not exist`() {
-                assertThat(applicationRepository.findAll()).isEmpty()
+                assertThat(hakemusRepository.findAll()).isEmpty()
                 val request = HakemusUpdateRequestFactory.createFilledKaivuilmoitusUpdateRequest()
 
                 val exception = assertFailure {
@@ -1458,9 +1456,9 @@ class HakemusServiceITest(
 
             val responseApplicationData = response.applicationData as JohtoselvityshakemusData
             assertThat(responseApplicationData.pendingOnClient).isFalse()
-            val savedApplication = applicationRepository.findById(hakemus.id).get()
+            val savedApplication = hakemusRepository.findById(hakemus.id).get()
             val savedApplicationData =
-                savedApplication.applicationData as CableReportApplicationData
+                savedApplication.hakemusEntityData as JohtoselvityshakemusEntityData
             assertThat(savedApplicationData.pendingOnClient).isFalse()
             verifySequence {
                 alluClient.create(applicationData)
@@ -1494,7 +1492,7 @@ class HakemusServiceITest(
             val hanke = hankeFactory.saveWithAlue()
             val application =
                 hakemusFactory.builder(hankeEntity = hanke).withMandatoryFields().saveEntity()
-            val applicationData = application.applicationData as CableReportApplicationData
+            val applicationData = application.hakemusEntityData as JohtoselvityshakemusEntityData
             val expectedDataAfterSend = applicationData.copy(pendingOnClient = false)
             every { alluClient.create(any()) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
@@ -1507,9 +1505,9 @@ class HakemusServiceITest(
                 prop(Hakemus::applicationIdentifier).isNull()
                 prop(Hakemus::alluStatus).isNull()
             }
-            assertThat(applicationRepository.getReferenceById(application.id)).all {
+            assertThat(hakemusRepository.getReferenceById(application.id)).all {
                 prop(HakemusEntity::alluid).isEqualTo(alluId)
-                prop(HakemusEntity::applicationData).isEqualTo(expectedDataAfterSend)
+                prop(HakemusEntity::hakemusEntityData).isEqualTo(expectedDataAfterSend)
                 prop(HakemusEntity::applicationIdentifier).isNull()
                 prop(HakemusEntity::alluStatus).isNull()
             }
@@ -1546,7 +1544,7 @@ class HakemusServiceITest(
         @Test
         fun `cancels the sent application before throwing when uploading initial attachments fails`() {
             val hakemus = hakemusFactory.builder().withMandatoryFields().save()
-            val applicationEntity = applicationRepository.getReferenceById(hakemus.id)
+            val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
             attachmentFactory.save(application = applicationEntity).withContent()
             every { alluClient.create(any()) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
@@ -1578,7 +1576,7 @@ class HakemusServiceITest(
 
             assertThat(response.alluid).isEqualTo(alluId)
             assertThat(response.alluStatus).isEqualTo(ApplicationStatus.PENDING)
-            val savedHakemus = applicationRepository.getReferenceById(hakemus.id)
+            val savedHakemus = hakemusRepository.getReferenceById(hakemus.id)
             assertThat(savedHakemus.alluid).isEqualTo(alluId)
             assertThat(savedHakemus.alluStatus).isEqualTo(ApplicationStatus.PENDING)
             verifySequence {
@@ -1591,7 +1589,7 @@ class HakemusServiceITest(
         @Test
         fun `creates a new application to Allu and saves the ID and status to database`() {
             val hakemus = hakemusFactory.builder().withMandatoryFields().save()
-            val applicationEntity = applicationRepository.getReferenceById(hakemus.id)
+            val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
             attachmentFactory.save(application = applicationEntity).withContent()
             val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
             val hakemusData = hakemus.applicationData as JohtoselvityshakemusData
@@ -1614,7 +1612,7 @@ class HakemusServiceITest(
                 prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                 prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
             }
-            assertThat(applicationRepository.getReferenceById(hakemus.id)).all {
+            assertThat(hakemusRepository.getReferenceById(hakemus.id)).all {
                 prop(HakemusEntity::alluid).isEqualTo(alluId)
                 prop(HakemusEntity::applicationIdentifier)
                     .isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_IDENTIFIER)
@@ -1796,8 +1794,8 @@ class HakemusServiceITest(
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = true))
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             val auditLogEntry = auditLogRepository.findByType(ObjectType.HANKE)
             assertThat(auditLogEntry).single().isSuccess(Operation.DELETE) {
@@ -1821,8 +1819,8 @@ class HakemusServiceITest(
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = true))
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             assertThat(
                     fileClient.list(
@@ -1852,8 +1850,8 @@ class HakemusServiceITest(
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
             fileClient.connected = true
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = true))
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             assertThat(
                     fileClient.list(
@@ -1871,8 +1869,8 @@ class HakemusServiceITest(
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = false))
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)).isNotNull()
         }
 
@@ -1881,12 +1879,12 @@ class HakemusServiceITest(
             val hanke = hankeFactory.saveMinimal(generated = true)
             val hakemus1 = hakemusFactory.builder(hanke).withNoAlluFields().saveEntity()
             val hakemus2 = hakemusFactory.builder(hanke).withNoAlluFields().saveEntity()
-            assertThat(applicationRepository.findAll()).hasSize(2)
+            assertThat(hakemusRepository.findAll()).hasSize(2)
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus1.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
-            assertThat(applicationRepository.findAll())
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = false))
+            assertThat(hakemusRepository.findAll())
                 .single()
                 .prop(HakemusEntity::id)
                 .isEqualTo(hakemus2.id)
@@ -1907,7 +1905,7 @@ class HakemusServiceITest(
 
             hakemusService.deleteWithOrphanGeneratedHankeRemoval(application.id, USERNAME)
 
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             assertThat(hankekayttajaRepository.findAll()).isEmpty()
             assertThat(hakemusyhteystietoRepository.findAll()).isEmpty()
@@ -2003,7 +2001,7 @@ class HakemusServiceITest(
 
             hakemusService.cancelAndDelete(hakemus, USERNAME)
 
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(
                     fileClient.list(
                         Container.HAKEMUS_LIITTEET,
@@ -2076,7 +2074,7 @@ class HakemusServiceITest(
 
             hakemusService.cancelAndDelete(hakemus, USERNAME)
 
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             verifySequence {
                 alluClient.getApplicationInformation(alluId)
                 alluClient.cancel(alluId)
@@ -2098,7 +2096,7 @@ class HakemusServiceITest(
                 messageContains("id=${hakemus.id}")
                 messageContains("alluId=$alluId")
             }
-            assertThat(applicationRepository.findAll()).hasSize(1)
+            assertThat(hakemusRepository.findAll()).hasSize(1)
             verifySequence { alluClient.getApplicationInformation(alluId) }
         }
 
@@ -2116,7 +2114,7 @@ class HakemusServiceITest(
 
             hakemusService.cancelAndDelete(hakemus, USERNAME)
 
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hakemusyhteystietoRepository.findAll()).isEmpty()
             assertThat(hakemusyhteyshenkiloRepository.findAll()).isEmpty()
             assertThat(hankekayttajaRepository.count())
@@ -2134,7 +2132,7 @@ class HakemusServiceITest(
 
             hakemusService.cancelAndDelete(hakemus, USERNAME)
 
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
         }
     }
 
@@ -2203,7 +2201,7 @@ class HakemusServiceITest(
 
         @Test
         fun `updates the last updated time with empty histories`() {
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
                 .isEqualTo(placeholderUpdateTime)
 
@@ -2214,7 +2212,7 @@ class HakemusServiceITest(
 
         @Test
         fun `updates the hakemus statuses in the correct order`() {
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
                 .isEqualTo(placeholderUpdateTime)
             val hanke = hankeFactory.saveMinimal()
@@ -2240,7 +2238,7 @@ class HakemusServiceITest(
             hakemusService.handleHakemusUpdates(listOf(history), updateTime)
 
             assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isEqualTo(updateTime)
-            val application = applicationRepository.getOneByAlluid(alluId)
+            val application = hakemusRepository.getOneByAlluid(alluId)
             assertThat(application)
                 .isNotNull()
                 .prop("alluStatus", HakemusEntity::alluStatus)
@@ -2250,7 +2248,7 @@ class HakemusServiceITest(
 
         @Test
         fun `ignores missing hakemus`() {
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
                 .isEqualTo(placeholderUpdateTime)
             val hanke = hankeFactory.saveMinimal()
@@ -2266,7 +2264,7 @@ class HakemusServiceITest(
             hakemusService.handleHakemusUpdates(histories, updateTime)
 
             assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isEqualTo(updateTime)
-            val applications = applicationRepository.findAll()
+            val applications = hakemusRepository.findAll()
             assertThat(applications).hasSize(2)
             assertThat(applications.map { it.alluid }).containsExactlyInAnyOrder(alluId, alluId + 2)
             assertThat(applications.map { it.alluStatus })

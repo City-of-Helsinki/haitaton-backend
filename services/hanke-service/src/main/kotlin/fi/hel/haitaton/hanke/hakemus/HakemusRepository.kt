@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 
 @Repository
-interface ApplicationRepository : JpaRepository<HakemusEntity, Long> {
+interface HakemusRepository : JpaRepository<HakemusEntity, Long> {
     fun findOneById(id: Long): HakemusEntity?
 
     @Query("select alluid from HakemusEntity where alluid is not null")
