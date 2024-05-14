@@ -266,6 +266,12 @@ object HakemusUpdateRequestFactory {
             is KaivuilmoitusUpdateRequest -> this.copy(workDescription = workDescription)
         }
 
+    fun HakemusUpdateRequest.withRequiredCompetence(requiredCompetence: Boolean) =
+        when (this) {
+            is JohtoselvityshakemusUpdateRequest -> this
+            is KaivuilmoitusUpdateRequest -> this.copy(requiredCompetence = requiredCompetence)
+        }
+
     fun HakemusUpdateRequest.withArea(area: ApplicationArea?) = withAreas(area?.let { listOf(it) })
 
     fun HakemusUpdateRequest.withAreas(areas: List<ApplicationArea>?) =

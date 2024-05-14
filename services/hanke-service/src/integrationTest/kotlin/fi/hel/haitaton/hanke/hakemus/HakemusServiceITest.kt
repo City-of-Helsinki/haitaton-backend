@@ -78,6 +78,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withContractor
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomer
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomerWithContactsRequest
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withName
+import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRequiredCompetence
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -1195,6 +1196,7 @@ class HakemusServiceITest(
                             newKayttaja.id
                         )
                         .withWorkDescription("New work description")
+                        .withRequiredCompetence(true)
                         .withArea(area)
 
                 val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
@@ -1204,6 +1206,7 @@ class HakemusServiceITest(
                     .all {
                         prop(KaivuilmoitusDataResponse::workDescription)
                             .isEqualTo("New work description")
+                        prop(KaivuilmoitusDataResponse::requiredCompetence).isTrue()
                         prop(KaivuilmoitusDataResponse::customerWithContacts)
                             .isNotNull()
                             .prop(CustomerWithContactsResponse::contacts)
