@@ -112,20 +112,8 @@ class TormaystarkasteluLaskentaService(
             .sum()
             .roundToOneDecimal()
 
-    internal fun calculatePyoraliikenneindeksi(geometriaIds: Set<Int>): Float {
-        val pyoraliikenneluokittelu = pyoraliikenneluokittelu(geometriaIds)
-        return if (pyoraliikenneluokittelu >= 4) 3.0f else 1.0f
-    }
-
-    internal fun pyoraliikenneluokittelu(geometriaIds: Set<Int>): Int =
-        when {
-            tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds) ->
-                Pyoraliikenneluokittelu
-                    .PRIORISOITU_REITTI_TAI_PRIORISOIDUN_REITIN_OSANA_TOIMIVA_KATU
-            tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds) ->
-                Pyoraliikenneluokittelu.PAAREITTI_TAI_PAAREITIN_OSANA_TOIMIVA_KATU
-            else -> Pyoraliikenneluokittelu.EI_VAIKUTA_PYORALIIKENTEESEEN
-        }.value
+    internal fun calculatePyoraliikenneindeksi(geometriaIds: Set<Int>): Float =
+        tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriaIds)?.toFloat() ?: 0f
 
     internal fun calculateLinjaautoliikenneindeksi(geometriaIds: Set<Int>): Float =
         linjaautoliikenneluokittelu(geometriaIds).toFloat()

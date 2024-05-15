@@ -94,11 +94,9 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
     fun anyIntersectsWithTramInfra(geometriaIds: Set<Int>) =
         anyIntersectsWith(geometriaIds, "tormays_tram_infra_polys")
 
-    fun anyIntersectsWithCyclewaysPriority(geometriaIds: Set<Int>) =
-        anyIntersectsWith(geometriaIds, "tormays_cycleways_priority_polys")
-
-    fun anyIntersectsWithCyclewaysMain(geometriaIds: Set<Int>) =
-        anyIntersectsWith(geometriaIds, "tormays_cycleways_main_polys")
+    fun maxIntersectingPyoraliikenneHierarkia(geometriaIds: Set<Int>): Int? =
+        getDistinctValuesIntersectingRows(geometriaIds, "tormays_cycle_infra_polys", "hierarkia")
+            .maxOfOrNull { PyoraliikenteenHierarkia.valueOfHierarkia(it).value }
 
     private fun getDistinctValuesIntersectingRows(
         geometriaIds: Set<Int>,
@@ -141,6 +139,21 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
 
 // Enum classes that associate the strings used in this database dataset with integer classification
 // values
+
+enum class PyoraliikenteenHierarkia(val value: Int, val hierarkia: String) {
+    MUU_YHTEYS(2, "Muu yhteys"),
+    MUU_PYORAREITTI(3, "Muu pyöräreitti"),
+    BAANA(5, "Baana"),
+    PAAPYORAREITTI(5, "Pääpyöräreitti"),
+    ;
+
+    companion object {
+        fun valueOfHierarkia(hierarkia: String?): PyoraliikenteenHierarkia =
+            hierarkia?.let {
+                return entries.first { it.hierarkia == hierarkia }
+            } ?: MUU_PYORAREITTI
+    }
+}
 
 enum class TormaystarkasteluKatuluokka(val value: Int, val katuluokka: String) {
     /**
