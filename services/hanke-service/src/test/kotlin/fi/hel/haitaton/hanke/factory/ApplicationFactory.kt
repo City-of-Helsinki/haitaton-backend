@@ -171,9 +171,9 @@ class ApplicationFactory(
             tyoalueet: List<Tyoalue> = listOf(createTyoalue()),
             katuosoite: String = "Katu 1",
             tyonTarkoitukset: Set<TyomaaTyyppi> = setOf(TyomaaTyyppi.VESI),
-            meluhaitta: Meluhaitta = Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
-            polyhaitta: Polyhaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
-            tarinahaitta: Tarinahaitta = Tarinahaitta.SATUNNAINEN_HAITTA,
+            meluhaitta: Meluhaitta = Meluhaitta.JATKUVA_MELUHAITTA,
+            polyhaitta: Polyhaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
+            tarinahaitta: Tarinahaitta = Tarinahaitta.SATUNNAINEN_TARINAHAITTA,
             kaistahaitta: VaikutusAutoliikenteenKaistamaariin =
                 VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
             kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus =

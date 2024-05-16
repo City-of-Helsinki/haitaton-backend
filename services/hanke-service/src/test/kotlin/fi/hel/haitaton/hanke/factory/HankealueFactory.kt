@@ -24,9 +24,9 @@ object HankealueFactory {
             VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
         kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? =
             AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA,
-        meluHaitta: Meluhaitta? = Meluhaitta.SATUNNAINEN_HAITTA,
-        polyHaitta: Polyhaitta? = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
-        tarinaHaitta: Tarinahaitta? = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
+        meluHaitta: Meluhaitta? = Meluhaitta.SATUNNAINEN_MELUHAITTA,
+        polyHaitta: Polyhaitta? = Polyhaitta.TOISTUVA_POLYHAITTA,
+        tarinaHaitta: Tarinahaitta? = Tarinahaitta.JATKUVA_TARINAHAITTA,
         nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
     ): SavedHankealue {
         return SavedHankealue(

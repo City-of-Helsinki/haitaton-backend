@@ -53,9 +53,9 @@ internal class HankeTest {
                     VaikutusAutoliikenteenKaistamaariin
                         .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
                 kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
-                meluHaitta = Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
-                polyHaitta = Polyhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
-                tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
+                meluHaitta = Meluhaitta.JATKUVA_MELUHAITTA,
+                polyHaitta = Polyhaitta.JATKUVA_POLYHAITTA,
+                tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
             )
         hanke.alueet.add(hankealue)
 

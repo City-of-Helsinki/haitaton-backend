@@ -7,6 +7,8 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -29,11 +31,12 @@ class HankealueEntity(
     var geometriat: Int? = null,
     var haittaAlkuPvm: LocalDate? = null,
     var haittaLoppuPvm: LocalDate? = null,
-    var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
+    @Enumerated(EnumType.STRING) var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
+    @Enumerated(EnumType.STRING)
     var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
-    var meluHaitta: Meluhaitta? = null,
-    var polyHaitta: Polyhaitta? = null,
-    var tarinaHaitta: Tarinahaitta? = null,
+    @Enumerated(EnumType.STRING) var meluHaitta: Meluhaitta? = null,
+    @Enumerated(EnumType.STRING) var polyHaitta: Polyhaitta? = null,
+    @Enumerated(EnumType.STRING) var tarinaHaitta: Tarinahaitta? = null,
     var nimi: String
 ) : HasId<Int> {
 
