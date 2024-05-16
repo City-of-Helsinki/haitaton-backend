@@ -1047,9 +1047,9 @@ class HankeServiceITests(
                     VaikutusAutoliikenteenKaistamaariin
                         .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
                 kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
-                meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA,
-                polyHaitta = Polyhaitta.SATUNNAINEN_HAITTA,
-                tarinaHaitta = Tarinahaitta.SATUNNAINEN_HAITTA,
+                meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
+                polyHaitta = Polyhaitta.SATUNNAINEN_POLYHAITTA,
+                tarinaHaitta = Tarinahaitta.SATUNNAINEN_TARINAHAITTA,
             )
         val createdHanke =
             hankeFactory.builder(USERNAME).withHankealue().withHankealue(hankealue).save()
@@ -1067,9 +1067,9 @@ class HankeServiceITests(
             )
         assertThat(alue.kaistaPituusHaitta)
             .isEqualTo(AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA)
-        assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
-        assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.SATUNNAINEN_HAITTA)
-        assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_HAITTA)
+        assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_MELUHAITTA)
+        assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.SATUNNAINEN_POLYHAITTA)
+        assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_TARINAHAITTA)
         assertThat(alue.geometriat).isNotNull()
     }
 
@@ -1336,9 +1336,9 @@ class HankeServiceITests(
                     VaikutusAutoliikenteenKaistamaariin
                         .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
                 kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
-                meluHaitta = Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
-                polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
-                tarinaHaitta = Tarinahaitta.SATUNNAINEN_HAITTA,
+                meluHaitta = Meluhaitta.JATKUVA_MELUHAITTA,
+                polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
+                tarinaHaitta = Tarinahaitta.SATUNNAINEN_TARINAHAITTA,
             )
         createdHanke.alueet.add(hankealue)
         val request = createdHanke.toModifyRequest()
@@ -1358,9 +1358,9 @@ class HankeServiceITests(
             )
         assertThat(alue.kaistaPituusHaitta)
             .isEqualTo(AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA)
-        assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA)
-        assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA)
-        assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_HAITTA)
+        assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.JATKUVA_MELUHAITTA)
+        assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.TOISTUVA_POLYHAITTA)
+        assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_TARINAHAITTA)
         assertThat(alue.geometriat).isNotNull()
     }
 
@@ -1408,9 +1408,9 @@ class HankeServiceITests(
                     VaikutusAutoliikenteenKaistamaariin
                         .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
                 kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
-                meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA,
-                polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
-                tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
+                meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
+                polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
+                tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
             )
         val hanke = hankeFactory.builder(USERNAME).withHankealue().withHankealue(hankealue).save()
         assertThat(hanke.alueet).hasSize(2)
@@ -1431,10 +1431,9 @@ class HankeServiceITests(
                 )
             prop(SavedHankealue::kaistaPituusHaitta)
                 .isEqualTo(AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA)
-            prop(SavedHankealue::meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
-            prop(SavedHankealue::polyHaitta).isEqualTo(Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA)
-            prop(SavedHankealue::tarinaHaitta)
-                .isEqualTo(Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA)
+            prop(SavedHankealue::meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_MELUHAITTA)
+            prop(SavedHankealue::polyHaitta).isEqualTo(Polyhaitta.TOISTUVA_POLYHAITTA)
+            prop(SavedHankealue::tarinaHaitta).isEqualTo(Tarinahaitta.JATKUVA_TARINAHAITTA)
             prop(SavedHankealue::geometriat).isNotNull()
         }
         val hankeFromDb = hankeService.loadHanke(hanke.hankeTunnus)
