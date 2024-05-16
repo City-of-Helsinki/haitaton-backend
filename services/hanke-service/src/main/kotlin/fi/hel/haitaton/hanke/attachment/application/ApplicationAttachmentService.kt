@@ -120,8 +120,14 @@ class ApplicationAttachmentService(
     fun deleteAllAttachments(hakemus: HakemusIdentifier) {
         logger.info { "Deleting all attachments from application. ${hakemus.logString()}" }
         metadataService.deleteAllAttachments(hakemus)
-        attachmentContentService.deleteAllForApplication(hakemus)
-        logger.info { "Deleted all attachments from application. ${hakemus.logString()}" }
+        try {
+            attachmentContentService.deleteAllForApplication(hakemus)
+            logger.info { "Deleted all attachments from application. ${hakemus.logString()}" }
+        } catch (e: Exception) {
+            logger.error(e) {
+                "Failed to delete all attachment content for application. Continuing with application deletion regardless of error. ${hakemus.logString()}"
+            }
+        }
     }
 
     fun sendInitialAttachments(alluId: Int, applicationId: Long) {

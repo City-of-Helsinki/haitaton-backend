@@ -97,10 +97,10 @@ class HankekayttajaDeleteService(
     }
 
     private fun isTheOnlyKaikkiOikeudetKayttaja(kayttaja: HankekayttajaEntity): Boolean {
-        if (kayttaja.deriveKayttooikeustaso() != Kayttooikeustaso.KAIKKI_OIKEUDET) return false
+        if (kayttaja.permission?.kayttooikeustaso != Kayttooikeustaso.KAIKKI_OIKEUDET) return false
         val adminCount =
-            hankekayttajaRepository.findByHankeId(kayttaja.hankeId).count {
-                it.deriveKayttooikeustaso() == Kayttooikeustaso.KAIKKI_OIKEUDET
+            permissionRepository.findAllByHankeId(kayttaja.hankeId).count {
+                it.kayttooikeustaso == Kayttooikeustaso.KAIKKI_OIKEUDET
             }
         return adminCount == 1
     }

@@ -78,6 +78,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withContractor
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomer
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomerWithContactsRequest
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withName
+import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRequiredCompetence
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -914,6 +915,24 @@ class HakemusServiceITest(
             }
 
             @Test
+            fun `doesn't send email when the caller adds themself as contact`() {
+                val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+                val hakemus = hakemusFactory.builder(USERNAME, hanke).save()
+                val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
+                assertThat(founder.permission?.userId).isNotNull().isEqualTo(USERNAME)
+                val request =
+                    hakemus
+                        .toResponse()
+                        .toUpdateRequest()
+                        .withCustomer(CustomerType.COMPANY, null, founder.id)
+                        .withContractor(CustomerType.COMPANY, null, founder.id)
+
+                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                assertThat(greenMail.receivedMessages).isEmpty()
+            }
+
+            @Test
             fun `updates project name when application name is changed`() {
                 val entity = hakemusFactory.builderWithGeneratedHanke().saveEntity()
                 val hakemus = hakemusService.hakemusResponse(entity.id)
@@ -1177,6 +1196,7 @@ class HakemusServiceITest(
                             newKayttaja.id
                         )
                         .withWorkDescription("New work description")
+                        .withRequiredCompetence(true)
                         .withArea(area)
 
                 val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
@@ -1186,6 +1206,7 @@ class HakemusServiceITest(
                     .all {
                         prop(KaivuilmoitusDataResponse::workDescription)
                             .isEqualTo("New work description")
+                        prop(KaivuilmoitusDataResponse::requiredCompetence).isTrue()
                         prop(KaivuilmoitusDataResponse::customerWithContacts)
                             .isNotNull()
                             .prop(CustomerWithContactsResponse::contacts)
@@ -1314,6 +1335,27 @@ class HakemusServiceITest(
                     .contains(
                         "laatimassa kaivuilmoitusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})"
                     )
+            }
+
+            @Test
+            fun `doesn't send email when the caller adds themself as contact`() {
+                val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+                val hakemus =
+                    hakemusFactory
+                        .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                        .save()
+                val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
+                assertThat(founder.permission?.userId).isNotNull().isEqualTo(USERNAME)
+                val request =
+                    hakemus
+                        .toResponse()
+                        .toUpdateRequest()
+                        .withCustomer(CustomerType.COMPANY, null, founder.id)
+                        .withContractor(CustomerType.COMPANY, null, founder.id)
+
+                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                assertThat(greenMail.receivedMessages).isEmpty()
             }
 
             @Test
@@ -1807,6 +1849,37 @@ class HakemusServiceITest(
         }
 
         @Test
+        fun `deletes all attachment metadata even when deleting attachment content fails`() {
+            val hakemus = hakemusFactory.builderWithGeneratedHanke().withNoAlluFields().saveEntity()
+            attachmentFactory.save(application = hakemus).withContent()
+            attachmentFactory.save(application = hakemus).withContent()
+            assertThat(applicationAttachmentRepository.findByApplicationId(hakemus.id)).hasSize(2)
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(hakemus.id)
+                    )
+                )
+                .hasSize(2)
+            fileClient.connected = false
+
+            val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
+
+            fileClient.connected = true
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hankeRepository.findAll()).isEmpty()
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(hakemus.id)
+                    )
+                )
+                .hasSize(2)
+            assertThat(applicationAttachmentRepository.findByApplicationId(hakemus.id)).isEmpty()
+        }
+
+        @Test
         fun `doesn't delete hanke when hanke is not generated`() {
             val hakemus = hakemusFactory.builder().withNoAlluFields().save()
 
@@ -1958,6 +2031,37 @@ class HakemusServiceITest(
         }
 
         @Test
+        fun `deletes application attachment metadata even when attachment content deletion fails`() {
+            val application = hakemusFactory.builder().withNoAlluFields().saveEntity()
+            attachmentFactory.save(application = application).withContent()
+            attachmentFactory.save(application = application).withContent()
+            val hakemus = hakemusService.getById(application.id)
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(application.id)
+                    )
+                )
+                .hasSize(2)
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
+                .hasSize(2)
+            fileClient.connected = false
+
+            hakemusService.cancelAndDelete(hakemus, USERNAME)
+
+            fileClient.connected = true
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(application.id)
+                    )
+                )
+                .hasSize(2)
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
+                .isEmpty()
+        }
+
+        @Test
         fun `writes audit log for the deleted application`() {
             TestUtils.addMockedRequestIp()
             val hakemus = hakemusFactory.builder().withNoAlluFields().save()
@@ -2032,6 +2136,20 @@ class HakemusServiceITest(
             assertThat(hakemusyhteyshenkiloRepository.findAll()).isEmpty()
             assertThat(hankekayttajaRepository.count())
                 .isEqualTo(5) // Hanke founder + one kayttaja for each role
+        }
+
+        @Test
+        fun `deletes application when application is already cancelled`() {
+            val application =
+                hakemusFactory
+                    .builder()
+                    .withStatus(ApplicationStatus.CANCELLED, alluId)
+                    .saveEntity()
+            val hakemus = hakemusService.getById(application.id)
+
+            hakemusService.cancelAndDelete(hakemus, USERNAME)
+
+            assertThat(applicationRepository.findAll()).isEmpty()
         }
     }
 

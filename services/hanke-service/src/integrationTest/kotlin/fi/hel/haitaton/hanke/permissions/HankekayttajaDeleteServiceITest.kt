@@ -260,6 +260,23 @@ class HankekayttajaDeleteServiceITest(
         }
 
         @Test
+        fun `throws an exception if the user is the only identified user with Kaikki Oikeudet privileges`() {
+            val hanke = hankeFactory.builder().save()
+            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            hankeKayttajaFactory.saveUnidentifiedUser(
+                hanke.id,
+                kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
+            )
+
+            val failure = assertFailure { deleteService.delete(founder.id, USERNAME) }
+
+            failure.all {
+                hasClass(NoAdminRemainingException::class)
+                messageContains(hanke.hankeTunnus)
+            }
+        }
+
+        @Test
         fun `throws an exception if the user is the only yhteyshenkilo for an omistaja`() {
             val hanke = hankeFactory.builder().saveEntity()
             val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
