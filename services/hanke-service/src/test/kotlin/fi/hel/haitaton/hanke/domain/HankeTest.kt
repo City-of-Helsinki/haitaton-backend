@@ -2,8 +2,6 @@ package fi.hel.haitaton.hanke.domain
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
-import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
@@ -13,28 +11,10 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
 
 internal class HankeTest {
-
-    @ParameterizedTest(name = "There are {0} days between {1} and {2}")
-    @CsvSource("1,2021-03-02,2021-03-02", "214,2021-03-01,2021-09-30")
-    fun haittaAjanKesto(expectedNumberOfDays: Int, startDate: LocalDate, endDate: LocalDate) {
-        val hanke = HankeFactory.create(id = 1, hankeTunnus = "HAI21-1")
-        hanke.alueet.add(
-            SavedHankealue(
-                haittaAlkuPvm = startDate.atStartOfDay(TZ_UTC),
-                haittaLoppuPvm = endDate.atStartOfDay(TZ_UTC),
-                nimi = "$HANKEALUE_DEFAULT_NAME 1"
-            )
-        )
-        val haittaAjanKesto = hanke.haittaAjanKestoDays
-        assertThat(haittaAjanKesto!!).isEqualTo(expectedNumberOfDays)
-    }
 
     @Test
     fun `Hanke alku and loppu calculated from alueet`() {

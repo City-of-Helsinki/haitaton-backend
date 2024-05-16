@@ -38,7 +38,7 @@ class HankealueService(
         source: Hankealue,
         target: HankealueEntity?
     ): HankealueEntity {
-        val result = target ?: HankealueEntity(nimi = source.nimi)
+        val result = target ?: HankealueEntity(nimi = source.nimi, tormaystarkasteluTulos = null)
 
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
         // be simply dropped here.
@@ -71,7 +71,7 @@ class HankealueService(
         hanketunnus: String,
         source: NewHankealue,
     ): HankealueEntity {
-        val result = HankealueEntity(nimi = source.nimi)
+        val result = HankealueEntity(nimi = source.nimi, tormaystarkasteluTulos = null)
 
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
         // be simply dropped here.
@@ -93,20 +93,18 @@ class HankealueService(
         return result
     }
 
-    fun calculateTormaystarkastelu(
-        alueet: List<Hankealue>,
-        geometriaIds: Set<Int>,
-        hanke: HankeEntity,
-    ): TormaystarkasteluTulosEntity? =
-        tormaystarkasteluService.calculateTormaystarkastelu(alueet, geometriaIds)?.let {
-            TormaystarkasteluTulosEntity(
-                autoliikenne = it.autoliikenneindeksi,
-                pyoraliikenne = it.pyoraliikenneindeksi,
-                linjaautoliikenne = it.linjaautoliikenneindeksi,
-                raitioliikenne = it.raitioliikenneindeksi,
-                hanke = hanke
-            )
-        }
+    fun updateTormaystarkastelu(alue: HankealueEntity) {
+        alue.tormaystarkasteluTulos =
+            tormaystarkasteluService.calculateTormaystarkastelu(alue)?.let {
+                TormaystarkasteluTulosEntity(
+                    autoliikenne = it.autoliikenneindeksi,
+                    pyoraliikenne = it.pyoraliikenneindeksi,
+                    linjaautoliikenne = it.linjaautoliikenneindeksi,
+                    raitioliikenne = it.raitioliikenneindeksi,
+                    hankealue = alue,
+                )
+            }
+    }
 
     companion object {
 

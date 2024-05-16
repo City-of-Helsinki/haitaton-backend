@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
-import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankealueEntity
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -11,7 +11,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 
 @Schema(description = "Collision review result")
@@ -74,7 +74,15 @@ class TormaystarkasteluTulosEntity(
     val pyoraliikenne: Float,
     val linjaautoliikenne: Float,
     val raitioliikenne: Float,
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "hankeid")
-    val hanke: HankeEntity,
-)
+    @OneToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "hankealue_id")
+    val hankealue: HankealueEntity,
+) {
+    fun toDomain(): TormaystarkasteluTulos =
+        TormaystarkasteluTulos(
+            autoliikenne,
+            pyoraliikenne,
+            linjaautoliikenne,
+            raitioliikenne,
+        )
+}

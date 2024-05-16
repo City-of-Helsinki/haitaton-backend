@@ -91,23 +91,23 @@
       "meluHaitta": "SATUNNAINEN_MELUHAITTA",
       "polyHaitta": "TOISTUVA_POLYHAITTA",
       "tarinaHaitta": "JATKUVA_TARINAHAITTA",
+      {{#tormaystarkasteluTulos}}
+          "tormaystarkasteluTulos": {
+            "autoliikenneindeksi": 1.4,
+            "pyoraliikenneindeksi": 0.0,
+            "linjaautoliikenneindeksi": 0.0,
+            "raitioliikenneindeksi": 0.0,
+            "liikennehaittaindeksi": {
+              "indeksi": 1.4,
+              "tyyppi": "AUTOLIIKENNEINDEKSI"
+            }
+          },
+      {{/tormaystarkasteluTulos}}
+      {{^tormaystarkasteluTulos}}
+          "tormaystarkasteluTulos": null,
+      {{/tormaystarkasteluTulos}}
       "nimi": {{#alueNimi}}"{{alueNimi}}"{{/alueNimi}}{{^alueNimi}}null{{/alueNimi}}
     }
 {{/alueId}}
-  ],
-{{#tormaystarkasteluTulos}}
-  "tormaystarkasteluTulos": {
-    "autoliikenneindeksi": 1.4,
-    "pyoraliikenneindeksi": 0.0,
-    "linjaautoliikenneindeksi": 0.0,
-    "raitioliikenneindeksi": 0.0,
-    "liikennehaittaindeksi": {
-      "indeksi": 1.4,
-      "tyyppi": "AUTOLIIKENNEINDEKSI"
-    }
-  }
-{{/tormaystarkasteluTulos}}
-{{^tormaystarkasteluTulos}}
-  "tormaystarkasteluTulos": null
-{{/tormaystarkasteluTulos}}
+  ]
 }
