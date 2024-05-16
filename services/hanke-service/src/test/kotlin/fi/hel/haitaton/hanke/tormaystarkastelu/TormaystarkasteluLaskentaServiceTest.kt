@@ -17,6 +17,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
+import io.mockk.verifySequence
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class TormaystarkasteluLaskentaServiceTest {
@@ -282,46 +284,32 @@ internal class TormaystarkasteluLaskentaServiceTest {
     }
 
     @Nested
-    inner class Pyoraliikenneluokittelu {
+    inner class CalculatePyoraliikenneindeksi {
         // The parameter is only used to call mocks
         val geometriat = setOf<Int>()
 
-        @Test
-        fun `returns 5 when intersect with priority route`() {
-            every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) } returns true
+        @ParameterizedTest
+        @ValueSource(ints = [2, 3, 5])
+        fun `returns the matching float when the geometries intersect with cycle routes`(
+            hierarkiaValue: Int
+        ) {
+            every { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) } returns
+                hierarkiaValue
 
-            val result = laskentaService.pyoraliikenneluokittelu(geometriat)
+            val result = laskentaService.calculatePyoraliikenneindeksi(geometriat)
 
-            assertThat(result).isEqualTo(5)
-            verify { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) }
+            assertThat(result).isEqualTo(hierarkiaValue.toFloat())
+            verifySequence { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) }
         }
 
         @Test
-        fun `returns 4 when intersect with main route, but not priority route`() {
-            every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) } returns false
-            every { tormaysService.anyIntersectsWithCyclewaysMain(geometriat) } returns true
+        fun `returns 0 when the geometries don't intersect with any cycle routes`() {
+            every { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) } returns null
 
-            val result = laskentaService.pyoraliikenneluokittelu(geometriat)
+            val result = laskentaService.calculatePyoraliikenneindeksi(geometriat)
 
-            assertThat(result).isEqualTo(4)
-            verifyAll {
-                tormaysService.anyIntersectsWithCyclewaysPriority(geometriat)
-                tormaysService.anyIntersectsWithCyclewaysMain(geometriat)
-            }
-        }
-
-        @Test
-        fun `returns 0 when doesn't intersect with either`() {
-            every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) } returns false
-            every { tormaysService.anyIntersectsWithCyclewaysMain(geometriat) } returns false
-
-            val result = laskentaService.pyoraliikenneluokittelu(geometriat)
-
-            assertThat(result).isEqualTo(0)
-            verifyAll {
-                tormaysService.anyIntersectsWithCyclewaysPriority(geometriat)
-                tormaysService.anyIntersectsWithCyclewaysMain(geometriat)
-            }
+            assertThat(result).isEqualTo(0f)
+            verifySequence { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) }
         }
     }
 
@@ -466,16 +454,15 @@ internal class TormaystarkasteluLaskentaServiceTest {
 
         assertThat(tulos).isNotNull()
         assertThat(tulos!!.liikennehaittaindeksi).isNotNull()
-        assertThat(tulos.liikennehaittaindeksi.indeksi).isNotNull()
-        assertThat(tulos.liikennehaittaindeksi.indeksi).isEqualTo(5.0f)
+        assertThat(tulos.liikennehaittaindeksi.indeksi).isNotNull().isEqualTo(5.0f)
         assertThat(tulos.raitioliikenneindeksi).isEqualTo(3.0f)
+        assertThat(tulos.pyoraliikenneindeksi).isEqualTo(3.0f)
 
-        verifyAll {
+        verifySequence {
             tormaysService.anyIntersectsYleinenKatuosa(geometriaIds)
             tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds)
             tormaysService.maxLiikennemaara(geometriaIds, RADIUS_30)
-            tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds)
-            tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds)
+            tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriaIds)
             tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds)
             tormaysService.anyIntersectsWithTramLines(geometriaIds)
             tormaysService.anyIntersectsWithTramInfra(geometriaIds)
@@ -503,8 +490,8 @@ internal class TormaystarkasteluLaskentaServiceTest {
         every { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds) } returns
             TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value
         every { tormaysService.maxLiikennemaara(geometriaIds, RADIUS_30) } returns 1000
-        every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds) } returns false
-        every { tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds) } returns true
+        every { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriaIds) } returns
+            PyoraliikenteenHierarkia.MUU_PYORAREITTI.value
         every { tormaysService.anyIntersectsWithTramInfra(geometriaIds) } returns true
         every { tormaysService.anyIntersectsWithTramLines(geometriaIds) } returns false
         every { tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds) } returns true

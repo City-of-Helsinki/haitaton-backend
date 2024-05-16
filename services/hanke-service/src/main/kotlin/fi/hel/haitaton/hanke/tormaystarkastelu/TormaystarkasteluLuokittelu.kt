@@ -69,12 +69,6 @@ enum class Liikennemaaraluokittelu(override val value: Int) : Luokittelu {
     EI_LIIKENNETTA(0)
 }
 
-enum class Pyoraliikenneluokittelu(override val value: Int) : Luokittelu {
-    PRIORISOITU_REITTI_TAI_PRIORISOIDUN_REITIN_OSANA_TOIMIVA_KATU(5),
-    PAAREITTI_TAI_PAAREITIN_OSANA_TOIMIVA_KATU(4),
-    EI_VAIKUTA_PYORALIIKENTEESEEN(0)
-}
-
 enum class Linjaautoliikenneluokittelu(override val value: Int) : Luokittelu {
     /**
      * Kamppi-Rautatientori -alue, Mannerheimintie, Kaisaniemenkatu, Hämeentie or over 20 buses in

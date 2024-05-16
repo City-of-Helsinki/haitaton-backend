@@ -129,21 +129,12 @@ internal class TormaystarkasteluTormaysServiceITest : IntegrationTest() {
         assertThat(tormaysService.anyIntersectsWithTramLines(geometriaIds)).isEqualTo(result)
     }
 
-    /** Test manually what priority cycleways Hanke geometries are located on */
     @ParameterizedTest
-    @CsvSource("Kaivokatu,true", "Mustikkamaa,false")
-    fun `priority cycleways`(location: String, result: Boolean) {
+    @CsvSource("Kaivokatu,3", "Mustikkamaa,")
+    fun `cycleways hierarkia`(location: String, result: Int?) {
         val geometriaIds = createHankeGeometriat(location)
-        assertThat(tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds))
+        assertThat(tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriaIds))
             .isEqualTo(result)
-    }
-
-    /** Test manually what main cycleways Hanke geometries are located on */
-    @ParameterizedTest
-    @CsvSource("Kaivokatu,true", "Mustikkamaa,false")
-    fun `main cycleways`(location: String, result: Boolean) {
-        val geometriaIds = createHankeGeometriat(location)
-        assertThat(tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds)).isEqualTo(result)
     }
 
     private fun createHankeGeometriat(location: String): Set<Int> {
