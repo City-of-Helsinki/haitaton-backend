@@ -57,6 +57,7 @@ class ApplicationAttachmentService(
                 "content type = ${attachment.contentType}"
         }
         val filename = AttachmentValidator.validFilename(attachment.originalFilename)
+        AttachmentValidator.validateExtensionForType(filename, attachmentType)
         val application = findApplication(applicationId)
 
         if (isInAllu(application)) {

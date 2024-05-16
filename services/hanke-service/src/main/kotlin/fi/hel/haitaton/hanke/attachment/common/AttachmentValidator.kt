@@ -9,9 +9,11 @@ import org.springframework.web.multipart.MultipartFile
 
 private val logger = KotlinLogging.logger {}
 
+private const val pdfExtension = "pdf"
+
 private val supportedFiletypes =
     setOf(
-        "pdf",
+        pdfExtension,
         "jpg",
         "jpeg",
         "png",
@@ -84,6 +86,17 @@ object AttachmentValidator {
             throw AttachmentInvalidException("Invalid content type, $type")
         }
 
+    fun validateExtensionForType(
+        sanitizedFilename: String,
+        attachmentType: ApplicationAttachmentType
+    ) {
+        if (!isValidExtensionForType(sanitizedFilename, attachmentType)) {
+            throw AttachmentInvalidException(
+                "File extension is not valid for attachment type. filename=$sanitizedFilename, attachmentType=$attachmentType"
+            )
+        }
+    }
+
     private fun sanitizeFilename(filename: String?): String? =
         filename?.replace(INVALID_CHARS_PATTERN, "_")
 
@@ -106,7 +119,19 @@ object AttachmentValidator {
     }
 
     private fun supportedType(filename: String): Boolean {
-        val extension = getExtension(filename)
-        return supportedFiletypes.contains(extension.lowercase())
+        val extension = getExtension(filename).lowercase()
+        return supportedFiletypes.contains(extension)
+    }
+
+    private fun isValidExtensionForType(
+        filename: String,
+        attachmentType: ApplicationAttachmentType
+    ): Boolean {
+        val extension = getExtension(filename).lowercase()
+        return when (attachmentType) {
+            ApplicationAttachmentType.MUU -> supportedFiletypes.contains(extension)
+            ApplicationAttachmentType.VALTAKIRJA,
+            ApplicationAttachmentType.LIIKENNEJARJESTELY -> extension == pdfExtension
+        }
     }
 }
