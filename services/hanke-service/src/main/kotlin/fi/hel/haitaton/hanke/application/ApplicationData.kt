@@ -198,6 +198,7 @@ data class ExcavationNotificationData(
             rockExcavation = rockExcavation,
             cableReports = cableReports,
             placementContracts = placementContracts,
+            requiredCompetence = requiredCompetence ?: false,
             startTime = startTime,
             endTime = endTime,
             areas = areas,

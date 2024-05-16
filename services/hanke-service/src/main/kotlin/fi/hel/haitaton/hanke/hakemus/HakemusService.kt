@@ -51,7 +51,7 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
-import java.util.*
+import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.geojson.Polygon
@@ -231,6 +231,14 @@ class HakemusService(
         // Save only if sendApplicationToAllu didn't throw an exception
         return applicationRepository.save(hakemus).toHakemus()
     }
+
+    /**
+     * Deletes an application. Cancels the application in Allu if it's still pending. Refuses to
+     * delete, if the application is in Allu, and it's beyond the pending status.
+     */
+    @Transactional
+    fun delete(applicationId: Long, userId: String) =
+        with(getById(applicationId)) { cancelAndDelete(this, userId) }
 
     /**
      * Deletes an application. Cancels the application in Allu if it's still pending. Refuses to
@@ -847,25 +855,27 @@ class HakemusService(
         excludedUserIds: Set<UUID>,
         userId: String,
     ) {
-        applicationEntity.allContactUsers().toMutableList().apply {
-            removeIf { excludedUserIds.contains(it.id) }
-            if (isNotEmpty()) {
-                val inviter =
-                    hankeKayttajaService.getKayttajaByUserId(applicationEntity.hanke.id, userId)
-                        ?: throw CurrentUserWithoutKayttajaException(userId)
-                forEach {
-                    emailSenderService.sendApplicationNotificationEmail(
-                        ApplicationNotificationData(
-                            inviter.fullName(),
-                            inviter.sahkoposti,
-                            it.sahkoposti,
-                            applicationEntity.applicationType,
-                            applicationEntity.hanke.hankeTunnus,
-                            applicationEntity.hanke.nimi,
-                        )
-                    )
-                }
-            }
+        val newContacts =
+            applicationEntity.allContactUsers().filterNot { excludedUserIds.contains(it.id) }
+        if (newContacts.isEmpty()) {
+            return
+        }
+
+        val inviter =
+            hankeKayttajaService.getKayttajaByUserId(applicationEntity.hanke.id, userId)
+                ?: throw CurrentUserWithoutKayttajaException(userId)
+
+        for (newContact in newContacts.filter { it.sahkoposti != inviter.sahkoposti }) {
+            val data =
+                ApplicationNotificationData(
+                    inviter.fullName(),
+                    inviter.sahkoposti,
+                    newContact.sahkoposti,
+                    applicationEntity.applicationType,
+                    applicationEntity.hanke.hankeTunnus,
+                    applicationEntity.hanke.nimi,
+                )
+            emailSenderService.sendApplicationNotificationEmail(data)
         }
     }
 
@@ -896,6 +906,10 @@ class HakemusService(
             alluClient.cancel(alluId)
             alluClient.sendSystemComment(alluId, ALLU_USER_CANCELLATION_MSG)
             logger.info { "Hakemus canceled, proceeding to delete it. id=$id alluid=${alluId}" }
+        } else if (isCancelled(alluStatus)) {
+            logger.info {
+                "Hakemus is already cancelled, proceeding to delete it. id=$id alluid=${alluId}"
+            }
         } else {
             throw ApplicationAlreadyProcessingException(id, alluId)
         }
@@ -926,6 +940,8 @@ class HakemusService(
             else -> false
         }
     }
+
+    fun isCancelled(alluStatus: ApplicationStatus?) = alluStatus == ApplicationStatus.CANCELLED
 }
 
 class IncompatibleHakemusUpdateRequestException(
