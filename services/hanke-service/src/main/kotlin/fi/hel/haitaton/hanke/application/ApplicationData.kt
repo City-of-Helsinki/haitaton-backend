@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
@@ -38,8 +39,6 @@ sealed interface ApplicationData {
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<ApplicationArea>?
-    val customerWithContacts: CustomerWithContacts?
-    val representativeWithContacts: CustomerWithContacts?
 
     fun copy(pendingOnClient: Boolean): ApplicationData
 }
@@ -59,10 +58,6 @@ data class CableReportApplicationData(
     override val startTime: ZonedDateTime?,
     override val endTime: ZonedDateTime?,
     override val areas: List<CableReportApplicationArea>?,
-    override val customerWithContacts: CustomerWithContacts?,
-    val contractorWithContacts: CustomerWithContacts?,
-    val propertyDeveloperWithContacts: CustomerWithContacts? = null,
-    override val representativeWithContacts: CustomerWithContacts? = null,
 ) : ApplicationData {
     override fun copy(pendingOnClient: Boolean): CableReportApplicationData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
@@ -107,10 +102,6 @@ data class ExcavationNotificationData(
     override val startTime: ZonedDateTime?,
     override val endTime: ZonedDateTime?,
     override val areas: List<ExcavationNotificationArea>?,
-    override val customerWithContacts: CustomerWithContacts?,
-    val contractorWithContacts: CustomerWithContacts?,
-    val propertyDeveloperWithContacts: CustomerWithContacts? = null,
-    override val representativeWithContacts: CustomerWithContacts? = null,
     val invoicingCustomer: InvoicingCustomer? = null,
     val customerReference: String? = null,
     val additionalInfo: String? = null,

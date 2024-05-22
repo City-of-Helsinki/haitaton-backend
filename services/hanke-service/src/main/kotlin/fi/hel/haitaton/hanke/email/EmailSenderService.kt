@@ -1,8 +1,8 @@
 package fi.hel.haitaton.hanke.email
 
-import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.getResource
 import fi.hel.haitaton.hanke.getResourceAsText
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import jakarta.mail.internet.MimeMessage
 import mu.KotlinLogging

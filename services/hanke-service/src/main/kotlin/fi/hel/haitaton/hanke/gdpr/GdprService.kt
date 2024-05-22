@@ -121,7 +121,6 @@ class GdprService(
             kayttaja.hakemusyhteyshenkilot
                 .map { it.hakemusyhteystieto }
                 .map { it.application }
-                .map { it.toApplication() }
                 .filter { it.alluid != null }
 
         return activeApplications.map { GdprError.fromSentApplication(it.applicationIdentifier) }

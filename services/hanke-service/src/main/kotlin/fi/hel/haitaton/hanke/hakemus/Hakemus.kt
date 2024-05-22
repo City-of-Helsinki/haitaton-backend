@@ -2,13 +2,16 @@ package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.application.ApplicationMetaData
-import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.domain.HasId
 import java.time.ZonedDateTime
+
+enum class ApplicationType {
+    CABLE_REPORT,
+    EXCAVATION_NOTIFICATION,
+}
 
 data class Hakemus(
     override val id: Long,
@@ -31,8 +34,8 @@ data class Hakemus(
             hankeTunnus = hankeTunnus,
         )
 
-    fun toMetadata(): ApplicationMetaData =
-        ApplicationMetaData(
+    fun toMetadata(): HakemusMetaData =
+        HakemusMetaData(
             id = id,
             alluid = alluid,
             alluStatus = alluStatus,
@@ -169,3 +172,13 @@ interface HakemusIdentifier : HasId<Long> {
 
     fun logString() = "Hakemus: (id=$id, alluId=$alluid, identifier=$applicationIdentifier)"
 }
+
+/** Without application data, just the identifiers and metadata. */
+data class HakemusMetaData(
+    override val id: Long,
+    override val alluid: Int?,
+    val alluStatus: ApplicationStatus?,
+    override val applicationIdentifier: String?,
+    val applicationType: ApplicationType,
+    val hankeTunnus: String,
+) : HakemusIdentifier
