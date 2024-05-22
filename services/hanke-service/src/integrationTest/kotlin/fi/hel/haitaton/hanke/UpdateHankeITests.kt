@@ -10,6 +10,7 @@ import assertk.assertions.first
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.hasSize
+import assertk.assertions.isBetween
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotEmpty
@@ -57,6 +58,7 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.Duration
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -101,21 +103,14 @@ class UpdateHankeITests(
             prop(Hanke::version).isEqualTo(1)
             prop(Hanke::createdAt).isEqualTo(hanke.createdAt)
             prop(Hanke::createdBy).isEqualTo(hanke.createdBy)
-            prop(Hanke::modifiedAt).isRecentZDT(Duration.ofMinutes(10))
+            prop(Hanke::modifiedAt).isNotNull().isBetween(hanke.createdAt, ZonedDateTime.now())
             prop(Hanke::modifiedBy).isNotNull().isEqualTo(USERNAME)
         }
-        val loadedHanke = hankeService.loadHanke(result.hankeTunnus)
-        assertThat(loadedHanke).isNotNull().all {
-            prop(Hanke::version).isEqualTo(1)
-            prop(Hanke::createdAt).isEqualTo(hanke.createdAt)
-            prop(Hanke::createdBy).isEqualTo(hanke.createdBy)
-            prop(Hanke::modifiedAt).isRecentZDT(Duration.ofMinutes(10))
-            prop(Hanke::modifiedBy).isNotNull().isEqualTo(USERNAME)
-        }
+        assertThat(hankeService.loadHanke(result.hankeTunnus)).isEqualTo(result)
     }
 
     @Test
-    fun `doesn't update metadata fields when nothing changes`() {
+    fun `updates metadata fields when nothing changes`() {
         val hanke = hankeFactory.builder(USERNAME).create()
         assertThat(hanke).all {
             prop(Hanke::version).isEqualTo(0)
@@ -133,17 +128,10 @@ class UpdateHankeITests(
             prop(Hanke::version).isEqualTo(1)
             prop(Hanke::createdAt).isEqualTo(hanke.createdAt)
             prop(Hanke::createdBy).isEqualTo(hanke.createdBy)
-            prop(Hanke::modifiedAt).isRecentZDT(Duration.ofMinutes(10))
+            prop(Hanke::modifiedAt).isNotNull().isBetween(hanke.createdAt, ZonedDateTime.now())
             prop(Hanke::modifiedBy).isNotNull().isEqualTo(USERNAME)
         }
-        val loadedHanke = hankeService.loadHanke(result.hankeTunnus)
-        assertThat(loadedHanke).isNotNull().all {
-            prop(Hanke::version).isEqualTo(1)
-            prop(Hanke::createdAt).isEqualTo(hanke.createdAt)
-            prop(Hanke::createdBy).isEqualTo(hanke.createdBy)
-            prop(Hanke::modifiedAt).isRecentZDT(Duration.ofMinutes(10))
-            prop(Hanke::modifiedBy).isNotNull().isEqualTo(USERNAME)
-        }
+        assertThat(hankeService.loadHanke(result.hankeTunnus)).isEqualTo(result)
     }
 
     @Test
