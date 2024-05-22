@@ -3,12 +3,11 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.HankePerustaja
+import fi.hel.haitaton.hanke.hakemus.ApplicationData
+import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
+import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
@@ -21,6 +20,7 @@ import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
+import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.ZonedDateTime

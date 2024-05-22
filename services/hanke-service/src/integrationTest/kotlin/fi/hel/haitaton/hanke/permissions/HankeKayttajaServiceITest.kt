@@ -26,7 +26,6 @@ import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -42,6 +41,7 @@ import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.identifier
+import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget

@@ -2,8 +2,6 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.PostalAddress
-import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
@@ -15,6 +13,8 @@ import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusDataResponse
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusDataResponse
+import fi.hel.haitaton.hanke.hakemus.PostalAddress
+import fi.hel.haitaton.hanke.hakemus.StreetAddress
 import java.time.ZonedDateTime
 import java.util.UUID
 

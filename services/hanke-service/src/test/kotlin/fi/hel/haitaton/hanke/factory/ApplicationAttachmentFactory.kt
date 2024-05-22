@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
@@ -14,6 +13,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.FileClient
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_APPLICATION_ID
+import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
 import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.OffsetDateTime
 import java.util.UUID

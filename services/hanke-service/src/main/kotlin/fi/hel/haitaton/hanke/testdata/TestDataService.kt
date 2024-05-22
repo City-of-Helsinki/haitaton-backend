@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.testdata
 
-import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service

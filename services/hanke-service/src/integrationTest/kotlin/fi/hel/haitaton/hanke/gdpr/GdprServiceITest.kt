@@ -23,8 +23,6 @@ import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -32,6 +30,8 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.PermissionFactory
+import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
+import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity

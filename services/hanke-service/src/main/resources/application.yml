@@ -49,8 +49,8 @@ haitaton:
     graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
     audience: ${PROFIILI_AUDIENCE:https://api.hel.fi/auth/helsinkiprofile}
   testdata:
-    # For dev and test environments, enable the testdata controller for resetting data
     enabled: ${HAITATON_TESTDATA_ENABLED:false}
+    # For dev and test environments, enable the testdata controller for resetting data
 
 info:
   java-vendor: ${java.specification.vendor}

@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
@@ -20,6 +19,7 @@ import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.PostalAddressRequest
+import fi.hel.haitaton.hanke.hakemus.StreetAddress
 import fi.hel.haitaton.hanke.parseJson
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.ZonedDateTime

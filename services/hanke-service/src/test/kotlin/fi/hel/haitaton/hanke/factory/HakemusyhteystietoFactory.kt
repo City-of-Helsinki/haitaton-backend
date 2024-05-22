@@ -1,8 +1,8 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.ApplicationEntity
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
+import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity

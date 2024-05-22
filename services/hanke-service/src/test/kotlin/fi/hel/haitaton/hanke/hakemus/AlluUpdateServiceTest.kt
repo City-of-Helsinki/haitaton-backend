@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.hakemus
 import assertk.assertThat
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.configuration.LockService
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent

@@ -7,9 +7,9 @@ import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

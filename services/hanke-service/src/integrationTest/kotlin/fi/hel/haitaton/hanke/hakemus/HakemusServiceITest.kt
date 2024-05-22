@@ -35,15 +35,6 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
-import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
@@ -78,6 +69,10 @@ import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.getResourceAsBytes
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.ASIANHOITAJA
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.HAKIJA
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.RAKENNUTTAJA
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCableReportData
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AlluContactWithRole
