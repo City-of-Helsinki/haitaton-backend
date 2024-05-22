@@ -23,7 +23,7 @@ class HakemusUpdateRequestTest {
         fun `returns false when nothing has changed`() {
             val original =
                 ApplicationFactory.createApplicationEntity(
-                    applicationData = ApplicationFactory.createBlankCableReportApplicationData(),
+                    hakemusEntityData = ApplicationFactory.createBlankCableReportApplicationData(),
                     hanke = HankeFactory.createMinimalEntity()
                 )
             val request = HakemusUpdateRequestFactory.createBlankJohtoselvityshakemusUpdateRequest()
@@ -35,7 +35,7 @@ class HakemusUpdateRequestTest {
         fun `returns true when name is changed`() {
             val original =
                 ApplicationFactory.createApplicationEntity(
-                    applicationData = ApplicationFactory.createBlankCableReportApplicationData(),
+                    hakemusEntityData = ApplicationFactory.createBlankCableReportApplicationData(),
                     hanke = HankeFactory.createMinimalEntity()
                 )
             val request =
@@ -49,7 +49,7 @@ class HakemusUpdateRequestTest {
         fun `returns true when work description is changed`() {
             val original =
                 ApplicationFactory.createApplicationEntity(
-                    applicationData = ApplicationFactory.createBlankCableReportApplicationData(),
+                    hakemusEntityData = ApplicationFactory.createBlankCableReportApplicationData(),
                     hanke = HankeFactory.createMinimalEntity()
                 )
             val request =
@@ -65,7 +65,7 @@ class HakemusUpdateRequestTest {
         fun `returns true when a customer is added`() {
             val original =
                 ApplicationFactory.createApplicationEntity(
-                    applicationData = ApplicationFactory.createBlankCableReportApplicationData(),
+                    hakemusEntityData = ApplicationFactory.createBlankCableReportApplicationData(),
                     hanke = HankeFactory.createMinimalEntity()
                 )
             val request =
@@ -124,7 +124,7 @@ class HakemusUpdateRequestTest {
         vararg hakemusyhteyshenkilot: Pair<String, Boolean>
     ): HakemusEntity =
         ApplicationFactory.createApplicationEntity(
-                applicationData = ApplicationFactory.createBlankCableReportApplicationData(),
+                hakemusEntityData = ApplicationFactory.createBlankCableReportApplicationData(),
                 hanke = HankeFactory.createMinimalEntity()
             )
             .apply {

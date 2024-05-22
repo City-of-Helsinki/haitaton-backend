@@ -25,7 +25,7 @@ import org.springframework.integration.jdbc.lock.JdbcLockRegistry
 import org.springframework.web.reactive.function.client.WebClientResponseException
 
 class AlluUpdateServiceTest {
-    private val applicationRepository: ApplicationRepository = mockk()
+    private val hakemusRepository: HakemusRepository = mockk()
     private val alluStatusRepository: AlluStatusRepository = mockk()
     private val cableReportService: CableReportService = mockk()
     private val hakemusService: HakemusService = mockk()
@@ -34,7 +34,7 @@ class AlluUpdateServiceTest {
 
     private val alluUpdateService =
         AlluUpdateService(
-            applicationRepository,
+            hakemusRepository,
             alluStatusRepository,
             cableReportService,
             hakemusService,
@@ -51,7 +51,7 @@ class AlluUpdateServiceTest {
         checkUnnecessaryStub()
         confirmVerified(
             alluStatusRepository,
-            applicationRepository,
+            hakemusRepository,
             cableReportService,
             hakemusService,
             jdbcLockRegistry,
@@ -67,13 +67,13 @@ class AlluUpdateServiceTest {
         @Test
         fun `does nothing with no alluids`() {
             mockLocking(true)
-            every { applicationRepository.getAllAlluIds() } returns listOf()
+            every { hakemusRepository.getAllAlluIds() } returns listOf()
 
             alluUpdateService.checkApplicationStatuses()
 
             verifyOrder {
                 jdbcLockRegistry.obtain(alluUpdateService.lockName)
-                applicationRepository.getAllAlluIds()
+                hakemusRepository.getAllAlluIds()
                 alluStatusRepository wasNot Called
                 cableReportService wasNot Called
                 hakemusService wasNot Called
@@ -84,7 +84,7 @@ class AlluUpdateServiceTest {
         fun `calls Allu with alluids and last update date`() {
             mockLocking(true)
             val alluids = listOf(23, 24)
-            every { applicationRepository.getAllAlluIds() } returns alluids
+            every { hakemusRepository.getAllAlluIds() } returns alluids
             every { alluStatusRepository.getLastUpdateTime() } returns lastUpdated
             every { cableReportService.getApplicationStatusHistories(alluids, eventsAfter) } returns
                 listOf()
@@ -94,7 +94,7 @@ class AlluUpdateServiceTest {
 
             verifyOrder {
                 jdbcLockRegistry.obtain(alluUpdateService.lockName)
-                applicationRepository.getAllAlluIds()
+                hakemusRepository.getAllAlluIds()
                 alluStatusRepository.getLastUpdateTime()
                 cableReportService.getApplicationStatusHistories(alluids, eventsAfter)
                 hakemusService.handleHakemusUpdates(listOf(), any())
@@ -106,7 +106,7 @@ class AlluUpdateServiceTest {
             mockLocking(true)
             val alluids = listOf(23, 24)
             val histories = listOf(ApplicationHistoryFactory.create(applicationId = 24))
-            every { applicationRepository.getAllAlluIds() } returns alluids
+            every { hakemusRepository.getAllAlluIds() } returns alluids
             every { alluStatusRepository.getLastUpdateTime() } returns lastUpdated
             every { cableReportService.getApplicationStatusHistories(alluids, eventsAfter) } returns
                 histories
@@ -116,7 +116,7 @@ class AlluUpdateServiceTest {
 
             verifyOrder {
                 jdbcLockRegistry.obtain(alluUpdateService.lockName)
-                applicationRepository.getAllAlluIds()
+                hakemusRepository.getAllAlluIds()
                 alluStatusRepository.getLastUpdateTime()
                 cableReportService.getApplicationStatusHistories(alluids, eventsAfter)
                 hakemusService.handleHakemusUpdates(histories, any())
@@ -127,7 +127,7 @@ class AlluUpdateServiceTest {
         fun `calls application service with the current time`() {
             mockLocking(true)
             val alluids = listOf(23, 24)
-            every { applicationRepository.getAllAlluIds() } returns alluids
+            every { hakemusRepository.getAllAlluIds() } returns alluids
             every { alluStatusRepository.getLastUpdateTime() } returns lastUpdated
             every { cableReportService.getApplicationStatusHistories(alluids, eventsAfter) } returns
                 listOf()
@@ -137,7 +137,7 @@ class AlluUpdateServiceTest {
 
             verifyOrder {
                 jdbcLockRegistry.obtain(alluUpdateService.lockName)
-                applicationRepository.getAllAlluIds()
+                hakemusRepository.getAllAlluIds()
                 alluStatusRepository.getLastUpdateTime()
                 cableReportService.getApplicationStatusHistories(alluids, eventsAfter)
                 hakemusService.handleHakemusUpdates(listOf(), withArg { assertThat(it).isRecent() })
@@ -152,7 +152,7 @@ class AlluUpdateServiceTest {
 
             verifyOrder {
                 jdbcLockRegistry.obtain(alluUpdateService.lockName)
-                applicationRepository wasNot Called
+                hakemusRepository wasNot Called
                 alluStatusRepository wasNot Called
                 cableReportService wasNot Called
                 hakemusService wasNot Called
@@ -163,7 +163,7 @@ class AlluUpdateServiceTest {
         fun `releases lock if there's an exception`() {
             val lock = mockLocking(true)
             val alluids = listOf(23, 24)
-            every { applicationRepository.getAllAlluIds() } returns alluids
+            every { hakemusRepository.getAllAlluIds() } returns alluids
             every { alluStatusRepository.getLastUpdateTime() } returns lastUpdated
             every { cableReportService.getApplicationStatusHistories(alluids, eventsAfter) } throws
                 WebClientResponseException(500, "Internal server error", null, null, null)
@@ -173,7 +173,7 @@ class AlluUpdateServiceTest {
             verifyOrder {
                 jdbcLockRegistry.obtain(alluUpdateService.lockName)
                 lock.tryLock()
-                applicationRepository.getAllAlluIds()
+                hakemusRepository.getAllAlluIds()
                 alluStatusRepository.getLastUpdateTime()
                 cableReportService.getApplicationStatusHistories(alluids, eventsAfter)
                 lock.unlock()

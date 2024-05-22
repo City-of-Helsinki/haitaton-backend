@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.testdata
 
-import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
@@ -11,17 +11,17 @@ private val logger = KotlinLogging.logger {}
 @Service
 @ConditionalOnProperty(name = ["haitaton.testdata.enabled"], havingValue = "true")
 class TestDataService(
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
 ) {
     @Transactional
     fun unlinkApplicationsFromAllu() {
         logger.warn { "Unlinking all applications from Allu." }
-        applicationRepository.findAll().forEach {
+        hakemusRepository.findAll().forEach {
             logger.warn { "Unlinking application from Allu. ${it.logString()}" }
             it.alluid = null
             it.alluStatus = null
             it.applicationIdentifier = null
-            it.applicationData = it.applicationData.copy(pendingOnClient = true)
+            it.hakemusEntityData = it.hakemusEntityData.copy(pendingOnClient = true)
         }
     }
 }

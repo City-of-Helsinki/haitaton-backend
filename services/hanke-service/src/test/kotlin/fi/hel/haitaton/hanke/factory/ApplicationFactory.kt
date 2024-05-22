@@ -4,15 +4,15 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
-import fi.hel.haitaton.hanke.hakemus.ApplicationData
-import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
-import fi.hel.haitaton.hanke.hakemus.CableReportApplicationData
-import fi.hel.haitaton.hanke.hakemus.ExcavationNotificationData
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.hakemus.InvoicingCustomer
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusEntityData
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.hakemus.StreetAddress
 import fi.hel.haitaton.hanke.hakemus.Tyoalue
@@ -30,7 +30,7 @@ const val TEPPO_TESTI = "Teppo Testihenkilö"
 
 @Component
 class ApplicationFactory(
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val hankeFactory: HankeFactory,
 ) {
     companion object {
@@ -120,7 +120,7 @@ class ApplicationFactory(
                 TormaystarkasteluTulos(1.0f, 3.0f, 5.0f, 5.0f),
         ) = Tyoalue(geometry, area, tormaystarkasteluTulos)
 
-        fun createBlankApplicationData(applicationType: ApplicationType): ApplicationData =
+        fun createBlankApplicationData(applicationType: ApplicationType): HakemusEntityData =
             when (applicationType) {
                 ApplicationType.CABLE_REPORT -> createBlankCableReportApplicationData()
                 ApplicationType.EXCAVATION_NOTIFICATION -> createBlankExcavationNotificationData()
@@ -135,8 +135,8 @@ class ApplicationFactory(
             workDescription: String = DEFAULT_WORK_DESCRIPTION,
             rockExcavation: Boolean = false,
             postalAddress: PostalAddress? = null,
-        ): CableReportApplicationData =
-            CableReportApplicationData(
+        ): JohtoselvityshakemusEntityData =
+            JohtoselvityshakemusEntityData(
                 applicationType = ApplicationType.CABLE_REPORT,
                 name = name,
                 areas = areas,
@@ -177,8 +177,8 @@ class ApplicationFactory(
             invoicingCustomer: InvoicingCustomer? = createCompanyInvoicingCustomer(),
             customerReference: String? = "Asiakkaan viite",
             additionalInfo: String? = null,
-        ): ExcavationNotificationData =
-            ExcavationNotificationData(
+        ): KaivuilmoitusEntityData =
+            KaivuilmoitusEntityData(
                 applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
                 pendingOnClient = pendingOnClient,
                 name = name,
@@ -215,7 +215,7 @@ class ApplicationFactory(
             applicationIdentifier: String? = null,
             userId: String? = null,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-            applicationData: ApplicationData = createCableReportApplicationData(),
+            hakemusEntityData: HakemusEntityData = createCableReportApplicationData(),
             hanke: HankeEntity,
         ): HakemusEntity =
             HakemusEntity(
@@ -225,7 +225,7 @@ class ApplicationFactory(
                 applicationIdentifier,
                 userId,
                 applicationType,
-                applicationData,
+                hakemusEntityData,
                 hanke = hanke,
             )
 
@@ -247,7 +247,7 @@ class ApplicationFactory(
         alluStatus: ApplicationStatus? = null,
         applicationIdentifier: String? = null,
         applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-        applicationData: ApplicationData = createCableReportApplicationData(),
+        hakemusEntityData: HakemusEntityData = createCableReportApplicationData(),
     ): HakemusEntity {
         val hakemusEntity =
             HakemusEntity(
@@ -257,9 +257,9 @@ class ApplicationFactory(
                 applicationIdentifier = applicationIdentifier,
                 userId = username,
                 applicationType = applicationType,
-                applicationData = applicationData,
+                hakemusEntityData = hakemusEntityData,
                 hanke = hanke,
             )
-        return applicationRepository.save(hakemusEntity)
+        return hakemusRepository.save(hakemusEntity)
     }
 }

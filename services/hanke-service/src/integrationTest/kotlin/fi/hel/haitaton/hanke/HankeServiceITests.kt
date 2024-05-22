@@ -62,11 +62,11 @@ import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.hakemus.ALLU_USER_CANCELLATION_MSG
-import fi.hel.haitaton.hanke.hakemus.ApplicationData
-import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -139,7 +139,7 @@ class HankeServiceITests(
     @Autowired private val hankeService: HankeService,
     @Autowired private val permissionService: PermissionService,
     @Autowired private val auditLogRepository: AuditLogRepository,
-    @Autowired private val applicationRepository: ApplicationRepository,
+    @Autowired private val hakemusRepository: HakemusRepository,
     @Autowired private val hankeRepository: HankeRepository,
     @Autowired private val hankekayttajaRepository: HankekayttajaRepository,
     @Autowired private val hankeYhteyshenkiloRepository: HankeYhteyshenkiloRepository,
@@ -381,7 +381,7 @@ class HankeServiceITests(
 
         val result = hankeService.getHankeApplications(hanke.hankeTunnus)
 
-        val expectedHakemus = applicationRepository.findAll().single().toMetadata()
+        val expectedHakemus = hakemusRepository.findAll().single().toMetadata()
         assertThat(result).hasSameElementsAs(listOf(expectedHakemus))
     }
 
@@ -1092,10 +1092,10 @@ class HankeServiceITests(
 
             hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
 
-            assertThat(applicationRepository.findAll())
+            assertThat(hakemusRepository.findAll())
                 .single()
-                .prop(HakemusEntity::applicationData)
-                .prop(ApplicationData::name)
+                .prop(HakemusEntity::hakemusEntityData)
+                .prop(HakemusEntityData::name)
                 .isEqualTo(hakemusNimi)
         }
 
@@ -1616,7 +1616,7 @@ class HankeServiceITests(
     ): HankeEntity {
         val hanke = hankeFactory.saveMinimal(hankeTunnus = "HAI23-1")
         val application =
-            applicationRepository.save(
+            hakemusRepository.save(
                 ApplicationFactory.createApplicationEntity(
                     hanke = hanke,
                     alluStatus = alluStatus,

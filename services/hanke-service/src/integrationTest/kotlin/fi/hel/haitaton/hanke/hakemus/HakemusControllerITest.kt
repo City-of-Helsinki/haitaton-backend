@@ -510,7 +510,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 IncompatibleHakemusUpdateRequestException(
                     HakemusFactory.create(id = id),
-                    CableReportApplicationData::class,
+                    JohtoselvityshakemusEntityData::class,
                     JohtoselvityshakemusUpdateRequest::class
                 ) // these types are actually compatible but since there are no other application
             // types yet, we use them here
@@ -798,7 +798,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         fun `deletes application and returns deletion result when the application is pending`(
             hankeDeleted: Boolean
         ) {
-            val expectedResponseBody = ApplicationDeletionResultDto(hankeDeleted)
+            val expectedResponseBody = HakemusDeletionResultDto(hankeDeleted)
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
