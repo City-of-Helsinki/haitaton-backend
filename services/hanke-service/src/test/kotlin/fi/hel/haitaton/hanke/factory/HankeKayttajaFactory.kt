@@ -4,8 +4,8 @@ import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.factory.KayttajaTunnisteFactory.TUNNISTE_ID
 import fi.hel.haitaton.hanke.factory.PermissionFactory.PERMISSION_ID
-import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
 import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.permissions.HankeKayttaja
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
@@ -141,7 +141,7 @@ class HankeKayttajaFactory(
 
     @Transactional
     fun getFounderFromHakemus(applicationId: Long): HankekayttajaEntity {
-        val application: ApplicationEntity = applicationRepository.getReferenceById(applicationId)
+        val application: HakemusEntity = applicationRepository.getReferenceById(applicationId)
         val permission =
             permissionService.findPermission(application.hanke.id, application.userId!!)!!
         return hankeKayttajaRepository.findByPermissionId(permission.id)!!

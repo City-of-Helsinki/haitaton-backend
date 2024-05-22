@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
-import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
@@ -29,7 +29,7 @@ object HakemusyhteystietoFactory {
         sahkoposti: String = DEFAULT_SAHKOPOSTI,
         puhelinnumero: String = DEFAULT_PUHELINNUMERO,
         ytunnus: String? = DEFAULT_YTUNNUS,
-        application: ApplicationEntity,
+        application: HakemusEntity,
     ): HakemusyhteystietoEntity =
         HakemusyhteystietoEntity(
             tyyppi = tyyppi,

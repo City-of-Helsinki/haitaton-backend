@@ -460,7 +460,7 @@ class HakemusServiceTest {
             }
         }
 
-        private fun applicationEntity(): ApplicationEntity {
+        private fun applicationEntity(): HakemusEntity {
             val hankeEntity = HankeFactory.createMinimalEntity(id = 1)
             val applicationEntity =
                 ApplicationFactory.createApplicationEntity(
@@ -570,7 +570,7 @@ class HakemusServiceTest {
             }
         }
 
-        private fun applicationEntityWithoutCustomer(id: Long = applicationId): ApplicationEntity {
+        private fun applicationEntityWithoutCustomer(id: Long = applicationId): HakemusEntity {
             val entity =
                 HakemusFactory.createEntity(
                     id = id,
@@ -582,7 +582,7 @@ class HakemusServiceTest {
             return entity
         }
 
-        private fun applicationEntityWithCustomer(id: Long = applicationId): ApplicationEntity {
+        private fun applicationEntityWithCustomer(id: Long = applicationId): HakemusEntity {
             val entity = applicationEntityWithoutCustomer(id)
             entity.yhteystiedot[ApplicationContactType.HAKIJA] =
                 HakemusyhteystietoFactory.createEntity(application = entity, sahkoposti = receiver)

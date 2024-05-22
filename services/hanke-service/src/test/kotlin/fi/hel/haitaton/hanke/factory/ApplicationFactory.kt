@@ -5,11 +5,11 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.hakemus.ApplicationData
-import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
 import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.CableReportApplicationData
 import fi.hel.haitaton.hanke.hakemus.ExcavationNotificationData
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.InvoicingCustomer
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
@@ -217,8 +217,8 @@ class ApplicationFactory(
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
             applicationData: ApplicationData = createCableReportApplicationData(),
             hanke: HankeEntity,
-        ): ApplicationEntity =
-            ApplicationEntity(
+        ): HakemusEntity =
+            HakemusEntity(
                 id,
                 alluid,
                 alluStatus,
@@ -248,9 +248,9 @@ class ApplicationFactory(
         applicationIdentifier: String? = null,
         applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
         applicationData: ApplicationData = createCableReportApplicationData(),
-    ): ApplicationEntity {
-        val applicationEntity =
-            ApplicationEntity(
+    ): HakemusEntity {
+        val hakemusEntity =
+            HakemusEntity(
                 id = 0,
                 alluid = alluId,
                 alluStatus = alluStatus,
@@ -260,6 +260,6 @@ class ApplicationFactory(
                 applicationData = applicationData,
                 hanke = hanke,
             )
-        return applicationRepository.save(applicationEntity)
+        return applicationRepository.save(hakemusEntity)
     }
 }

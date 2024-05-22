@@ -3,12 +3,12 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
-import fi.hel.haitaton.hanke.hakemus.ApplicationEntity
 import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.CableReportApplicationData
 import fi.hel.haitaton.hanke.hakemus.ExcavationNotificationData
 import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.Hakemusalue
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
@@ -25,7 +25,7 @@ import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import java.time.ZonedDateTime
 
 data class HakemusBuilder(
-    private var applicationEntity: ApplicationEntity,
+    private var hakemusEntity: HakemusEntity,
     private var hankeId: Int,
     private val userId: String,
     private val hakemusFactory: HakemusFactory,
@@ -39,8 +39,8 @@ data class HakemusBuilder(
 ) {
     fun save(): Hakemus = hakemusService.getById(saveEntity().id)
 
-    fun saveEntity(): ApplicationEntity {
-        val savedApplication = applicationRepository.save(applicationEntity)
+    fun saveEntity(): HakemusEntity {
+        val savedApplication = applicationRepository.save(hakemusEntity)
         savedApplication.yhteystiedot.forEach { (_, yhteystieto) ->
             yhteystieto.yhteyshenkilot.forEach { yhteyshenkilo ->
                 hakemusyhteyshenkiloRepository.save(yhteyshenkilo)
@@ -54,7 +54,7 @@ data class HakemusBuilder(
         alluId: Int? = 1,
         identifier: String? = "JS000$alluId",
     ): HakemusBuilder {
-        applicationEntity.apply {
+        hakemusEntity.apply {
             alluid = alluId
             alluStatus = status
             applicationIdentifier = identifier
@@ -113,14 +113,13 @@ data class HakemusBuilder(
         onCableReport: CableReportApplicationData.() -> CableReportApplicationData,
         onExcavationNotification: ExcavationNotificationData.() -> ExcavationNotificationData,
     ) = apply {
-        applicationEntity.applicationData =
-            when (applicationEntity.applicationType) {
+        hakemusEntity.applicationData =
+            when (hakemusEntity.applicationType) {
                 ApplicationType.CABLE_REPORT -> {
-                    (applicationEntity.applicationData as CableReportApplicationData)
-                        .onCableReport()
+                    (hakemusEntity.applicationData as CableReportApplicationData).onCableReport()
                 }
                 ApplicationType.EXCAVATION_NOTIFICATION -> {
-                    (applicationEntity.applicationData as ExcavationNotificationData)
+                    (hakemusEntity.applicationData as ExcavationNotificationData)
                         .onExcavationNotification()
                 }
             }
@@ -250,7 +249,7 @@ data class HakemusBuilder(
         val yhteyshenkiloEntities =
             yhteyshenkilot.map { createYhteyshenkiloEntity(yhteystietoEntity, it) }
         yhteystietoEntity.yhteyshenkilot.addAll(yhteyshenkiloEntities)
-        applicationEntity.yhteystiedot[rooli] = yhteystietoEntity
+        hakemusEntity.yhteystiedot[rooli] = yhteystietoEntity
 
         return this
     }
@@ -266,7 +265,7 @@ data class HakemusBuilder(
         val yhteyshenkiloEntity = createYhteyshenkiloEntity(yhteystietoEntity, kayttaja, tilaaja)
 
         yhteystietoEntity.yhteyshenkilot.add(yhteyshenkiloEntity)
-        applicationEntity.yhteystiedot[rooli] = yhteystietoEntity
+        hakemusEntity.yhteystiedot[rooli] = yhteystietoEntity
         return this
     }
 
@@ -275,7 +274,7 @@ data class HakemusBuilder(
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
     ): HankekayttajaEntity =
         hankeKayttajaFactory.findOrSaveIdentifiedUser(
-            applicationEntity.hanke.id,
+            hakemusEntity.hanke.id,
             kayttajaInput,
             kayttooikeustaso = kayttooikeustaso,
         )
@@ -291,7 +290,7 @@ data class HakemusBuilder(
             sahkoposti = yhteystieto.sahkoposti,
             puhelinnumero = yhteystieto.puhelinnumero,
             ytunnus = yhteystieto.ytunnus,
-            application = applicationEntity,
+            application = hakemusEntity,
         )
 
     private fun createYhteyshenkiloEntity(

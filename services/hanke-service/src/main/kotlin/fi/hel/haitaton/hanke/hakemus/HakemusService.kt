@@ -83,7 +83,7 @@ class HakemusService(
                 ?: throw HankeNotFoundException(createHakemusRequest.hankeTunnus)
         val entity =
             applicationRepository.save(
-                ApplicationEntity(
+                HakemusEntity(
                     id = 0,
                     alluid = null,
                     alluStatus = null,
@@ -114,7 +114,7 @@ class HakemusService(
                 workDescription = "",
             )
         val entity =
-            ApplicationEntity(
+            HakemusEntity(
                 id = 0,
                 alluid = null,
                 alluStatus = null,
@@ -335,10 +335,7 @@ class HakemusService(
         applicationRepository.save(application)
     }
 
-    private fun handleApplicationEvent(
-        application: ApplicationEntity,
-        event: ApplicationStatusEvent
-    ) {
+    private fun handleApplicationEvent(application: HakemusEntity, event: ApplicationStatusEvent) {
         application.alluStatus = event.newStatus
         application.applicationIdentifier = event.applicationIdentifier
         logger.info {
@@ -354,10 +351,7 @@ class HakemusService(
         }
     }
 
-    private fun sendDecisionReadyEmails(
-        application: ApplicationEntity,
-        applicationIdentifier: String
-    ) {
+    private fun sendDecisionReadyEmails(application: HakemusEntity, applicationIdentifier: String) {
         val receivers = application.allContactUsers()
 
         if (receivers.isEmpty()) {
@@ -386,10 +380,10 @@ class HakemusService(
     }
 
     /** Find the application entity or throw an exception. */
-    private fun getEntityById(id: Long): ApplicationEntity =
+    private fun getEntityById(id: Long): HakemusEntity =
         applicationRepository.findOneById(id) ?: throw HakemusNotFoundException(id)
 
-    private fun setOrderedOnSend(hakemus: ApplicationEntity, currentUserId: String) {
+    private fun setOrderedOnSend(hakemus: HakemusEntity, currentUserId: String) {
         val yhteyshenkilo: HakemusyhteyshenkiloEntity =
             listOf(
                     ApplicationContactType.HAKIJA,
@@ -406,12 +400,12 @@ class HakemusService(
     }
 
     /** Assert that the application has not been sent to Allu. */
-    private fun assertNotSent(applicationEntity: ApplicationEntity) {
-        if (applicationEntity.alluid != null) {
+    private fun assertNotSent(hakemusEntity: HakemusEntity) {
+        if (hakemusEntity.alluid != null) {
             throw HakemusAlreadySentException(
-                applicationEntity.id,
-                applicationEntity.alluid,
-                applicationEntity.alluStatus
+                hakemusEntity.id,
+                hakemusEntity.alluid,
+                hakemusEntity.alluStatus
             )
         }
     }
@@ -555,19 +549,16 @@ class HakemusService(
     }
 
     /** Assert that the update request is compatible with the application data. */
-    private fun assertCompatibility(
-        applicationEntity: ApplicationEntity,
-        request: HakemusUpdateRequest
-    ) {
+    private fun assertCompatibility(hakemusEntity: HakemusEntity, request: HakemusUpdateRequest) {
         val expected =
-            when (applicationEntity.applicationData) {
+            when (hakemusEntity.applicationData) {
                 is CableReportApplicationData -> request is JohtoselvityshakemusUpdateRequest
                 is ExcavationNotificationData -> request is KaivuilmoitusUpdateRequest
             }
         if (!expected) {
             throw IncompatibleHakemusUpdateRequestException(
-                applicationEntity,
-                applicationEntity.applicationData::class,
+                hakemusEntity,
+                hakemusEntity.applicationData::class,
                 request::class
             )
         }
@@ -590,27 +581,27 @@ class HakemusService(
      * of the application hanke.
      */
     private fun assertYhteystiedotValidity(
-        applicationEntity: ApplicationEntity,
+        hakemusEntity: HakemusEntity,
         updateRequest: HakemusUpdateRequest
     ) {
         val customersWithContacts = updateRequest.customersByRole()
         ApplicationContactType.entries.forEach {
             assertYhteystietoValidity(
-                applicationEntity,
+                hakemusEntity,
                 it,
-                applicationEntity.yhteystiedot[it],
+                hakemusEntity.yhteystiedot[it],
                 customersWithContacts[it]
             )
         }
 
         assertYhteyshenkilotValidity(
-            applicationEntity.hanke,
+            hakemusEntity.hanke,
             customersWithContacts.values
                 .filterNotNull()
                 .flatMap { it.contacts.map { contact -> contact.hankekayttajaId } }
                 .toSet()
         ) {
-            "Invalid hanke user/users received when updating hakemus ${applicationEntity.logString()}, invalidHankeKayttajaIds=$it"
+            "Invalid hanke user/users received when updating hakemus ${hakemusEntity.logString()}, invalidHankeKayttajaIds=$it"
         }
     }
 
@@ -704,20 +695,20 @@ class HakemusService(
         )
     }
 
-    /** Creates a new [ApplicationEntity] based on the given [request] and saves it. */
+    /** Creates a new [HakemusEntity] based on the given [request] and saves it. */
     private fun saveWithUpdate(
-        applicationEntity: ApplicationEntity,
+        hakemusEntity: HakemusEntity,
         request: HakemusUpdateRequest,
         userId: String,
-    ): ApplicationEntity {
-        val originalContactUserIds = applicationEntity.allContactUsers().map { it.id }.toSet()
+    ): HakemusEntity {
+        val originalContactUserIds = hakemusEntity.allContactUsers().map { it.id }.toSet()
         val updatedApplicationEntity =
-            applicationEntity.copy(
-                applicationData = request.toApplicationData(applicationEntity.applicationData),
+            hakemusEntity.copy(
+                applicationData = request.toApplicationData(hakemusEntity.applicationData),
                 yhteystiedot =
                     updateYhteystiedot(
-                        applicationEntity,
-                        applicationEntity.yhteystiedot,
+                        hakemusEntity,
+                        hakemusEntity.yhteystiedot,
                         request.customersByRole()
                     )
             )
@@ -729,7 +720,7 @@ class HakemusService(
     }
 
     private fun updateYhteystiedot(
-        applicationEntity: ApplicationEntity,
+        hakemusEntity: HakemusEntity,
         currentYhteystiedot: Map<ApplicationContactType, HakemusyhteystietoEntity>,
         newYhteystiedot: Map<ApplicationContactType, CustomerWithContactsRequest?>
     ): MutableMap<ApplicationContactType, HakemusyhteystietoEntity> {
@@ -737,7 +728,7 @@ class HakemusService(
         ApplicationContactType.entries.forEach { rooli ->
             updateYhteystieto(
                     rooli,
-                    applicationEntity,
+                    hakemusEntity,
                     currentYhteystiedot[rooli],
                     newYhteystiedot[rooli]
                 )
@@ -748,7 +739,7 @@ class HakemusService(
 
     private fun updateYhteystieto(
         rooli: ApplicationContactType,
-        applicationEntity: ApplicationEntity,
+        hakemusEntity: HakemusEntity,
         hakemusyhteystietoEntity: HakemusyhteystietoEntity?,
         customerWithContactsRequest: CustomerWithContactsRequest?
     ): HakemusyhteystietoEntity? {
@@ -758,10 +749,7 @@ class HakemusService(
         }
         if (hakemusyhteystietoEntity == null) {
             // new customer was added
-            return customerWithContactsRequest.toNewHakemusyhteystietoEntity(
-                rooli,
-                applicationEntity
-            )
+            return customerWithContactsRequest.toNewHakemusyhteystietoEntity(rooli, hakemusEntity)
         }
         // update existing customer
         return customerWithContactsRequest.toExistingHakemusyhteystietoEntity(
@@ -771,7 +759,7 @@ class HakemusService(
 
     private fun CustomerWithContactsRequest.toNewHakemusyhteystietoEntity(
         rooli: ApplicationContactType,
-        applicationEntity: ApplicationEntity
+        hakemusEntity: HakemusEntity
     ) =
         HakemusyhteystietoEntity(
                 tyyppi = customer.type,
@@ -780,7 +768,7 @@ class HakemusService(
                 sahkoposti = customer.email,
                 puhelinnumero = customer.phone,
                 ytunnus = customer.registryKey,
-                application = applicationEntity,
+                application = hakemusEntity,
             )
             .apply {
                 yhteyshenkilot.addAll(contacts.map { it.toNewHakemusyhteyshenkiloEntity(this) })
@@ -828,18 +816,18 @@ class HakemusService(
     }
 
     private fun sendApplicationNotifications(
-        applicationEntity: ApplicationEntity,
+        hakemusEntity: HakemusEntity,
         excludedUserIds: Set<UUID>,
         userId: String,
     ) {
         val newContacts =
-            applicationEntity.allContactUsers().filterNot { excludedUserIds.contains(it.id) }
+            hakemusEntity.allContactUsers().filterNot { excludedUserIds.contains(it.id) }
         if (newContacts.isEmpty()) {
             return
         }
 
         val inviter =
-            hankeKayttajaService.getKayttajaByUserId(applicationEntity.hanke.id, userId)
+            hankeKayttajaService.getKayttajaByUserId(hakemusEntity.hanke.id, userId)
                 ?: throw CurrentUserWithoutKayttajaException(userId)
 
         for (newContact in newContacts.filter { it.sahkoposti != inviter.sahkoposti }) {
@@ -848,9 +836,9 @@ class HakemusService(
                     inviter.fullName(),
                     inviter.sahkoposti,
                     newContact.sahkoposti,
-                    applicationEntity.applicationType,
-                    applicationEntity.hanke.hankeTunnus,
-                    applicationEntity.hanke.nimi,
+                    hakemusEntity.applicationType,
+                    hakemusEntity.hanke.hankeTunnus,
+                    hakemusEntity.hanke.nimi,
                 )
             emailSenderService.sendApplicationNotificationEmail(data)
         }

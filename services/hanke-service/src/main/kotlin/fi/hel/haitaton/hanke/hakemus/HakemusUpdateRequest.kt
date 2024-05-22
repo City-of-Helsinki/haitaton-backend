@@ -32,9 +32,9 @@ sealed interface HakemusUpdateRequest {
 
     /**
      * Returns true if this application update request has changes compared to the given
-     * [applicationEntity].
+     * [hakemusEntity].
      */
-    fun hasChanges(applicationEntity: ApplicationEntity): Boolean
+    fun hasChanges(hakemusEntity: HakemusEntity): Boolean
 
     /**
      * Converts this update request to an [ApplicationData] object using the given [baseData] as a
@@ -88,8 +88,8 @@ data class JohtoselvityshakemusUpdateRequest(
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusUpdateRequest {
 
-    override fun hasChanges(applicationEntity: ApplicationEntity): Boolean {
-        val applicationData = applicationEntity.applicationData as CableReportApplicationData
+    override fun hasChanges(hakemusEntity: HakemusEntity): Boolean {
+        val applicationData = hakemusEntity.applicationData as CableReportApplicationData
         return name != applicationData.name ||
             (postalAddress?.streetAddress?.streetName ?: "") !=
                 (applicationData.postalAddress?.streetAddress?.streetName ?: "") ||
@@ -103,16 +103,16 @@ data class JohtoselvityshakemusUpdateRequest(
             endTime != applicationData.endTime ||
             areas != applicationData.areas ||
             customerWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]
+                hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]
             ) ||
             contractorWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
+                hakemusEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
             ) ||
             propertyDeveloperWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]
+                hakemusEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]
             ) ||
             representativeWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]
+                hakemusEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]
             )
     }
 
@@ -193,8 +193,8 @@ data class KaivuilmoitusUpdateRequest(
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusUpdateRequest {
 
-    override fun hasChanges(applicationEntity: ApplicationEntity): Boolean {
-        val applicationData = applicationEntity.applicationData as ExcavationNotificationData
+    override fun hasChanges(hakemusEntity: HakemusEntity): Boolean {
+        val applicationData = hakemusEntity.applicationData as ExcavationNotificationData
         return name != applicationData.name ||
             workDescription != applicationData.workDescription ||
             constructionWork != applicationData.constructionWork ||
@@ -209,16 +209,16 @@ data class KaivuilmoitusUpdateRequest(
             endTime != applicationData.endTime ||
             areas != applicationData.areas ||
             customerWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]
+                hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]
             ) ||
             contractorWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
+                hakemusEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
             ) ||
             propertyDeveloperWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]
+                hakemusEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]
             ) ||
             representativeWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]
+                hakemusEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]
             ) ||
             invoicingCustomer.hasChanges(
                 applicationData.invoicingCustomer,

@@ -122,7 +122,7 @@ class HakemusUpdateRequestTest {
 
     private fun createApplicationEntityWithYhteystiedot(
         vararg hakemusyhteyshenkilot: Pair<String, Boolean>
-    ): ApplicationEntity =
+    ): HakemusEntity =
         ApplicationFactory.createApplicationEntity(
                 applicationData = ApplicationFactory.createBlankCableReportApplicationData(),
                 hanke = HankeFactory.createMinimalEntity()
