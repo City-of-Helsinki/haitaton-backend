@@ -334,9 +334,9 @@ class HakemusServiceITest(
         inner class WithJohtoselvityshakemus {
             @Test
             fun `returns applications`() {
-                val (_, hanke) = hankeFactory.builder(USERNAME).saveAsGenerated()
+                val hakemus = hakemusFactory.builderWithGeneratedHanke().save()
 
-                val result = hakemusService.hankkeenHakemuksetResponse(hanke.hankeTunnus)
+                val result = hakemusService.hankkeenHakemuksetResponse(hakemus.hankeTunnus)
 
                 val expectedHakemus =
                     HankkeenHakemusResponse(applicationRepository.findAll().single())

@@ -7,7 +7,6 @@ import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.application.ApplicationType.CABLE_REPORT
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -19,7 +18,6 @@ import org.springframework.boot.test.context.SpringBootTest
         [
             "haitaton.email.filter.use=true",
             "haitaton.email.filter.allow-list=test@test.test;something@mail.com;*@wildcard.com",
-            "haitaton.features.user-management=false"
         ]
 )
 class FilteredEmailSenderServiceITest : IntegrationTest() {
@@ -84,21 +82,5 @@ class FilteredEmailSenderServiceITest : IntegrationTest() {
         val email = greenMail.firstReceivedMessage()
         assertThat(email.allRecipients).hasSize(1)
         assertThat(email.allRecipients[0].toString()).isEqualTo("test+suffix@wildcard.com")
-    }
-
-    @Test
-    fun `sendApplicationNotificationEmail does not send when user management is not enabled`() {
-        emailSenderService.sendApplicationNotificationEmail(
-            ApplicationNotificationData(
-                senderName = "Kalle Kutsuja",
-                senderEmail = "kalle.kutsuja@mail.com",
-                recipientEmail = "test@test.test",
-                applicationType = CABLE_REPORT,
-                hankeTunnus = "HAI24-1",
-                hankeNimi = "Testihanke",
-            )
-        )
-
-        assertThat(greenMail.receivedMessages.size).isEqualTo(0)
     }
 }

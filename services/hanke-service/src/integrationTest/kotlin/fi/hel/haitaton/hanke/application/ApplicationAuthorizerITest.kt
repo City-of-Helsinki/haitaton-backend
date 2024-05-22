@@ -88,44 +88,6 @@ class ApplicationAuthorizerITest(
 
         @Test
         fun `throws exception if hanketunnus not found`() {
-            val application = ApplicationFactory.createApplication(hankeTunnus = hankeTunnus)
-
-            assertFailure { authorizer.authorizeCreate(application) }
-                .all {
-                    hasClass(HankeNotFoundException::class)
-                    messageContains(application.id.toString())
-                }
-        }
-
-        @Test
-        fun `throws exception if user doesn't have EDIT_APPLICATIONS permission`() {
-            val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
-            val application = ApplicationFactory.createApplication(hankeTunnus = hankeTunnus)
-            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
-
-            assertFailure { authorizer.authorizeCreate(application) }
-                .all {
-                    hasClass(HankeNotFoundException::class)
-                    messageContains(application.id.toString())
-                }
-        }
-
-        @Test
-        fun `returns true if user has EDIT_APPLICATIONS permission`() {
-            val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
-            val application = ApplicationFactory.createApplication(hankeTunnus = hankeTunnus)
-            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
-
-            assertThat(authorizer.authorizeCreate(application)).isTrue()
-        }
-    }
-
-    @Nested
-    inner class AuthorizeCreateHakemus {
-        private val hankeTunnus = "HAI23-1414"
-
-        @Test
-        fun `throws exception if hanketunnus not found`() {
             val request =
                 CreateHakemusRequestFactory.johtoselvitysRequest(hankeTunnus = hankeTunnus)
 

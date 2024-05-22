@@ -7,8 +7,6 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.configuration.Feature
-import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -40,9 +38,8 @@ class EmailSenderServiceTest {
             baseUrl = "https://haitaton.hel.fi",
             filter = EmailFilterProperties(false, listOf())
         )
-    private val featureFlags = FeatureFlags(mapOf(Feature.USER_MANAGEMENT to true))
     private val mailSender: JavaMailSender = spyk()
-    private val emailSenderService = EmailSenderService(mailSender, emailConfig, featureFlags)
+    private val emailSenderService = EmailSenderService(mailSender, emailConfig)
 
     private val encodedInviter = StringEscapeUtils.escapeHtml4(INVITER_NAME)
 

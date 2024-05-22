@@ -51,19 +51,6 @@ sealed interface ApplicationData {
     fun customersWithContacts(): List<CustomerWithContacts>
 
     fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContacts>>
-
-    /**
-     * Returns a set of email addresses from customer contact persons that:
-     * - are not null, empty or blank.
-     * - do not match the optional [omit] argument.
-     */
-    fun contactPersonEmails(omit: String? = null): Set<String> =
-        customersWithContacts()
-            .flatMap { customer -> customer.contacts }
-            .mapNotNull { it.email }
-            .filter { it.isNotBlank() }
-            .toMutableSet()
-            .apply { omit?.let { remove(it) } }
 }
 
 @JsonView(ChangeLogView::class)
@@ -183,9 +170,6 @@ data class ExcavationNotificationData(
             propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
         )
 
-    fun findOrderer(): Contact? =
-        customersWithContacts().flatMap { it.contacts }.find { it.orderer }
-
     fun toHakemusData(yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>): HakemusData =
         KaivuilmoitusData(
             pendingOnClient = pendingOnClient,
@@ -210,8 +194,6 @@ data class ExcavationNotificationData(
             additionalInfo = additionalInfo,
         )
 }
-
-fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }
 
 fun InvoicingCustomer?.toLaskutusyhteystieto(customerReference: String?): Laskutusyhteystieto? =
     this?.let {
