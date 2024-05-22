@@ -3,11 +3,7 @@ package fi.hel.haitaton.hanke.hakemus
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
-import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
-import fi.hel.haitaton.hanke.application.ApplicationGeometryException
-import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -339,10 +335,10 @@ class HakemusController(
         return HankeErrorDetail(hankeError = HankeError.HAI2008, errorPaths = ex.errorPaths)
     }
 
-    @ExceptionHandler(ApplicationAlreadySentException::class)
+    @ExceptionHandler(HakemusAlreadySentException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
-    fun applicationAlreadySentException(ex: ApplicationAlreadySentException): HankeError {
+    fun applicationAlreadySentException(ex: HakemusAlreadySentException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2009
     }
@@ -357,19 +353,19 @@ class HakemusController(
         return HankeError.HAI2002
     }
 
-    @ExceptionHandler(ApplicationGeometryException::class)
+    @ExceptionHandler(HakemusGeometryException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
-    fun applicationGeometryException(ex: ApplicationGeometryException): HankeError {
+    fun applicationGeometryException(ex: HakemusGeometryException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2005
     }
 
-    @ExceptionHandler(ApplicationGeometryNotInsideHankeException::class)
+    @ExceptionHandler(HakemusGeometryNotInsideHankeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
     fun applicationGeometryNotInsideHankeException(
-        ex: ApplicationGeometryNotInsideHankeException
+        ex: HakemusGeometryNotInsideHankeException
     ): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2007
@@ -407,10 +403,10 @@ class HakemusController(
         return HankeError.HAI2012
     }
 
-    @ExceptionHandler(ApplicationDecisionNotFoundException::class)
+    @ExceptionHandler(HakemusDecisionNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @Hidden
-    fun applicationDecisionNotFoundException(ex: ApplicationDecisionNotFoundException): HankeError {
+    fun applicationDecisionNotFoundException(ex: HakemusDecisionNotFoundException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2006
     }
