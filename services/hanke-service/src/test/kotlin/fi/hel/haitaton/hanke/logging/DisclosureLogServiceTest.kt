@@ -10,9 +10,6 @@ import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
-import fi.hel.haitaton.hanke.application.toLaskutusyhteystieto
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
@@ -33,6 +30,8 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.gdpr.StringNode
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.HAKIJA
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
@@ -40,6 +39,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCableReportData
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluContact
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCustomer
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluExcavationNotificationData
+import fi.hel.haitaton.hanke.hakemus.toLaskutusyhteystieto
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.reformatJson
 import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.hasAlluActor

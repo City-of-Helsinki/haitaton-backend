@@ -10,7 +10,6 @@ import com.lowagie.text.Phrase
 import com.lowagie.text.Rectangle
 import com.lowagie.text.pdf.PdfPTable
 import com.lowagie.text.pdf.PdfWriter
-import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import java.io.ByteArrayOutputStream
 import java.time.ZoneId

@@ -1,9 +1,6 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import java.time.ZonedDateTime
 
 data class HankkeenHakemuksetResponse(val applications: List<HankkeenHakemusResponse>)
