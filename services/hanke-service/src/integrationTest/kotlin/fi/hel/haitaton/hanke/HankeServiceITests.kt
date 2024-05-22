@@ -4,29 +4,22 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.contains
-import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.extracting
-import assertk.assertions.first
 import assertk.assertions.hasClass
-import assertk.assertions.hasMessage
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
-import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotEqualTo
 import assertk.assertions.isNotNull
-import assertk.assertions.isNotSameInstanceAs
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
-import com.icegreen.greenmail.configuration.GreenMailConfiguration
-import com.icegreen.greenmail.junit5.GreenMailExtension
-import com.icegreen.greenmail.util.ServerSetupTest
+import fi.hel.haitaton.hanke.ExpectedHankeLogObject.expectedHankeLogObject
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
@@ -37,30 +30,21 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.SavedHankealue
-import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.DateFactory
-import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeBuilder.Companion.toModifyRequest
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUSTAJA
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
-import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
-import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
-import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.hakemus.ALLU_USER_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
@@ -74,7 +58,6 @@ import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaNotFoundException
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
@@ -95,11 +78,6 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import fi.hel.haitaton.hanke.test.USERNAME
-import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
-import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -108,10 +86,6 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifySequence
-import java.time.Duration
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
-import java.util.UUID
 import net.pwall.mustache.Template
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -121,18 +95,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.extension.RegisterExtension
 import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.transaction.annotation.Transactional
 
 private const val NAME_1 = "etu1 suku1"
 private const val NAME_2 = "etu2 suku2"
-private const val NAME_3 = "etu3 suku3"
 private const val NAME_SOMETHING = "Som Et Hing"
 
 class HankeServiceITests(
@@ -142,10 +113,8 @@ class HankeServiceITests(
     @Autowired private val hakemusRepository: HakemusRepository,
     @Autowired private val hankeRepository: HankeRepository,
     @Autowired private val hankekayttajaRepository: HankekayttajaRepository,
-    @Autowired private val hankeYhteyshenkiloRepository: HankeYhteyshenkiloRepository,
     @Autowired private val kayttajakutsuRepository: KayttajakutsuRepository,
     @Autowired private val hankeAttachmentRepository: HankeAttachmentRepository,
-    @Autowired private val jdbcTemplate: JdbcTemplate,
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val profiiliClient: ProfiiliClient,
     @Autowired private val hankeFactory: HankeFactory,
@@ -154,14 +123,6 @@ class HankeServiceITests(
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val cableReportService: CableReportService,
 ) : IntegrationTest() {
-
-    companion object {
-        @JvmField
-        @RegisterExtension
-        val greenMail: GreenMailExtension =
-            GreenMailExtension(ServerSetupTest.SMTP)
-                .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
-    }
 
     @BeforeEach
     fun clearMocks() {
@@ -239,6 +200,33 @@ class HankeServiceITests(
             assertThat(hanke.muut).single().all {
                 hasDefaultInfo()
                 hasOneYhteyshenkilo(HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA)
+            }
+        }
+
+        private fun assertk.Assert<HankeYhteystieto>.hasDefaultInfo() {
+            prop(HankeYhteystieto::nimi).isEqualTo(TEPPO_TESTI)
+            prop(HankeYhteystieto::email).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
+            prop(HankeYhteystieto::tyyppi).isEqualTo(YhteystietoTyyppi.YRITYS)
+            prop(HankeYhteystieto::ytunnus).isEqualTo(HankeYhteystietoFactory.DEFAULT_YTUNNUS)
+            prop(HankeYhteystieto::puhelinnumero).isEqualTo(ApplicationFactory.TEPPO_PHONE)
+            prop(HankeYhteystieto::organisaatioNimi).isEqualTo("Organisaatio")
+            prop(HankeYhteystieto::osasto).isEqualTo("Osasto")
+            prop(HankeYhteystieto::createdBy).isEqualTo("test7358")
+            prop(HankeYhteystieto::createdAt).isRecentZDT()
+            prop(HankeYhteystieto::modifiedBy).isNull()
+            prop(HankeYhteystieto::modifiedAt).isNull()
+            prop(HankeYhteystieto::rooli).isEqualTo("Isännöitsijä")
+        }
+
+        private fun assertk.Assert<HankeYhteystieto>.hasOneYhteyshenkilo(
+            hankekayttajaInput: HankekayttajaInput
+        ) {
+            prop(HankeYhteystieto::yhteyshenkilot).single().all {
+                prop(Yhteyshenkilo::id).isNotNull()
+                prop(Yhteyshenkilo::etunimi).isEqualTo(hankekayttajaInput.etunimi)
+                prop(Yhteyshenkilo::sukunimi).isEqualTo(hankekayttajaInput.sukunimi)
+                prop(Yhteyshenkilo::sahkoposti).isEqualTo(hankekayttajaInput.email)
+                prop(Yhteyshenkilo::puhelinnumero).isEqualTo(hankekayttajaInput.puhelin)
             }
         }
     }
@@ -362,460 +350,40 @@ class HankeServiceITests(
         }
     }
 
-    @Test
-    fun `updateHanke updates hanke status when given full data`() {
-        val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
-        assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
-        hanke.tyomaaKatuosoite = "Testikatu 1 A 1"
-        hanke.withYhteystiedot { id = null }
-        val request = hanke.toModifyRequest().copy(tyomaaKatuosoite = "Testikatu 1 A 1")
+    @Nested
+    inner class GetHankeApplications {
+        @Test
+        fun `returns applications`() {
+            val hanke = initHankeWithHakemus(123)
 
-        val returnedHanke2 = hankeService.updateHanke(hanke.hankeTunnus, request)
+            val result = hankeService.getHankeApplications(hanke.hankeTunnus)
 
-        assertThat(returnedHanke2.status).isEqualTo(HankeStatus.PUBLIC)
-    }
+            val expectedHakemus = hakemusRepository.findAll().single().toMetadata()
+            assertThat(result).hasSameElementsAs(listOf(expectedHakemus))
+        }
 
-    @Test
-    fun `getHankeApplications return applications`() {
-        val hanke = initHankeWithHakemus(123)
+        @Test
+        fun `throws not found when hanke does not exist`() {
+            val hankeTunnus = "HAI-1234"
 
-        val result = hankeService.getHankeApplications(hanke.hankeTunnus)
-
-        val expectedHakemus = hakemusRepository.findAll().single().toMetadata()
-        assertThat(result).hasSameElementsAs(listOf(expectedHakemus))
-    }
-
-    @Test
-    fun `getHankeApplications hanke does not exist throws not found`() {
-        val hankeTunnus = "HAI-1234"
-
-        assertFailure { hankeService.getHankeApplications(hankeTunnus) }
-            .all {
-                hasClass(HankeNotFoundException::class)
-                messageContains(hankeTunnus)
-            }
-    }
-
-    @Test
-    fun `getHankeApplications when no hakemukset returns an empty list`() {
-        val hankeInitial = hankeFactory.builder(USERNAME).save()
-
-        val result = hankeService.getHankeApplications(hankeInitial.hankeTunnus)
-
-        assertThat(result).isEmpty()
-    }
-
-    @Test
-    fun `updateHanke resets feature properties`() {
-        val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
-        val request =
-            hanke.toModifyRequest().apply {
-                this.alueet[0].geometriat?.featureCollection?.features?.forEach {
-                    it.properties["something"] = "fishy"
+            assertFailure { hankeService.getHankeApplications(hankeTunnus) }
+                .all {
+                    hasClass(HankeNotFoundException::class)
+                    messageContains(hankeTunnus)
                 }
-            }
+        }
 
-        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
+        @Test
+        fun `returns an empty list when there are no hakemus`() {
+            val hankeInitial = hankeFactory.builder(USERNAME).save()
 
-        assertFeaturePropertiesIsReset(result, mapOf("hankeTunnus" to result.hankeTunnus))
-    }
+            val result = hankeService.getHankeApplications(hankeInitial.hankeTunnus)
 
-    @Test
-    fun `updateHanke doesn't revert to a draft`() {
-        // Setup Hanke (with all mandatory fields):
-        val hanke = hankeFactory.builder(USERNAME).withYhteystiedot().withHankealue().save()
-        assertThat(hanke.status).isEqualTo(HankeStatus.PUBLIC)
-        val request = hanke.toModifyRequest().copy(tyomaaKatuosoite = "")
-
-        val exception =
-            assertThrows<HankeArgumentException> {
-                hankeService.updateHanke(hanke.hankeTunnus, request)
-            }
-
-        assertThat(exception).hasMessage("A public hanke didn't have all mandatory fields filled.")
-    }
-
-    @Test
-    fun `updateHanke with yhteystieto with wrong id should throw`() {
-        val hanke = hankeFactory.builder(USERNAME).withYhteystiedot().withHankealue().save()
-        val rubbishId = hanke.extractYhteystiedot().mapNotNull { it.id }.max() + 1
-        hanke.omistajat[0].id = rubbishId
-        val request = hanke.toModifyRequest()
-
-        val failure = assertFailure { hankeService.updateHanke(hanke.hankeTunnus, request) }
-
-        failure.all {
-            hasClass(HankeYhteystietoNotFoundException::class)
-            messageContains("HankeYhteystieto not found for Hanke")
-            messageContains(hanke.hankeTunnus)
-            messageContains(hanke.id.toString())
-            messageContains(rubbishId.toString())
+            assertThat(result).isEmpty()
         }
     }
 
-    @Test
-    fun `updateHanke can add new Yhteystietos to a group that already has one`() {
-        // Setup Hanke with one Yhteystieto:
-        val hanke = hankeFactory.builder(USERNAME).withGeneratedOmistaja(1).save()
-        val ytid = hanke.omistajat[0].id!!
-        hanke.withOmistaja(i = 2, id = null).withRakennuttaja(i = 3, id = null)
-        val request = hanke.toModifyRequest()
-
-        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        // Check that all 3 Yhteystietos are there:
-        assertThat(result.omistajat).hasSize(2)
-        assertThat(result.rakennuttajat).hasSize(1)
-        // Check that the first Yhteystieto has not changed, and the two new ones are as expected:
-        // (Not checking all fields, just ensuring the code is not accidentally mixing whole
-        // entries).
-        assertThat(result.omistajat[0].id).isEqualTo(ytid)
-        assertThat(result.omistajat[0].nimi).isEqualTo(NAME_1)
-        assertThat(result.omistajat[1].id).isNotEqualTo(ytid)
-        assertThat(result.omistajat[1].nimi).isEqualTo(NAME_2)
-        assertThat(result.rakennuttajat[0].id).isNotEqualTo(ytid)
-        assertThat(result.rakennuttajat[0].id).isNotEqualTo(result.omistajat[1].id)
-        assertThat(result.rakennuttajat[0].nimi).isEqualTo(NAME_3)
-
-        // Use loadHanke and check it returns the same data:
-        val loadedHanke = hankeService.loadHanke(result.hankeTunnus)
-        assertThat(loadedHanke).isNotNull().all {
-            prop(Hanke::omistajat).isEqualTo(result.omistajat)
-            prop(Hanke::rakennuttajat).isEqualTo(result.rakennuttajat)
-            prop(Hanke::omistajat).first().all {
-                prop(HankeYhteystieto::createdAt).isEqualTo(hanke.omistajat[0].createdAt)
-                prop(HankeYhteystieto::createdBy).isEqualTo(hanke.omistajat[0].createdBy)
-                // The original omistajat-entry was not modified, so modifiedXx-fields must not get
-                // values:
-                prop(HankeYhteystieto::modifiedAt).isNull()
-                prop(HankeYhteystieto::modifiedBy).isNull()
-            }
-        }
-    }
-
-    @Test
-    fun `updateHanke updates audit fields`() {
-        val hanke = hankeFactory.builder(USERNAME).create()
-        assertThat(hanke).all {
-            prop(Hanke::version).isEqualTo(0)
-            prop(Hanke::createdAt).isRecentZDT()
-            prop(Hanke::createdBy).isEqualTo(USERNAME)
-            prop(Hanke::modifiedAt).isNull()
-            prop(Hanke::modifiedBy).isNull()
-        }
-        val request = hanke.toModifyRequest().copy(kuvaus = "New description")
-
-        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        assertThat(result).isNotSameInstanceAs(hanke)
-        assertThat(result).all {
-            prop(Hanke::version).isEqualTo(1)
-            prop(Hanke::createdAt).isEqualTo(hanke.createdAt)
-            prop(Hanke::createdBy).isEqualTo(hanke.createdBy)
-            prop(Hanke::modifiedAt).isRecentZDT(Duration.ofMinutes(10))
-            prop(Hanke::modifiedBy).isNotNull().isEqualTo(USERNAME)
-        }
-        val loadedHanke = hankeService.loadHanke(result.hankeTunnus)
-        assertThat(loadedHanke).isNotNull().all {
-            prop(Hanke::version).isEqualTo(1)
-            prop(Hanke::createdAt).isEqualTo(hanke.createdAt)
-            prop(Hanke::createdBy).isEqualTo(hanke.createdBy)
-            prop(Hanke::modifiedAt).isRecentZDT(Duration.ofMinutes(10))
-            prop(Hanke::modifiedBy).isNotNull().isEqualTo(USERNAME)
-        }
-    }
-
-    @Test
-    fun `test changing one existing Yhteystieto in a group with two`() {
-        // Setup Hanke with two Yhteystietos in the same group:
-        val hanke = hankeFactory.builder(USERNAME).withGeneratedOmistajat(1, 2).save()
-        val ytid1 = hanke.omistajat[0].id!!
-        val ytid2 = hanke.omistajat[1].id!!
-        assertThat(hanke.omistajat[0].nimi).isEqualTo(NAME_1)
-        assertThat(hanke.omistajat[1].nimi).isEqualTo(NAME_2)
-        // Change a value:
-        hanke.omistajat[1].nimi = NAME_SOMETHING
-        val request = hanke.toModifyRequest()
-
-        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        // Check that both entries kept their ids, and the only change is where expected
-        assertThat(result.omistajat).hasSize(2)
-        assertThat(result.omistajat[0].id).isEqualTo(ytid1)
-        assertThat(result.omistajat[0].nimi).isEqualTo(NAME_1)
-        // Check that audit modifiedXx-fields got updated:
-        assertThat(result.omistajat[1]).all {
-            prop(HankeYhteystieto::id).isEqualTo(ytid2)
-            prop(HankeYhteystieto::nimi).isEqualTo(NAME_SOMETHING)
-            prop(HankeYhteystieto::modifiedAt).isRecentZDT(Duration.ofMinutes(10))
-            prop(HankeYhteystieto::modifiedBy).isNotNull().isEqualTo(USERNAME)
-        }
-
-        val loadedHanke = hankeService.loadHanke(result.hankeTunnus)
-        assertThat(loadedHanke).isNotNull().all {
-            isNotSameInstanceAs(hanke)
-            isNotSameInstanceAs(result)
-            prop(Hanke::omistajat).isEqualTo(result.omistajat)
-        }
-    }
-
-    @Test
-    fun `test that missing yhteystieto gets removed from DB`() {
-        // Setup Hanke with two Yhteystietos in the same group:
-        val hanke = hankeFactory.builder(USERNAME).withGeneratedOmistajat(1, 2).save()
-        val ytid1 = hanke.omistajat[0].id!!
-        hanke.omistajat.removeAt(1)
-        val request = hanke.toModifyRequest()
-
-        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        assertThat(result).isNotSameInstanceAs(hanke)
-        assertThat(result.omistajat).single().all {
-            prop(HankeYhteystieto::id).isEqualTo(ytid1)
-            prop(HankeYhteystieto::nimi).isEqualTo(NAME_1)
-        }
-
-        val loadedHanke = hankeService.loadHanke(result.hankeTunnus)
-        assertThat(loadedHanke).isNotNull().all {
-            isNotSameInstanceAs(hanke)
-            isNotSameInstanceAs(result)
-            prop(Hanke::omistajat).isEqualTo(result.omistajat)
-        }
-    }
-
-    @Test
-    fun `test adding identical Yhteystietos in different groups and removing the other`() {
-        // Setup Hanke with two identical Yhteystietos in different group:
-        val hanke =
-            hankeFactory
-                .builder(USERNAME)
-                .withGeneratedOmistaja(1)
-                .withGeneratedRakennuttaja(1)
-                .save()
-        val ytid1 = hanke.omistajat[0].id!!
-        val ytid2 = hanke.rakennuttajat[0].id!!
-        assertThat(ytid1).isNotEqualTo(ytid2)
-        val request = hanke.toModifyRequest().copy(rakennuttajat = listOf())
-
-        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        assertThat(result.rakennuttajat).isEmpty()
-        assertThat(result.omistajat).single().all {
-            prop(HankeYhteystieto::id).isEqualTo(ytid1)
-            prop(HankeYhteystieto::nimi).isEqualTo(NAME_1)
-        }
-
-        val loadedHanke = hankeService.loadHanke(result.hankeTunnus)
-        assertThat(loadedHanke).isNotNull().all {
-            isNotSameInstanceAs(hanke)
-            isNotSameInstanceAs(result)
-            prop(Hanke::rakennuttajat).isEmpty()
-            prop(Hanke::omistajat).hasSameElementsAs(result.omistajat)
-        }
-    }
-
-    @Test
-    fun `updateHanke throws an exception when trying to add a non-existing yhteyshenkilo`() {
-        val hanke = hankeFactory.builder(USERNAME).withGeneratedOmistaja(1).save()
-        val kayttajaId = UUID.fromString("c4f0e9a1-8308-47f6-9b26-177635e76b89")
-        val omistaja =
-            hanke.omistajat[0].toModifyRequest().copy(yhteyshenkilot = listOf(kayttajaId))
-        val request = hanke.toModifyRequest().copy(omistajat = listOf(omistaja))
-
-        val failure = assertFailure { hankeService.updateHanke(hanke.hankeTunnus, request) }
-
-        failure.all {
-            hasClass(HankeKayttajaNotFoundException::class)
-            messageContains("HankeKayttaja was not found")
-            messageContains(kayttajaId.toString())
-        }
-    }
-
-    @Test
-    fun `updateHanke throws an exception when trying to add an yhteyshenkilo from another hanke`() {
-        val hanke = hankeFactory.builder(USERNAME).withGeneratedOmistaja(1).save()
-        val otherHanke = hankeFactory.builder(USERNAME).save()
-        val kayttajaId = hankeKayttajaFactory.saveIdentifiedUser(otherHanke.id).id
-        val omistaja =
-            hanke.omistajat[0].toModifyRequest().copy(yhteyshenkilot = listOf(kayttajaId))
-        val request = hanke.toModifyRequest().copy(omistajat = listOf(omistaja))
-
-        val failure = assertFailure { hankeService.updateHanke(hanke.hankeTunnus, request) }
-
-        failure.all {
-            hasClass(HankeKayttajaNotFoundException::class)
-            messageContains("HankeKayttaja was not found")
-            messageContains(kayttajaId.toString())
-        }
-    }
-
-    @Test
-    fun `updateHanke adds an yhteyshenkilo when adding a new yhteystieto`() {
-        val hanke = hankeFactory.builder(USERNAME).save()
-        val kayttajaId = hankeKayttajaFactory.saveIdentifiedUser(hanke.id).id
-        val omistaja =
-            HankeYhteystietoFactory.createDifferentiated(1)
-                .toModifyRequest(id = null)
-                .copy(yhteyshenkilot = listOf(kayttajaId))
-        val request = hanke.toModifyRequest().copy(omistajat = listOf(omistaja))
-
-        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        assertThat(result.omistajat)
-            .single()
-            .prop(HankeYhteystieto::yhteyshenkilot)
-            .single()
-            .isEqualTo(HankeYhteyshenkiloFactory.kake(kayttajaId))
-        val yhteyshenkiloIdentifiers = hankeYhteyshenkiloRepository.findIds()
-        assertThat(yhteyshenkiloIdentifiers).single().all {
-            prop(HankeYhteyshenkiloIdentifiers::kayttajaId).isEqualTo(kayttajaId)
-            prop(HankeYhteyshenkiloIdentifiers::yhteystietoId)
-                .isEqualTo(result.omistajat.first().id)
-        }
-    }
-
-    @Test
-    fun `updateHanke adds an yhteyshenkilo when adding a hankekayttaja to an existing yhteystieto`() {
-        val hanke = hankeFactory.builder(USERNAME).withGeneratedOmistaja(1).save()
-        val kayttajaId = hankeKayttajaFactory.saveIdentifiedUser(hanke.id).id
-        val omistaja =
-            hanke.omistajat[0].toModifyRequest().copy(yhteyshenkilot = listOf(kayttajaId))
-        val request = hanke.toModifyRequest().copy(omistajat = listOf(omistaja))
-
-        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        assertThat(result.omistajat)
-            .single()
-            .prop(HankeYhteystieto::yhteyshenkilot)
-            .single()
-            .isEqualTo(HankeYhteyshenkiloFactory.kake(kayttajaId))
-        val yhteyshenkiloIdentifiers = hankeYhteyshenkiloRepository.findIds()
-        assertThat(yhteyshenkiloIdentifiers).single().all {
-            prop(HankeYhteyshenkiloIdentifiers::kayttajaId).isEqualTo(kayttajaId)
-            prop(HankeYhteyshenkiloIdentifiers::yhteystietoId).isEqualTo(omistaja.id)
-        }
-    }
-
-    @Test
-    fun `updateHanke removes an yhteyshenkilo when removing the only one`() {
-        val hankeId = hankeFactory.builder(USERNAME).saveWithYhteystiedot { omistaja() }.id
-        val hanke = hankeService.loadHankeById(hankeId)!!
-        val omistajaRequest = hanke.omistajat[0].toModifyRequest().copy(yhteyshenkilot = listOf())
-        val request = hanke.toModifyRequest().copy(omistajat = listOf(omistajaRequest))
-
-        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        assertThat(result.omistajat).single().prop(HankeYhteystieto::yhteyshenkilot).isEmpty()
-        assertThat(hankeYhteyshenkiloRepository.findAll()).isEmpty()
-    }
-
-    @Test
-    fun `updateHanke adds and removes correct yhteyshenkilot in a complex setting`() {
-        val hankeEntity = hankeFactory.builder().saveEntity()
-        val hankeId = hankeEntity.id
-        val kayttaja1 = hankeKayttajaFactory.saveIdentifiedUser(hankeId, sahkoposti = "kayttaja1")
-        val kayttaja2 = hankeKayttajaFactory.saveIdentifiedUser(hankeId, sahkoposti = "kayttaja2")
-        val kayttaja3 = hankeKayttajaFactory.saveIdentifiedUser(hankeId, sahkoposti = "kayttaja3")
-        hankeFactory.addYhteystiedotTo(hankeEntity) {
-            omistaja(kayttaja1, kayttaja2)
-            rakennuttaja(yhteyshenkilot = arrayOf())
-            rakennuttaja(yhteyshenkilot = arrayOf())
-            toteuttaja(kayttaja3)
-            muuYhteystieto(kayttaja1, kayttaja("kayttaja4"))
-        }
-        val hanke = hankeService.loadHankeById(hankeId)!!
-        val newEmail = "new kayttaja"
-        val newKayttaja = hankeKayttajaFactory.saveIdentifiedUser(hanke.id, sahkoposti = newEmail)
-        // Remove kayttaja2 from omistaja and add new kayttaja
-        val omistaja =
-            hanke.omistajat[0]
-                .toModifyRequest()
-                .copy(yhteyshenkilot = listOf(kayttaja1.id, newKayttaja.id))
-        // Add kayttaja1 and kayttaja2 to first rakennuttaja
-        val rakennuttaja1 =
-            hanke.rakennuttajat[0]
-                .toModifyRequest()
-                .copy(yhteyshenkilot = listOf(kayttaja1.id, kayttaja2.id))
-        // Leave the other rakennuttaja without yhteyshenkilo
-        val rakennuttaja2 = hanke.rakennuttajat[1].toModifyRequest()
-        // Leave toteuttaja with kayttaja3
-        val toteuttaja = hanke.toteuttajat[0].toModifyRequest()
-        // Remove kayttaja1 and kayttaja4 from muu and add new kayttaja
-        val muu = hanke.muut[0].toModifyRequest().copy(yhteyshenkilot = listOf(newKayttaja.id))
-        val request =
-            hanke
-                .toModifyRequest()
-                .copy(
-                    omistajat = listOf(omistaja),
-                    rakennuttajat = listOf(rakennuttaja1, rakennuttaja2),
-                    toteuttajat = listOf(toteuttaja),
-                    muut = listOf(muu)
-                )
-
-        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        assertThat(result.omistajat)
-            .single()
-            .prop(HankeYhteystieto::yhteyshenkilot)
-            .extracting { it.sahkoposti }
-            .containsExactlyInAnyOrder("kayttaja1", newEmail)
-        assertThat(result.rakennuttajat)
-            .extracting { yhteystieto -> yhteystieto.yhteyshenkilot.map { it.sahkoposti } }
-            .containsExactlyInAnyOrder(listOf<String>(), listOf("kayttaja1", "kayttaja2"))
-        assertThat(result.toteuttajat)
-            .single()
-            .prop(HankeYhteystieto::yhteyshenkilot)
-            .extracting { it.sahkoposti }
-            .containsExactly("kayttaja3")
-        assertThat(result.muut)
-            .single()
-            .prop(HankeYhteystieto::yhteyshenkilot)
-            .extracting { it.sahkoposti }
-            .containsExactly(newEmail)
-
-        val yhteyshenkiloIdentifiers = hankeYhteyshenkiloRepository.findIds()
-        assertThat(yhteyshenkiloIdentifiers).hasSize(6)
-        assertThat(yhteyshenkiloIdentifiers.filter { it.yhteystietoId == omistaja.id })
-            .extracting { it.kayttajaId }
-            .containsExactlyInAnyOrder(kayttaja1.id, newKayttaja.id)
-        assertThat(yhteyshenkiloIdentifiers.filter { it.yhteystietoId == rakennuttaja1.id })
-            .extracting { it.kayttajaId }
-            .containsExactlyInAnyOrder(kayttaja1.id, kayttaja2.id)
-        assertThat(yhteyshenkiloIdentifiers.filter { it.yhteystietoId == rakennuttaja2.id })
-            .isEmpty()
-        assertThat(yhteyshenkiloIdentifiers.filter { it.yhteystietoId == toteuttaja.id })
-            .extracting { it.kayttajaId }
-            .containsExactlyInAnyOrder(kayttaja3.id)
-        assertThat(yhteyshenkiloIdentifiers.filter { it.yhteystietoId == muu.id })
-            .extracting { it.kayttajaId }
-            .containsExactlyInAnyOrder(newKayttaja.id)
-    }
-
-    @Test
-    fun `test that sending the same Yhteystieto twice without id does not create duplicates`() {
-        // Old version of the Yhteystieto should get removed, id increases in response,
-        // get-operation returns the new one.
-        // NOTE: UI is not supposed to do that, but this situation came up during
-        // development/testing, so it is a sort of regression test for the logic.
-        val hanke = hankeFactory.builder(USERNAME).withGeneratedOmistaja(1).save()
-        val ytid = hanke.omistajat[0].id
-        // Tweaking the returned Yhteystieto-object's id back to null, to make it look like new one.
-        hanke.omistajat[0].id = null
-        val request = hanke.toModifyRequest()
-
-        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        assertThat(result).isNotSameInstanceAs(hanke)
-        assertThat(result.omistajat).hasSize(1)
-        assertThat(result.omistajat[0].id).isNotNull().isNotEqualTo(ytid)
-
-        val loadedHanke = hankeService.loadHanke(result.hankeTunnus)
-        assertThat(loadedHanke).isNotNull().all {
-            isNotSameInstanceAs(hanke)
-            isNotSameInstanceAs(result)
-            prop(Hanke::omistajat).hasSameElementsAs(result.omistajat)
-        }
-    }
+    @Nested inner class UpdateHanke {}
 
     @Test
     fun `test personal data logging`() {
@@ -1029,44 +597,6 @@ class HankeServiceITests(
         assertThat(auditLogEvents).hasSize(4)
     }
 
-    @Test
-    fun `test creation of hanke with alueet`() {
-        val alkuPvm = DateFactory.getStartDatetime()
-        val loppuPvm = DateFactory.getStartDatetime()
-        val hankealue =
-            HankealueFactory.create(
-                haittaAlkuPvm = alkuPvm,
-                haittaLoppuPvm = loppuPvm,
-                kaistaHaitta =
-                    VaikutusAutoliikenteenKaistamaariin
-                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
-                kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
-                meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
-                polyHaitta = Polyhaitta.SATUNNAINEN_POLYHAITTA,
-                tarinaHaitta = Tarinahaitta.SATUNNAINEN_TARINAHAITTA,
-            )
-        val createdHanke =
-            hankeFactory.builder(USERNAME).withHankealue().withHankealue(hankealue).save()
-
-        assertThat(createdHanke.alueet).hasSize(2)
-        val alue = createdHanke.alueet[1]
-        assertThat(alue.haittaAlkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
-            .isEqualTo(alkuPvm.format(DateTimeFormatter.BASIC_ISO_DATE))
-        assertThat(alue.haittaLoppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
-            .isEqualTo(loppuPvm.format(DateTimeFormatter.BASIC_ISO_DATE))
-        assertThat(alue.kaistaHaitta)
-            .isEqualTo(
-                VaikutusAutoliikenteenKaistamaariin
-                    .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA
-            )
-        assertThat(alue.kaistaPituusHaitta)
-            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA)
-        assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_MELUHAITTA)
-        assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.SATUNNAINEN_POLYHAITTA)
-        assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_TARINAHAITTA)
-        assertThat(alue.geometriat).isNotNull()
-    }
-
     @Nested
     inner class GenerateHankeWithJohtoselvityshakemus {
         private val hakemusNimi = "Johtoselvitys for a private property"
@@ -1165,126 +695,6 @@ class HankeServiceITests(
                     ObjectType.PERMISSION,
                 )
         }
-    }
-
-    @Test
-    fun `updateHanke creates new hankealue`() {
-        val alkuPvm = DateFactory.getStartDatetime()
-        val loppuPvm = DateFactory.getStartDatetime()
-        val createdHanke = hankeFactory.builder(USERNAME).withHankealue().save()
-        val hankealue =
-            HankealueFactory.create(
-                id = null,
-                haittaAlkuPvm = alkuPvm,
-                haittaLoppuPvm = loppuPvm,
-                kaistaHaitta =
-                    VaikutusAutoliikenteenKaistamaariin
-                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
-                kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
-                meluHaitta = Meluhaitta.JATKUVA_MELUHAITTA,
-                polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
-                tarinaHaitta = Tarinahaitta.SATUNNAINEN_TARINAHAITTA,
-            )
-        createdHanke.alueet.add(hankealue)
-        val request = createdHanke.toModifyRequest()
-
-        val updatedHanke = hankeService.updateHanke(createdHanke.hankeTunnus, request)
-
-        assertThat(updatedHanke.alueet).hasSize(2)
-        val alue = updatedHanke.alueet[1]
-        assertThat(alue.haittaAlkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
-            .isEqualTo(alkuPvm.format(DateTimeFormatter.BASIC_ISO_DATE))
-        assertThat(alue.haittaLoppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
-            .isEqualTo(loppuPvm.format(DateTimeFormatter.BASIC_ISO_DATE))
-        assertThat(alue.kaistaHaitta)
-            .isEqualTo(
-                VaikutusAutoliikenteenKaistamaariin
-                    .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA
-            )
-        assertThat(alue.kaistaPituusHaitta)
-            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA)
-        assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.JATKUVA_MELUHAITTA)
-        assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.TOISTUVA_POLYHAITTA)
-        assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_TARINAHAITTA)
-        assertThat(alue.geometriat).isNotNull()
-    }
-
-    @Test
-    fun `updateHanke new hankealue name updates name and keeps data intact`() {
-        val createdHanke = hankeFactory.builder(USERNAME).withHankealue().save()
-        val hankealue = createdHanke.alueet[0]
-        assertThat(hankealue.nimi).isEqualTo("Hankealue 1")
-        val modifiedHanke =
-            createdHanke.copy().apply {
-                // manually set mutable collections due to a shallow copy.
-                this.omistajat = createdHanke.omistajat
-                this.rakennuttajat = createdHanke.rakennuttajat
-                this.toteuttajat = createdHanke.toteuttajat
-                this.tyomaaTyyppi = createdHanke.tyomaaTyyppi
-                this.alueet = mutableListOf(hankealue.copy(nimi = "Changed Name"))
-            }
-        val request = modifiedHanke.toModifyRequest()
-
-        val updateHankeResult = hankeService.updateHanke(modifiedHanke.hankeTunnus, request)
-
-        assertThat(updateHankeResult)
-            .transform { it.copy(modifiedAt = null) }
-            .isEqualTo(createdHanke.copy(version = 2, modifiedAt = null))
-        assertThat(updateHankeResult.alueet).single().all {
-            transform { it.copy(geometriat = null) }
-                .isEqualTo(hankealue.copy(geometriat = null, nimi = "Changed Name"))
-            prop(SavedHankealue::geometriat)
-                .isNotNull()
-                .prop(Geometriat::featureCollection)
-                .isEqualTo(hankealue.geometriat!!.featureCollection)
-        }
-    }
-
-    @Test
-    fun `updateHanke removes hankealue and geometriat`() {
-        val alkuPvm = DateFactory.getStartDatetime()
-        val loppuPvm = DateFactory.getStartDatetime()
-        val hankealue =
-            HankealueFactory.create(
-                id = null,
-                haittaAlkuPvm = alkuPvm,
-                haittaLoppuPvm = loppuPvm,
-                kaistaHaitta =
-                    VaikutusAutoliikenteenKaistamaariin
-                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
-                kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
-                meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
-                polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
-                tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
-            )
-        val hanke = hankeFactory.builder(USERNAME).withHankealue().withHankealue(hankealue).save()
-        assertThat(hanke.alueet).hasSize(2)
-        assertThat(hankealueCount()).isEqualTo(2)
-        assertThat(geometriatCount()).isEqualTo(2)
-        hanke.alueet.removeAt(0)
-        val request = hanke.toModifyRequest()
-
-        val updatedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        assertThat(updatedHanke.alueet).single().all {
-            prop(SavedHankealue::haittaAlkuPvm).isEqualTo(alkuPvm.truncatedTo(ChronoUnit.DAYS))
-            prop(SavedHankealue::haittaLoppuPvm).isEqualTo(loppuPvm.truncatedTo(ChronoUnit.DAYS))
-            prop(SavedHankealue::kaistaHaitta)
-                .isEqualTo(
-                    VaikutusAutoliikenteenKaistamaariin
-                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA
-                )
-            prop(SavedHankealue::kaistaPituusHaitta)
-                .isEqualTo(AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA)
-            prop(SavedHankealue::meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_MELUHAITTA)
-            prop(SavedHankealue::polyHaitta).isEqualTo(Polyhaitta.TOISTUVA_POLYHAITTA)
-            prop(SavedHankealue::tarinaHaitta).isEqualTo(Tarinahaitta.JATKUVA_TARINAHAITTA)
-            prop(SavedHankealue::geometriat).isNotNull()
-        }
-        val hankeFromDb = hankeService.loadHanke(hanke.hankeTunnus)
-        assertThat(hankeFromDb?.alueet).isNotNull().hasSize(1)
-        assertThat(hankealueCount()).isEqualTo(1)
-        assertThat(geometriatCount()).isEqualTo(1)
     }
 
     @Nested
@@ -1481,182 +891,14 @@ class HankeServiceITests(
         }
     }
 
-    @Test
-    fun `updateHanke creates audit log entry for updated hanke`() {
-        val hanke =
-            hankeFactory
-                .builder(USERNAME)
-                .withTyomaaKatuosoite("Testikatu 1")
-                .withTyomaaTyypit(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-                .save()
-        val geometria = GeometriaFactory.create().apply { id = 67 }
-        hanke.alueet.add(HankealueFactory.create(id = null, geometriat = geometria))
-        auditLogRepository.deleteAll()
-        assertEquals(0, auditLogRepository.count())
-        TestUtils.addMockedRequestIp()
-        val request = hanke.toModifyRequest()
-
-        val updatedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
-        assertEquals(1, hankeLogs.size)
-        val hankeLog = hankeLogs[0]
-        assertFalse(hankeLog.isSent)
-        assertThat(hankeLog.createdAt).isRecent()
-        val event = hankeLog.message.auditEvent
-        assertThat(event.dateTime).isRecent()
-        assertEquals(Operation.UPDATE, event.operation)
-        assertEquals(Status.SUCCESS, event.status)
-        assertNull(event.failureDescription)
-        assertEquals("1", event.appVersion)
-        assertEquals("test7358", event.actor.userId)
-        assertEquals(UserRole.USER, event.actor.role)
-        assertEquals(TestUtils.mockedIp, event.actor.ipAddress)
-        assertEquals(hanke.id.toString(), event.target.id)
-        assertEquals(ObjectType.HANKE, event.target.type)
-        val expectedObjectBefore =
-            expectedHankeLogObject(hanke, hankeVersion = 1, alkuPvm = null, loppuPvm = null)
-        JSONAssert.assertEquals(
-            expectedObjectBefore,
-            event.target.objectBefore,
-            JSONCompareMode.NON_EXTENSIBLE
-        )
-        val expectedObjectAfter =
-            expectedHankeLogObject(
-                hanke,
-                updatedHanke.alueet[0],
-                hankeVersion = 2,
-                tormaystarkasteluTulos = true,
-            )
-        JSONAssert.assertEquals(
-            expectedObjectAfter,
-            event.target.objectAfter,
-            JSONCompareMode.NON_EXTENSIBLE
-        )
-    }
-
-    @Test
-    fun `updateHanke creates audit log entry when geometria is updated in hankealue`() {
-        val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
-        auditLogRepository.deleteAll()
-        assertEquals(0, auditLogRepository.count())
-        TestUtils.addMockedRequestIp()
-        hanke.alueet[0].geometriat = GeometriaFactory.create(hanke.alueet[0].geometriat!!.id!!)
-        val request = hanke.toModifyRequest()
-
-        val updatedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
-        assertEquals(1, hankeLogs.size)
-        val event = hankeLogs[0].message.auditEvent
-        assertEquals(Operation.UPDATE, event.operation)
-        assertEquals(hanke.id.toString(), event.target.id)
-        assertEquals(ObjectType.HANKE, event.target.type)
-        val expectedObjectBefore =
-            expectedHankeLogObject(
-                hanke,
-                hanke.alueet[0],
-                hankeVersion = 1,
-                tormaystarkasteluTulos = true
-            )
-        JSONAssert.assertEquals(
-            expectedObjectBefore,
-            event.target.objectBefore,
-            JSONCompareMode.NON_EXTENSIBLE
-        )
-        val expectedHankeObject =
-            expectedHankeLogObject(
-                updatedHanke,
-                updatedHanke.alueet[0],
-                hankeVersion = 2,
-                geometriaVersion = 1,
-                tormaystarkasteluTulos = true,
-            )
-        JSONAssert.assertEquals(
-            expectedHankeObject,
-            event.target.objectAfter,
-            JSONCompareMode.NON_EXTENSIBLE
-        )
-    }
-
-    @Test
-    fun `updateHanke creates audit log entry even if there are no changes`() {
-        val hanke =
-            hankeFactory
-                .builder(USERNAME)
-                .withTyomaaKatuosoite("Testikatu 1")
-                .withTyomaaTyypit(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-                .save()
-        auditLogRepository.deleteAll()
-        assertEquals(0, auditLogRepository.count())
-        val request = hanke.toModifyRequest()
-
-        hankeService.updateHanke(hanke.hankeTunnus, request)
-
-        val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
-        val expectedBefore =
-            expectedHankeLogObject(hanke, hankeVersion = 1, alkuPvm = null, loppuPvm = null)
-        val expectedAfter =
-            expectedHankeLogObject(hanke, hankeVersion = 2, alkuPvm = null, loppuPvm = null)
-        assertThat(hankeLogs).single().isSuccess(Operation.UPDATE) {
-            withTarget {
-                prop(AuditLogTarget::objectBefore).given {
-                    JSONAssert.assertEquals(expectedBefore, it, JSONCompareMode.NON_EXTENSIBLE)
-                }
-                prop(AuditLogTarget::objectAfter).given {
-                    JSONAssert.assertEquals(expectedAfter, it, JSONCompareMode.NON_EXTENSIBLE)
-                }
-            }
-        }
-    }
-
     private fun initHankeWithHakemus(
         alluId: Int,
         alluStatus: ApplicationStatus = ApplicationStatus.PENDING
     ): HankeEntity {
-        val hanke = hankeFactory.saveMinimal(hankeTunnus = "HAI23-1")
-        val application =
-            hakemusRepository.save(
-                ApplicationFactory.createApplicationEntity(
-                    hanke = hanke,
-                    alluStatus = alluStatus,
-                    alluid = alluId,
-                    userId = USERNAME
-                )
-            )
-        return hanke.apply { hakemukset = mutableSetOf(application) }
+        hakemusFactory.builder().withStatus(alluId = alluId, status = alluStatus).saveEntity()
+
+        return hankeRepository.findAll().first()
     }
-
-    private fun assertFeaturePropertiesIsReset(hanke: Hanke, propertiesWanted: Map<String, Any?>) {
-        assertThat(hanke.alueet).isNotEmpty()
-        hanke.alueet.forEach { alue ->
-            val features = alue.geometriat?.featureCollection?.features
-            assertThat(features).isNotNull().isNotEmpty()
-            features?.forEach { feature ->
-                assertThat(feature.properties).isEqualTo(propertiesWanted)
-            }
-        }
-    }
-
-    data class TemplateData(
-        val hankeId: Int,
-        val hankeTunnus: String,
-        val alueId: Int? = null,
-        val geometriaId: Int? = null,
-        val geometriaVersion: Int = 0,
-        val hankeVersion: Int = 0,
-        val nextYear: Int = nextYear(),
-        val tormaystarkasteluTulos: Boolean = false,
-        val alueNimi: String? = null,
-        val alkuPvm: String? = null,
-        val loppuPvm: String? = null,
-    )
-
-    val expectedHankeWithPolygon =
-        Template.parse(
-            "/fi/hel/haitaton/hanke/logging/expectedHankeWithPolygon.json.mustache"
-                .getResourceAsText()
-        )
 
     private fun expectedNewHankeLogObject(hanke: Hanke): String {
         val templateData =
@@ -1665,32 +907,6 @@ class HankeServiceITests(
                 "/fi/hel/haitaton/hanke/logging/expectedNewHanke.json.mustache".getResourceAsText()
             )
             .processToString(templateData)
-    }
-
-    private fun expectedHankeLogObject(
-        hanke: Hanke,
-        alue: SavedHankealue? = null,
-        geometriaVersion: Int = 0,
-        hankeVersion: Int = 0,
-        tormaystarkasteluTulos: Boolean = false,
-        alkuPvm: String? = "${nextYear()}-02-20T00:00:00Z",
-        loppuPvm: String? = "${nextYear()}-02-21T00:00:00Z",
-    ): String {
-        val templateData =
-            TemplateData(
-                hanke.id,
-                hanke.hankeTunnus,
-                alue?.id,
-                alue?.geometriat?.id,
-                geometriaVersion,
-                hankeVersion,
-                nextYear(),
-                tormaystarkasteluTulos,
-                alue?.nimi,
-                alkuPvm,
-                loppuPvm,
-            )
-        return expectedHankeWithPolygon.processToString(templateData)
     }
 
     private fun List<AuditLogEntryEntity>.findByTargetId(id: Int): AuditLogEntryEntity =
@@ -1745,43 +961,58 @@ class HankeServiceITests(
 
     fun AuditLogRepository.countByType(type: ObjectType) = this.findByType(type).count()
 
-    private fun geometriatCount(): Int? =
-        jdbcTemplate.queryForObject("SELECT count(*) from geometriat", Int::class.java)
-
-    private fun hankealueCount(): Int? =
-        jdbcTemplate.queryForObject("SELECT count(*) from hankealue", Int::class.java)
-
     private fun setUpProfiiliMocks(): SecurityContext {
         val securityContext: SecurityContext = mockk()
         every { securityContext.userId() } returns USERNAME
         every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
         return securityContext
     }
+}
 
-    private fun assertk.Assert<HankeYhteystieto>.hasDefaultInfo() {
-        prop(HankeYhteystieto::nimi).isEqualTo(TEPPO_TESTI)
-        prop(HankeYhteystieto::email).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
-        prop(HankeYhteystieto::tyyppi).isEqualTo(YhteystietoTyyppi.YRITYS)
-        prop(HankeYhteystieto::ytunnus).isEqualTo(HankeYhteystietoFactory.DEFAULT_YTUNNUS)
-        prop(HankeYhteystieto::puhelinnumero).isEqualTo(ApplicationFactory.TEPPO_PHONE)
-        prop(HankeYhteystieto::organisaatioNimi).isEqualTo("Organisaatio")
-        prop(HankeYhteystieto::osasto).isEqualTo("Osasto")
-        prop(HankeYhteystieto::createdBy).isEqualTo("test7358")
-        prop(HankeYhteystieto::createdAt).isRecentZDT()
-        prop(HankeYhteystieto::modifiedBy).isNull()
-        prop(HankeYhteystieto::modifiedAt).isNull()
-        prop(HankeYhteystieto::rooli).isEqualTo("Isännöitsijä")
+object ExpectedHankeLogObject {
+    private val expectedHankeWithPolygon =
+        Template.parse(
+            "/fi/hel/haitaton/hanke/logging/expectedHankeWithPolygon.json.mustache"
+                .getResourceAsText()
+        )
+
+    fun expectedHankeLogObject(
+        hanke: Hanke,
+        alue: SavedHankealue? = null,
+        geometriaVersion: Int = 0,
+        hankeVersion: Int = 0,
+        tormaystarkasteluTulos: Boolean = false,
+        alkuPvm: String? = "${nextYear()}-02-20T00:00:00Z",
+        loppuPvm: String? = "${nextYear()}-02-21T00:00:00Z",
+    ): String {
+        val templateData =
+            TemplateData(
+                hanke.id,
+                hanke.hankeTunnus,
+                alue?.id,
+                alue?.geometriat?.id,
+                geometriaVersion,
+                hankeVersion,
+                nextYear(),
+                tormaystarkasteluTulos,
+                alue?.nimi,
+                alkuPvm,
+                loppuPvm,
+            )
+        return expectedHankeWithPolygon.processToString(templateData)
     }
 
-    private fun assertk.Assert<HankeYhteystieto>.hasOneYhteyshenkilo(
-        hankekayttajaInput: HankekayttajaInput
-    ) {
-        prop(HankeYhteystieto::yhteyshenkilot).single().all {
-            prop(Yhteyshenkilo::id).isNotNull()
-            prop(Yhteyshenkilo::etunimi).isEqualTo(hankekayttajaInput.etunimi)
-            prop(Yhteyshenkilo::sukunimi).isEqualTo(hankekayttajaInput.sukunimi)
-            prop(Yhteyshenkilo::sahkoposti).isEqualTo(hankekayttajaInput.email)
-            prop(Yhteyshenkilo::puhelinnumero).isEqualTo(hankekayttajaInput.puhelin)
-        }
-    }
+    data class TemplateData(
+        val hankeId: Int,
+        val hankeTunnus: String,
+        val alueId: Int? = null,
+        val geometriaId: Int? = null,
+        val geometriaVersion: Int = 0,
+        val hankeVersion: Int = 0,
+        val nextYear: Int = nextYear(),
+        val tormaystarkasteluTulos: Boolean = false,
+        val alueNimi: String? = null,
+        val alkuPvm: String? = null,
+        val loppuPvm: String? = null,
+    )
 }
