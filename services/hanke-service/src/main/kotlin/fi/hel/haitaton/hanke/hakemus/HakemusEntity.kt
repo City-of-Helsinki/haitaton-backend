@@ -22,7 +22,7 @@ import org.hibernate.annotations.Type
 
 @Entity
 @Table(name = "applications")
-data class ApplicationEntity(
+data class HakemusEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override val id: Long,
     override var alluid: Int?,
     @Enumerated(EnumType.STRING) var alluStatus: ApplicationStatus?,
