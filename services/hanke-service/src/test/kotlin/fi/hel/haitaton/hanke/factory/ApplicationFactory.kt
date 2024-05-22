@@ -4,14 +4,12 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
-import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
@@ -22,10 +20,6 @@ import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.application.Tyoalue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
-import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
-import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
-import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
-import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_SUORITTAJA
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
@@ -52,14 +46,6 @@ class ApplicationFactory(
         const val TESTIHENKILO = "Testihenkilö"
         const val TEPPO_EMAIL = "teppo@example.test"
         const val TEPPO_PHONE = "04012345678"
-
-        val expectedRecipients =
-            arrayOf(
-                "timo.tyonsuorittaja@mail.com",
-                "anssi.asianhoitaja@mail.com",
-                "rane.rakennuttaja@mail.com",
-                "new.mail@foo.fi",
-            )
 
         fun createPostalAddress(
             streetAddress: String = "Katu 1",
@@ -133,14 +119,6 @@ class ApplicationFactory(
                 invoicingOperator = null,
             )
 
-        fun ApplicationEntity.withCustomer(customer: CustomerWithContacts): ApplicationEntity {
-            applicationData =
-                (applicationData as CableReportApplicationData).copy(
-                    customerWithContacts = customer
-                )
-            return this
-        }
-
         fun Customer.withContacts(vararg contacts: Contact): CustomerWithContacts =
             CustomerWithContacts(this, contacts.asList())
 
@@ -200,151 +178,6 @@ class ApplicationFactory(
             tormaystarkasteluTulos: TormaystarkasteluTulos =
                 TormaystarkasteluTulos(1.0f, 3.0f, 5.0f, 5.0f),
         ) = Tyoalue(geometry, area, tormaystarkasteluTulos)
-
-        fun Application.withApplicationData(
-            type: ApplicationType = ApplicationType.CABLE_REPORT,
-            name: String = DEFAULT_APPLICATION_NAME,
-            areas: List<ApplicationArea>? =
-                listOf(
-                    when (applicationType) {
-                        ApplicationType.CABLE_REPORT -> createCableReportApplicationArea()
-                        ApplicationType.EXCAVATION_NOTIFICATION ->
-                            createExcavationNotificationArea()
-                    }
-                ),
-            startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
-            endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-            pendingOnClient: Boolean = false,
-            workDescription: String = DEFAULT_WORK_DESCRIPTION,
-            customerWithContacts: CustomerWithContacts =
-                createCompanyCustomer().withContacts(createContact(orderer = true)),
-            contractorWithContacts: CustomerWithContacts =
-                createCompanyCustomer().withContacts(createContact()),
-            representativeWithContacts: CustomerWithContacts? = null,
-            propertyDeveloperWithContacts: CustomerWithContacts? = null,
-            rockExcavation: Boolean = false,
-        ): Application =
-            when (type) {
-                ApplicationType.CABLE_REPORT ->
-                    withCableReportApplicationData(
-                        name,
-                        areas?.map { it as CableReportApplicationArea },
-                        startTime,
-                        endTime,
-                        pendingOnClient,
-                        workDescription,
-                        customerWithContacts,
-                        contractorWithContacts,
-                        representativeWithContacts,
-                        propertyDeveloperWithContacts,
-                        rockExcavation,
-                        createPostalAddress()
-                    )
-                ApplicationType.EXCAVATION_NOTIFICATION ->
-                    withExcavationNotificationData(
-                        pendingOnClient,
-                        name,
-                        workDescription,
-                        false,
-                        false,
-                        false,
-                        rockExcavation,
-                        true,
-                        emptyList(),
-                        emptyList(),
-                        areas?.map { it as ExcavationNotificationArea },
-                        startTime,
-                        endTime,
-                        customerWithContacts,
-                        contractorWithContacts,
-                        representativeWithContacts,
-                        propertyDeveloperWithContacts,
-                        createCompanyInvoicingCustomer(),
-                        "Asiakkaan viite"
-                    )
-            }
-
-        fun Application.withCableReportApplicationData(
-            name: String = DEFAULT_APPLICATION_NAME,
-            areas: List<CableReportApplicationArea>? = listOf(createCableReportApplicationArea()),
-            startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
-            endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-            pendingOnClient: Boolean = false,
-            workDescription: String = DEFAULT_WORK_DESCRIPTION,
-            customerWithContacts: CustomerWithContacts =
-                createCompanyCustomer().withContacts(createContact(orderer = true)),
-            contractorWithContacts: CustomerWithContacts =
-                createCompanyCustomer().withContacts(createContact()),
-            representativeWithContacts: CustomerWithContacts? = null,
-            propertyDeveloperWithContacts: CustomerWithContacts? = null,
-            rockExcavation: Boolean = false,
-            postalAddress: PostalAddress? = null,
-        ): Application =
-            this.copy(
-                applicationData =
-                    createCableReportApplicationData(
-                        name,
-                        areas,
-                        startTime,
-                        endTime,
-                        pendingOnClient,
-                        workDescription,
-                        customerWithContacts,
-                        contractorWithContacts,
-                        representativeWithContacts,
-                        propertyDeveloperWithContacts,
-                        rockExcavation,
-                        postalAddress
-                    )
-            )
-
-        fun Application.withExcavationNotificationData(
-            pendingOnClient: Boolean = false,
-            name: String = DEFAULT_APPLICATION_NAME,
-            workDescription: String = "Työn kuvaus.",
-            maintenanceWork: Boolean = false,
-            emergencyWork: Boolean = false,
-            cableReportDone: Boolean = false,
-            rockExcavation: Boolean = false,
-            requiredCompetence: Boolean = true,
-            cableReports: List<String> = emptyList(),
-            placementContracts: List<String> = emptyList(),
-            areas: List<ExcavationNotificationArea>? = listOf(createExcavationNotificationArea()),
-            startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
-            endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-            customerWithContacts: CustomerWithContacts =
-                createCompanyCustomer().withContacts(createContact(orderer = true)),
-            contractorWithContacts: CustomerWithContacts =
-                createCompanyCustomer().withContacts(createContact()),
-            representativeWithContacts: CustomerWithContacts? = null,
-            propertyDeveloperWithContacts: CustomerWithContacts? = null,
-            invoicingCustomer: InvoicingCustomer? = createCompanyInvoicingCustomer(),
-            customerReference: String? = "Asiakkaan viite",
-        ): Application =
-            this.copy(
-                applicationData =
-                    createExcavationNotificationData(
-                        pendingOnClient = pendingOnClient,
-                        name = name,
-                        workDescription = workDescription,
-                        maintenanceWork = maintenanceWork,
-                        emergencyWork = emergencyWork,
-                        cableReportDone = cableReportDone,
-                        rockExcavation = rockExcavation,
-                        cableReports = cableReports,
-                        placementContracts = placementContracts,
-                        requiredCompetence = requiredCompetence,
-                        areas = areas,
-                        startTime = startTime,
-                        endTime = endTime,
-                        customerWithContacts = customerWithContacts,
-                        contractorWithContacts = contractorWithContacts,
-                        representativeWithContacts = representativeWithContacts,
-                        propertyDeveloperWithContacts = propertyDeveloperWithContacts,
-                        invoicingCustomer = invoicingCustomer,
-                        customerReference = customerReference
-                    )
-            )
 
         private fun createApplicationData(applicationType: ApplicationType): ApplicationData =
             when (applicationType) {
@@ -487,44 +320,6 @@ class ApplicationFactory(
                 hankeTunnus = hankeTunnus
             )
 
-        fun Application.withCustomer(customer: CustomerWithContacts?): Application =
-            this.copy(
-                applicationData =
-                    (applicationData as CableReportApplicationData).copy(
-                        customerWithContacts = customer
-                    )
-            )
-
-        fun Application.withCustomerContacts(vararg contacts: Contact): Application =
-            this.withCustomer(
-                (applicationData as CableReportApplicationData)
-                    .customerWithContacts!!
-                    .copy(contacts = contacts.asList())
-            )
-
-        fun Application.withInvoicingCustomer(customer: InvoicingCustomer?): Application =
-            this.copy(
-                applicationData =
-                    (applicationData as ExcavationNotificationData).copy(
-                        invoicingCustomer = customer
-                    )
-            )
-
-        fun CableReportApplicationData.withPostalAddress(
-            streetAddress: String = "Katu 1",
-            postalCode: String = "00100",
-            city: String = "Helsinki",
-        ) = this.copy(postalAddress = PostalAddress(StreetAddress(streetAddress), postalCode, city))
-
-        fun CableReportApplicationData.withArea(name: String, geometry: Polygon) =
-            this.copy(areas = (areas ?: listOf()) + CableReportApplicationArea(name, geometry))
-
-        fun cableReportWithoutHanke(
-            applicationData: CableReportApplicationData = createCableReportApplicationData(),
-            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-            f: CableReportApplicationData.() -> CableReportApplicationData = { this },
-        ): CableReportWithoutHanke = CableReportWithoutHanke(applicationType, applicationData.f())
-
         fun createApplications(
             n: Long,
             mapper: (Long, Application) -> Application = { _, app -> app },
@@ -587,58 +382,6 @@ class ApplicationFactory(
             (1..n).map { i ->
                 createApplicationEntity(id = i, hanke = hanke, applicationType = applicationType)
             }
-
-        val hakijaCustomerContact: CustomerWithContacts =
-            with(KAYTTAJA_INPUT_HAKIJA) {
-                createCompanyCustomer()
-                    .withContacts(
-                        createContact(
-                            firstName = etunimi,
-                            lastName = sukunimi,
-                            email = email,
-                            orderer = true
-                        )
-                    )
-            }
-
-        val suorittajaCustomerContact: CustomerWithContacts =
-            with(KAYTTAJA_INPUT_SUORITTAJA) {
-                createCompanyCustomer()
-                    .withContacts(
-                        createContact(
-                            firstName = etunimi,
-                            lastName = sukunimi,
-                            email = email,
-                            orderer = false
-                        )
-                    )
-            }
-
-        val asianHoitajaCustomerContact: CustomerWithContacts =
-            with(KAYTTAJA_INPUT_ASIANHOITAJA) {
-                createCompanyCustomer()
-                    .withContacts(
-                        createContact(
-                            firstName = etunimi,
-                            lastName = sukunimi,
-                            email = email,
-                            orderer = false
-                        )
-                    )
-            }
-
-        val rakennuttajaCustomerContact: CustomerWithContacts =
-            with(KAYTTAJA_INPUT_RAKENNUTTAJA) {
-                createCompanyCustomer()
-                    .withContacts(
-                        createContact(
-                            firstName = etunimi,
-                            lastName = sukunimi,
-                            email = email,
-                            orderer = false
-                        )
-                    )
-            }
     }
 
     /** Save an application to database. it. */
@@ -663,32 +406,5 @@ class ApplicationFactory(
                 hanke = hanke,
             )
         return applicationRepository.save(applicationEntity)
-    }
-
-    /**
-     * Save several applications to database. The mutator can be used to mutate the entities before
-     * saving them.
-     */
-    fun saveApplicationEntities(
-        n: Long,
-        username: String,
-        hanke: HankeEntity,
-        mutator: (Int, ApplicationEntity) -> Unit = { _, _ -> },
-    ): List<ApplicationEntity> {
-        val entities =
-            createApplications(n).map { application ->
-                ApplicationEntity(
-                    id = 0,
-                    alluid = application.alluid,
-                    alluStatus = null,
-                    applicationIdentifier = null,
-                    userId = username,
-                    applicationType = application.applicationType,
-                    applicationData = application.applicationData,
-                    hanke = hanke,
-                )
-            }
-        entities.forEachIndexed { i, application -> mutator(i, application) }
-        return applicationRepository.saveAll(entities)
     }
 }

@@ -8,10 +8,6 @@ import fi.hel.haitaton.hanke.HankeYhteyshenkiloEntity
 import fi.hel.haitaton.hanke.HankeYhteyshenkiloRepository
 import fi.hel.haitaton.hanke.HankeYhteystietoEntity
 import fi.hel.haitaton.hanke.HankeYhteystietoRepository
-import fi.hel.haitaton.hanke.application.Application
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
@@ -73,24 +69,6 @@ data class HankeBuilder(
 
     /** Save the entity with [save], and - for convenience - get the saved entity from DB. */
     fun saveEntity(): HankeEntity = hankeRepository.getReferenceById(save().id)
-
-    /**
-     * Save a standalone cable report application from this hanke with the given application data.
-     * This is the best way to create a hanke with generated = true, since [save] overwrites the
-     * generated tag during the update.
-     */
-    fun saveAsGenerated(
-        applicationData: CableReportApplicationData =
-            ApplicationFactory.createCableReportApplicationData()
-    ): Pair<Application, Hanke> {
-        val application =
-            hankeService.generateHankeWithApplication(
-                CableReportWithoutHanke(ApplicationType.CABLE_REPORT, applicationData),
-                setUpProfiiliMocks()
-            )
-        val hanke = hankeService.loadHanke(application.hankeTunnus)!!
-        return Pair(application, hanke)
-    }
 
     /**
      * Save a hanke that has the generated field set. The hanke is created like it would be created

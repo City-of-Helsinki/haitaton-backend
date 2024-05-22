@@ -76,10 +76,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 private const val HANKE_TUNNUS = "HAI-1234"
 
-@WebMvcTest(
-    controllers = [HakemusController::class],
-    properties = ["haitaton.features.user-management=true"]
-)
+@WebMvcTest(controllers = [HakemusController::class])
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)

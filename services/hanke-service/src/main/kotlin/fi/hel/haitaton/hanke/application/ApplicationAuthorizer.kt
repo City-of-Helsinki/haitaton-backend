@@ -35,10 +35,6 @@ class ApplicationAuthorizer(
         authorizeApplicationId(applicationId, PermissionCode.valueOf(permissionCode))
 
     @Transactional(readOnly = true)
-    fun authorizeCreate(application: Application): Boolean =
-        authorizeHankeTunnus(application.hankeTunnus, PermissionCode.EDIT_APPLICATIONS)
-
-    @Transactional(readOnly = true)
     fun authorizeCreate(hakemus: CreateHakemusRequest): Boolean =
         authorizeHankeTunnus(hakemus.hankeTunnus, PermissionCode.EDIT_APPLICATIONS)
 
