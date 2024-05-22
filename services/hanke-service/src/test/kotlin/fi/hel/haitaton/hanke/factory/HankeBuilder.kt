@@ -18,6 +18,7 @@ import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankealueRequest
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
+import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
@@ -116,10 +117,16 @@ data class HankeBuilder(
         rakennuttajat = mutableListOf(HankeYhteystietoFactory.createDifferentiated(i, id = null))
     }
 
-    fun withHankealue(alue: SavedHankealue = HankealueFactory.create()) = applyToHanke {
+    fun withHankealue(
+        alue: SavedHankealue = HankealueFactory.create(),
+        haittojenhallintasuunnitelma: Boolean = false
+    ) = applyToHanke {
         alueet.add(alue)
         tyomaaKatuosoite = "Testikatu 1"
         tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
+        if (haittojenhallintasuunnitelma) {
+            alue.haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma()
+        }
     }
 
     fun withPerustaja(perustaja: HankekayttajaInput): HankeBuilder =
@@ -193,7 +200,8 @@ data class HankeBuilder(
                 kaistaPituusHaitta = kaistaPituusHaitta,
                 meluHaitta = meluHaitta,
                 polyHaitta = polyHaitta,
-                tarinaHaitta = tarinaHaitta
+                tarinaHaitta = tarinaHaitta,
+                haittojenhallintasuunnitelma = haittojenhallintasuunnitelma
             )
     }
 }

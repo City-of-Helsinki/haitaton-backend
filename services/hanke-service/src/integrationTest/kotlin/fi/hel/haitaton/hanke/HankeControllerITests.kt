@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import assertk.assertThat
 import assertk.assertions.isTrue
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
@@ -14,6 +15,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withToteuttaja
 import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -517,6 +519,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
                     tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
                     tormaystarkasteluTulos = null,
+                    haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma(),
                 )
             hankeToBeUpdated.alueet.add(alue)
             // Prepare the expected result/return
@@ -553,6 +556,13 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                                 .name
                         )
                 ) // Note, here as string, not the enum.
+                .andExpect(
+                    jsonPath("$.alueet[0].haittojenhallintasuunnitelma.YLEINEN")
+                        .value(
+                            hankeToBeUpdated.alueet[0].haittojenhallintasuunnitelma!![
+                                Haittojenhallintatyyppi.YLEINEN]
+                        )
+                )
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)

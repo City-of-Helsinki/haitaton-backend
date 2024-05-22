@@ -106,7 +106,15 @@
       {{^tormaystarkasteluTulos}}
           "tormaystarkasteluTulos": null,
       {{/tormaystarkasteluTulos}}
-      "nimi": {{#alueNimi}}"{{alueNimi}}"{{/alueNimi}}{{^alueNimi}}null{{/alueNimi}}
+      "nimi": {{#alueNimi}}"{{alueNimi}}"{{/alueNimi}}{{^alueNimi}}null{{/alueNimi}},
+      "haittojenhallintasuunnitelma": {{#haittojenhallintasuunnitelma}}{
+        "AUTOLIIKENNE":"Autoliikenteelle koituvien haittojen hallintasuunnitelma",
+        "LINJAAUTOLIIKENNE":"Linja-autoliikenteelle koituvien haittojen hallintasuunnitelma",
+        "YLEINEN":"Yleisten haittojen hallintasuunnitelma",
+        "PYORALIIKENNE":"Pyöräliikenteelle koituvien haittojen hallintasuunnitelma",
+        "RAITIOLIIKENNE":"Raitioliikenteelle koituvien haittojen hallintasuunnitelma",
+        "MUUT":"Muiden haittojen hallintasuunnitelma"
+      }{{/haittojenhallintasuunnitelma}}{{^haittojenhallintasuunnitelma}}null{{/haittojenhallintasuunnitelma}}
     }
 {{/alueId}}
   ]

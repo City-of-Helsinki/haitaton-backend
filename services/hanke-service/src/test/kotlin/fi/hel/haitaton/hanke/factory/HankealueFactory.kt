@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankealueEntity
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
@@ -31,6 +32,7 @@ object HankealueFactory {
         tarinaHaitta: Tarinahaitta? = Tarinahaitta.JATKUVA_TARINAHAITTA,
         nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
         tormaystarkasteluTulos: TormaystarkasteluTulos? = tormaystarkasteluTulos(),
+        haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>? = null,
     ): SavedHankealue {
         return SavedHankealue(
             id,
@@ -45,6 +47,22 @@ object HankealueFactory {
             tarinaHaitta,
             nimi,
             tormaystarkasteluTulos,
+            haittojenhallintasuunnitelma,
+        )
+    }
+
+    fun createHaittojenhallintasuunnitelma(): Map<Haittojenhallintatyyppi, String> {
+        return mapOf(
+            Haittojenhallintatyyppi.YLEINEN to "Yleisten haittojen hallintasuunnitelma",
+            Haittojenhallintatyyppi.PYORALIIKENNE to
+                "Pyöräliikenteelle koituvien haittojen hallintasuunnitelma",
+            Haittojenhallintatyyppi.AUTOLIIKENNE to
+                "Autoliikenteelle koituvien haittojen hallintasuunnitelma",
+            Haittojenhallintatyyppi.LINJAAUTOLIIKENNE to
+                "Linja-autoliikenteelle koituvien haittojen hallintasuunnitelma",
+            Haittojenhallintatyyppi.RAITIOLIIKENNE to
+                "Raitioliikenteelle koituvien haittojen hallintasuunnitelma",
+            Haittojenhallintatyyppi.MUUT to "Muiden haittojen hallintasuunnitelma"
         )
     }
 
@@ -92,6 +110,7 @@ object HankealueFactory {
                 tarinaHaitta = alue.tarinaHaitta,
                 nimi = alue.nimi,
                 tormaystarkasteluTulos = null,
+                haittojenhallintasuunnitelma = alue.haittojenhallintasuunnitelma,
             )
             .apply { tormaystarkasteluTulos = tormaystarkasteluTulosEntity(hankealueEntity = this) }
     }

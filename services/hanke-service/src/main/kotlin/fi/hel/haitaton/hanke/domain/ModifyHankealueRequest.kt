@@ -49,6 +49,10 @@ data class ModifyHankealueRequest(
         description = "Vibration nuisance",
     )
     override val tarinaHaitta: Tarinahaitta?,
+    @field:Schema(
+        description = "Nuisance management plan for this area",
+    )
+    override val haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>?
 ) : HasId<Int?>, Hankealue
 
 data class ModifyGeometriaRequest(
