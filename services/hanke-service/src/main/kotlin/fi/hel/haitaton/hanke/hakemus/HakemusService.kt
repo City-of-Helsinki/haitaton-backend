@@ -21,7 +21,6 @@ import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
@@ -121,8 +120,6 @@ class HakemusService(
                 applicationType = ApplicationType.CABLE_REPORT,
                 pendingOnClient = true,
                 areas = null,
-                customerWithContacts = null,
-                contractorWithContacts = null,
                 startTime = null,
                 endTime = null,
                 rockExcavation = null,
@@ -315,8 +312,6 @@ class HakemusService(
             startTime = null,
             endTime = null,
             areas = null,
-            customerWithContacts = null,
-            contractorWithContacts = null,
         )
 
     private fun CreateKaivuilmoitusRequest.newExcavationNotificationData() =
@@ -336,8 +331,6 @@ class HakemusService(
             startTime = null,
             endTime = null,
             areas = null,
-            customerWithContacts = null,
-            contractorWithContacts = null,
         )
 
     private fun handleHakemusUpdate(applicationHistory: ApplicationHistory) {

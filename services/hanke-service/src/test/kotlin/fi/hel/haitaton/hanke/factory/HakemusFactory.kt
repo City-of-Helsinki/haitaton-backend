@@ -6,12 +6,12 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.HankePerustaja
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusService

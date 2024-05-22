@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.gdpr
 
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
-import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.Called
@@ -274,12 +273,8 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         @ParameterizedTest(name = "{displayName} dryRun={0}")
         @ValueSource(booleans = [true, false])
         fun `Returns 403 and reasons if applications in handling`(dryRun: Boolean) {
-            val applications =
-                ApplicationFactory.createApplications(2) { i, application ->
-                    application.copy(applicationIdentifier = "JS$i")
-                }
-            every { gdprService.canDelete(USERNAME) } throws
-                DeleteForbiddenException.fromSentApplications(applications)
+            val gdprErrors = listOf("JS1", "JS2").map { GdprError.fromSentApplication(it) }
+            every { gdprService.canDelete(USERNAME) } throws DeleteForbiddenException(gdprErrors)
             val expectedResponse =
                 """
                 {

@@ -29,7 +29,6 @@ import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
@@ -382,7 +381,7 @@ class HankeServiceITests(
 
         val result = hankeService.getHankeApplications(hanke.hankeTunnus)
 
-        val expectedHakemus = applicationRepository.findAll().first().toDomainObject()
+        val expectedHakemus = applicationRepository.findAll().single().toMetadata()
         assertThat(result).hasSameElementsAs(listOf(expectedHakemus))
     }
 
@@ -1627,19 +1626,6 @@ class HankeServiceITests(
             )
         return hanke.apply { hakemukset = mutableSetOf(application) }
     }
-
-    private fun ApplicationEntity.toDomainObject(): Application =
-        with(this) {
-            Application(
-                id,
-                alluid,
-                alluStatus,
-                applicationIdentifier,
-                applicationType,
-                applicationData,
-                hanke.hankeTunnus,
-            )
-        }
 
     private fun assertFeaturePropertiesIsReset(hanke: Hanke, propertiesWanted: Map<String, Any?>) {
         assertThat(hanke.alueet).isNotEmpty()

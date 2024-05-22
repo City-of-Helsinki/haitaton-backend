@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.ApplicationType
 import java.io.IOException
 
 /**
