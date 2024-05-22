@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentAuthorizer
@@ -12,6 +11,7 @@ import fi.hel.haitaton.hanke.gdpr.GdprProperties
 import fi.hel.haitaton.hanke.gdpr.GdprService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatService
+import fi.hel.haitaton.hanke.hakemus.HakemusAuthorizer
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -91,7 +91,7 @@ class IntegrationTestConfiguration {
 
     @Bean fun hankeAuthorizer(): HankeAuthorizer = mockk(relaxUnitFun = true)
 
-    @Bean fun applicationAuthorizer(): ApplicationAuthorizer = mockk(relaxUnitFun = true)
+    @Bean fun hakemusAuthorizer(): HakemusAuthorizer = mockk(relaxUnitFun = true)
 
     @Bean fun hankeAttachmentAuthorizer(): HankeAttachmentAuthorizer = mockk(relaxUnitFun = true)
 
