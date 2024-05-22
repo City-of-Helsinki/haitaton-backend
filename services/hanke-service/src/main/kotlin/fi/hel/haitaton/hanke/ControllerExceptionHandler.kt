@@ -1,13 +1,13 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
-import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.application.ApplicationInAlluException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
+import fi.hel.haitaton.hanke.hakemus.HakemusAlreadyProcessingException
+import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -128,10 +128,10 @@ class ControllerExceptionHandler {
         return HankeError.HAI1013
     }
 
-    @ExceptionHandler(ApplicationNotFoundException::class)
+    @ExceptionHandler(HakemusNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @Hidden
-    fun applicationNotFound(ex: ApplicationNotFoundException): HankeError {
+    fun applicationNotFound(ex: HakemusNotFoundException): HankeError {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI2001
@@ -146,10 +146,10 @@ class ControllerExceptionHandler {
         return HankeError.HAI2009
     }
 
-    @ExceptionHandler(ApplicationAlreadyProcessingException::class)
+    @ExceptionHandler(HakemusAlreadyProcessingException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
-    fun applicationAlreadyProcessing(ex: ApplicationAlreadyProcessingException): HankeError {
+    fun applicationAlreadyProcessing(ex: HakemusAlreadyProcessingException): HankeError {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI2003

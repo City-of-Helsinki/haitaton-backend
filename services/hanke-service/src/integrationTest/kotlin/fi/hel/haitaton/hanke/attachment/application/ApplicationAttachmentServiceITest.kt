@@ -20,7 +20,6 @@ import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
@@ -43,6 +42,7 @@ import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.Asserts.isSameInstantAs
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -319,7 +319,7 @@ class ApplicationAttachmentServiceITest(
                 )
             }
 
-            failure.hasClass(ApplicationNotFoundException::class)
+            failure.hasClass(HakemusNotFoundException::class)
             assertThat(attachmentRepository.findAll()).isEmpty()
         }
 

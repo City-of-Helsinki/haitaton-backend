@@ -8,7 +8,6 @@ import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
@@ -41,7 +40,7 @@ class HakemusAuthorizerITest(
         fun `throws exception if application doesn't exist`() {
             assertFailure { authorizer.authorizeHakemusId(applicationId, VIEW.name) }
                 .all {
-                    hasClass(ApplicationNotFoundException::class)
+                    hasClass(HakemusNotFoundException::class)
                     messageContains(applicationId.toString())
                 }
         }
@@ -53,7 +52,7 @@ class HakemusAuthorizerITest(
 
             assertFailure { authorizer.authorizeHakemusId(application.id, VIEW.name) }
                 .all {
-                    hasClass(ApplicationNotFoundException::class)
+                    hasClass(HakemusNotFoundException::class)
                     messageContains(application.id.toString())
                 }
         }
@@ -68,7 +67,7 @@ class HakemusAuthorizerITest(
                     authorizer.authorizeHakemusId(application.id, PermissionCode.DELETE.name)
                 }
                 .all {
-                    hasClass(ApplicationNotFoundException::class)
+                    hasClass(HakemusNotFoundException::class)
                     messageContains(application.id.toString())
                 }
         }
@@ -132,7 +131,7 @@ class HakemusAuthorizerITest(
         fun `throws exception if applicationId is not found`() {
             assertFailure { authorizer.authorizeAttachment(applicationId, attachmentId, VIEW.name) }
                 .all {
-                    hasClass(ApplicationNotFoundException::class)
+                    hasClass(HakemusNotFoundException::class)
                     messageContains(applicationId.toString())
                 }
         }
@@ -146,7 +145,7 @@ class HakemusAuthorizerITest(
                     authorizer.authorizeAttachment(application.id, attachmentId, VIEW.name)
                 }
                 .all {
-                    hasClass(ApplicationNotFoundException::class)
+                    hasClass(HakemusNotFoundException::class)
                     messageContains(application.id.toString())
                 }
         }
@@ -161,7 +160,7 @@ class HakemusAuthorizerITest(
                     authorizer.authorizeAttachment(application.id, attachmentId, EDIT.name)
                 }
                 .all {
-                    hasClass(ApplicationNotFoundException::class)
+                    hasClass(HakemusNotFoundException::class)
                     messageContains(application.id.toString())
                 }
         }
