@@ -6,9 +6,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
-import fi.hel.haitaton.hanke.allu.AlluApplicationData
-import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
-import fi.hel.haitaton.hanke.allu.AlluExcavationNotificationData
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
@@ -45,12 +42,6 @@ sealed interface ApplicationData {
     val representativeWithContacts: CustomerWithContacts?
 
     fun copy(pendingOnClient: Boolean): ApplicationData
-
-    fun toAlluData(hankeTunnus: String): AlluApplicationData
-
-    fun customersWithContacts(): List<CustomerWithContacts>
-
-    fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContacts>>
 }
 
 @JsonView(ChangeLogView::class)
@@ -75,29 +66,6 @@ data class CableReportApplicationData(
 ) : ApplicationData {
     override fun copy(pendingOnClient: Boolean): CableReportApplicationData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
-
-    override fun toAlluData(hankeTunnus: String): AlluCableReportApplicationData =
-        ApplicationDataMapper.toAlluData(hankeTunnus, this)
-
-    /** Returns CustomerWithContacts fields that are not null. */
-    override fun customersWithContacts(): List<CustomerWithContacts> =
-        listOfNotNull(
-            customerWithContacts,
-            contractorWithContacts,
-            propertyDeveloperWithContacts,
-            representativeWithContacts
-        )
-
-    override fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContacts>> =
-        listOfNotNull(
-            customerWithContacts?.let { ApplicationContactType.HAKIJA to it },
-            contractorWithContacts?.let { ApplicationContactType.TYON_SUORITTAJA to it },
-            representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
-            propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
-        )
-
-    fun findOrderer(): Contact? =
-        customersWithContacts().flatMap { it.contacts }.find { it.orderer }
 
     fun toHakemusData(
         yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>
@@ -149,26 +117,6 @@ data class ExcavationNotificationData(
 ) : ApplicationData {
     override fun copy(pendingOnClient: Boolean): ExcavationNotificationData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
-
-    override fun toAlluData(hankeTunnus: String): AlluExcavationNotificationData =
-        ApplicationDataMapper.toAlluData(hankeTunnus, this)
-
-    /** Returns CustomerWithContacts fields that are not null. */
-    override fun customersWithContacts(): List<CustomerWithContacts> =
-        listOfNotNull(
-            customerWithContacts,
-            contractorWithContacts,
-            propertyDeveloperWithContacts,
-            representativeWithContacts
-        )
-
-    override fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContacts>> =
-        listOfNotNull(
-            customerWithContacts?.let { ApplicationContactType.HAKIJA to it },
-            contractorWithContacts?.let { ApplicationContactType.TYON_SUORITTAJA to it },
-            representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
-            propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
-        )
 
     fun toHakemusData(yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>): HakemusData =
         KaivuilmoitusData(

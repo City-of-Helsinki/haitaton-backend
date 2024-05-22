@@ -20,6 +20,7 @@ import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
+import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.ZonedDateTime
@@ -149,7 +150,7 @@ class HakemusFactory(
                 propertyDeveloperWithContacts = propertyDeveloperWithContacts,
             )
 
-        private fun createKaivuilmoitusData(
+        fun createKaivuilmoitusData(
             pendingOnClient: Boolean = false,
             name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
             workDescription: String = "Work description.",
@@ -161,6 +162,7 @@ class HakemusFactory(
             contractorWithContacts: Hakemusyhteystieto? = null,
             representativeWithContacts: Hakemusyhteystieto? = null,
             propertyDeveloperWithContacts: Hakemusyhteystieto? = null,
+            invoicingCustomer: Laskutusyhteystieto? = null,
         ): KaivuilmoitusData =
             KaivuilmoitusData(
                 pendingOnClient = pendingOnClient,
@@ -173,6 +175,7 @@ class HakemusFactory(
                 contractorWithContacts = contractorWithContacts,
                 representativeWithContacts = representativeWithContacts,
                 propertyDeveloperWithContacts = propertyDeveloperWithContacts,
+                invoicingCustomer = invoicingCustomer,
             )
 
         fun createEntity(
