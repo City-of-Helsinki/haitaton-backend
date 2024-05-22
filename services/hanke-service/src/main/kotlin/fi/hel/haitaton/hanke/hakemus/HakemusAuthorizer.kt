@@ -17,11 +17,11 @@ import org.springframework.transaction.annotation.Transactional
 class HakemusAuthorizer(
     permissionService: PermissionService,
     hankeRepository: HankeRepository,
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val attachmentRepository: ApplicationAttachmentRepository,
 ) : Authorizer(permissionService, hankeRepository) {
     private fun authorizeHakemusId(hakemusId: Long, permissionCode: PermissionCode): Boolean {
-        val hankeId = applicationRepository.findOneById(hakemusId)?.hanke?.id
+        val hankeId = hakemusRepository.findOneById(hakemusId)?.hanke?.id
         authorize(hankeId, permissionCode) { HakemusNotFoundException(hakemusId) }
         return true
     }

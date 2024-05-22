@@ -247,7 +247,7 @@ class HakemusController(
             ]
     )
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
-    fun delete(@PathVariable(name = "id") id: Long): ApplicationDeletionResultDto {
+    fun delete(@PathVariable(name = "id") id: Long): HakemusDeletionResultDto {
         val userId = currentUserId()
         logger.info { "Received request to delete application id=$id, userId=$userId" }
         val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(id, userId)

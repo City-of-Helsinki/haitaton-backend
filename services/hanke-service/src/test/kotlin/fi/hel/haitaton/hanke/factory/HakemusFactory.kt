@@ -5,12 +5,12 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.HankePerustaja
-import fi.hel.haitaton.hanke.hakemus.ApplicationData
-import fi.hel.haitaton.hanke.hakemus.ApplicationRepository
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component
 class HakemusFactory(
     private val hankeKayttajaService: HankeKayttajaService,
     private val hakemusService: HakemusService,
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val hankeRepository: HankeRepository,
     private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
@@ -63,7 +63,7 @@ class HakemusFactory(
             this,
             hakemusService,
             hankeKayttajaService,
-            applicationRepository,
+            hakemusRepository,
             hankeRepository,
             hankeKayttajaFactory,
             hakemusyhteystietoRepository,
@@ -185,7 +185,7 @@ class HakemusFactory(
             applicationIdentifier: String? = null,
             userId: String,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-            applicationData: ApplicationData =
+            hakemusEntityData: HakemusEntityData =
                 ApplicationFactory.createBlankApplicationData(applicationType),
             hanke: HankeEntity,
         ): HakemusEntity =
@@ -196,7 +196,7 @@ class HakemusFactory(
                 applicationIdentifier = applicationIdentifier,
                 userId = userId,
                 applicationType = applicationType,
-                applicationData = applicationData,
+                hakemusEntityData = hakemusEntityData,
                 hanke = hanke,
             )
     }

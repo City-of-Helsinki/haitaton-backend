@@ -46,7 +46,7 @@ const val ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG =
 
 @Service
 class HakemusService(
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val hankeRepository: HankeRepository,
     private val geometriatDao: GeometriatDao,
     private val hankealueService: HankealueService,
@@ -82,7 +82,7 @@ class HakemusService(
             hankeRepository.findByHankeTunnus(createHakemusRequest.hankeTunnus)
                 ?: throw HankeNotFoundException(createHakemusRequest.hankeTunnus)
         val entity =
-            applicationRepository.save(
+            hakemusRepository.save(
                 HakemusEntity(
                     id = 0,
                     alluid = null,
@@ -90,7 +90,7 @@ class HakemusService(
                     applicationIdentifier = null,
                     userId = userId,
                     applicationType = createHakemusRequest.applicationType,
-                    applicationData = newApplicationData(createHakemusRequest),
+                    hakemusEntityData = newApplicationData(createHakemusRequest),
                     hanke = hanke
                 )
             )
@@ -103,7 +103,7 @@ class HakemusService(
     @Transactional
     fun createJohtoselvitys(hanke: HankeEntity, currentUserId: String): Hakemus {
         val data =
-            CableReportApplicationData(
+            JohtoselvityshakemusEntityData(
                 name = hanke.nimi,
                 applicationType = ApplicationType.CABLE_REPORT,
                 pendingOnClient = true,
@@ -121,12 +121,12 @@ class HakemusService(
                 applicationIdentifier = null,
                 userId = currentUserId,
                 applicationType = ApplicationType.CABLE_REPORT,
-                applicationData = data,
+                hakemusEntityData = data,
                 hanke = hanke,
                 yhteystiedot = mutableMapOf()
             )
 
-        val hakemus = applicationRepository.save(entity).toHakemus()
+        val hakemus = hakemusRepository.save(entity).toHakemus()
         hakemusLoggingService.logCreate(hakemus, currentUserId)
         return hakemus
     }
@@ -185,7 +185,7 @@ class HakemusService(
 
         val hanke = hakemus.hanke
         if (!hanke.generated) {
-            hakemus.applicationData.areas?.let { areas ->
+            hakemus.hakemusEntityData.areas?.let { areas ->
                 assertGeometryCompatibility(hanke.id, areas) { geometry ->
                     "Hakemus geometry doesn't match any hankealue when sending hakemus, " +
                         "${hanke.logString()}, ${hakemus.logString()}, " +
@@ -197,7 +197,7 @@ class HakemusService(
         assertNotSent(hakemus)
 
         // The application should no longer be a draft
-        hakemus.applicationData = hakemus.applicationData.copy(pendingOnClient = false)
+        hakemus.hakemusEntityData = hakemus.hakemusEntityData.copy(pendingOnClient = false)
 
         logger.info("Sending hakemus id=$id")
         hakemus.alluid = createApplicationInAllu(hakemus.toHakemus())
@@ -210,7 +210,7 @@ class HakemusService(
 
         logger.info("Sent hakemus. ${hakemus.logString()}, alluStatus = ${hakemus.alluStatus}")
         // Save only if sendApplicationToAllu didn't throw an exception
-        return applicationRepository.save(hakemus).toHakemus()
+        return hakemusRepository.save(hakemus).toHakemus()
     }
 
     /**
@@ -232,7 +232,7 @@ class HakemusService(
     fun deleteWithOrphanGeneratedHankeRemoval(
         hakemusId: Long,
         userId: String,
-    ): ApplicationDeletionResultDto {
+    ): HakemusDeletionResultDto {
         val application = getEntityById(hakemusId)
         val hanke = application.hanke
 
@@ -247,10 +247,10 @@ class HakemusService(
                 HankeMapper.domainFrom(hanke, hankealueService.geometryMapFrom(hanke.alueet))
             hankeLoggingService.logDelete(hankeDomain, userId)
 
-            return ApplicationDeletionResultDto(hankeDeleted = true)
+            return HakemusDeletionResultDto(hankeDeleted = true)
         }
 
-        return ApplicationDeletionResultDto(hankeDeleted = false)
+        return HakemusDeletionResultDto(hankeDeleted = false)
     }
 
     @Transactional(readOnly = true)
@@ -277,7 +277,7 @@ class HakemusService(
         alluStatusRepository.save(status)
     }
 
-    private fun newApplicationData(createHakemusRequest: CreateHakemusRequest): ApplicationData =
+    private fun newApplicationData(createHakemusRequest: CreateHakemusRequest): HakemusEntityData =
         when (createHakemusRequest) {
             is CreateJohtoselvityshakemusRequest ->
                 createHakemusRequest.newCableReportApplicationData()
@@ -285,7 +285,7 @@ class HakemusService(
         }
 
     private fun CreateJohtoselvityshakemusRequest.newCableReportApplicationData() =
-        CableReportApplicationData(
+        JohtoselvityshakemusEntityData(
             applicationType = ApplicationType.CABLE_REPORT,
             pendingOnClient = true,
             name = name,
@@ -303,7 +303,7 @@ class HakemusService(
         )
 
     private fun CreateKaivuilmoitusRequest.newExcavationNotificationData() =
-        ExcavationNotificationData(
+        KaivuilmoitusEntityData(
             applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
             pendingOnClient = true,
             name = name,
@@ -322,7 +322,7 @@ class HakemusService(
         )
 
     private fun handleHakemusUpdate(applicationHistory: ApplicationHistory) {
-        val application = applicationRepository.getOneByAlluid(applicationHistory.applicationId)
+        val application = hakemusRepository.getOneByAlluid(applicationHistory.applicationId)
         if (application == null) {
             logger.error {
                 "Allu had events for a hakemus we don't have anymore. alluId=${applicationHistory.applicationId}"
@@ -332,7 +332,7 @@ class HakemusService(
         applicationHistory.events
             .sortedBy { it.eventTime }
             .forEach { handleApplicationEvent(application, it) }
-        applicationRepository.save(application)
+        hakemusRepository.save(application)
     }
 
     private fun handleApplicationEvent(application: HakemusEntity, event: ApplicationStatusEvent) {
@@ -381,7 +381,7 @@ class HakemusService(
 
     /** Find the application entity or throw an exception. */
     private fun getEntityById(id: Long): HakemusEntity =
-        applicationRepository.findOneById(id) ?: throw HakemusNotFoundException(id)
+        hakemusRepository.findOneById(id) ?: throw HakemusNotFoundException(id)
 
     private fun setOrderedOnSend(hakemus: HakemusEntity, currentUserId: String) {
         val yhteyshenkilo: HakemusyhteyshenkiloEntity =
@@ -551,14 +551,14 @@ class HakemusService(
     /** Assert that the update request is compatible with the application data. */
     private fun assertCompatibility(hakemusEntity: HakemusEntity, request: HakemusUpdateRequest) {
         val expected =
-            when (hakemusEntity.applicationData) {
-                is CableReportApplicationData -> request is JohtoselvityshakemusUpdateRequest
-                is ExcavationNotificationData -> request is KaivuilmoitusUpdateRequest
+            when (hakemusEntity.hakemusEntityData) {
+                is JohtoselvityshakemusEntityData -> request is JohtoselvityshakemusUpdateRequest
+                is KaivuilmoitusEntityData -> request is KaivuilmoitusUpdateRequest
             }
         if (!expected) {
             throw IncompatibleHakemusUpdateRequestException(
                 hakemusEntity,
-                hakemusEntity.applicationData::class,
+                hakemusEntity.hakemusEntityData::class,
                 request::class
             )
         }
@@ -704,7 +704,7 @@ class HakemusService(
         val originalContactUserIds = hakemusEntity.allContactUsers().map { it.id }.toSet()
         val updatedApplicationEntity =
             hakemusEntity.copy(
-                applicationData = request.toApplicationData(hakemusEntity.applicationData),
+                hakemusEntityData = request.toEntityData(hakemusEntity.hakemusEntityData),
                 yhteystiedot =
                     updateYhteystiedot(
                         hakemusEntity,
@@ -716,7 +716,7 @@ class HakemusService(
             updatedApplicationEntity.hanke.nimi = request.name
         }
         sendApplicationNotifications(updatedApplicationEntity, originalContactUserIds, userId)
-        return applicationRepository.save(updatedApplicationEntity)
+        return hakemusRepository.save(updatedApplicationEntity)
     }
 
     private fun updateYhteystiedot(
@@ -859,7 +859,7 @@ class HakemusService(
 
         logger.info { "Deleting hakemus, ${hakemus.logString()}" }
         attachmentService.deleteAllAttachments(hakemus)
-        applicationRepository.deleteById(hakemus.id)
+        hakemusRepository.deleteById(hakemus.id)
         hakemusLoggingService.logDelete(hakemus, userId)
         logger.info { "Hakemus deleted, ${hakemus.logString()}" }
     }
@@ -911,7 +911,7 @@ class HakemusService(
 
 class IncompatibleHakemusUpdateRequestException(
     application: HakemusIdentifier,
-    oldApplicationClass: KClass<out ApplicationData>,
+    oldApplicationClass: KClass<out HakemusEntityData>,
     requestClass: KClass<out HakemusUpdateRequest>,
 ) :
     RuntimeException(

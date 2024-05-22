@@ -12,7 +12,7 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class AlluUpdateService(
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val alluStatusRepository: AlluStatusRepository,
     private val cableReportService: CableReportService,
     private val hakemusService: HakemusService,
@@ -31,7 +31,7 @@ class AlluUpdateService(
     }
 
     private fun getApplicationStatuses() {
-        val ids = applicationRepository.getAllAlluIds()
+        val ids = hakemusRepository.getAllAlluIds()
         if (ids.isEmpty()) {
             // Exit if there are no alluids. Allu handles an empty list as "all", which we don't
             // want.

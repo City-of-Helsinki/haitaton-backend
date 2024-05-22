@@ -23,10 +23,10 @@ enum class ApplicationContactType {
     visible = true
 )
 @JsonSubTypes(
-    JsonSubTypes.Type(value = CableReportApplicationData::class, name = "CABLE_REPORT"),
-    JsonSubTypes.Type(value = ExcavationNotificationData::class, name = "EXCAVATION_NOTIFICATION"),
+    JsonSubTypes.Type(value = JohtoselvityshakemusEntityData::class, name = "CABLE_REPORT"),
+    JsonSubTypes.Type(value = KaivuilmoitusEntityData::class, name = "EXCAVATION_NOTIFICATION"),
 )
-sealed interface ApplicationData {
+sealed interface HakemusEntityData {
     val applicationType: ApplicationType
     val pendingOnClient: Boolean
     val name: String
@@ -34,11 +34,11 @@ sealed interface ApplicationData {
     val endTime: ZonedDateTime?
     val areas: List<Hakemusalue>?
 
-    fun copy(pendingOnClient: Boolean): ApplicationData
+    fun copy(pendingOnClient: Boolean): HakemusEntityData
 }
 
 @JsonView(ChangeLogView::class)
-data class CableReportApplicationData(
+data class JohtoselvityshakemusEntityData(
     @JsonView(NotInChangeLogView::class) override val applicationType: ApplicationType,
     override val pendingOnClient: Boolean,
     override val name: String,
@@ -52,8 +52,8 @@ data class CableReportApplicationData(
     override val startTime: ZonedDateTime?,
     override val endTime: ZonedDateTime?,
     override val areas: List<JohtoselvitysHakemusalue>?,
-) : ApplicationData {
-    override fun copy(pendingOnClient: Boolean): CableReportApplicationData =
+) : HakemusEntityData {
+    override fun copy(pendingOnClient: Boolean): JohtoselvityshakemusEntityData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
 
     fun toHakemusData(
@@ -80,7 +80,7 @@ data class CableReportApplicationData(
 }
 
 @JsonView(ChangeLogView::class)
-data class ExcavationNotificationData(
+data class KaivuilmoitusEntityData(
     @JsonView(NotInChangeLogView::class) override val applicationType: ApplicationType,
     override val pendingOnClient: Boolean,
     override val name: String,
@@ -99,8 +99,8 @@ data class ExcavationNotificationData(
     val invoicingCustomer: InvoicingCustomer? = null,
     val customerReference: String? = null,
     val additionalInfo: String? = null,
-) : ApplicationData {
-    override fun copy(pendingOnClient: Boolean): ExcavationNotificationData =
+) : HakemusEntityData {
+    override fun copy(pendingOnClient: Boolean): KaivuilmoitusEntityData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
 
     fun toHakemusData(yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>): HakemusData =
