@@ -1,12 +1,12 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.ModifyHankealueRequest
 import fi.hel.haitaton.hanke.domain.NewGeometriat
 import fi.hel.haitaton.hanke.domain.NewHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatService
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.ZonedDateTime
@@ -111,7 +111,7 @@ class HankealueService(
     companion object {
 
         fun createHankealueetFromApplicationAreas(
-            areas: List<CableReportApplicationArea>?,
+            areas: List<JohtoselvitysHakemusalue>?,
             startTime: ZonedDateTime?,
             endTime: ZonedDateTime?,
         ): List<NewHankealue> =

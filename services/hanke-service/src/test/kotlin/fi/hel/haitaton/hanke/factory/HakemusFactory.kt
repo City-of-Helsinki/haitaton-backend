@@ -6,8 +6,6 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.HankePerustaja
@@ -18,7 +16,9 @@ import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
@@ -120,7 +120,7 @@ class HakemusFactory(
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
-            areas: List<CableReportApplicationArea>? =
+            areas: List<JohtoselvitysHakemusalue>? =
                 listOf(ApplicationFactory.createCableReportApplicationArea()),
             customerWithContacts: Hakemusyhteystieto? = null,
             contractorWithContacts: Hakemusyhteystieto? = null,
@@ -156,7 +156,7 @@ class HakemusFactory(
             workDescription: String = "Work description.",
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-            areas: List<ExcavationNotificationArea>? =
+            areas: List<KaivuilmoitusAlue>? =
                 listOf(ApplicationFactory.createExcavationNotificationArea()),
             customerWithContacts: Hakemusyhteystieto? = null,
             contractorWithContacts: Hakemusyhteystieto? = null,
