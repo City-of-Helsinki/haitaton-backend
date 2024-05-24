@@ -67,7 +67,7 @@ data class SavedHankealue(
     )
     val tormaystarkasteluTulos: TormaystarkasteluTulos?,
     @field:Schema(
-        description = "Nuisance management plan for this area",
+        description = "Nuisance control plan for this area",
     )
     override var haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>? = null,
 ) : HasId<Int?>, Hankealue

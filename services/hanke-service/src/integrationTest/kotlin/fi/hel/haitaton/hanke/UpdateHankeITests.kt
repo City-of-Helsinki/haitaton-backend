@@ -636,7 +636,7 @@ class UpdateHankeITests(
     }
 
     @Test
-    fun `removes hankealue and geometriat and nuisance management plan when saved alue missing from request`() {
+    fun `removes hankealue and geometriat and nuisance control plan when saved alue missing from request`() {
         val alkuPvm = DateFactory.getStartDatetime()
         val loppuPvm = DateFactory.getStartDatetime()
         val hankealue =
@@ -822,7 +822,7 @@ class UpdateHankeITests(
     }
 
     @Test
-    fun `creates audit log entry when nuisance management plan is updated in hankealue`() {
+    fun `creates audit log entry when nuisance control plan is updated in hankealue`() {
         val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
         auditLogRepository.deleteAll()
         assertEquals(0, auditLogRepository.count())

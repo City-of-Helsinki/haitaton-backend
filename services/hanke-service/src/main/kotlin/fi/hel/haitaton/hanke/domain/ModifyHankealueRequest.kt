@@ -50,7 +50,7 @@ data class ModifyHankealueRequest(
     )
     override val tarinaHaitta: Tarinahaitta?,
     @field:Schema(
-        description = "Nuisance management plan for this area",
+        description = "Nuisance control plan for this area",
     )
     override val haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>?
 ) : HasId<Int?>, Hankealue
