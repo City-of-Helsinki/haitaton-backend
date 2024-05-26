@@ -24,7 +24,6 @@ import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.ZonedDateTime
 import org.springframework.stereotype.Component
 
@@ -196,7 +195,6 @@ class HankeFactory(
                                 createdByUser = defaultUser
                             )
                         )
-                    tormaystarkasteluTulokset = mutableListOf(tormaysTarkastelu(hankeEntity = this))
                 }
 
         fun createRequest(
@@ -323,18 +321,5 @@ class HankeFactory(
             muut.add(HankeYhteystietoFactory.createDifferentiated(i, id, yhteyshenkilo.toList()))
             return this
         }
-
-        private fun tormaysTarkastelu(
-            id: Int = 1,
-            hankeEntity: HankeEntity
-        ): TormaystarkasteluTulosEntity =
-            TormaystarkasteluTulosEntity(
-                id = id,
-                autoliikenne = 1.25f,
-                pyoraliikenne = 2.5f,
-                linjaautoliikenne = 3.75f,
-                raitioliikenne = 3.75f,
-                hanke = hankeEntity,
-            )
     }
 }

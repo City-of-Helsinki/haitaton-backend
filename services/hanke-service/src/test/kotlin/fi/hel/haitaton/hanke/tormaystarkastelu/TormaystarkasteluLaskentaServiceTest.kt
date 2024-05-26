@@ -3,11 +3,9 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
-import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
-import fi.hel.haitaton.hanke.TZ_UTC
-import fi.hel.haitaton.hanke.domain.SavedHankealue
-import fi.hel.haitaton.hanke.domain.geometriaIds
-import fi.hel.haitaton.hanke.factory.GeometriaFactory
+import fi.hel.haitaton.hanke.HankealueEntity
+import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30
 import io.mockk.checkUnnecessaryStub
@@ -18,7 +16,6 @@ import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifySequence
-import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -286,7 +283,8 @@ internal class TormaystarkasteluLaskentaServiceTest {
     @Nested
     inner class CalculatePyoraliikenneindeksi {
         // The parameter is only used to call mocks
-        val geometriat = setOf<Int>()
+        val geometria = 6
+        val geometriat = setOf(geometria)
 
         @ParameterizedTest
         @ValueSource(ints = [2, 3, 5])
@@ -296,7 +294,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) } returns
                 hierarkiaValue
 
-            val result = laskentaService.calculatePyoraliikenneindeksi(geometriat)
+            val result = laskentaService.calculatePyoraliikenneindeksi(geometria)
 
             assertThat(result).isEqualTo(hierarkiaValue.toFloat())
             verifySequence { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) }
@@ -306,7 +304,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `returns 0 when the geometries don't intersect with any cycle routes`() {
             every { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) } returns null
 
-            val result = laskentaService.calculatePyoraliikenneindeksi(geometriat)
+            val result = laskentaService.calculatePyoraliikenneindeksi(geometria)
 
             assertThat(result).isEqualTo(0f)
             verifySequence { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) }
@@ -447,10 +445,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
 
     @Test
     fun `calculateTormaystarkastelu happy case`() {
-        val alueet = setupHappyCase()
-        val geometriaIds = alueet.geometriaIds()
+        val alue = setupHappyCase()
 
-        val tulos = laskentaService.calculateTormaystarkastelu(alueet, geometriaIds)
+        val tulos = laskentaService.calculateTormaystarkastelu(alue)
 
         assertThat(tulos).isNotNull()
         assertThat(tulos!!.liikennehaittaindeksi).isNotNull()
@@ -458,6 +455,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         assertThat(tulos.raitioliikenneindeksi).isEqualTo(3.0f)
         assertThat(tulos.pyoraliikenneindeksi).isEqualTo(3.0f)
 
+        val geometriaIds = setOf(alue.geometriat!!)
         verifySequence {
             tormaysService.anyIntersectsYleinenKatuosa(geometriaIds)
             tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds)
@@ -469,22 +467,10 @@ internal class TormaystarkasteluLaskentaServiceTest {
         }
     }
 
-    private fun setupHappyCase(): List<SavedHankealue> {
+    private fun setupHappyCase(): HankealueEntity {
 
-        val alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
-        val alueet =
-            listOf(
-                SavedHankealue(
-                    geometriat = GeometriaFactory.create(),
-                    haittaAlkuPvm = alkuPvm,
-                    haittaLoppuPvm = alkuPvm.plusDays(7),
-                    kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.EI_VAIKUTA,
-                    kaistaPituusHaitta =
-                        AutoliikenteenKaistavaikutustenPituus.EI_VAIKUTA_KAISTAJARJESTELYIHIN,
-                    nimi = "$HANKEALUE_DEFAULT_NAME 1"
-                )
-            )
-        val geometriaIds = alueet.geometriaIds()
+        val alue = HankealueFactory.createHankeAlueEntity(hankeEntity = HankeFactory.createEntity())
+        val geometriaIds = setOf(alue.geometriat!!)
 
         every { tormaysService.anyIntersectsYleinenKatuosa(geometriaIds) } returns true
         every { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds) } returns
@@ -496,6 +482,6 @@ internal class TormaystarkasteluLaskentaServiceTest {
         every { tormaysService.anyIntersectsWithTramLines(geometriaIds) } returns false
         every { tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds) } returns true
 
-        return alueet
+        return alue
     }
 }

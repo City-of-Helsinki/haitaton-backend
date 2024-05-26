@@ -177,3 +177,5 @@ databaseChangeLog:
       file: db/changelog/changesets/073-change-haitat-to-enum-names.sql
   - include:
       file: db/changelog/changesets/074-remove-old-cycle-tormays-tables.sql
+  - include:
+      file: db/changelog/changesets/075-change-tormaystarkastelutulos-to-refer-to-hankealue.sql

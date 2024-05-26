@@ -5,6 +5,7 @@ import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.each
 import assertk.assertions.extracting
 import assertk.assertions.first
 import assertk.assertions.hasClass
@@ -31,6 +32,7 @@ import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeBuilder.Companion.toModifyRequest
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
@@ -53,10 +55,15 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus.PITUUS_500_METRIA_TAI_ENEMMAN
+import fi.hel.haitaton.hanke.tormaystarkastelu.IndeksiType
+import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaindeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin.VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -656,6 +663,53 @@ class UpdateHankeITests(
         assertThat(hankeFromDb?.alueet).isNotNull().hasSize(1)
         assertThat(hankealueCount()).isEqualTo(1)
         assertThat(geometriatCount()).isEqualTo(1)
+    }
+
+    @Test
+    fun `calculates tormaystarkastelu for each added alue`() {
+        val hanke = hankeFactory.builder(USERNAME).save()
+        assertThat(hanke.alueet).isEmpty()
+        hanke.withHankealue()
+        hanke.alueet.add(HankealueFactory.create(geometriat = GeometriaFactory.create()))
+        assertThat(hanke.alueet).hasSize(2)
+        val request = hanke.toModifyRequest()
+
+        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
+
+        assertThat(result.alueet).hasSize(2)
+        assertThat(result.alueet.map { it.tormaystarkasteluTulos }).each {
+            it.isNotNull().all {
+                prop(TormaystarkasteluTulos::autoliikenneindeksi).isEqualTo(1.4f)
+                prop(TormaystarkasteluTulos::pyoraliikenneindeksi).isEqualTo(0f)
+                prop(TormaystarkasteluTulos::linjaautoliikenneindeksi).isEqualTo(0f)
+                prop(TormaystarkasteluTulos::raitioliikenneindeksi).isEqualTo(0f)
+                prop(TormaystarkasteluTulos::liikennehaittaindeksi).all {
+                    prop(LiikennehaittaindeksiType::tyyppi)
+                        .isEqualTo(IndeksiType.AUTOLIIKENNEINDEKSI)
+                    prop(LiikennehaittaindeksiType::indeksi).isEqualTo(1.4f)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `recalculates tormaystarkastelu when hankealue is updated`() {
+        val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+        hanke.alueet[0] =
+            HankealueFactory.create(
+                kaistaHaitta = VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA,
+                kaistaPituusHaitta = PITUUS_500_METRIA_TAI_ENEMMAN,
+            )
+        val request = hanke.toModifyRequest()
+
+        val result = hankeService.updateHanke(hanke.hankeTunnus, request)
+
+        assertThat(result.alueet)
+            .single()
+            .prop(SavedHankealue::tormaystarkasteluTulos)
+            .isNotNull()
+            .prop(TormaystarkasteluTulos::autoliikenneindeksi)
+            .isEqualTo(2.3f)
     }
 
     @Test

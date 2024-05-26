@@ -53,7 +53,7 @@ object HankeMapper {
 
     private fun alueList(
         hankeTunnus: String?,
-        alueet: MutableList<HankealueEntity>,
+        alueet: List<HankealueEntity>,
         geometriaData: Map<Int, Geometriat?>
     ): MutableList<SavedHankealue> =
         alueet.map { alue(hankeTunnus, it, geometriaData[it.geometriat]) }.toMutableList()
@@ -72,16 +72,21 @@ object HankeMapper {
                 polyHaitta = polyHaitta,
                 tarinaHaitta = tarinaHaitta,
                 nimi = nimi,
+                tormaystarkasteluTulos = entity.tormaystarkasteluTulos?.toDomain()
             )
         }
 
-    private fun tormaystarkasteluTulos(entity: HankeEntity) =
-        entity.tormaystarkasteluTulokset.firstOrNull()?.let {
+    private fun tormaystarkasteluTulos(entity: HankeEntity): TormaystarkasteluTulos? {
+        val tulokset = entity.alueet.mapNotNull { it.tormaystarkasteluTulos }
+        return if (tulokset.isEmpty()) {
+            null
+        } else {
             TormaystarkasteluTulos(
-                it.autoliikenne,
-                it.pyoraliikenne,
-                it.linjaautoliikenne,
-                it.raitioliikenne
+                autoliikenneindeksi = tulokset.maxOf { it.autoliikenne },
+                pyoraliikenneindeksi = tulokset.maxOf { it.pyoraliikenne },
+                linjaautoliikenneindeksi = tulokset.maxOf { it.linjaautoliikenne },
+                raitioliikenneindeksi = tulokset.maxOf { it.raitioliikenne },
             )
         }
+    }
 }
