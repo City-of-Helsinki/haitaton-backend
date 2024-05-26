@@ -9,6 +9,8 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPi
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.ZonedDateTime
 
@@ -28,6 +30,7 @@ object HankealueFactory {
         polyHaitta: Polyhaitta? = Polyhaitta.TOISTUVA_POLYHAITTA,
         tarinaHaitta: Tarinahaitta? = Tarinahaitta.JATKUVA_TARINAHAITTA,
         nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
+        tormaystarkasteluTulos: TormaystarkasteluTulos? = tormaystarkasteluTulos(),
     ): SavedHankealue {
         return SavedHankealue(
             id,
@@ -41,6 +44,7 @@ object HankealueFactory {
             polyHaitta,
             tarinaHaitta,
             nimi,
+            tormaystarkasteluTulos,
         )
     }
 
@@ -69,23 +73,47 @@ object HankealueFactory {
             polyHaitta,
             tarinaHaitta,
             nimi,
+            null
         )
     }
 
     fun createHankeAlueEntity(mockId: Int = 1, hankeEntity: HankeEntity): HankealueEntity {
         val alue = create(id = mockId).apply { geometriat?.id = mockId }
         return HankealueEntity(
-            id = alue.id!!,
-            hanke = hankeEntity,
-            geometriat = alue.geometriat?.id,
-            haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate(),
-            haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate(),
-            kaistaHaitta = alue.kaistaHaitta,
-            kaistaPituusHaitta = alue.kaistaPituusHaitta,
-            meluHaitta = alue.meluHaitta,
-            polyHaitta = alue.polyHaitta,
-            tarinaHaitta = alue.tarinaHaitta,
-            nimi = alue.nimi
-        )
+                id = alue.id!!,
+                hanke = hankeEntity,
+                geometriat = alue.geometriat?.id,
+                haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate(),
+                haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate(),
+                kaistaHaitta = alue.kaistaHaitta,
+                kaistaPituusHaitta = alue.kaistaPituusHaitta,
+                meluHaitta = alue.meluHaitta,
+                polyHaitta = alue.polyHaitta,
+                tarinaHaitta = alue.tarinaHaitta,
+                nimi = alue.nimi,
+                tormaystarkasteluTulos = null,
+            )
+            .apply { tormaystarkasteluTulos = tormaystarkasteluTulosEntity(hankealueEntity = this) }
     }
+
+    private fun tormaystarkasteluTulos() =
+        TormaystarkasteluTulos(
+            autoliikenneindeksi = 1.25f,
+            pyoraliikenneindeksi = 2.5f,
+            linjaautoliikenneindeksi = 3.75f,
+            raitioliikenneindeksi = 3.75f,
+        )
+
+    private fun tormaystarkasteluTulosEntity(
+        id: Int = 1,
+        hankealueEntity: HankealueEntity,
+    ): TormaystarkasteluTulosEntity =
+        TormaystarkasteluTulosEntity(
+            id = id,
+            autoliikenne = 1.25f,
+            pyoraliikenne = 2.5f,
+            linjaautoliikenne = 3.75f,
+            raitioliikenne = 3.75f,
+            hankealue = hankealueEntity,
+        )
 }

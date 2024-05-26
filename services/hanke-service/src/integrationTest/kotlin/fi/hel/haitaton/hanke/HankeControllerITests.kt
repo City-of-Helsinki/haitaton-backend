@@ -287,13 +287,15 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 SavedHankealue(
                     hankeId = hankeIds[0],
                     geometriat = Geometriat(1, FeatureCollection(), version = 1),
-                    nimi = "$HANKEALUE_DEFAULT_NAME 1"
+                    nimi = "$HANKEALUE_DEFAULT_NAME 1",
+                    tormaystarkasteluTulos = null,
                 )
             val alue2 =
                 SavedHankealue(
                     hankeId = hankeIds[1],
                     geometriat = Geometriat(2, FeatureCollection(), version = 1),
-                    nimi = "$HANKEALUE_DEFAULT_NAME 2"
+                    nimi = "$HANKEALUE_DEFAULT_NAME 2",
+                    tormaystarkasteluTulos = null,
                 )
             val hanke1 = HankeFactory.create(id = hankeIds[0], hankeTunnus = HANKE_TUNNUS)
             val hanke2 = HankeFactory.create(id = hankeIds[1], hankeTunnus = "hanketunnus2")
@@ -502,15 +504,20 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             hankeToBeUpdated.tyomaaKatuosoite = "Testikatu 1"
             hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
             hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.KAASUJOHTO)
-            val alue = SavedHankealue(nimi = "$HANKEALUE_DEFAULT_NAME 1")
-            alue.haittaAlkuPvm = DateFactory.getStartDatetime()
-            alue.haittaLoppuPvm = DateFactory.getEndDatetime()
-            alue.kaistaHaitta =
-                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-            alue.kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA
-            alue.meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA
-            alue.polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA
-            alue.tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA
+            val alue =
+                SavedHankealue(
+                    nimi = "$HANKEALUE_DEFAULT_NAME 1",
+                    haittaAlkuPvm = DateFactory.getStartDatetime(),
+                    haittaLoppuPvm = DateFactory.getEndDatetime(),
+                    kaistaHaitta =
+                        VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+                    kaistaPituusHaitta =
+                        AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA,
+                    meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
+                    polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
+                    tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
+                    tormaystarkasteluTulos = null,
+                )
             hankeToBeUpdated.alueet.add(alue)
             // Prepare the expected result/return
             // Note, "pvm" values should have become truncated to begin of the day

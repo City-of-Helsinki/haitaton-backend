@@ -6,7 +6,6 @@ import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.CollectionTable
 import jakarta.persistence.ElementCollection
@@ -82,26 +81,10 @@ class HankeEntity(
     @Enumerated(EnumType.STRING)
     var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
 
-    // Made bidirectional relation mainly to allow cascaded delete.
-    @OneToMany(
-        fetch = FetchType.LAZY,
-        mappedBy = "hanke",
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true
-    )
-    var tormaystarkasteluTulokset: MutableList<TormaystarkasteluTulosEntity> = mutableListOf()
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke")
     var hakemukset: MutableSet<HakemusEntity> = mutableSetOf()
 
     // ==================  Helper functions ================
-
-    fun addYhteystieto(yhteystieto: HankeYhteystietoEntity) {
-        // TODO: should check that the given entity is not yet connected to another Hanke, or
-        // if already connected to this hanke (see addTormaystarkasteluTulos())
-        yhteystiedot.add(yhteystieto)
-        yhteystieto.hanke = this
-    }
 
     fun removeYhteystieto(yhteystieto: HankeYhteystietoEntity) {
         yhteystieto.id?.let { id ->

@@ -6,7 +6,6 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeRequest
 import fi.hel.haitaton.hanke.domain.HankeStatus
-import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.Yhteystieto
@@ -121,7 +120,7 @@ class HankeService(
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
         entity.generated = false
 
-        calculateTormaystarkastelu(hanke.alueet, entity.alueet.geometriaIds(), entity)
+        updateTormaystarkastelut(entity.alueet)
         entity.status = decideNewHankeStatus(entity)
 
         logger.debug { "Saving Hanke ${entity.logString()}." }
@@ -161,14 +160,9 @@ class HankeService(
                 !hakemusService.isCancelled(it.alluStatus)
         }
 
-    private fun calculateTormaystarkastelu(
-        alueet: List<Hankealue>,
-        geometriaIds: Set<Int>,
-        target: HankeEntity
-    ) {
-        hankealueService.calculateTormaystarkastelu(alueet, geometriaIds, target)?.let {
-            target.tormaystarkasteluTulokset.clear()
-            target.tormaystarkasteluTulokset.add(it)
+    private fun updateTormaystarkastelut(alueet: List<HankealueEntity>) {
+        for (alue in alueet) {
+            hankealueService.updateTormaystarkastelu(alue)
         }
     }
 
@@ -184,7 +178,9 @@ class HankeService(
                     HankeStatus.PUBLIC
                 } else {
                     logger.debug {
-                        "A hanke draft wasn't ready to go public. hankeTunnus=${entity.hankeTunnus} failedFields=${validationResult.errorPaths().joinToString()}"
+                        "A hanke draft wasn't ready to go public. hankeTunnus=${entity.hankeTunnus} failedFields=${
+                            validationResult.errorPaths().joinToString()
+                        }"
                     }
                     HankeStatus.DRAFT
                 }
@@ -193,7 +189,9 @@ class HankeService(
                     HankeStatus.PUBLIC
                 } else {
                     logger.warn {
-                        "A public hanke wasn't updated with missing or invalid fields. hankeTunnus=${entity.hankeTunnus} failedFields=${validationResult.errorPaths().joinToString()}"
+                        "A public hanke wasn't updated with missing or invalid fields. hankeTunnus=${entity.hankeTunnus} failedFields=${
+                            validationResult.errorPaths().joinToString()
+                        }"
                     }
                     throw HankeArgumentException(
                         "A public hanke didn't have all mandatory fields filled."
@@ -457,7 +455,8 @@ class HankeService(
         hankeYht.yhteyshenkilot.forEach { kayttajaId ->
             addYhteyshenkilo(kayttajaId, hankeEntity.id, hankeYhtEntity)
         }
-        hankeEntity.addYhteystieto(hankeYhtEntity)
+        hankeEntity.yhteystiedot.add(hankeYhtEntity)
+        hankeYhtEntity.hanke = hankeEntity
         // Logging of creating new yhteystietos is done after the hanke gets saved.
     }
 

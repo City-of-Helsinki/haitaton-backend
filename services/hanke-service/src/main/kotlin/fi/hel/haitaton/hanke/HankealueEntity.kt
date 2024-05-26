@@ -5,7 +5,9 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPi
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -15,8 +17,10 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 @Entity
 @Table(name = "hankealue")
@@ -37,8 +41,22 @@ class HankealueEntity(
     @Enumerated(EnumType.STRING) var meluHaitta: Meluhaitta? = null,
     @Enumerated(EnumType.STRING) var polyHaitta: Polyhaitta? = null,
     @Enumerated(EnumType.STRING) var tarinaHaitta: Tarinahaitta? = null,
-    var nimi: String
+    var nimi: String,
+    // Made bidirectional relation mainly to allow cascaded delete.
+    @OneToOne(
+        fetch = FetchType.LAZY,
+        mappedBy = "hankealue",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    var tormaystarkasteluTulos: TormaystarkasteluTulosEntity?,
 ) : HasId<Int> {
+    fun haittaAjanKestoDays(): Int? =
+        if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
+            ChronoUnit.DAYS.between(haittaAlkuPvm, haittaLoppuPvm).toInt() + 1
+        } else {
+            null
+        }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
