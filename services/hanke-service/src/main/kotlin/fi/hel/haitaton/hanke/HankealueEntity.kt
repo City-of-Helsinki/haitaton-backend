@@ -64,7 +64,7 @@ class HankealueEntity(
     @MapKeyColumn(name = "tyyppi")
     @Column(name = "sisalto")
     @MapKeyEnumerated(EnumType.STRING)
-    var haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>? = null
+    var haittojenhallintasuunnitelma: MutableMap<Haittojenhallintatyyppi, String> = mutableMapOf(),
 ) : HasId<Int> {
     fun haittaAjanKestoDays(): Int? =
         if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
@@ -107,5 +107,3 @@ class HankealueEntity(
         return result
     }
 }
-
-fun List<HankealueEntity>.geometriaIds(): Set<Int> = mapNotNull { it.geometriat }.toSet()

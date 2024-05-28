@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.HankeYhteyshenkiloRepository
 import fi.hel.haitaton.hanke.HankeYhteystietoEntity
 import fi.hel.haitaton.hanke.HankeYhteystietoRepository
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
@@ -18,7 +19,6 @@ import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankealueRequest
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
-import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
@@ -119,14 +119,12 @@ data class HankeBuilder(
 
     fun withHankealue(
         alue: SavedHankealue = HankealueFactory.create(),
-        haittojenhallintasuunnitelma: Boolean = false
+        haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>? = null,
     ) = applyToHanke {
         alueet.add(alue)
         tyomaaKatuosoite = "Testikatu 1"
         tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-        if (haittojenhallintasuunnitelma) {
-            alue.haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma()
-        }
+        haittojenhallintasuunnitelma?.let { alue.haittojenhallintasuunnitelma = it }
     }
 
     fun withPerustaja(perustaja: HankekayttajaInput): HankeBuilder =

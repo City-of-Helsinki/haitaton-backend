@@ -52,7 +52,7 @@ data class ModifyHankealueRequest(
     @field:Schema(
         description = "Nuisance control plan for this area",
     )
-    override val haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>?
+    override val haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>?,
 ) : HasId<Int?>, Hankealue
 
 data class ModifyGeometriaRequest(

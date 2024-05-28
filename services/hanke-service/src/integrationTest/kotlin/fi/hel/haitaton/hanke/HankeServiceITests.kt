@@ -41,6 +41,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUSTAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
@@ -701,7 +702,9 @@ class HankeServiceITests(
             val hanke =
                 hankeFactory
                     .builder(USERNAME)
-                    .withHankealue(haittojenhallintasuunnitelma = true)
+                    .withHankealue(
+                        haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma()
+                    )
                     .save()
             auditLogRepository.deleteAll()
             assertEquals(0, auditLogRepository.count())

@@ -51,19 +51,22 @@ object HankealueFactory {
         )
     }
 
-    fun createHaittojenhallintasuunnitelma(): Map<Haittojenhallintatyyppi, String> {
-        return mapOf(
-            Haittojenhallintatyyppi.YLEINEN to "Yleisten haittojen hallintasuunnitelma",
-            Haittojenhallintatyyppi.PYORALIIKENNE to
-                "Pyöräliikenteelle koituvien haittojen hallintasuunnitelma",
-            Haittojenhallintatyyppi.AUTOLIIKENNE to
-                "Autoliikenteelle koituvien haittojen hallintasuunnitelma",
-            Haittojenhallintatyyppi.LINJAAUTOLIIKENNE to
-                "Linja-autoliikenteelle koituvien haittojen hallintasuunnitelma",
-            Haittojenhallintatyyppi.RAITIOLIIKENNE to
-                "Raitioliikenteelle koituvien haittojen hallintasuunnitelma",
-            Haittojenhallintatyyppi.MUUT to "Muiden haittojen hallintasuunnitelma"
-        )
+    fun createHaittojenhallintasuunnitelma(
+        vararg pairs: Pair<Haittojenhallintatyyppi, String> =
+            arrayOf(
+                Haittojenhallintatyyppi.YLEINEN to "Yleisten haittojen hallintasuunnitelma",
+                Haittojenhallintatyyppi.PYORALIIKENNE to
+                    "Pyöräliikenteelle koituvien haittojen hallintasuunnitelma",
+                Haittojenhallintatyyppi.AUTOLIIKENNE to
+                    "Autoliikenteelle koituvien haittojen hallintasuunnitelma",
+                Haittojenhallintatyyppi.LINJAAUTOLIIKENNE to
+                    "Linja-autoliikenteelle koituvien haittojen hallintasuunnitelma",
+                Haittojenhallintatyyppi.RAITIOLIIKENNE to
+                    "Raitioliikenteelle koituvien haittojen hallintasuunnitelma",
+                Haittojenhallintatyyppi.MUUT to "Muiden haittojen hallintasuunnitelma"
+            )
+    ): MutableMap<Haittojenhallintatyyppi, String> {
+        return mutableMapOf(*pairs)
     }
 
     fun createMinimal(
@@ -110,9 +113,11 @@ object HankealueFactory {
                 tarinaHaitta = alue.tarinaHaitta,
                 nimi = alue.nimi,
                 tormaystarkasteluTulos = null,
-                haittojenhallintasuunnitelma = alue.haittojenhallintasuunnitelma,
             )
-            .apply { tormaystarkasteluTulos = tormaystarkasteluTulosEntity(hankealueEntity = this) }
+            .apply {
+                tormaystarkasteluTulos = tormaystarkasteluTulosEntity(hankealueEntity = this)
+                alue.haittojenhallintasuunnitelma?.let { haittojenhallintasuunnitelma.putAll(it) }
+            }
     }
 
     private fun tormaystarkasteluTulos() =

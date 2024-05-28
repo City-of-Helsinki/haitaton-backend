@@ -102,5 +102,5 @@ enum class Haittojenhallintatyyppi {
     AUTOLIIKENNE,
     RAITIOLIIKENNE,
     LINJAAUTOLIIKENNE,
-    MUUT
+    MUUT,
 }
