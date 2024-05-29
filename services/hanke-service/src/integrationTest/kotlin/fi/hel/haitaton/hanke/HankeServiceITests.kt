@@ -41,6 +41,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUSTAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
@@ -382,8 +383,6 @@ class HankeServiceITests(
         }
     }
 
-    @Nested inner class UpdateHanke {}
-
     @Test
     fun `test personal data logging`() {
         // Create hanke with two yhteystietos, save and check logs. There should be two rows and the
@@ -700,7 +699,13 @@ class HankeServiceITests(
     inner class DeleteHanke {
         @Test
         fun `creates audit log entry for deleted hanke`() {
-            val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+            val hanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue(
+                        haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma()
+                    )
+                    .save()
             auditLogRepository.deleteAll()
             assertEquals(0, auditLogRepository.count())
             TestUtils.addMockedRequestIp()
@@ -730,6 +735,7 @@ class HankeServiceITests(
                     hanke.alueet[0],
                     hankeVersion = 1,
                     tormaystarkasteluTulos = true,
+                    haittojenhallintasuunnitelma = true
                 )
             JSONAssert.assertEquals(
                 expectedObject,
@@ -983,6 +989,7 @@ object ExpectedHankeLogObject {
         tormaystarkasteluTulos: Boolean = false,
         alkuPvm: String? = "${nextYear()}-02-20T00:00:00Z",
         loppuPvm: String? = "${nextYear()}-02-21T00:00:00Z",
+        haittojenhallintasuunnitelma: Boolean = false,
     ): String {
         val templateData =
             TemplateData(
@@ -997,6 +1004,7 @@ object ExpectedHankeLogObject {
                 alue?.nimi,
                 alkuPvm,
                 loppuPvm,
+                haittojenhallintasuunnitelma,
             )
         return expectedHankeWithPolygon.processToString(templateData)
     }
@@ -1013,5 +1021,6 @@ object ExpectedHankeLogObject {
         val alueNimi: String? = null,
         val alkuPvm: String? = null,
         val loppuPvm: String? = null,
+        val haittojenhallintasuunnitelma: Boolean = false,
     )
 }

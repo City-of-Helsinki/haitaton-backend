@@ -91,22 +91,26 @@
       "meluHaitta": "SATUNNAINEN_MELUHAITTA",
       "polyHaitta": "TOISTUVA_POLYHAITTA",
       "tarinaHaitta": "JATKUVA_TARINAHAITTA",
-      {{#tormaystarkasteluTulos}}
-          "tormaystarkasteluTulos": {
-            "autoliikenneindeksi": 1.4,
-            "pyoraliikenneindeksi": 0.0,
-            "linjaautoliikenneindeksi": 0.0,
-            "raitioliikenneindeksi": 0.0,
-            "liikennehaittaindeksi": {
-              "indeksi": 1.4,
-              "tyyppi": "AUTOLIIKENNEINDEKSI"
-            }
-          },
-      {{/tormaystarkasteluTulos}}
-      {{^tormaystarkasteluTulos}}
-          "tormaystarkasteluTulos": null,
-      {{/tormaystarkasteluTulos}}
-      "nimi": {{#alueNimi}}"{{alueNimi}}"{{/alueNimi}}{{^alueNimi}}null{{/alueNimi}}
+      "nimi": {{#alueNimi}}"{{alueNimi}}"{{/alueNimi}}{{^alueNimi}}null{{/alueNimi}},
+      {{#tormaystarkasteluTulos}}"tormaystarkasteluTulos": {
+        "autoliikenneindeksi": 1.4,
+        "pyoraliikenneindeksi": 0.0,
+        "linjaautoliikenneindeksi": 0.0,
+        "raitioliikenneindeksi": 0.0,
+        "liikennehaittaindeksi": {
+          "indeksi": 1.4,
+          "tyyppi": "AUTOLIIKENNEINDEKSI"
+        }
+      },{{/tormaystarkasteluTulos}}
+      "haittojenhallintasuunnitelma": {
+        {{#haittojenhallintasuunnitelma}}"AUTOLIIKENNE":"Autoliikenteelle koituvien haittojen hallintasuunnitelma",
+        "LINJAAUTOLIIKENNE":"Linja-autoliikenteelle koituvien haittojen hallintasuunnitelma",
+        "YLEINEN":"Yleisten haittojen hallintasuunnitelma",
+        "PYORALIIKENNE":"Pyöräliikenteelle koituvien haittojen hallintasuunnitelma",
+        "RAITIOLIIKENNE":"Raitioliikenteelle koituvien haittojen hallintasuunnitelma",
+        "MUUT":"Muiden haittojen hallintasuunnitelma"
+        {{/haittojenhallintasuunnitelma}}
+      }
     }
 {{/alueId}}
   ]

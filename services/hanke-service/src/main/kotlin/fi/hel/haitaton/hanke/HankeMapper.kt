@@ -72,7 +72,8 @@ object HankeMapper {
                 polyHaitta = polyHaitta,
                 tarinaHaitta = tarinaHaitta,
                 nimi = nimi,
-                tormaystarkasteluTulos = entity.tormaystarkasteluTulos?.toDomain()
+                tormaystarkasteluTulos = entity.tormaystarkasteluTulos?.toDomain(),
+                haittojenhallintasuunnitelma = haittojenhallintasuunnitelma.toMap(),
             )
         }
 

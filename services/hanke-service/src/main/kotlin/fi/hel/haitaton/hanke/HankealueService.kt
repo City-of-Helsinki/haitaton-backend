@@ -57,6 +57,10 @@ class HankealueService(
             result.geometriat = saved?.id
         }
         result.nimi = source.nimi
+        source.haittojenhallintasuunnitelma?.let {
+            result.haittojenhallintasuunnitelma.clear()
+            result.haittojenhallintasuunnitelma.putAll(it)
+        }
 
         return result
     }
