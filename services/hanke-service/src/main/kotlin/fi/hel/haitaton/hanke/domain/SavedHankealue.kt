@@ -66,6 +66,10 @@ data class SavedHankealue(
         description = "Collision review result for this area",
     )
     val tormaystarkasteluTulos: TormaystarkasteluTulos?,
+    @field:Schema(
+        description = "Nuisance control plan for this area",
+    )
+    override var haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>? = null,
 ) : HasId<Int?>, Hankealue
 
 fun List<Hankealue>.alkuPvm(): ZonedDateTime? = mapNotNull { it.haittaAlkuPvm }.minOfOrNull { it }

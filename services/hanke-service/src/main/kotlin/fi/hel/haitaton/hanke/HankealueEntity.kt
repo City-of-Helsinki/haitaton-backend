@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
@@ -8,6 +9,9 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import jakarta.persistence.CascadeType
+import jakarta.persistence.CollectionTable
+import jakarta.persistence.Column
+import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -17,6 +21,8 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.MapKeyColumn
+import jakarta.persistence.MapKeyEnumerated
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.time.LocalDate
@@ -50,6 +56,15 @@ class HankealueEntity(
         orphanRemoval = true
     )
     var tormaystarkasteluTulos: TormaystarkasteluTulosEntity?,
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+        name = "hankkeen_haittojenhallintasuunnitelma",
+        joinColumns = [JoinColumn(name = "hankealue_id", referencedColumnName = "id")]
+    )
+    @MapKeyColumn(name = "tyyppi")
+    @Column(name = "sisalto")
+    @MapKeyEnumerated(EnumType.STRING)
+    var haittojenhallintasuunnitelma: MutableMap<Haittojenhallintatyyppi, String> = mutableMapOf(),
 ) : HasId<Int> {
     fun haittaAjanKestoDays(): Int? =
         if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
@@ -92,5 +107,3 @@ class HankealueEntity(
         return result
     }
 }
-
-fun List<HankealueEntity>.geometriaIds(): Set<Int> = mapNotNull { it.geometriat }.toSet()

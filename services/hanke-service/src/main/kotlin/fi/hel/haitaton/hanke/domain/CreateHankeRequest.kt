@@ -73,6 +73,10 @@ data class NewHankealue(
         description = "Area name, must not be null or empty",
     )
     override val nimi: String,
+    @field:Schema(
+        description = "Nuisance control plans for this area",
+    )
+    override val haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>? = null,
 ) : Hankealue
 
 data class NewGeometriat(
