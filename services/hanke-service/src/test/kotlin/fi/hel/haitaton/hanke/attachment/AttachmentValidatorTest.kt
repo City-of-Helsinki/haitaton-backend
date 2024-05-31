@@ -26,6 +26,24 @@ import org.springframework.mock.web.MockMultipartFile
 class AttachmentValidatorTest {
 
     @Nested
+    inner class ValidateSize {
+        @Test
+        fun `throws exception if the attachment has no content`() {
+            assertFailure { AttachmentValidator.validateSize(0) }
+                .all {
+                    hasClass(AttachmentInvalidException::class.java)
+                    messageContains("Attachment has no content.")
+                }
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = [1, 2, 100, 1000000])
+        fun `passes without errors when the size is positive`(size: Int) {
+            AttachmentValidator.validateSize(size)
+        }
+    }
+
+    @Nested
     inner class ValidFilename {
         @Test
         fun `Normal filename should be valid`() {
