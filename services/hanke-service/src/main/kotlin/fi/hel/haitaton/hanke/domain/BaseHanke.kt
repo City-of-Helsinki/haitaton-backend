@@ -10,6 +10,8 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaari
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
 
+typealias Haittojenhallintasuunnitelma = Map<Haittojenhallintatyyppi, String>
+
 interface HasYhteystiedot {
     val omistajat: List<Yhteystieto>?
     val rakennuttajat: List<Yhteystieto>?
@@ -75,7 +77,7 @@ interface Hankealue {
     val polyHaitta: Polyhaitta?
     val tarinaHaitta: Tarinahaitta?
     val nimi: String
-    val haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>?
+    val haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma?
 }
 
 fun List<Hankealue>.geometriat(): List<HasFeatures> = mapNotNull { it.geometriat }
