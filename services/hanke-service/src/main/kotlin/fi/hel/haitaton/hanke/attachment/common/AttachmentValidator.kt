@@ -63,6 +63,10 @@ object AttachmentValidator {
             "LPT9",
         )
 
+    fun validateSize(size: Int) {
+        if (size == 0) throw AttachmentInvalidException("Attachment has no content.")
+    }
+
     fun validFilename(filename: String?): String {
         logger.info { "Validating file name $filename" }
 

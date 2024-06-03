@@ -137,6 +137,20 @@ class HankeAttachmentServiceITest(
                     )
                 }
         }
+
+        @Test
+        fun `throws an exception when the attachment has no content`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val testfile = testFile(data = byteArrayOf())
+
+            assertFailure {
+                    hankeAttachmentService.uploadHankeAttachment(hanke.hankeTunnus, testfile)
+                }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    messageContains("Attachment has no content")
+                }
+        }
     }
 
     @Nested

@@ -56,6 +56,7 @@ class ApplicationAttachmentService(
                 "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}, " +
                 "content type = ${attachment.contentType}"
         }
+        AttachmentValidator.validateSize(attachment.bytes.size)
         val filename = AttachmentValidator.validFilename(attachment.originalFilename)
         AttachmentValidator.validateExtensionForType(filename, attachmentType)
         val hakemus = findHakemus(applicationId)
