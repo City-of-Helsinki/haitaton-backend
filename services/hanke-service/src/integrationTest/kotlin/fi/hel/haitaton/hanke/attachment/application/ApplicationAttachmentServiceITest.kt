@@ -270,6 +270,24 @@ class ApplicationAttachmentServiceITest(
         }
 
         @Test
+        fun `Throws exception without content`() {
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
+
+            val failure = assertFailure {
+                attachmentService.addAttachment(
+                    applicationId = application.id,
+                    attachmentType = VALTAKIRJA,
+                    attachment = testFile(data = byteArrayOf())
+                )
+            }
+
+            failure.all {
+                hasClass(AttachmentInvalidException::class)
+                messageContains("Attachment has no content")
+            }
+        }
+
+        @Test
         fun `Throws exception without content type`() {
             val application = applicationFactory.saveApplicationEntity(USERNAME)
 
