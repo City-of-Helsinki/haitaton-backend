@@ -41,7 +41,7 @@ haitaton:
     audience: ${HAITATON_GDPR_AUDIENCE:http://localhost:8080/haitaton}
     authorization-field: ${HAITATON_GDPR_AUTHORIZATION_FIELD:http://localhost:8080}
     delete-scope: ${HAITATON_GDPR_DELETE_SCOPE:haitaton.gdprdelete}
-    disabled: ${HAITATON_GDPR_DISABLED:true}
+    disabled: ${HAITATON_GDPR_DISABLED:false}
     issuer: ${HAITATON_GDPR_ISSUER:http://gdpr-api-tester:8888/}
     query-scope: ${HAITATON_GDPR_QUERY_SCOPE:haitaton.gdprquery}
   profiili-api:

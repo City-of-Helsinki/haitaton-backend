@@ -48,12 +48,17 @@ class OAuth2ResourceServerSecurityConfiguration(
     /**
      * Higher priority filter chain for authenticating GDPR API requests.
      *
-     * When GDPR API is enabled, i.e. haitaton.gdpr.disabled is false, all requests to the GDPR API
-     * endpoints are authenticated by parsing and validating the JWT in the request.
+     * When GDPR API is enabled, i.e. haitaton.gdpr.disabled is false, or missing completely, all
+     * requests to the GDPR API endpoints are authenticated by parsing and validating the JWT in the
+     * request.
      */
     @Bean
     @Order(1)
-    @ConditionalOnProperty(name = ["haitaton.gdpr.disabled"], havingValue = "false")
+    @ConditionalOnProperty(
+        name = ["haitaton.gdpr.disabled"],
+        havingValue = "false",
+        matchIfMissing = true,
+    )
     fun gdprFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .securityMatcher("/gdpr-api/**")
@@ -63,15 +68,14 @@ class OAuth2ResourceServerSecurityConfiguration(
     }
 
     /**
-     * When haitaton.gdpr.disabled is something other than false, or missing completely, deny all
-     * requests to the GDPR API endpoints.
+     * When haitaton.gdpr.disabled is true, deny all requests to the GDPR API endpoints.
      *
      * Without this, the authentication token would be sent to the user-info endpoint for
      * validation, which we don't want if it's a JWT of some sort.
      */
     @Bean
     @Order(1)
-    @ConditionalOnProperty(name = ["haitaton.gdpr.disabled"], matchIfMissing = true)
+    @ConditionalOnProperty(name = ["haitaton.gdpr.disabled"], havingValue = "true")
     fun gdprDisabledFilterChain(http: HttpSecurity): SecurityFilterChain {
         http.securityMatcher("/gdpr-api/**").authorizeHttpRequests { authorize ->
             authorize.anyRequest().denyAll()
@@ -86,7 +90,11 @@ class OAuth2ResourceServerSecurityConfiguration(
 
     /** Custom decoder needed to check the audience. */
     @Bean
-    @ConditionalOnProperty(value = ["haitaton.gdpr.disabled"], havingValue = "false")
+    @ConditionalOnProperty(
+        value = ["haitaton.gdpr.disabled"],
+        havingValue = "false",
+        matchIfMissing = true,
+    )
     fun jwtDecoder(): JwtDecoder {
         val jwtDecoder: NimbusJwtDecoder =
             JwtDecoders.fromIssuerLocation(gdprProperties.issuer) as NimbusJwtDecoder
