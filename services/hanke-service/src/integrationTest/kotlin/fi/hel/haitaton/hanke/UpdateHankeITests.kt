@@ -147,13 +147,12 @@ class UpdateHankeITests(
     fun `updates hanke status when given full data`() {
         val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
         assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
-        hanke.tyomaaKatuosoite = "Testikatu 1 A 1"
         hanke.withYhteystiedot { id = null }
-        val request = hanke.toModifyRequest().copy(tyomaaKatuosoite = "Testikatu 1 A 1")
+        val request = hanke.toModifyRequest()
 
-        val returnedHanke2 = hankeService.updateHanke(hanke.hankeTunnus, request)
+        val returnedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
 
-        assertThat(returnedHanke2.status).isEqualTo(HankeStatus.PUBLIC)
+        assertThat(returnedHanke.status).isEqualTo(HankeStatus.PUBLIC)
     }
 
     @Test
