@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.validation
 
+import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.SavedHankealue
@@ -7,6 +9,8 @@ import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.isValidBusinessId
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import fi.hel.haitaton.hanke.validation.ValidationResult.Companion.whenNotNull
 import fi.hel.haitaton.hanke.validation.Validators.firstOf
 import fi.hel.haitaton.hanke.validation.Validators.notBlank
 import fi.hel.haitaton.hanke.validation.Validators.notEmpty
@@ -58,6 +62,14 @@ object HankePublicValidator {
                 )
             }
             .and { notNullOrBlank(alue.nimi, "$path.nimi") }
+            .andNotNull(alue.haittojenhallintasuunnitelma, "$path.haittojenhallintasuunnitelma") {
+                hhs,
+                p ->
+                whenNotNull(alue.tormaystarkasteluTulos) { tt ->
+                        validateHaittojenhallintasuunnitelmaLiikennemuodot(hhs, tt, p)
+                    }
+                    .and { validateHaittojenhallintasuunnitelmaCommonFields(hhs, p) }
+            }
 
     private fun validateYhteystieto(yhteystieto: HankeYhteystieto, path: String): ValidationResult =
         validate { notBlank(yhteystieto.nimi, "$path.nimi") }
@@ -67,5 +79,34 @@ object HankePublicValidator {
             }
             .andWhen(yhteystieto.tyyppi == YKSITYISHENKILO) {
                 validateTrue(yhteystieto.ytunnus == null, "$path.ytunnus")
+            }
+
+    internal fun validateHaittojenhallintasuunnitelmaCommonFields(
+        hhs: Haittojenhallintasuunnitelma,
+        path: String
+    ) =
+        validate { notNullOrBlank(hhs[Haittojenhallintatyyppi.MUUT], "$path.MUUT") }
+            .and { notNullOrBlank(hhs[Haittojenhallintatyyppi.YLEINEN], "$path.YLEINEN") }
+
+    internal fun validateHaittojenhallintasuunnitelmaLiikennemuodot(
+        hhs: Haittojenhallintasuunnitelma,
+        tt: TormaystarkasteluTulos,
+        path: String
+    ): ValidationResult =
+        validate()
+            .andWhen(tt.autoliikenneindeksi > 0) {
+                notNullOrBlank(hhs[Haittojenhallintatyyppi.AUTOLIIKENNE], "$path.AUTOLIIKENNE")
+            }
+            .andWhen(tt.pyoraliikenneindeksi > 0) {
+                notNullOrBlank(hhs[Haittojenhallintatyyppi.PYORALIIKENNE], "$path.PYORALIIKENNE")
+            }
+            .andWhen(tt.linjaautoliikenneindeksi > 0) {
+                notNullOrBlank(
+                    hhs[Haittojenhallintatyyppi.LINJAAUTOLIIKENNE],
+                    "$path.LINJAAUTOLIIKENNE"
+                )
+            }
+            .andWhen(tt.raitioliikenneindeksi > 0f) {
+                notNullOrBlank(hhs[Haittojenhallintatyyppi.RAITIOLIIKENNE], "$path.RAITIOLIIKENNE")
             }
 }
