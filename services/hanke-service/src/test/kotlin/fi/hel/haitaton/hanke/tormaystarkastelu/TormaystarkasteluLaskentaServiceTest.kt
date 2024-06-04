@@ -283,8 +283,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
     @Nested
     inner class CalculatePyoraliikenneindeksi {
         // The parameter is only used to call mocks
-        val geometria = 6
-        val geometriat = setOf(geometria)
+        val geometriat = setOf(6)
 
         @ParameterizedTest
         @ValueSource(ints = [2, 3, 5])
@@ -294,7 +293,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) } returns
                 hierarkiaValue
 
-            val result = laskentaService.calculatePyoraliikenneindeksi(geometria)
+            val result = laskentaService.calculatePyoraliikenneindeksi(geometriat)
 
             assertThat(result).isEqualTo(hierarkiaValue.toFloat())
             verifySequence { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) }
@@ -304,7 +303,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `returns 0 when the geometries don't intersect with any cycle routes`() {
             every { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) } returns null
 
-            val result = laskentaService.calculatePyoraliikenneindeksi(geometria)
+            val result = laskentaService.calculatePyoraliikenneindeksi(geometriat)
 
             assertThat(result).isEqualTo(0f)
             verifySequence { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) }
@@ -320,9 +319,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `returns 5 when intersects with a tram line`() {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns true
 
-            val result = laskentaService.raitioliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateRaitioliikenneindeksi(geometriat)
 
-            assertThat(result).isEqualTo(5)
+            assertThat(result).isEqualTo(5f)
             verify { tormaysService.anyIntersectsWithTramLines(geometriat) }
             verify(exactly = 0) { tormaysService.anyIntersectsWithTramInfra(geometriat) }
         }
@@ -332,9 +331,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
             every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns true
 
-            val result = laskentaService.raitioliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateRaitioliikenneindeksi(geometriat)
 
-            assertThat(result).isEqualTo(3)
+            assertThat(result).isEqualTo(3f)
             verifyAll {
                 tormaysService.anyIntersectsWithTramLines(geometriat)
                 tormaysService.anyIntersectsWithTramInfra(geometriat)
@@ -346,9 +345,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
             every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns false
 
-            val result = laskentaService.raitioliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateRaitioliikenneindeksi(geometriat)
 
-            assertThat(result).isEqualTo(0)
+            assertThat(result).isEqualTo(0f)
             verifyAll {
                 tormaysService.anyIntersectsWithTramLines(geometriat)
                 tormaysService.anyIntersectsWithTramInfra(geometriat)
@@ -365,7 +364,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `returns 5 when intersects with critical bus routes`() {
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns true
 
-            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateLinjaautoliikenneindeksi(geometriat)
 
             assertThat(result).isEqualTo(5)
             verify { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) }
@@ -376,7 +375,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometriat) } returns setOf()
 
-            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateLinjaautoliikenneindeksi(geometriat)
 
             assertThat(result).isEqualTo(0)
             verifyAll {
@@ -411,7 +410,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometriat) } returns busLines
 
-            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateLinjaautoliikenneindeksi(geometriat)
 
             assertThat(result).isEqualTo(expectedResult)
             verifyAll {
@@ -433,7 +432,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometriat) } returns busLines
 
-            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateLinjaautoliikenneindeksi(geometriat)
 
             assertThat(result).isEqualTo(expectedResult)
             verifyAll {
@@ -451,7 +450,11 @@ internal class TormaystarkasteluLaskentaServiceTest {
 
         assertThat(tulos).isNotNull()
         assertThat(tulos!!.liikennehaittaindeksi).isNotNull()
-        assertThat(tulos.liikennehaittaindeksi.indeksi).isNotNull().isEqualTo(5.0f)
+        assertThat(tulos.liikennehaittaindeksi.indeksi).isEqualTo(5.0f)
+        assertThat(tulos.liikennehaittaindeksi.tyyppi)
+            .isEqualTo(IndeksiType.LINJAAUTOLIIKENNEINDEKSI)
+        assertThat(tulos.autoliikenneindeksi).isEqualTo(2.7f)
+        assertThat(tulos.linjaautoliikenneindeksi).isEqualTo(5.0f)
         assertThat(tulos.raitioliikenneindeksi).isEqualTo(3.0f)
         assertThat(tulos.pyoraliikenneindeksi).isEqualTo(3.0f)
 

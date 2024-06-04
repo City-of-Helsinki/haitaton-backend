@@ -190,7 +190,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
         }
     }
 
-    fun validateGeometria(geometria: GeoJsonObject): GeometriatDao.InvalidDetail? {
+    fun validateGeometria(geometria: GeoJsonObject): InvalidDetail? {
         val detailQuery =
             "select valid, reason, ST_AsGeoJSON(location) as location from ST_IsValidDetail(ST_GeomFromGeoJSON(?))"
 
@@ -199,7 +199,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
                 detailQuery,
                 { rs, _ ->
                     if (!rs.getBoolean("valid")) {
-                        GeometriatDao.InvalidDetail(
+                        InvalidDetail(
                             rs.getString("reason"),
                             rs.getString("location"),
                         )
@@ -222,7 +222,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
      *
      * @return List of indexes in the feature collection where the validation failed.
      */
-    fun validateGeometriat(geometriat: List<GeoJsonObject>): GeometriatDao.InvalidDetail? =
+    fun validateGeometriat(geometriat: List<GeoJsonObject>): InvalidDetail? =
         geometriat.firstNotNullOfOrNull { validateGeometria(it) }
 
     /** Check if the given geometry is inside any hankealue of the given hanke. */
