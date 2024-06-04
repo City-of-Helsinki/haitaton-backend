@@ -56,8 +56,6 @@ class TormaystarkasteluControllerITest(
     inner class Calculate {
         val url = "/haittaindeksit"
 
-        val featureCollection = GeometriaFactory.createNew().featureCollection!!
-
         @Test
         @WithAnonymousUser
         fun `returns 401 when not authenticated`() {
@@ -174,7 +172,7 @@ class TormaystarkasteluControllerITest(
                 AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
         ) =
             TormaystarkasteluRequest(
-                geometriat = featureCollection,
+                geometriat = GeometriaFactory.createNew().featureCollection!!,
                 haittaAlkuPvm = haittaAlkuPvm,
                 haittaLoppuPvm = haittaLoppuPvm,
                 kaistaHaitta = kaistaHaitta,
