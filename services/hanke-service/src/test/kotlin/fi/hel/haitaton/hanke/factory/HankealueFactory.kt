@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankealueEntity
+import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
@@ -32,7 +33,8 @@ object HankealueFactory {
         tarinaHaitta: Tarinahaitta? = Tarinahaitta.JATKUVA_TARINAHAITTA,
         nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
         tormaystarkasteluTulos: TormaystarkasteluTulos? = tormaystarkasteluTulos(),
-        haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>? = null,
+        haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma? =
+            createHaittojenhallintasuunnitelma(),
     ): SavedHankealue {
         return SavedHankealue(
             id,
@@ -51,9 +53,20 @@ object HankealueFactory {
         )
     }
 
+    /**
+     * Creates a haittojenhallintasuunnitelma with values in all fields.
+     *
+     * Values can be overridden with parameters like
+     * `createHaittojenhallintasuunnitelma(Haittojenhallintatyyppi.YLEINEN to "Overridden value")`.
+     *
+     * Values can be removed from the haittojenhallintasuunnitelma by overriding them with null:
+     * `createHaittojenhallintasuunnitelma(Haittojenhallintatyyppi.YLEINEN to null)`.
+     */
     fun createHaittojenhallintasuunnitelma(
-        vararg pairs: Pair<Haittojenhallintatyyppi, String> =
-            arrayOf(
+        vararg overrides: Pair<Haittojenhallintatyyppi, String?>
+    ): Haittojenhallintasuunnitelma {
+        val haittojenhallintasuunnitelma =
+            mutableMapOf(
                 Haittojenhallintatyyppi.YLEINEN to "Yleisten haittojen hallintasuunnitelma",
                 Haittojenhallintatyyppi.PYORALIIKENNE to
                     "Pyöräliikenteelle koituvien haittojen hallintasuunnitelma",
@@ -65,8 +78,14 @@ object HankealueFactory {
                     "Raitioliikenteelle koituvien haittojen hallintasuunnitelma",
                 Haittojenhallintatyyppi.MUUT to "Muiden haittojen hallintasuunnitelma"
             )
-    ): MutableMap<Haittojenhallintatyyppi, String> {
-        return mutableMapOf(*pairs)
+        overrides.forEach { (haittojenhallintatyyppi, suunnitelma) ->
+            if (suunnitelma == null) {
+                haittojenhallintasuunnitelma.remove(haittojenhallintatyyppi)
+            } else {
+                haittojenhallintasuunnitelma[haittojenhallintatyyppi] = suunnitelma
+            }
+        }
+        return haittojenhallintasuunnitelma
     }
 
     fun createMinimal(

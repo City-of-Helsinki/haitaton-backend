@@ -69,7 +69,7 @@ data class SavedHankealue(
     @field:Schema(
         description = "Nuisance control plan for this area",
     )
-    override var haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>? = null,
+    override var haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma? = null,
 ) : HasId<Int?>, Hankealue
 
 fun List<Hankealue>.alkuPvm(): ZonedDateTime? = mapNotNull { it.haittaAlkuPvm }.minOfOrNull { it }

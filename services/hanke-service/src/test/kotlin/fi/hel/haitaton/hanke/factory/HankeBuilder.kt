@@ -9,7 +9,7 @@ import fi.hel.haitaton.hanke.HankeYhteyshenkiloRepository
 import fi.hel.haitaton.hanke.HankeYhteystietoEntity
 import fi.hel.haitaton.hanke.HankeYhteystietoRepository
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
-import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
+import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
@@ -119,12 +119,13 @@ data class HankeBuilder(
 
     fun withHankealue(
         alue: SavedHankealue = HankealueFactory.create(),
-        haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>? = null,
+        haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma? =
+            alue.haittojenhallintasuunnitelma,
     ) = applyToHanke {
         alueet.add(alue)
         tyomaaKatuosoite = "Testikatu 1"
         tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-        haittojenhallintasuunnitelma?.let { alue.haittojenhallintasuunnitelma = it }
+        alue.haittojenhallintasuunnitelma = haittojenhallintasuunnitelma
     }
 
     fun withPerustaja(perustaja: HankekayttajaInput): HankeBuilder =

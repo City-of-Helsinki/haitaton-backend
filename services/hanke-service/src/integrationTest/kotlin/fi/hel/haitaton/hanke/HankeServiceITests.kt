@@ -735,7 +735,6 @@ class HankeServiceITests(
                     hanke.alueet[0],
                     hankeVersion = 1,
                     tormaystarkasteluTulos = true,
-                    haittojenhallintasuunnitelma = true
                 )
             JSONAssert.assertEquals(
                 expectedObject,
@@ -989,7 +988,6 @@ object ExpectedHankeLogObject {
         tormaystarkasteluTulos: Boolean = false,
         alkuPvm: String? = "${nextYear()}-02-20T00:00:00Z",
         loppuPvm: String? = "${nextYear()}-02-21T00:00:00Z",
-        haittojenhallintasuunnitelma: Boolean = false,
     ): String {
         val templateData =
             TemplateData(
@@ -1004,7 +1002,7 @@ object ExpectedHankeLogObject {
                 alue?.nimi,
                 alkuPvm,
                 loppuPvm,
-                haittojenhallintasuunnitelma,
+                alue?.haittojenhallintasuunnitelma != null,
             )
         return expectedHankeWithPolygon.processToString(templateData)
     }
