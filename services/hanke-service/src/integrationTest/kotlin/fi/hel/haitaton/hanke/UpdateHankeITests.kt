@@ -634,32 +634,18 @@ class UpdateHankeITests(
 
     @Test
     fun `updates a nuisance control plan`() {
-        val createdHanke =
-            hankeFactory
-                .builder(USERNAME)
-                .withHankealue(haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma())
-                .save()
+        val createdHanke = hankeFactory.builder(USERNAME).withHankealue().save()
         val hankealue = createdHanke.alueet[0]
         assertThat(hankealue.haittojenhallintasuunnitelma!!.size).isEqualTo(6)
         assertThat(hankealue.haittojenhallintasuunnitelma!![Haittojenhallintatyyppi.YLEINEN])
             .isEqualTo("Yleisten haittojen hallintasuunnitelma")
-        val request = createdHanke.toModifyRequest()
-        val newHaittojenhallintasuunnitelma =
-            createHaittojenhallintasuunnitelma().apply {
-                this[Haittojenhallintatyyppi.YLEINEN] =
-                    "Uusi yleisten haittojen hallintasuunnitelma"
-            }
-        val updatedRequest =
-            request.copy(
-                alueet =
-                    listOf(
-                        request.alueet[0].copy(
-                            haittojenhallintasuunnitelma = newHaittojenhallintasuunnitelma
-                        )
-                    )
+        hankealue.haittojenhallintasuunnitelma =
+            createHaittojenhallintasuunnitelma(
+                Haittojenhallintatyyppi.YLEINEN to "Uusi yleisten haittojen hallintasuunnitelma"
             )
+        val request = createdHanke.toModifyRequest()
 
-        val updateHankeResult = hankeService.updateHanke(createdHanke.hankeTunnus, updatedRequest)
+        val updateHankeResult = hankeService.updateHanke(createdHanke.hankeTunnus, request)
 
         val updatedHaittojenhallintasuunnitelma =
             updateHankeResult.alueet.single().haittojenhallintasuunnitelma!!
@@ -670,27 +656,14 @@ class UpdateHankeITests(
 
     @Test
     fun `removes a nuisance control plan`() {
-        val createdHanke =
-            hankeFactory
-                .builder(USERNAME)
-                .withHankealue(haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma())
-                .save()
+        val createdHanke = hankeFactory.builder(USERNAME).withHankealue().save()
         val hankealue = createdHanke.alueet[0]
         assertThat(hankealue.haittojenhallintasuunnitelma!!.size).isEqualTo(6)
+        hankealue.haittojenhallintasuunnitelma =
+            createHaittojenhallintasuunnitelma(Haittojenhallintatyyppi.YLEINEN to null)
         val request = createdHanke.toModifyRequest()
-        val newHaittojenhallintasuunnitelma =
-            createHaittojenhallintasuunnitelma().apply { remove(Haittojenhallintatyyppi.YLEINEN) }
-        val updatedRequest =
-            request.copy(
-                alueet =
-                    listOf(
-                        request.alueet[0].copy(
-                            haittojenhallintasuunnitelma = newHaittojenhallintasuunnitelma
-                        )
-                    )
-            )
 
-        val updateHankeResult = hankeService.updateHanke(createdHanke.hankeTunnus, updatedRequest)
+        val updateHankeResult = hankeService.updateHanke(createdHanke.hankeTunnus, request)
 
         val updatedHaittojenhallintasuunnitelma =
             updateHankeResult.alueet.single().haittojenhallintasuunnitelma!!
@@ -705,32 +678,20 @@ class UpdateHankeITests(
                 .builder(USERNAME)
                 .withHankealue(
                     haittojenhallintasuunnitelma =
-                        createHaittojenhallintasuunnitelma().apply {
-                            remove(Haittojenhallintatyyppi.YLEINEN)
-                        }
+                        createHaittojenhallintasuunnitelma(Haittojenhallintatyyppi.YLEINEN to null)
                 )
                 .save()
         val hankealue = createdHanke.alueet[0]
         assertThat(hankealue.haittojenhallintasuunnitelma!!.size).isEqualTo(5)
         assertThat(hankealue.haittojenhallintasuunnitelma!![Haittojenhallintatyyppi.YLEINEN])
             .isNull()
-        val request = createdHanke.toModifyRequest()
-        val newHaittojenhallintasuunnitelma =
-            createHaittojenhallintasuunnitelma().apply {
-                this[Haittojenhallintatyyppi.YLEINEN] =
-                    "Uusi yleisten haittojen hallintasuunnitelma"
-            }
-        val updatedRequest =
-            request.copy(
-                alueet =
-                    listOf(
-                        request.alueet[0].copy(
-                            haittojenhallintasuunnitelma = newHaittojenhallintasuunnitelma
-                        )
-                    )
+        hankealue.haittojenhallintasuunnitelma =
+            createHaittojenhallintasuunnitelma(
+                Haittojenhallintatyyppi.YLEINEN to "Uusi yleisten haittojen hallintasuunnitelma"
             )
+        val request = createdHanke.toModifyRequest()
 
-        val updateHankeResult = hankeService.updateHanke(createdHanke.hankeTunnus, updatedRequest)
+        val updateHankeResult = hankeService.updateHanke(createdHanke.hankeTunnus, request)
 
         val updatedHaittojenhallintasuunnitelma =
             updateHankeResult.alueet.single().haittojenhallintasuunnitelma!!
@@ -755,13 +716,9 @@ class UpdateHankeITests(
                 meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
                 polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
                 tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
+                haittojenhallintasuunnitelma = null,
             )
-        val hanke =
-            hankeFactory
-                .builder(USERNAME)
-                .withHankealue(haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma())
-                .withHankealue(hankealue)
-                .save()
+        val hanke = hankeFactory.builder(USERNAME).withHankealue().withHankealue(hankealue).save()
         assertThat(hanke.alueet).hasSize(2)
         assertThat(hankealueCount()).isEqualTo(2)
         assertThat(geometriatCount()).isEqualTo(2)
@@ -927,7 +884,8 @@ class UpdateHankeITests(
 
     @Test
     fun `creates audit log entry when nuisance control plan is updated in hankealue`() {
-        val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+        val hanke =
+            hankeFactory.builder(USERNAME).withHankealue(haittojenhallintasuunnitelma = null).save()
         auditLogRepository.deleteAll()
         assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
@@ -939,9 +897,9 @@ class UpdateHankeITests(
         val expectedLogBefore =
             expectedHankeLogObject(
                 hanke,
-                hanke.alueet[0],
+                hanke.alueet[0].apply { haittojenhallintasuunnitelma = null },
                 hankeVersion = 1,
-                tormaystarkasteluTulos = true
+                tormaystarkasteluTulos = true,
             )
         val expectedLogAfter =
             expectedHankeLogObject(
@@ -950,7 +908,6 @@ class UpdateHankeITests(
                 hankeVersion = 2,
                 geometriaVersion = 1,
                 tormaystarkasteluTulos = true,
-                haittojenhallintasuunnitelma = true,
             )
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertThat(hankeLogs).single().isSuccess(Operation.UPDATE) {

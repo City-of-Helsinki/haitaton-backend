@@ -90,7 +90,8 @@ class HankeMapperTest {
                 haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate().atStartOfDay(TZ_UTC),
                 geometriat =
                     GeometriaFactory.create().apply { resetFeatureProperties(hankeTunnus) },
-                haittojenhallintasuunnitelma = emptyMap(),
+                haittojenhallintasuunnitelma =
+                    HankealueFactory.createHaittojenhallintasuunnitelma(),
             )
         )
 }

@@ -76,7 +76,7 @@ data class NewHankealue(
     @field:Schema(
         description = "Nuisance control plans for this area",
     )
-    override val haittojenhallintasuunnitelma: Map<Haittojenhallintatyyppi, String>? = null,
+    override val haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma? = null,
 ) : Hankealue
 
 data class NewGeometriat(
