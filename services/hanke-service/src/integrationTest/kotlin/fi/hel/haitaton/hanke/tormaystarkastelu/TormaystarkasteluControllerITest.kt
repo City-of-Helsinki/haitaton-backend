@@ -67,7 +67,9 @@ class TormaystarkasteluControllerITest(
         @Test
         fun `returns 400 when request has wrong CRS`() {
             val request = createRequest()
-            request.geometriat.crs?.properties?.set("name", "urn:ogc:def:crs:EPSG::0000")
+            request.geometriat.featureCollection.crs
+                ?.properties
+                ?.set("name", "urn:ogc:def:crs:EPSG::0000")
 
             post(url, request)
                 .andExpect(status().isBadRequest)
@@ -77,7 +79,7 @@ class TormaystarkasteluControllerITest(
         @Test
         fun `returns 400 when request has no CRS`() {
             val request = createRequest()
-            request.geometriat.crs = null
+            request.geometriat.featureCollection.crs = null
 
             post(url, request)
                 .andExpect(status().isBadRequest)
@@ -87,7 +89,7 @@ class TormaystarkasteluControllerITest(
         @Test
         fun `returns 400 when request has no CRS properties`() {
             val request = createRequest()
-            request.geometriat.crs.properties = null
+            request.geometriat.featureCollection.crs.properties = null
 
             post(url, request)
                 .andExpect(status().isBadRequest)
@@ -170,14 +172,17 @@ class TormaystarkasteluControllerITest(
                 VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
             kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus =
                 AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
-        ) =
-            TormaystarkasteluRequest(
-                geometriat = GeometriaFactory.createNew().featureCollection!!,
+        ): TormaystarkasteluRequest {
+            val featureCollection = GeometriaFactory.createNew().featureCollection!!
+
+            return TormaystarkasteluRequest(
+                geometriat = TormaystarkasteluRequest.Geometriat(featureCollection),
                 haittaAlkuPvm = haittaAlkuPvm,
                 haittaLoppuPvm = haittaLoppuPvm,
                 kaistaHaitta = kaistaHaitta,
                 kaistaPituusHaitta = kaistaPituusHaitta,
             )
+        }
 
         private fun createTulos() = TormaystarkasteluTulos(1.5f, 2.4f, 7.1f, 5.0f)
     }

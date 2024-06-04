@@ -52,7 +52,7 @@ class TormaystarkasteluController(
             ]
     )
     fun calculate(@RequestBody request: TormaystarkasteluRequest): TormaystarkasteluTulos {
-        GeometriatValidator.expectValid(request.geometriat)
+        GeometriatValidator.expectValid(request.geometriat.featureCollection)
 
         if (request.haittaAlkuPvm.isAfter(request.haittaLoppuPvm)) {
             throw EndBeforeStartException(request.haittaAlkuPvm, request.haittaLoppuPvm)
@@ -62,7 +62,7 @@ class TormaystarkasteluController(
             ChronoUnit.DAYS.between(request.haittaAlkuPvm, request.haittaLoppuPvm).toInt() + 1
 
         return tormaystarkasteluLaskentaService.calculateTormaystarkastelu(
-            request.geometriat,
+            request.geometriat.featureCollection,
             haittaajanKestoDays,
             request.kaistaHaitta,
             request.kaistaPituusHaitta
