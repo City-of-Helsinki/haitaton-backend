@@ -35,7 +35,7 @@ fun MultipartFile.validNameAndType() =
 object AttachmentValidator {
 
     /** %22 is what `"` gets encoded to for transport. Treating it like it's `"`. */
-    private val INVALID_CHARS_PATTERN = "%22|[\\\\/:*?\"<>|]".toRegex()
+    private val INVALID_CHARS_PATTERN = "%22|[\\\\/:*?.\"<>|]".toRegex()
 
     private val RESERVED_NAMES =
         arrayOf(
@@ -68,6 +68,10 @@ object AttachmentValidator {
     }
 
     fun validFilename(filename: String?): String {
+        if (filename == null) {
+            throw AttachmentInvalidException("Null filename not supported")
+        }
+
         logger.info { "Validating file name $filename" }
 
         val sanitizedFilename = sanitizeFilename(filename)
@@ -76,7 +80,7 @@ object AttachmentValidator {
         if (!isValidFilename(sanitizedFilename)) {
             throw AttachmentInvalidException("File '$sanitizedFilename' not supported")
         }
-        return sanitizedFilename!!
+        return sanitizedFilename
     }
 
     fun ensureMediaType(contentType: String?): MediaType =
@@ -101,17 +105,18 @@ object AttachmentValidator {
         }
     }
 
-    private fun sanitizeFilename(filename: String?): String? =
-        filename?.replace(INVALID_CHARS_PATTERN, "_")
+    private fun sanitizeFilename(filename: String): String {
+        val extension = getExtension(filename).replace(INVALID_CHARS_PATTERN, "_")
+        val base = removeExtension(filename).replace(INVALID_CHARS_PATTERN, "_")
 
-    private fun isValidFilename(filename: String?): Boolean =
+        return if (extension.isEmpty()) base else "$base.$extension"
+    }
+
+    private fun isValidFilename(filename: String): Boolean =
         when {
-            filename.isNullOrBlank() -> fail("Attachment file name null or blank")
+            filename.isBlank() -> fail("Attachment file name blank")
             filename.length > 128 -> fail("File name is too long")
             !supportedType(filename) -> fail("File '$filename' not supported")
-            filename.contains("..") -> fail("File name contains path traversal characters")
-            INVALID_CHARS_PATTERN.containsMatchIn(filename) ->
-                fail("File name contains invalid characters")
             RESERVED_NAMES.contains(removeExtension(filename).uppercase()) ->
                 fail("File name is reserved")
             else -> true
