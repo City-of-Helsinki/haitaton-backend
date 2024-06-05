@@ -77,9 +77,9 @@ class EmailSenderServiceTest {
 
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on lisätty hankkeelle HAI24-1 " +
-                        "/ Du har lagts till i projektet HAI24-1 " +
-                        "/ You have been added to project HAI24-1"
+                    "Haitaton: Sinut on kutsuttu hankkeelle HAI24-1 " +
+                        "/ Du har blivit inbjuden till projektet HAI24-1 " +
+                        "/ You have been invited to project HAI24-1"
                 )
         }
 
@@ -88,9 +88,9 @@ class EmailSenderServiceTest {
             val (textBody, htmlBody) = sendAndCapture().bodies()
 
             val expectedHeader =
-                "Sinut on lisätty hankkeelle HAI24-1 " +
-                    "/ Du har lagts till i projektet HAI24-1 " +
-                    "/ You have been added to project HAI24-1"
+                "Sinut on kutsuttu hankkeelle HAI24-1 " +
+                    "/ Du har blivit inbjuden till projektet HAI24-1 " +
+                    "/ You have been invited to project HAI24-1"
             assertThat(textBody).contains(expectedHeader)
             assertThat(htmlBody).contains(expectedHeader)
         }
@@ -109,7 +109,7 @@ class EmailSenderServiceTest {
                 )
 
             open fun inviterInformation(name: String, email: String) =
-                "$name ($email) lisäsi sinut hankkeelle"
+                "$name ($email) on kutsunut sinut hankkeelle"
 
             open val hankeInformation = "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>."
 

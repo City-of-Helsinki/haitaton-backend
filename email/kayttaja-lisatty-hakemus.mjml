@@ -16,6 +16,10 @@
                     <a href="{{baseUrl}}">{{baseUrl}}</a>
                 </mj-text>
                 <mj-text mj-class="basic-txt">
+                    Huomioithan, että nähdäksesi hakemuksen tulee sinun olla aktivoinut saamasi tunnistautumislinkki
+                    hankkeelle, jolle hakemus on tehty. Löydät tunnistautumislinkin erillisestä sähköpostiviestistä.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
                     Löydät hakemuksesi siirtymällä etusivulta Omiin hankkeisiin ja valitsemalla sieltä oikean
                     hankkeen.
                     Avaa listanäkymässä hankkeen tiedot ja valitse "Näytä hankkeen hakemukset".

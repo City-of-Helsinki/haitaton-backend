@@ -7,12 +7,12 @@
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Sinut on lisätty hankkeelle {{hankeTunnus}} / Du har lagts till i projektet {{hankeTunnus}} / You
-                    have been added to project {{hankeTunnus}}
+                    Sinut on kutsuttu hankkeelle {{hankeTunnus}} / Du har blivit inbjuden till projektet {{hankeTunnus}} / You
+                    have been invited to project {{hankeTunnus}}
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    {{inviterName}} ({{inviterEmail}}) lisäsi sinut hankkeelle <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
-                    Tunnistaudu Haitattomaan alla olevan linkin kautta.
+                    {{inviterName}} ({{inviterEmail}}) on kutsunut sinut hankkeelle <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
+                    Nähdäksesi hankkeen, sinun tulee tunnistautua alla olevan linkin kautta. Huomioithan, että linkki on kertakäyttöinen.
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     <a href="{{baseUrl}}/fi/kutsu?id={{invitationToken}}">{{baseUrl}}/fi/kutsu?id={{invitationToken}}
