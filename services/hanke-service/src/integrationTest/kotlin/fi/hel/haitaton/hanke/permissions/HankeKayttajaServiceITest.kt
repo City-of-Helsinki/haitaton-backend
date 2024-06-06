@@ -7,7 +7,6 @@ import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.containsMatch
-import assertk.assertions.each
 import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
@@ -26,7 +25,6 @@ import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUSTAJA
@@ -1366,30 +1364,11 @@ class HankeKayttajaServiceITest : IntegrationTest() {
         }
     }
 
-    private fun findKayttaja(hankeId: Int, email: String) =
-        hankeKayttajaRepository.findByHankeIdAndSahkopostiIn(hankeId, listOf(email)).first()
-
     private fun Assert<KayttajakutsuEntity>.hasKayttajaWithId(kayttajaId: UUID) =
         prop(KayttajakutsuEntity::hankekayttaja)
             .isNotNull()
             .prop(HankekayttajaEntity::id)
             .isEqualTo(kayttajaId)
-
-    private fun Assert<List<KayttajakutsuEntity>>.areValid() = each { t ->
-        t.prop(KayttajakutsuEntity::id).isNotNull()
-        t.prop(KayttajakutsuEntity::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
-        t.prop(KayttajakutsuEntity::createdAt).isRecent()
-        t.prop(KayttajakutsuEntity::tunniste).matches(Regex(kayttajaTunnistePattern))
-        t.prop(KayttajakutsuEntity::hankekayttaja).isNotNull()
-    }
-
-    private fun Assert<Array<MimeMessage>>.areValidHankeInvitations(
-        inviterName: String,
-        inviterEmail: String,
-        hanke: Hanke
-    ) {
-        each { it.isValidHankeInvitation(inviterName, inviterEmail, hanke.nimi, hanke.hankeTunnus) }
-    }
 
     private fun Assert<MimeMessage>.isValidHankeInvitation(
         inviterName: String,
