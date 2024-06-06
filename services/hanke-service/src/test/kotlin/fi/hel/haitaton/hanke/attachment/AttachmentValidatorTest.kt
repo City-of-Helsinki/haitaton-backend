@@ -65,6 +65,15 @@ class AttachmentValidatorTest {
 
         @Test
         fun `Missing filename should cause exception`() {
+            assertFailure { AttachmentValidator.validFilename(null) }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    hasMessage("Attachment upload exception: Null filename not supported")
+                }
+        }
+
+        @Test
+        fun `Blank filename should cause exception`() {
             assertFailure { AttachmentValidator.validFilename("") }
                 .all {
                     hasClass(AttachmentInvalidException::class)
@@ -97,6 +106,8 @@ class AttachmentValidatorTest {
             "exa%22mple,exa_mple",
             "exa*|%22:<>mple,exa______mple",
             "exa-mple,exa-mple",
+            "../example,___example",
+            "example.,example_",
         )
         fun `Invalid characters should be sanitized`(given: String, expected: String) {
             val filename = "$given.txt"
@@ -114,17 +125,6 @@ class AttachmentValidatorTest {
                 .all {
                     hasClass(AttachmentInvalidException::class)
                     hasMessage("Attachment upload exception: File '$filename' not supported")
-                }
-        }
-
-        @Test
-        fun `PathTraversal should cause an exception`() {
-            val filename = "../example.txt"
-
-            assertFailure { AttachmentValidator.validFilename(filename) }
-                .all {
-                    hasClass(AttachmentInvalidException::class)
-                    hasMessage("Attachment upload exception: File '.._example.txt' not supported")
                 }
         }
 
