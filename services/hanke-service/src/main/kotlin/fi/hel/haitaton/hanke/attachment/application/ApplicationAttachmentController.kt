@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -156,5 +157,13 @@ class ApplicationAttachmentController(
     fun alluDataError(ex: ApplicationInAlluException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2009
+    }
+
+    @ExceptionHandler(ValtakirjaForbiddenException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @Hidden
+    fun valtakirjaForbiddenException(ex: ValtakirjaForbiddenException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI3004
     }
 }

@@ -46,6 +46,7 @@ enum class HankeError(val errorMessage: String) {
     HAI3001("Attachment upload failed"),
     HAI3002("Loading attachment failed"),
     HAI3003("Attachment limit reached"),
+    HAI3004("Valtakirja download forbidden"),
     HAI4001("HankeKayttaja not found"),
     HAI4002("Trying to change own permission"),
     HAI4003("Permission data conflict"),
