@@ -43,30 +43,6 @@ internal class TormaystarkasteluLaskentaServiceTest {
         confirmVerified(tormaysService)
     }
 
-    @ParameterizedTest(name = "Autoliikenneindeksi with default weights should be {0}")
-    @CsvSource("1.0,1,1,1,1,1", "1.9,1,2,2,2,2", "3.0,3,3,3,3,3", "3.9,3,4,4,4,4", "5.0,5,5,5,5,5")
-    fun autoliikenneindeksiCalculatorTest(
-        indeksi: Float,
-        haittaAjanKesto: Int,
-        todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin: Int,
-        kaistajarjestelynPituus: Int,
-        katuluokka: Int,
-        liikennemaara: Int
-    ) {
-        val luokittelu =
-            mapOf(
-                LuokitteluType.HAITTA_AJAN_KESTO to haittaAjanKesto,
-                LuokitteluType.VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN to
-                    todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin,
-                LuokitteluType.AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS to kaistajarjestelynPituus,
-                LuokitteluType.KATULUOKKA to katuluokka,
-                LuokitteluType.AUTOLIIKENTEEN_MAARA to liikennemaara
-            )
-        val autoliikenneindeksi =
-            laskentaService.calculateAutoliikenneindeksiFromLuokittelu(luokittelu)
-        assertThat(autoliikenneindeksi).isEqualTo(indeksi)
-    }
-
     @Nested
     inner class Katuluokkaluokittelu {
         // The parameter is only used to call mocks
@@ -453,7 +429,12 @@ internal class TormaystarkasteluLaskentaServiceTest {
         assertThat(tulos.liikennehaittaindeksi.indeksi).isEqualTo(5.0f)
         assertThat(tulos.liikennehaittaindeksi.tyyppi)
             .isEqualTo(IndeksiType.LINJAAUTOLIIKENNEINDEKSI)
-        assertThat(tulos.autoliikenneindeksi).isEqualTo(2.7f)
+        assertThat(tulos.autoliikenne.haitanKesto).isEqualTo(1)
+        assertThat(tulos.autoliikenne.katuluokka).isEqualTo(4)
+        assertThat(tulos.autoliikenne.liikennemaara).isEqualTo(2)
+        assertThat(tulos.autoliikenne.kaistahaitta).isEqualTo(2)
+        assertThat(tulos.autoliikenne.kaistapituushaitta).isEqualTo(2)
+        assertThat(tulos.autoliikenne.indeksi).isEqualTo(2.3f)
         assertThat(tulos.linjaautoliikenneindeksi).isEqualTo(5.0f)
         assertThat(tulos.raitioliikenneindeksi).isEqualTo(3.0f)
         assertThat(tulos.pyoraliikenneindeksi).isEqualTo(3.0f)

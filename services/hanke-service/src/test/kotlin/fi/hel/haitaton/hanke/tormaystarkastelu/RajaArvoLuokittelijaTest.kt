@@ -35,7 +35,7 @@ class RajaArvoLuokittelijaTest {
         "5000,4",
         "9999,4",
         "10000,5",
-        "18000,5",
+        "25000,5",
     )
     fun liikennemaara(volume: Int, classificationValue: Int) {
         val actual = RajaArvoLuokittelija.liikennemaaraluokka(volume)

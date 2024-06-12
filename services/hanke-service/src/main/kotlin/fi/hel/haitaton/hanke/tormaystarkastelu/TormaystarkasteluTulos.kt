@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankealueEntity
+import fi.hel.haitaton.hanke.roundToOneDecimal
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -18,8 +20,8 @@ import jakarta.persistence.Table
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class TormaystarkasteluTulos(
     @JsonView(ChangeLogView::class)
-    @field:Schema(description = "Car traffic index result")
-    val autoliikenneindeksi: Float,
+    @field:Schema(description = "Car traffic index results")
+    val autoliikenne: Autoliikenneluokittelu,
     //
     @field:Schema(description = "Cycling index result")
     @JsonView(ChangeLogView::class)
@@ -37,7 +39,7 @@ data class TormaystarkasteluTulos(
     val liikennehaittaindeksi: LiikennehaittaindeksiType by lazy {
         val max =
             maxOf(
-                autoliikenneindeksi,
+                autoliikenne.indeksi,
                 pyoraliikenneindeksi,
                 linjaautoliikenneindeksi,
                 raitioliikenneindeksi
@@ -46,10 +48,34 @@ data class TormaystarkasteluTulos(
             when (max) {
                 linjaautoliikenneindeksi -> IndeksiType.LINJAAUTOLIIKENNEINDEKSI
                 raitioliikenneindeksi -> IndeksiType.RAITIOLIIKENNEINDEKSI
-                autoliikenneindeksi -> IndeksiType.AUTOLIIKENNEINDEKSI
+                autoliikenne.indeksi -> IndeksiType.AUTOLIIKENNEINDEKSI
                 else -> IndeksiType.PYORALIIKENNEINDEKSI
             }
         LiikennehaittaindeksiType(max, type)
+    }
+}
+
+@Schema(description = "Car traffic nuisance index and classification")
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Autoliikenneluokittelu(
+    @JsonView(ChangeLogView::class) val haitanKesto: Int,
+    @JsonView(ChangeLogView::class) val katuluokka: Int,
+    @JsonView(ChangeLogView::class) val liikennemaara: Int,
+    @JsonView(ChangeLogView::class) val kaistahaitta: Int,
+    @JsonView(ChangeLogView::class) val kaistapituushaitta: Int,
+) {
+    @get:JsonView(ChangeLogView::class)
+    val indeksi: Float by lazy {
+        if (katuluokka == 0 || liikennemaara == 0) {
+            0.0f
+        } else {
+            (0.1f * haitanKesto +
+                    0.2f * katuluokka +
+                    0.25f * liikennemaara +
+                    0.25f * kaistahaitta +
+                    0.2f * kaistapituushaitta)
+                .roundToOneDecimal()
+        }
     }
 }
 
@@ -71,6 +97,11 @@ enum class IndeksiType {
 class TormaystarkasteluTulosEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Int = 0,
     val autoliikenne: Float,
+    @Column(name = "haitan_kesto") val haitanKesto: Int,
+    val katuluokka: Int,
+    val autoliikennemaara: Int,
+    val kaistahaitta: Int,
+    val kaistapituushaitta: Int,
     val pyoraliikenne: Float,
     val linjaautoliikenne: Float,
     val raitioliikenne: Float,
@@ -80,7 +111,13 @@ class TormaystarkasteluTulosEntity(
 ) {
     fun toDomain(): TormaystarkasteluTulos =
         TormaystarkasteluTulos(
-            autoliikenne,
+            Autoliikenneluokittelu(
+                haitanKesto,
+                katuluokka,
+                autoliikennemaara,
+                kaistahaitta,
+                kaistapituushaitta,
+            ),
             pyoraliikenne,
             linjaautoliikenne,
             raitioliikenne,

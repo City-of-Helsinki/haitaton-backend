@@ -7,16 +7,38 @@ import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.HaittaAjanKestoLuokittelu
+import fi.hel.haitaton.hanke.tormaystarkastelu.Liikennemaaraluokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluKatuluokka
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.ZonedDateTime
 
 object HankealueFactory {
+
+    val TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU =
+        Autoliikenneluokittelu(
+            HaittaAjanKestoLuokittelu.YLI_KOLME_KUUKAUTTA.value,
+            TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS.value,
+            Liikennemaaraluokittelu.LIIKENNEMAARA_ALLE_500.value,
+            VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA.value,
+            AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA.value
+        )
+
+    val TORMAYSTARKASTELU_ZERO_AUTOLIIKENNELUOKITTELU =
+        Autoliikenneluokittelu(
+            1,
+            0, // if either 'katuluokka' or 'liikennemaara' is 0, the index is 0.0
+            0, // if either 'katuluokka' or 'liikennemaara' is 0, the index is 0.0
+            1,
+            1
+        )
 
     fun create(
         id: Int? = 1,
@@ -27,7 +49,7 @@ object HankealueFactory {
         kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? =
             VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
         kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? =
-            AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA,
+            AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA,
         meluHaitta: Meluhaitta? = Meluhaitta.SATUNNAINEN_MELUHAITTA,
         polyHaitta: Polyhaitta? = Polyhaitta.TOISTUVA_POLYHAITTA,
         tarinaHaitta: Tarinahaitta? = Tarinahaitta.JATKUVA_TARINAHAITTA,
@@ -141,7 +163,7 @@ object HankealueFactory {
 
     private fun tormaystarkasteluTulos() =
         TormaystarkasteluTulos(
-            autoliikenneindeksi = 1.25f,
+            autoliikenne = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
             pyoraliikenneindeksi = 2.5f,
             linjaautoliikenneindeksi = 3.75f,
             raitioliikenneindeksi = 3.75f,
@@ -153,7 +175,13 @@ object HankealueFactory {
     ): TormaystarkasteluTulosEntity =
         TormaystarkasteluTulosEntity(
             id = id,
-            autoliikenne = 1.25f,
+            autoliikenne = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU.indeksi,
+            haitanKesto = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU.haitanKesto,
+            katuluokka = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU.katuluokka,
+            autoliikennemaara = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU.liikennemaara,
+            kaistahaitta = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU.kaistahaitta,
+            kaistapituushaitta =
+                TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU.kaistapituushaitta,
             pyoraliikenne = 2.5f,
             linjaautoliikenne = 3.75f,
             raitioliikenne = 3.75f,

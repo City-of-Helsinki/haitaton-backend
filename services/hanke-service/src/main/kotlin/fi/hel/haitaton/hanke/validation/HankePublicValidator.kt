@@ -94,7 +94,7 @@ object HankePublicValidator {
         path: String
     ): ValidationResult =
         validate()
-            .andWhen(tt.autoliikenneindeksi > 0) {
+            .andWhen(tt.autoliikenne.indeksi > 0) {
                 notNullOrBlank(hhs[Haittojenhallintatyyppi.AUTOLIIKENNE], "$path.AUTOLIIKENNE")
             }
             .andWhen(tt.pyoraliikenneindeksi > 0) {

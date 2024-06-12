@@ -16,6 +16,8 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankealueFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
+import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_ZERO_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.factory.modify
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.touch
@@ -404,7 +406,7 @@ class HankePublicValidatorTest {
 
         private val tormaystarkasteluTulos =
             TormaystarkasteluTulos(
-                autoliikenneindeksi = 3f,
+                autoliikenne = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
                 pyoraliikenneindeksi = 3f,
                 linjaautoliikenneindeksi = 3f,
                 raitioliikenneindeksi = 3f
@@ -515,7 +517,9 @@ class HankePublicValidatorTest {
             listOf(
                 Arguments.of(
                     Haittojenhallintatyyppi.AUTOLIIKENNE,
-                    tormaystarkasteluTulos.copy(autoliikenneindeksi = 0f)
+                    tormaystarkasteluTulos.copy(
+                        autoliikenne = TORMAYSTARKASTELU_ZERO_AUTOLIIKENNELUOKITTELU
+                    )
                 ),
                 Arguments.of(
                     Haittojenhallintatyyppi.LINJAAUTOLIIKENNE,
@@ -536,7 +540,7 @@ class HankePublicValidatorTest {
     inner class ValidateHaittojenhallintasuunnitelmaCommonFields {
         private val tormaystarkasteluTulos =
             TormaystarkasteluTulos(
-                autoliikenneindeksi = 3f,
+                autoliikenne = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
                 pyoraliikenneindeksi = 3f,
                 linjaautoliikenneindeksi = 3f,
                 raitioliikenneindeksi = 3f

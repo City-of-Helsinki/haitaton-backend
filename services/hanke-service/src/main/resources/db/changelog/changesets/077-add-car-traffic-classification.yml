@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 077-add-car-traffic-classification
+      author: Teemu Hiltunen
+      changes:
+        - addColumn:
+            tableName: tormaystarkastelutulos
+            columns:
+              - column:
+                  name: haitan_kesto
+                  type: int
+                  constraints:
+                    nullable: false
+                  defaultValue: -1
+              - column:
+                  name: katuluokka
+                  type: int
+                  constraints:
+                    nullable: false
+                  defaultValue: 0
+              - column:
+                  name: autoliikennemaara
+                  type: int
+                  constraints:
+                    nullable: false
+                  defaultValue: 0
+              - column:
+                  name: kaistahaitta
+                  type: int
+                  constraints:
+                    nullable: false
+                  defaultValue: 1
+              - column:
+                  name: kaistapituushaitta
+                  type: int
+                  constraints:
+                    nullable: false
+                  defaultValue: 1

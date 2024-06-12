@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.HankealueEntity
 import fi.hel.haitaton.hanke.SRID
-import fi.hel.haitaton.hanke.roundToOneDecimal
 import kotlin.math.max
 import org.geojson.Crs
 import org.geojson.FeatureCollection
@@ -68,22 +67,22 @@ class TormaystarkasteluLaskentaService(
             alue.geometriat != null)
     }
 
-    private fun calculateAutoliikenneindeksi(alue: HankealueEntity): Float {
-        val luokittelu = mutableMapOf<LuokitteluType, Int>()
-
-        luokittelu[LuokitteluType.HAITTA_AJAN_KESTO] =
+    private fun calculateAutoliikenneindeksi(alue: HankealueEntity): Autoliikenneluokittelu {
+        val haittaajankesto =
             RajaArvoLuokittelija.haittaajankestoluokka(alue.haittaAjanKestoDays()!!)
-        luokittelu[LuokitteluType.VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN] =
-            alue.kaistaHaitta?.value!!
-        luokittelu[LuokitteluType.AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS] =
-            alue.kaistaPituusHaitta?.value!!
-
-        val katuluokkaLuokittelu = katuluokkaluokittelu(setOf(alue.geometriat!!))
-        luokittelu[LuokitteluType.KATULUOKKA] = katuluokkaLuokittelu
-        luokittelu[LuokitteluType.AUTOLIIKENTEEN_MAARA] =
-            liikennemaaraluokittelu(setOf(alue.geometriat!!), katuluokkaLuokittelu)
-
-        return calculateAutoliikenneindeksiFromLuokittelu(luokittelu)
+        val katuluokka = katuluokkaluokittelu(setOf(alue.geometriat!!))
+        val liikennemaara = liikennemaaraluokittelu(setOf(alue.geometriat!!), katuluokka)
+        val kaistahaitta = alue.kaistaHaitta ?: VaikutusAutoliikenteenKaistamaariin.EI_VAIKUTA
+        val kaistapituushaitta =
+            alue.kaistaPituusHaitta
+                ?: AutoliikenteenKaistavaikutustenPituus.EI_VAIKUTA_KAISTAJARJESTELYIHIN
+        return Autoliikenneluokittelu(
+            haittaajankesto,
+            katuluokka,
+            liikennemaara,
+            kaistahaitta.value,
+            kaistapituushaitta.value
+        )
     }
 
     private fun calculateAutoliikenneindeksi(
@@ -91,21 +90,17 @@ class TormaystarkasteluLaskentaService(
         haittaajanKestoDays: Int,
         kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
         kaistapituushaitta: AutoliikenteenKaistavaikutustenPituus,
-    ): Float {
-        val luokittelu = mutableMapOf<LuokitteluType, Int>()
-
-        luokittelu[LuokitteluType.HAITTA_AJAN_KESTO] =
-            RajaArvoLuokittelija.haittaajankestoluokka(haittaajanKestoDays)
-        luokittelu[LuokitteluType.VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN] = kaistahaitta.value
-        luokittelu[LuokitteluType.AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS] =
+    ): Autoliikenneluokittelu {
+        val haittaajankesto = RajaArvoLuokittelija.haittaajankestoluokka(haittaajanKestoDays)
+        val katuluokka = katuluokkaluokittelu(geometria)
+        val liikennemaara = liikennemaaraluokittelu(geometria, katuluokka)
+        return Autoliikenneluokittelu(
+            haittaajankesto,
+            katuluokka,
+            liikennemaara,
+            kaistahaitta.value,
             kaistapituushaitta.value
-
-        val katuluokkaLuokittelu = katuluokkaluokittelu(geometria)
-        luokittelu[LuokitteluType.KATULUOKKA] = katuluokkaLuokittelu
-        luokittelu[LuokitteluType.AUTOLIIKENTEEN_MAARA] =
-            liikennemaaraluokittelu(geometria, katuluokkaLuokittelu)
-
-        return calculateAutoliikenneindeksiFromLuokittelu(luokittelu)
+        )
     }
 
     internal fun katuluokkaluokittelu(geometriaIds: Set<Int>): Int =
@@ -171,14 +166,6 @@ class TormaystarkasteluLaskentaService(
         val maxVolume = maxLiikennemaara(radius) ?: 0
         return RajaArvoLuokittelija.liikennemaaraluokka(maxVolume)
     }
-
-    internal fun calculateAutoliikenneindeksiFromLuokittelu(
-        luokitteluByType: Map<LuokitteluType, Int>
-    ): Float =
-        luokitteluByType
-            .map { (type, index) -> autoliikenneindeksipainot(type).times(index) }
-            .sum()
-            .roundToOneDecimal()
 
     internal fun calculatePyoraliikenneindeksi(geometriaIds: Set<Int>): Float =
         tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriaIds)?.toFloat() ?: 0f
@@ -247,15 +234,4 @@ class TormaystarkasteluLaskentaService(
             }
             .value
             .toFloat()
-
-    companion object {
-        fun autoliikenneindeksipainot(luokittelu: LuokitteluType) =
-            when (luokittelu) {
-                LuokitteluType.HAITTA_AJAN_KESTO -> 0.1f
-                LuokitteluType.VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN -> 0.25f
-                LuokitteluType.AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS -> 0.2f
-                LuokitteluType.KATULUOKKA -> 0.2f
-                LuokitteluType.AUTOLIIKENTEEN_MAARA -> 0.25f
-            }
-    }
 }

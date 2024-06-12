@@ -30,7 +30,15 @@ class HankealueService(
     /** Map by area geometry id to area geometry data. */
     fun geometryMapFrom(alueet: List<HankealueEntity>): Map<Int, Geometriat?> =
         alueet
-            .mapNotNull { it.geometriat }
+            .mapNotNull {
+                // If car traffic nuisance indexes are not yet calculated, calculate them now.
+                it.tormaystarkasteluTulos?.let { tt ->
+                    if (tt.haitanKesto == -1) {
+                        updateTormaystarkastelu(it)
+                    }
+                }
+                it.geometriat
+            }
             .associateBy({ it }, { geometriatService.getGeometriat(it) })
 
     fun copyNonNullHankealueFieldsToEntity(
@@ -101,7 +109,12 @@ class HankealueService(
         alue.tormaystarkasteluTulos =
             tormaystarkasteluService.calculateTormaystarkastelu(alue)?.let {
                 TormaystarkasteluTulosEntity(
-                    autoliikenne = it.autoliikenneindeksi,
+                    autoliikenne = it.autoliikenne.indeksi,
+                    haitanKesto = it.autoliikenne.haitanKesto,
+                    katuluokka = it.autoliikenne.katuluokka,
+                    autoliikennemaara = it.autoliikenne.liikennemaara,
+                    kaistahaitta = it.autoliikenne.kaistahaitta,
+                    kaistapituushaitta = it.autoliikenne.kaistapituushaitta,
                     pyoraliikenne = it.pyoraliikenneindeksi,
                     linjaautoliikenne = it.linjaautoliikenneindeksi,
                     raitioliikenne = it.raitioliikenneindeksi,

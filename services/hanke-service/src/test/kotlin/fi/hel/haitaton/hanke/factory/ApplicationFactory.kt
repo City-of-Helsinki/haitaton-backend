@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
+import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
@@ -117,7 +118,12 @@ class ApplicationFactory(
             geometry: Polygon = GeometriaFactory.secondPolygon,
             area: Double = 100.0,
             tormaystarkasteluTulos: TormaystarkasteluTulos =
-                TormaystarkasteluTulos(1.0f, 3.0f, 5.0f, 5.0f),
+                TormaystarkasteluTulos(
+                    TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
+                    3.0f,
+                    5.0f,
+                    5.0f
+                ),
         ) = Tyoalue(geometry, area, tormaystarkasteluTulos)
 
         fun createBlankApplicationData(applicationType: ApplicationType): HakemusEntityData =
