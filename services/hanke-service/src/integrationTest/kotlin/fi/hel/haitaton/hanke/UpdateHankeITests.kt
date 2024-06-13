@@ -14,6 +14,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isBetween
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isGreaterThan
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotEqualTo
 import assertk.assertions.isNotNull
@@ -56,6 +57,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
+import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus.PITUUS_500_METRIA_TAI_ENEMMAN
 import fi.hel.haitaton.hanke.tormaystarkastelu.IndeksiType
@@ -764,14 +766,21 @@ class UpdateHankeITests(
         assertThat(result.alueet).hasSize(2)
         assertThat(result.alueet.map { it.tormaystarkasteluTulos }).each {
             it.isNotNull().all {
-                prop(TormaystarkasteluTulos::autoliikenneindeksi).isEqualTo(1.4f)
-                prop(TormaystarkasteluTulos::pyoraliikenneindeksi).isEqualTo(0f)
-                prop(TormaystarkasteluTulos::linjaautoliikenneindeksi).isEqualTo(0f)
-                prop(TormaystarkasteluTulos::raitioliikenneindeksi).isEqualTo(0f)
+                prop(TormaystarkasteluTulos::autoliikenne).all {
+                    prop(Autoliikenneluokittelu::haitanKesto).isEqualTo(1)
+                    prop(Autoliikenneluokittelu::katuluokka).isEqualTo(4)
+                    prop(Autoliikenneluokittelu::liikennemaara).isEqualTo(5)
+                    prop(Autoliikenneluokittelu::kaistahaitta).isEqualTo(2)
+                    prop(Autoliikenneluokittelu::kaistapituushaitta).isEqualTo(2)
+                    prop(Autoliikenneluokittelu::indeksi).isEqualTo(3.1f)
+                }
+                prop(TormaystarkasteluTulos::pyoraliikenneindeksi).isEqualTo(3.0f)
+                prop(TormaystarkasteluTulos::linjaautoliikenneindeksi).isEqualTo(3.0f)
+                prop(TormaystarkasteluTulos::raitioliikenneindeksi).isEqualTo(5.0f)
                 prop(TormaystarkasteluTulos::liikennehaittaindeksi).all {
                     prop(LiikennehaittaindeksiType::tyyppi)
-                        .isEqualTo(IndeksiType.AUTOLIIKENNEINDEKSI)
-                    prop(LiikennehaittaindeksiType::indeksi).isEqualTo(1.4f)
+                        .isEqualTo(IndeksiType.RAITIOLIIKENNEINDEKSI)
+                    prop(LiikennehaittaindeksiType::indeksi).isEqualTo(5.0f)
                 }
             }
         }
@@ -780,6 +789,10 @@ class UpdateHankeITests(
     @Test
     fun `recalculates tormaystarkastelu when hankealue is updated`() {
         val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+        val originalTormaystarkasteluTulos = hanke.alueet[0].tormaystarkasteluTulos!!
+        val originalAutoliikenteenIndeksi = originalTormaystarkasteluTulos.autoliikenne.indeksi
+        assertThat(originalTormaystarkasteluTulos.autoliikenne.kaistahaitta).isEqualTo(2)
+        assertThat(originalTormaystarkasteluTulos.autoliikenne.kaistapituushaitta).isEqualTo(2)
         hanke.alueet[0] =
             HankealueFactory.create(
                 kaistaHaitta = VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA,
@@ -793,8 +806,19 @@ class UpdateHankeITests(
             .single()
             .prop(SavedHankealue::tormaystarkasteluTulos)
             .isNotNull()
-            .prop(TormaystarkasteluTulos::autoliikenneindeksi)
-            .isEqualTo(2.3f)
+            .prop(TormaystarkasteluTulos::autoliikenne)
+            .all {
+                prop(Autoliikenneluokittelu::haitanKesto)
+                    .isEqualTo(originalTormaystarkasteluTulos.autoliikenne.haitanKesto)
+                prop(Autoliikenneluokittelu::katuluokka)
+                    .isEqualTo(originalTormaystarkasteluTulos.autoliikenne.katuluokka)
+                prop(Autoliikenneluokittelu::liikennemaara)
+                    .isEqualTo(originalTormaystarkasteluTulos.autoliikenne.liikennemaara)
+                prop(Autoliikenneluokittelu::kaistahaitta).isEqualTo(5)
+                prop(Autoliikenneluokittelu::kaistapituushaitta).isEqualTo(5)
+                // increasing lane nuisance and lane length nuisance should increase the index
+                prop(Autoliikenneluokittelu::indeksi).isGreaterThan(originalAutoliikenteenIndeksi)
+            }
     }
 
     @Test

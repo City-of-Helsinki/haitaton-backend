@@ -1,13 +1,5 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-enum class LuokitteluType {
-    HAITTA_AJAN_KESTO,
-    VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN,
-    AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS,
-    KATULUOKKA,
-    AUTOLIIKENTEEN_MAARA
-}
-
 interface Luokittelu {
     val value: Int
 }

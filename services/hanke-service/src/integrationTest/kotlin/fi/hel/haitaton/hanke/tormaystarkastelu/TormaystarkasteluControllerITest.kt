@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.Called
@@ -184,6 +185,12 @@ class TormaystarkasteluControllerITest(
             )
         }
 
-        private fun createTulos() = TormaystarkasteluTulos(1.5f, 2.4f, 7.1f, 5.0f)
+        private fun createTulos() =
+            TormaystarkasteluTulos(
+                TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
+                2.4f,
+                7.1f,
+                5.0f
+            )
     }
 }

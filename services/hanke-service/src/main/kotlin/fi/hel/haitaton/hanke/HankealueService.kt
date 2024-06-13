@@ -101,7 +101,12 @@ class HankealueService(
         alue.tormaystarkasteluTulos =
             tormaystarkasteluService.calculateTormaystarkastelu(alue)?.let {
                 TormaystarkasteluTulosEntity(
-                    autoliikenne = it.autoliikenneindeksi,
+                    autoliikenne = it.autoliikenne.indeksi,
+                    haitanKesto = it.autoliikenne.haitanKesto,
+                    katuluokka = it.autoliikenne.katuluokka,
+                    autoliikennemaara = it.autoliikenne.liikennemaara,
+                    kaistahaitta = it.autoliikenne.kaistahaitta,
+                    kaistapituushaitta = it.autoliikenne.kaistapituushaitta,
                     pyoraliikenne = it.pyoraliikenneindeksi,
                     linjaautoliikenne = it.linjaautoliikenneindeksi,
                     raitioliikenne = it.raitioliikenneindeksi,
