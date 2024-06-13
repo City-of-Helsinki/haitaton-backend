@@ -98,6 +98,25 @@ sealed class ValidationResult {
         return this
     }
 
+    /**
+     * If either this or the validated function is ok, return ok.
+     *
+     * If both have errors, return all errors.
+     */
+    fun or(f: () -> ValidationResult): ValidationResult {
+        if (isOk()) {
+            return this
+        }
+
+        val other = f()
+        if (other.isOk()) {
+            return other
+        }
+
+        this.errorPaths.addAll(other.errorPaths())
+        return this
+    }
+
     /** Run the validation only when the value is not null. */
     fun <T> whenNotNull(value: T?, f: (T) -> ValidationResult): ValidationResult =
         if (value != null) this.and { f(value) } else this
