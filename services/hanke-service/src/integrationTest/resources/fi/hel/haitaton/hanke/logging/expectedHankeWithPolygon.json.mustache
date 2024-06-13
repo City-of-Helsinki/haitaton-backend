@@ -59,24 +59,24 @@
                 "coordinates": [
                   [
                     [
-                      25493861.3,
-                      6679741.68
+                      2.549669725e7,
+                      6673078.21
                     ],
                     [
-                      25493853.86,
-                      6679745.75
+                      2.549681001e7,
+                      6673080.58
                     ],
                     [
-                      25493849.79,
-                      6679738.31
+                      2.549681063e7,
+                      6673045.68
                     ],
                     [
-                      25493857.23,
-                      6679734.23
+                      2.54967012e7,
+                      6673042.13
                     ],
                     [
-                      25493861.3,
-                      6679741.68
+                      2.549669725e7,
+                      6673078.21
                     ]
                   ]
                 ]
@@ -87,19 +87,26 @@
         "version": {{geometriaVersion}}
       },
       "kaistaHaitta": "VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA",
-      "kaistaPituusHaitta": "PITUUS_100_499_METRIA",
+      "kaistaPituusHaitta": "PITUUS_ALLE_10_METRIA",
       "meluHaitta": "SATUNNAINEN_MELUHAITTA",
       "polyHaitta": "TOISTUVA_POLYHAITTA",
       "tarinaHaitta": "JATKUVA_TARINAHAITTA",
       "nimi": {{#alueNimi}}"{{alueNimi}}"{{/alueNimi}}{{^alueNimi}}null{{/alueNimi}},
       {{#tormaystarkasteluTulos}}"tormaystarkasteluTulos": {
-        "autoliikenneindeksi": 1.4,
-        "pyoraliikenneindeksi": 0.0,
-        "linjaautoliikenneindeksi": 0.0,
-        "raitioliikenneindeksi": 0.0,
+        "autoliikenne": {
+          "haitanKesto": 1,
+          "katuluokka": 4,
+          "liikennemaara": 5,
+          "kaistahaitta": 2,
+          "kaistapituushaitta": 2,
+          "indeksi": 3.1
+        },
+        "pyoraliikenneindeksi": 3.0,
+        "linjaautoliikenneindeksi": 3.0,
+        "raitioliikenneindeksi": 5.0,
         "liikennehaittaindeksi": {
-          "indeksi": 1.4,
-          "tyyppi": "AUTOLIIKENNEINDEKSI"
+          "indeksi": 5.0,
+          "tyyppi": "RAITIOLIIKENNEINDEKSI"
         }
       },{{/tormaystarkasteluTulos}}
       "haittojenhallintasuunnitelma": {

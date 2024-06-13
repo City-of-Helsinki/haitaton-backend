@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 
 object HankeMapper {
@@ -83,7 +84,19 @@ object HankeMapper {
             null
         } else {
             TormaystarkasteluTulos(
-                autoliikenneindeksi = tulokset.maxOf { it.autoliikenne },
+                autoliikenne =
+                    tulokset
+                        .maxBy { it.autoliikenne }
+                        .let {
+                            Autoliikenneluokittelu(
+                                it.autoliikenne,
+                                it.haitanKesto,
+                                it.katuluokka,
+                                it.autoliikennemaara,
+                                it.kaistahaitta,
+                                it.kaistapituushaitta
+                            )
+                        },
                 pyoraliikenneindeksi = tulokset.maxOf { it.pyoraliikenne },
                 linjaautoliikenneindeksi = tulokset.maxOf { it.linjaautoliikenne },
                 raitioliikenneindeksi = tulokset.maxOf { it.raitioliikenne },

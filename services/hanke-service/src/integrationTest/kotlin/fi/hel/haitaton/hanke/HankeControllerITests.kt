@@ -15,6 +15,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withToteuttaja
 import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -130,14 +131,14 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
         @Test
         fun `Returns tormaystarkastelutulos with the hanke if it has been calculated`() {
-            val autoliikenneindeksi = 4.3f
+            val autoliikenne = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
             val pyoraliikenneindeksi = 2.1f
             val linjaautoliikenneindeksi = 1.4f
             val raitioliikenneindeksi = 3f
             val hanke =
                 HankeFactory.create(hankeTunnus = HANKE_TUNNUS)
                     .withTormaystarkasteluTulos(
-                        autoliikenneindeksi = autoliikenneindeksi,
+                        autoliikenne = autoliikenne,
                         pyoraliikenneindeksi = pyoraliikenneindeksi,
                         linjaautoliikenneindeksi = linjaautoliikenneindeksi,
                         raitioliikenneindeksi = raitioliikenneindeksi
@@ -150,8 +151,28 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             get(url)
                 .andExpect(status().isOk)
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.autoliikenneindeksi")
-                        .value(autoliikenneindeksi)
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.haitanKesto")
+                        .value(autoliikenne.haitanKesto)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.katuluokka")
+                        .value(autoliikenne.katuluokka)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.liikennemaara")
+                        .value(autoliikenne.liikennemaara)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.kaistahaitta")
+                        .value(autoliikenne.kaistahaitta)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.kaistapituushaitta")
+                        .value(autoliikenne.kaistapituushaitta)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.indeksi")
+                        .value(autoliikenne.indeksi)
                 )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.pyoraliikenneindeksi")
@@ -165,14 +186,14 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     jsonPath("tormaystarkasteluTulos.raitioliikenneindeksi")
                         .value(raitioliikenneindeksi)
                 )
-                // In this case, autoliikenneindeksi has the highest value
+                // In this case, raitioliikenneindeksi has the highest value
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.liikennehaittaindeksi.indeksi")
-                        .value(autoliikenneindeksi)
+                        .value(raitioliikenneindeksi)
                 )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.liikennehaittaindeksi.tyyppi")
-                        .value(IndeksiType.AUTOLIIKENNEINDEKSI.name)
+                        .value(IndeksiType.RAITIOLIIKENNEINDEKSI.name)
                 )
 
             verifySequence {

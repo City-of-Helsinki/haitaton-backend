@@ -20,11 +20,13 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
+import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.test.USERNAME
+import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
 import org.springframework.stereotype.Component
@@ -236,14 +238,14 @@ class HankeFactory(
         }
 
         fun Hanke.withTormaystarkasteluTulos(
-            autoliikenneindeksi: Float = 1f,
+            autoliikenne: Autoliikenneluokittelu = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
             pyoraliikenneindeksi: Float = 1f,
             linjaautoliikenneindeksi: Float = 1f,
             raitioliikenneindeksi: Float = 1f,
         ): Hanke {
             this.tormaystarkasteluTulos =
                 TormaystarkasteluTulos(
-                    autoliikenneindeksi,
+                    autoliikenne,
                     pyoraliikenneindeksi,
                     linjaautoliikenneindeksi,
                     raitioliikenneindeksi,
