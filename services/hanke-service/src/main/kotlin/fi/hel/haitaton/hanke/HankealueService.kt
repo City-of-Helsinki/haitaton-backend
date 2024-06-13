@@ -30,15 +30,7 @@ class HankealueService(
     /** Map by area geometry id to area geometry data. */
     fun geometryMapFrom(alueet: List<HankealueEntity>): Map<Int, Geometriat?> =
         alueet
-            .mapNotNull {
-                // If car traffic nuisance indexes are not yet calculated, calculate them now.
-                it.tormaystarkasteluTulos?.let { tt ->
-                    if (tt.haitanKesto == -1) {
-                        updateTormaystarkastelu(it)
-                    }
-                }
-                it.geometriat
-            }
+            .mapNotNull { it.geometriat }
             .associateBy({ it }, { geometriatService.getGeometriat(it) })
 
     fun copyNonNullHankealueFieldsToEntity(

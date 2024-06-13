@@ -538,13 +538,6 @@ class HankePublicValidatorTest {
 
     @Nested
     inner class ValidateHaittojenhallintasuunnitelmaCommonFields {
-        private val tormaystarkasteluTulos =
-            TormaystarkasteluTulos(
-                autoliikenne = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
-                pyoraliikenneindeksi = 3f,
-                linjaautoliikenneindeksi = 3f,
-                raitioliikenneindeksi = 3f
-            )
 
         @ParameterizedTest
         @ValueSource(strings = ["", BLANK])

@@ -34,8 +34,8 @@ object HankealueFactory {
     val TORMAYSTARKASTELU_ZERO_AUTOLIIKENNELUOKITTELU =
         Autoliikenneluokittelu(
             1,
-            0, // if either 'katuluokka' or 'liikennemaara' is 0, the index is 0.0
-            0, // if either 'katuluokka' or 'liikennemaara' is 0, the index is 0.0
+            0, // if both 'katuluokka' and 'liikennemaara' is 0, the index is 0.0
+            0, // if both 'katuluokka' and 'liikennemaara' is 0, the index is 0.0
             1,
             1
         )

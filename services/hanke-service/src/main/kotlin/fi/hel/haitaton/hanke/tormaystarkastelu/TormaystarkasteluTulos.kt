@@ -58,25 +58,47 @@ data class TormaystarkasteluTulos(
 @Schema(description = "Car traffic nuisance index and classification")
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Autoliikenneluokittelu(
+    @JsonView(ChangeLogView::class) val indeksi: Float,
     @JsonView(ChangeLogView::class) val haitanKesto: Int,
     @JsonView(ChangeLogView::class) val katuluokka: Int,
     @JsonView(ChangeLogView::class) val liikennemaara: Int,
     @JsonView(ChangeLogView::class) val kaistahaitta: Int,
     @JsonView(ChangeLogView::class) val kaistapituushaitta: Int,
 ) {
-    @get:JsonView(ChangeLogView::class)
-    val indeksi: Float by lazy {
-        if (katuluokka == 0 || liikennemaara == 0) {
-            0.0f
-        } else {
-            (0.1f * haitanKesto +
-                    0.2f * katuluokka +
-                    0.25f * liikennemaara +
-                    0.25f * kaistahaitta +
-                    0.2f * kaistapituushaitta)
-                .roundToOneDecimal()
-        }
+    companion object {
+        fun calculateIndeksi(
+            haitanKesto: Int,
+            katuluokka: Int,
+            liikennemaara: Int,
+            kaistahaitta: Int,
+            kaistapituushaitta: Int,
+        ): Float =
+            if (katuluokka == 0 && liikennemaara == 0) {
+                0.0f
+            } else {
+                (0.1f * haitanKesto +
+                        0.2f * katuluokka +
+                        0.25f * liikennemaara +
+                        0.25f * kaistahaitta +
+                        0.2f * kaistapituushaitta)
+                    .roundToOneDecimal()
+            }
     }
+
+    constructor(
+        haitanKesto: Int,
+        katuluokka: Int,
+        liikennemaara: Int,
+        kaistahaitta: Int,
+        kaistapituushaitta: Int,
+    ) : this(
+        calculateIndeksi(haitanKesto, katuluokka, liikennemaara, kaistahaitta, kaistapituushaitta),
+        haitanKesto,
+        katuluokka,
+        liikennemaara,
+        kaistahaitta,
+        kaistapituushaitta,
+    )
 }
 
 @Schema(description = "Traffic nuisance index type")
@@ -112,6 +134,7 @@ class TormaystarkasteluTulosEntity(
     fun toDomain(): TormaystarkasteluTulos =
         TormaystarkasteluTulos(
             Autoliikenneluokittelu(
+                autoliikenne,
                 haitanKesto,
                 katuluokka,
                 autoliikennemaara,

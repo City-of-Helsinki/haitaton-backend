@@ -89,6 +89,7 @@ object HankeMapper {
                         .maxBy { it.autoliikenne }
                         .let {
                             Autoliikenneluokittelu(
+                                it.autoliikenne,
                                 it.haitanKesto,
                                 it.katuluokka,
                                 it.autoliikennemaara,

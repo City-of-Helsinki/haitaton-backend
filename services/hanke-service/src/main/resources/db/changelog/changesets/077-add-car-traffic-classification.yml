@@ -2,7 +2,10 @@ databaseChangeLog:
   - changeSet:
       id: 077-add-car-traffic-classification
       author: Teemu Hiltunen
+      comment: Deletes all existing tormaystarkastelutulos rows, adds the new car traffic nuisance classification columns and sets the status of all projects to DRAFT.
       changes:
+        - delete:
+            tableName: tormaystarkastelutulos
         - addColumn:
             tableName: tormaystarkastelutulos
             columns:
@@ -11,28 +14,29 @@ databaseChangeLog:
                   type: int
                   constraints:
                     nullable: false
-                  defaultValue: -1
               - column:
                   name: katuluokka
                   type: int
                   constraints:
                     nullable: false
-                  defaultValue: 0
               - column:
                   name: autoliikennemaara
                   type: int
                   constraints:
                     nullable: false
-                  defaultValue: 0
               - column:
                   name: kaistahaitta
                   type: int
                   constraints:
                     nullable: false
-                  defaultValue: 1
               - column:
                   name: kaistapituushaitta
                   type: int
                   constraints:
                     nullable: false
-                  defaultValue: 1
+        - update:
+            tableName: hanke
+            columns:
+              - column:
+                  name: status
+                  value: "DRAFT"
