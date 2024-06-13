@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.HankealueEntity
 import fi.hel.haitaton.hanke.SRID
+import fi.hel.haitaton.hanke.roundToOneDecimal
 import kotlin.math.max
 import org.geojson.Crs
 import org.geojson.FeatureCollection
@@ -234,4 +235,24 @@ class TormaystarkasteluLaskentaService(
             }
             .value
             .toFloat()
+
+    companion object {
+        fun calculateAutoliikenneindeksi(
+            haitanKesto: Int,
+            katuluokka: Int,
+            liikennemaara: Int,
+            kaistahaitta: Int,
+            kaistapituushaitta: Int,
+        ): Float =
+            if (katuluokka == 0 && liikennemaara == 0) {
+                0.0f
+            } else {
+                (0.1f * haitanKesto +
+                        0.2f * katuluokka +
+                        0.25f * liikennemaara +
+                        0.25f * kaistahaitta +
+                        0.2f * kaistapituushaitta)
+                    .roundToOneDecimal()
+            }
+    }
 }

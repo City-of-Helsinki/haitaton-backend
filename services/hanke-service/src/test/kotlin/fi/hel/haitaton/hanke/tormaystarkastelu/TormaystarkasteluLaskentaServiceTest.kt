@@ -468,4 +468,51 @@ internal class TormaystarkasteluLaskentaServiceTest {
 
         return alue
     }
+
+    @Nested
+    inner class Autoliikenneindeksi {
+        @ParameterizedTest(name = "Autoliikenneindeksi for {0},{1},{2},{3},{4} should be {5}")
+        @CsvSource(
+            "1,0,1,1,1,0.8",
+            "1,1,0,1,1,0.8",
+            "1,1,1,1,1,1.0",
+            "1,2,2,2,2,1.9",
+            "3,3,3,3,3,3.0",
+            "3,4,4,4,4,3.9",
+            "5,5,5,5,5,5.0"
+        )
+        fun `calculate index`(
+            haittaAjanKesto: Int,
+            katuluokka: Int,
+            liikennemaara: Int,
+            kaistahaitta: Int,
+            kaistapituushaitta: Int,
+            indeksi: Float,
+        ) {
+            assertThat(
+                    TormaystarkasteluLaskentaService.calculateAutoliikenneindeksi(
+                        haittaAjanKesto,
+                        katuluokka,
+                        liikennemaara,
+                        kaistahaitta,
+                        kaistapituushaitta,
+                    )
+                )
+                .isEqualTo(indeksi)
+        }
+
+        @Test
+        fun `index should be 0 when there is no street class nor traffic`() {
+            assertThat(
+                    TormaystarkasteluLaskentaService.calculateAutoliikenneindeksi(
+                        5,
+                        0,
+                        0,
+                        5,
+                        5,
+                    )
+                )
+                .isEqualTo(0.0f)
+        }
+    }
 }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankealueEntity
-import fi.hel.haitaton.hanke.roundToOneDecimal
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService.Companion.calculateAutoliikenneindeksi
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -65,26 +65,6 @@ data class Autoliikenneluokittelu(
     @JsonView(ChangeLogView::class) val kaistahaitta: Int,
     @JsonView(ChangeLogView::class) val kaistapituushaitta: Int,
 ) {
-    companion object {
-        fun calculateIndeksi(
-            haitanKesto: Int,
-            katuluokka: Int,
-            liikennemaara: Int,
-            kaistahaitta: Int,
-            kaistapituushaitta: Int,
-        ): Float =
-            if (katuluokka == 0 && liikennemaara == 0) {
-                0.0f
-            } else {
-                (0.1f * haitanKesto +
-                        0.2f * katuluokka +
-                        0.25f * liikennemaara +
-                        0.25f * kaistahaitta +
-                        0.2f * kaistapituushaitta)
-                    .roundToOneDecimal()
-            }
-    }
-
     constructor(
         haitanKesto: Int,
         katuluokka: Int,
@@ -92,7 +72,13 @@ data class Autoliikenneluokittelu(
         kaistahaitta: Int,
         kaistapituushaitta: Int,
     ) : this(
-        calculateIndeksi(haitanKesto, katuluokka, liikennemaara, kaistahaitta, kaistapituushaitta),
+        calculateAutoliikenneindeksi(
+            haitanKesto,
+            katuluokka,
+            liikennemaara,
+            kaistahaitta,
+            kaistapituushaitta
+        ),
         haitanKesto,
         katuluokka,
         liikennemaara,
