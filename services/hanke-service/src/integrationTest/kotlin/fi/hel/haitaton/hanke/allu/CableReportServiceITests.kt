@@ -8,7 +8,11 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
+import assertk.assertions.isZero
 import assertk.assertions.prop
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
 import fi.hel.haitaton.hanke.factory.AlluFactory
@@ -16,6 +20,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
+import java.time.Instant
 import java.time.ZonedDateTime
 import okhttp3.MultipartReader
 import okhttp3.mockwebserver.MockResponse
@@ -45,6 +50,8 @@ class CableReportServiceITests {
     private lateinit var mockWebServer: MockWebServer
     private lateinit var service: CableReportService
 
+    private lateinit var authToken: String
+
     @BeforeEach
     fun setup() {
         mockWebServer = MockWebServer()
@@ -52,12 +59,77 @@ class CableReportServiceITests {
         val baseUrl = mockWebServer.url("/").toUrl().toString()
         val properties = AlluProperties(baseUrl, "fake_username", "any_password", 2)
         val webClient = webClientWithLargeBuffer(WebClient.builder())
+        authToken = createMockToken()
         service = CableReportService(webClient, properties)
+        service.authToken = authToken
+        service.authExpiration = Instant.now().plusSeconds(3600)
+    }
+
+    @Nested
+    inner class GetToken {
+        @Test
+        fun `doesn't renew token when it's not expired`() {
+            val token = service.getToken()
+
+            assertThat(mockWebServer.requestCount).isZero()
+            assertThat(token).isEqualTo(authToken)
+        }
+
+        @Test
+        fun `renews token when it's not yet set`() {
+            service.authToken = null
+            val mockToken = addStubbedLoginResponse()
+
+            val token = service.getToken()
+
+            assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
+            assertThat(token).isEqualTo(mockToken)
+            assertThat(service.authToken).isEqualTo(mockToken)
+            assertThat(service.authExpiration!!.isAfter(Instant.now())).isTrue()
+        }
+
+        @Test
+        fun `renews token when it's expiration date is null`() {
+            service.authExpiration = null
+            val mockToken = addStubbedLoginResponse()
+
+            val token = service.getToken()
+
+            assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
+            assertThat(token).isEqualTo(mockToken)
+            assertThat(service.authToken).isEqualTo(mockToken)
+            assertThat(service.authExpiration!!.isAfter(Instant.now())).isTrue()
+        }
+
+        @Test
+        fun `renews token when it's expired`() {
+            service.authExpiration = Instant.now().minusSeconds(6 * 60)
+            val mockToken = addStubbedLoginResponse()
+
+            val token = service.getToken()
+
+            assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
+            assertThat(token).isEqualTo(mockToken)
+            assertThat(service.authToken).isEqualTo(mockToken)
+            assertThat(service.authExpiration!!.isAfter(Instant.now())).isTrue()
+        }
+
+        @Test
+        fun `renews token when it's about to expire, but has not expired yet`() {
+            service.authExpiration = Instant.now().plusSeconds(4 * 60)
+            val mockToken = addStubbedLoginResponse()
+
+            val token = service.getToken()
+
+            assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
+            assertThat(token).isEqualTo(mockToken)
+            assertThat(service.authToken).isEqualTo(mockToken)
+            assertThat(service.authExpiration!!.isAfter(Instant.now())).isTrue()
+        }
     }
 
     @Test
     fun testCreate() {
-        val stubbedBearer = addStubbedLoginResponse()
         val stubbedApplicationId = 1337
         val applicationIdResponse =
             MockResponse()
@@ -70,17 +142,15 @@ class CableReportServiceITests {
         val actualApplicationId = service.create(application)
 
         assertThat(actualApplicationId).isEqualTo(stubbedApplicationId)
-        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
         val request = mockWebServer.takeRequest()
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/v2/cablereports")
-        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
+        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
     }
 
     @CsvSource("pdf,application/pdf", "png,image/png")
     @ParameterizedTest(name = "{displayName} ({arguments})")
     fun `addAttachment should upload attachment`(extension: String, contentType: String) {
-        addStubbedLoginResponse()
         val alluId = 123
         val metadata =
             AlluFactory.createAttachmentMetadata(mimeType = contentType, name = "file.$extension")
@@ -91,7 +161,6 @@ class CableReportServiceITests {
 
         service.addAttachment(alluId, attachment)
 
-        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
         val request = mockWebServer.takeRequest()
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/v2/applications/$alluId/attachments")
@@ -101,7 +170,6 @@ class CableReportServiceITests {
 
     @Test
     fun `addAttachments should upload attachments successfully`() {
-        addStubbedLoginResponse()
         val alluId = 123
         val file = "test file content".toByteArray()
         val attachment = ApplicationAttachmentFactory.create(applicationId = 123456)
@@ -111,7 +179,6 @@ class CableReportServiceITests {
 
         service.addAttachments(alluId, attachments) { _ -> file }
 
-        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
         attachments.forEach { _ ->
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
@@ -121,7 +188,6 @@ class CableReportServiceITests {
 
     @Test
     fun testCreateErrorHandling() {
-        val stubbedBearer = addStubbedLoginResponse()
         val applicationIdResponse =
             MockResponse()
                 .setResponseCode(400)
@@ -133,11 +199,10 @@ class CableReportServiceITests {
 
         assertThrows<WebClientResponseException.BadRequest> { service.create(getTestApplication()) }
 
-        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
         val createRequest = mockWebServer.takeRequest()
         assertThat(createRequest.method).isEqualTo("POST")
         assertThat(createRequest.path).isEqualTo("/v2/cablereports")
-        assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
+        assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $authToken")
     }
 
     @Nested
@@ -153,7 +218,6 @@ class CableReportServiceITests {
 
         @Test
         fun `returns PDF file as bytes`() {
-            val stubbedBearer = addStubbedLoginResponse()
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
@@ -164,16 +228,14 @@ class CableReportServiceITests {
             val response = service.getDecisionPdf(12)
 
             assertThat(response).isEqualTo(pdfBytes)
-            assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("GET")
             assertThat(createRequest.path).isEqualTo("/v2/cablereports/12/decision")
-            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
+            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $authToken")
         }
 
         @Test
         fun `returns big PDF file as bytes`() {
-            addStubbedLoginResponse()
             val content = Buffer()
             repeat(1000000 / pdfBytes.size + 1) { content.write(pdfBytes) }
             mockWebServer.enqueue(
@@ -190,7 +252,6 @@ class CableReportServiceITests {
 
         @Test
         fun `throws ApplicationDecisionNotFoundException on 404`() {
-            addStubbedLoginResponse()
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(404)
@@ -206,7 +267,6 @@ class CableReportServiceITests {
 
         @Test
         fun `throws WebClientResponseException on other error codes`() {
-            addStubbedLoginResponse()
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(500)
@@ -219,7 +279,6 @@ class CableReportServiceITests {
 
         @Test
         fun `throws AlluApiException if the response does not have PDF Content-Type`() {
-            addStubbedLoginResponse()
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
@@ -232,7 +291,6 @@ class CableReportServiceITests {
 
         @Test
         fun `throws AlluApiException if the response body is empty`() {
-            addStubbedLoginResponse()
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
@@ -251,7 +309,6 @@ class CableReportServiceITests {
             val alluids = listOf(12, 13)
             val eventsAfter = ZonedDateTime.parse("2022-10-10T15:25:34.981654Z")
             val histories = listOf(ApplicationHistoryFactory.create(applicationId = 12))
-            val stubbedBearer = addStubbedLoginResponse()
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
@@ -262,18 +319,16 @@ class CableReportServiceITests {
             val response = service.getApplicationStatusHistories(alluids, eventsAfter)
 
             assertThat(response).isEqualTo(histories)
-            assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("POST")
             assertThat(createRequest.path).isEqualTo("/v2/applicationhistory")
-            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
+            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $authToken")
         }
 
         @Test
         fun `doesn't panic on empty response`() {
             val alluids = listOf(12, 13)
             val eventsAfter = ZonedDateTime.parse("2022-10-10T15:25:34.981654Z")
-            addStubbedLoginResponse()
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
@@ -290,7 +345,6 @@ class CableReportServiceITests {
         fun `throws error on bad status`() {
             val alluids = listOf(12, 13)
             val eventsAfter = ZonedDateTime.parse("2022-10-10T15:25:34.981654Z")
-            addStubbedLoginResponse()
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(404)
@@ -316,7 +370,8 @@ class CableReportServiceITests {
     }
 
     private fun addStubbedLoginResponse(): String {
-        val stubbedBearer = "123dynamite-789wohoo"
+        val stubbedBearer = createMockToken()
+
         val loginResponse =
             MockResponse()
                 .setResponseCode(200)
@@ -325,6 +380,11 @@ class CableReportServiceITests {
         mockWebServer.enqueue(loginResponse)
         return stubbedBearer
     }
+
+    private fun createMockToken(secondsToAdd: Long = 3600) =
+        JWT.create()
+            .withExpiresAt(Instant.now().plusSeconds(secondsToAdd))
+            .sign(Algorithm.HMAC256("secret"))
 
     private fun getTestApplication(): AlluCableReportApplicationData {
         val customer =

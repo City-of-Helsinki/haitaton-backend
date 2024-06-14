@@ -1,8 +1,10 @@
 package fi.hel.haitaton.hanke.allu
 
+import com.auth0.jwt.JWT
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
 import java.time.Duration.ofSeconds
+import java.time.Instant
 import java.time.ZonedDateTime
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -33,10 +35,30 @@ class CableReportService(
     private val properties: AlluProperties,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
+    var authToken: String? = null
+    var authExpiration: Instant? = null
 
     private val baseUrl = properties.baseUrl
     private val defaultTimeout = ofSeconds(30)
     private val attachmentUploadTimeout = ofSeconds(55)
+
+    fun getToken(): String =
+        authToken?.let {
+            if (authExpiration?.isAfter(Instant.now().plusSeconds(300)) == true) {
+                it
+            } else null
+        } ?: refreshToken()
+
+    private fun refreshToken(): String {
+        authToken = null
+        authExpiration = null
+        val token = login()
+        val decodedJWT = JWT.decode(token)
+        authToken = token
+        authExpiration = decodedJWT.expiresAtAsInstant
+        logger.info { "Renewed Allu login token with expiration date: $authExpiration" }
+        return token
+    }
 
     private fun login(): String {
         try {
@@ -161,7 +183,7 @@ class CableReportService(
 
     /** Send an individual attachment. */
     fun addAttachment(alluApplicationId: Int, attachment: Attachment) {
-        val token = login()
+        val token = getToken()
         postAttachment(alluApplicationId, token, attachment)
     }
 
@@ -173,7 +195,7 @@ class CableReportService(
     ) = runBlocking {
         val semaphore = Semaphore(properties.concurrentUploads)
         withContext(ioDispatcher) {
-            val token = login()
+            val token = getToken()
             attachments.forEach {
                 launch {
                     semaphore.withPermit {
@@ -330,7 +352,7 @@ class CableReportService(
         path: String,
         accept: MediaType = MediaType.APPLICATION_JSON,
     ): WebClient.ResponseSpec {
-        val token = login()
+        val token = getToken()
         return webClient
             .get()
             .uri("$baseUrl/v2/$path")
@@ -340,7 +362,7 @@ class CableReportService(
     }
 
     private fun postJson(path: String, body: Any): WebClient.ResponseSpec {
-        val token = login()
+        val token = getToken()
         return webClient
             .post()
             .uri("$baseUrl/v2/$path")
@@ -357,7 +379,7 @@ class CableReportService(
     private fun putWithoutBody(path: String): WebClient.ResponseSpec = put(path).retrieve()
 
     private fun put(path: String): WebClient.RequestBodySpec {
-        val token = login()
+        val token = getToken()
         return webClient
             .put()
             .uri("$baseUrl/v2/$path")
