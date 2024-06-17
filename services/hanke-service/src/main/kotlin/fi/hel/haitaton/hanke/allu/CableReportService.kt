@@ -22,13 +22,13 @@ import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
-import org.springframework.web.reactive.function.client.body
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 
 private val logger = KotlinLogging.logger {}
 
 const val HAITATON_SYSTEM = "Haitaton järjestelmä"
+const val AUTH_TOKEN_SAFETY_MARGIN_SECONDS = 5L * 60L
 
 class CableReportService(
     private val webClient: WebClient,
@@ -44,7 +44,8 @@ class CableReportService(
 
     fun getToken(): String =
         authToken?.let {
-            if (authExpiration?.isAfter(Instant.now().plusSeconds(300)) == true) {
+            val expirationCutoff = Instant.now().plusSeconds(AUTH_TOKEN_SAFETY_MARGIN_SECONDS)
+            if (authExpiration?.isAfter(expirationCutoff) == true) {
                 it
             } else null
         } ?: refreshToken()
@@ -68,7 +69,7 @@ class CableReportService(
                 .uri(uri)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.TEXT_PLAIN)
-                .body(Mono.just(LoginInfo(properties.username, properties.password)))
+                .bodyValue(LoginInfo(properties.username, properties.password))
                 .retrieve()
                 .bodyToMono(String::class.java)
                 .timeout(defaultTimeout)
@@ -108,7 +109,7 @@ class CableReportService(
     ): List<ApplicationHistory> {
         logger.info { "Fetching application status histories." }
         val search = ApplicationHistorySearch(alluApplicationIds, eventsAfter)
-        return postJson("applicationhistory", search)
+        return post("applicationhistory", search)
             // API returns an array of ApplicationHistory objects (one for each requested
             // applicationId)
             .bodyToFlux(ApplicationHistory::class.java)
@@ -129,7 +130,7 @@ class CableReportService(
 
     fun create(cableReport: AlluApplicationData, path: String, name: String): Int {
         logger.info { "Creating $name." }
-        return postJson(path, cableReport)
+        return post(path, cableReport)
             .bodyToMono(Int::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -160,7 +161,7 @@ class CableReportService(
         name: String
     ) {
         logger.info { "Updating $name $alluApplicationId." }
-        putJson("$path/$alluApplicationId", application)
+        put("$path/$alluApplicationId", application)
             .bodyToMono(Int::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -172,7 +173,7 @@ class CableReportService(
 
     fun cancel(alluApplicationId: Int) {
         logger.info { "Cancelling application $alluApplicationId." }
-        putWithoutBody("applications/$alluApplicationId/cancelled")
+        put("applications/$alluApplicationId/cancelled")
             .bodyToMono(Void::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -183,8 +184,7 @@ class CableReportService(
 
     /** Send an individual attachment. */
     fun addAttachment(alluApplicationId: Int, attachment: Attachment) {
-        val token = getToken()
-        postAttachment(alluApplicationId, token, attachment)
+        postAttachment(alluApplicationId, attachment)
     }
 
     /** Send many attachments in parallel. */
@@ -195,12 +195,11 @@ class CableReportService(
     ) = runBlocking {
         val semaphore = Semaphore(properties.concurrentUploads)
         withContext(ioDispatcher) {
-            val token = getToken()
             attachments.forEach {
                 launch {
                     semaphore.withPermit {
                         val content = getContent(it)
-                        postAttachment(alluApplicationId, token, it.toAlluAttachment(content))
+                        postAttachment(alluApplicationId, it.toAlluAttachment(content))
                     }
                 }
             }
@@ -227,7 +226,7 @@ class CableReportService(
         updatedFields: List<InformationRequestFieldKey>,
     ) {
         logger.info { "Responding to information request." }
-        postJson(
+        post(
                 "cablereports/$alluApplicationId/informationrequests/$requestId/response",
                 CableReportInformationRequestResponse(cableReport, updatedFields)
             )
@@ -306,7 +305,7 @@ class CableReportService(
 
     private fun sendComment(alluApplicationId: Int, comment: Comment): Int {
         logger.info { "Sending comment to application: $alluApplicationId." }
-        return postJson("applications/$alluApplicationId/comments", comment)
+        return post("applications/$alluApplicationId/comments", comment)
             .bodyToMono(Int::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -316,7 +315,7 @@ class CableReportService(
             .orElseThrow()
     }
 
-    private fun postAttachment(alluApplicationId: Int, token: String, attachment: Attachment) {
+    private fun postAttachment(alluApplicationId: Int, attachment: Attachment) {
         logger.info { "Sending attachment for application $alluApplicationId." }
 
         val builder = MultipartBodyBuilder()
@@ -332,12 +331,10 @@ class CableReportService(
             .filename("file")
         val multipartData = builder.build()
 
-        webClient
-            .post()
-            .uri("$baseUrl/v2/applications/$alluApplicationId/attachments")
-            .contentType(MediaType.MULTIPART_FORM_DATA)
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
+        postRequest(
+                "applications/$alluApplicationId/attachments",
+                contentType = MediaType.MULTIPART_FORM_DATA
+            )
             .body(BodyInserters.fromMultipartData(multipartData))
             .retrieve()
             .bodyToMono<Unit>()
@@ -361,24 +358,28 @@ class CableReportService(
             .retrieve()
     }
 
-    private fun postJson(path: String, body: Any): WebClient.ResponseSpec {
+    private fun postRequest(
+        path: String,
+        contentType: MediaType = MediaType.APPLICATION_JSON,
+        accept: MediaType = MediaType.APPLICATION_JSON
+    ): WebClient.RequestBodySpec {
         val token = getToken()
         return webClient
             .post()
             .uri("$baseUrl/v2/$path")
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
+            .contentType(contentType)
+            .accept(accept)
             .headers { it.setBearerAuth(token) }
-            .bodyValue(body)
-            .retrieve()
     }
 
-    private fun putJson(path: String, body: Any): WebClient.ResponseSpec =
-        put(path).bodyValue(body).retrieve()
+    private fun post(
+        path: String,
+        body: Any,
+        contentType: MediaType = MediaType.APPLICATION_JSON,
+        accept: MediaType = MediaType.APPLICATION_JSON
+    ): WebClient.ResponseSpec = postRequest(path, contentType, accept).bodyValue(body).retrieve()
 
-    private fun putWithoutBody(path: String): WebClient.ResponseSpec = put(path).retrieve()
-
-    private fun put(path: String): WebClient.RequestBodySpec {
+    private fun putRequest(path: String): WebClient.RequestBodySpec {
         val token = getToken()
         return webClient
             .put()
@@ -387,6 +388,11 @@ class CableReportService(
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
     }
+
+    private fun put(path: String): WebClient.ResponseSpec = putRequest(path).retrieve()
+
+    private fun put(path: String, body: Any): WebClient.ResponseSpec =
+        putRequest(path).bodyValue(body).retrieve()
 
     private fun logError(msg: String, ex: WebClientResponseException) {
         logger.error {

@@ -7,6 +7,7 @@ import assertk.assertions.containsExactly
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
+import assertk.assertions.isGreaterThan
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import assertk.assertions.isZero
@@ -103,11 +104,12 @@ class CableReportServiceITests {
 
         @Test
         fun `renews token when it's expired`() {
-            service.authExpiration = Instant.now().minusSeconds(6 * 60)
+            service.authExpiration = Instant.now().minusSeconds(1)
             val mockToken = addStubbedLoginResponse()
 
             val token = service.getToken()
 
+            assertThat(mockWebServer.requestCount).isGreaterThan(0)
             assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
             assertThat(token).isEqualTo(mockToken)
             assertThat(service.authToken).isEqualTo(mockToken)
@@ -116,7 +118,7 @@ class CableReportServiceITests {
 
         @Test
         fun `renews token when it's about to expire, but has not expired yet`() {
-            service.authExpiration = Instant.now().plusSeconds(4 * 60)
+            service.authExpiration = Instant.now().plusSeconds(AUTH_TOKEN_SAFETY_MARGIN_SECONDS - 1)
             val mockToken = addStubbedLoginResponse()
 
             val token = service.getToken()
