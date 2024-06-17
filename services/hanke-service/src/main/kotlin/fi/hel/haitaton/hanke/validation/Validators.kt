@@ -83,19 +83,21 @@ object Validators {
 }
 
 sealed class ValidationResult {
-    abstract val errorPaths: MutableList<String>
+    abstract val errorPaths: List<String>
 
     /** Using a data class here to avoid the need to implement equals and hashCode for the class. */
-    private data class Result(override val errorPaths: MutableList<String> = mutableListOf()) :
+    private data class Result(override val errorPaths: List<String> = listOf()) :
         ValidationResult()
 
     fun errorPaths(): List<String> = errorPaths
 
     fun isOk() = errorPaths.isEmpty()
 
+    private fun addAll(errorPaths: List<String>): ValidationResult =
+        Result(this.errorPaths + errorPaths)
+
     fun and(f: () -> ValidationResult): ValidationResult {
-        this.errorPaths.addAll(f().errorPaths())
-        return this
+        return this.addAll(f().errorPaths())
     }
 
     /**
@@ -105,16 +107,15 @@ sealed class ValidationResult {
      */
     fun or(f: () -> ValidationResult): ValidationResult {
         if (isOk()) {
-            return this
+            return empty
         }
 
         val other = f()
         if (other.isOk()) {
-            return other
+            return empty
         }
 
-        this.errorPaths.addAll(other.errorPaths())
-        return this
+        return this.addAll(other.errorPaths())
     }
 
     /** Run the validation only when the value is not null. */
@@ -143,16 +144,17 @@ sealed class ValidationResult {
         path: String,
         f: (T, String) -> ValidationResult,
     ): ValidationResult {
-        this.errorPaths.addAll(
+        return this.addAll(
             values.flatMapIndexed { index: Int, value: T -> f(value, "$path[$index]").errorPaths() }
         )
-        return this
     }
 
     companion object {
-        fun success(): ValidationResult = Result()
+        private val empty = Result()
 
-        fun failure(errorPath: String): ValidationResult = Result(mutableListOf(errorPath))
+        fun success(): ValidationResult = empty
+
+        fun failure(errorPath: String): ValidationResult = Result(listOf(errorPath))
 
         fun <T> whenNotNull(value: T?, f: (T) -> ValidationResult): ValidationResult =
             success().whenNotNull(value, f)
