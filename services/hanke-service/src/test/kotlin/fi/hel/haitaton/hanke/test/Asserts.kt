@@ -1,19 +1,19 @@
 package fi.hel.haitaton.hanke.test
 
 import assertk.Assert
+import assertk.all
 import assertk.assertions.contains
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.extracting
 import assertk.assertions.isBetween
 import assertk.assertions.isEqualTo
-import assertk.assertions.isInstanceOf
+import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
+import assertk.assertions.isTrue
 import assertk.assertions.prop
-import assertk.assertions.single
-import fi.hel.haitaton.hanke.domain.Hankealue
-import fi.hel.haitaton.hanke.domain.HasFeatures
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.hakemus.StreetAddress
+import fi.hel.haitaton.hanke.validation.ValidationResult
 import fi.hel.haitaton.hanke.zonedDateTime
 import jakarta.mail.internet.MimeMessage
 import java.time.Duration
@@ -22,9 +22,6 @@ import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.TemporalAmount
 import java.util.UUID
-import org.geojson.Feature
-import org.geojson.FeatureCollection
-import org.geojson.Geometry
 
 object Asserts {
 
@@ -43,23 +40,6 @@ object Asserts {
 
     fun Assert<OffsetDateTime>.isSameInstantAs(expected: OffsetDateTime) {
         this.prop(OffsetDateTime::toInstant).isEqualTo(expected.toInstant())
-    }
-
-    fun <T> Assert<Feature>.hasSameCoordinatesAs(other: Geometry<T>) {
-        prop(Feature::getGeometry)
-            .isInstanceOf(Geometry::class)
-            .prop("coordinates") { it.coordinates }
-            .isEqualTo(other.coordinates)
-    }
-
-    fun <T> Assert<Hankealue>.hasSingleGeometryWithCoordinates(other: Geometry<T>) {
-        prop(Hankealue::geometriat)
-            .isNotNull()
-            .prop(HasFeatures::featureCollection)
-            .isNotNull()
-            .prop(FeatureCollection::getFeatures)
-            .single()
-            .hasSameCoordinatesAs(other)
     }
 
     fun Assert<Array<MimeMessage>>.hasReceivers(vararg receivers: String?) {
@@ -83,4 +63,11 @@ object Asserts {
             .prop(PostalAddress::streetAddress)
             .prop(StreetAddress::streetName)
             .isEqualTo(street)
+
+    fun Assert<ValidationResult>.failsWith(vararg paths: String) = all {
+        this.prop(ValidationResult::isOk).isFalse()
+        this.prop(ValidationResult::errorPaths).containsExactlyInAnyOrder(*paths)
+    }
+
+    fun Assert<ValidationResult>.succeeds() = this.prop(ValidationResult::isOk).isTrue()
 }
