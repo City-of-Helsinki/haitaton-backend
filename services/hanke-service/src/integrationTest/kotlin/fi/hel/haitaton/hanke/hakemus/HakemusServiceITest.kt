@@ -574,7 +574,7 @@ class HakemusServiceITest(
             private val notInHankeArea =
                 ApplicationFactory.createCableReportApplicationArea(
                     name = "area",
-                    geometry = GeometriaFactory.polygon
+                    geometry = GeometriaFactory.polygon()
                 )
 
             @Test
@@ -946,7 +946,7 @@ class HakemusServiceITest(
             private val notInHankeArea =
                 createExcavationNotificationArea(
                     name = "area",
-                    tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon)),
+                    tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon())),
                 )
 
             @Test
@@ -1364,7 +1364,7 @@ class HakemusServiceITest(
 
         private val areaOutsideDefaultHanke: JohtoselvitysHakemusalue =
             ApplicationFactory.createCableReportApplicationArea(
-                geometry = GeometriaFactory.thirdPolygon
+                geometry = GeometriaFactory.thirdPolygon()
             )
 
         @Test

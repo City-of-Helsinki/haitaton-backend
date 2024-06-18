@@ -82,7 +82,7 @@ class ApplicationFactory(
 
         fun createCableReportApplicationArea(
             name: String = "Alue",
-            geometry: Polygon = GeometriaFactory.secondPolygon,
+            geometry: Polygon = GeometriaFactory.secondPolygon(),
         ): JohtoselvitysHakemusalue = JohtoselvitysHakemusalue(name, geometry)
 
         fun createExcavationNotificationArea(
@@ -115,7 +115,7 @@ class ApplicationFactory(
             )
 
         fun createTyoalue(
-            geometry: Polygon = GeometriaFactory.secondPolygon,
+            geometry: Polygon = GeometriaFactory.secondPolygon(),
             area: Double = 100.0,
             tormaystarkasteluTulos: TormaystarkasteluTulos =
                 TormaystarkasteluTulos(
