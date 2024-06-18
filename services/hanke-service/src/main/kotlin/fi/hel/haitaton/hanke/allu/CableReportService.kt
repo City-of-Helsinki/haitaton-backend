@@ -1,8 +1,10 @@
 package fi.hel.haitaton.hanke.allu
 
+import com.auth0.jwt.JWT
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
 import java.time.Duration.ofSeconds
+import java.time.Instant
 import java.time.ZonedDateTime
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -20,23 +22,44 @@ import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
-import org.springframework.web.reactive.function.client.body
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 
 private val logger = KotlinLogging.logger {}
 
 const val HAITATON_SYSTEM = "Haitaton järjestelmä"
+const val AUTH_TOKEN_SAFETY_MARGIN_SECONDS = 5L * 60L
 
 class CableReportService(
     private val webClient: WebClient,
     private val properties: AlluProperties,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
+    var authToken: String? = null
+    var authExpiration: Instant? = null
 
     private val baseUrl = properties.baseUrl
     private val defaultTimeout = ofSeconds(30)
     private val attachmentUploadTimeout = ofSeconds(55)
+
+    fun getToken(): String =
+        authToken?.let {
+            val expirationCutoff = Instant.now().plusSeconds(AUTH_TOKEN_SAFETY_MARGIN_SECONDS)
+            if (authExpiration?.isAfter(expirationCutoff) == true) {
+                it
+            } else null
+        } ?: refreshToken()
+
+    private fun refreshToken(): String {
+        authToken = null
+        authExpiration = null
+        val token = login()
+        val decodedJWT = JWT.decode(token)
+        authToken = token
+        authExpiration = decodedJWT.expiresAtAsInstant
+        logger.info { "Renewed Allu login token with expiration date: $authExpiration" }
+        return token
+    }
 
     private fun login(): String {
         try {
@@ -46,7 +69,7 @@ class CableReportService(
                 .uri(uri)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.TEXT_PLAIN)
-                .body(Mono.just(LoginInfo(properties.username, properties.password)))
+                .bodyValue(LoginInfo(properties.username, properties.password))
                 .retrieve()
                 .bodyToMono(String::class.java)
                 .timeout(defaultTimeout)
@@ -64,13 +87,7 @@ class CableReportService(
 
     fun getApplicationInformation(alluApplicationId: Int): AlluApplicationResponse {
         logger.info { "Fetching application information for application: $alluApplicationId" }
-        val token = login()
-        return webClient
-            .get()
-            .uri("$baseUrl/v2/applications/$alluApplicationId")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
-            .retrieve()
+        return get("applications/$alluApplicationId")
             .bodyToMono(AlluApplicationResponse::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -91,16 +108,8 @@ class CableReportService(
         eventsAfter: ZonedDateTime,
     ): List<ApplicationHistory> {
         logger.info { "Fetching application status histories." }
-        val token = login()
         val search = ApplicationHistorySearch(alluApplicationIds, eventsAfter)
-        return webClient
-            .post()
-            .uri("$baseUrl/v2/applicationhistory")
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
-            .body(Mono.just(search))
-            .retrieve()
+        return post("applicationhistory", search)
             // API returns an array of ApplicationHistory objects (one for each requested
             // applicationId)
             .bodyToFlux(ApplicationHistory::class.java)
@@ -121,15 +130,7 @@ class CableReportService(
 
     fun create(cableReport: AlluApplicationData, path: String, name: String): Int {
         logger.info { "Creating $name." }
-        val token = login()
-        return webClient
-            .post()
-            .uri("$baseUrl/v2/$path")
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
-            .bodyValue(cableReport)
-            .retrieve()
+        return post(path, cableReport)
             .bodyToMono(Int::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -160,15 +161,7 @@ class CableReportService(
         name: String
     ) {
         logger.info { "Updating $name $alluApplicationId." }
-        val token = login()
-        webClient
-            .put()
-            .uri("$baseUrl/v2/$path/$alluApplicationId")
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
-            .body(Mono.just(application))
-            .retrieve()
+        put("$path/$alluApplicationId", application)
             .bodyToMono(Int::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -180,14 +173,7 @@ class CableReportService(
 
     fun cancel(alluApplicationId: Int) {
         logger.info { "Cancelling application $alluApplicationId." }
-        val token = login()
-        webClient
-            .put()
-            .uri("$baseUrl/v2/applications/$alluApplicationId/cancelled")
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
-            .retrieve()
+        put("applications/$alluApplicationId/cancelled")
             .bodyToMono(Void::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -198,8 +184,7 @@ class CableReportService(
 
     /** Send an individual attachment. */
     fun addAttachment(alluApplicationId: Int, attachment: Attachment) {
-        val token = login()
-        postAttachment(alluApplicationId, token, attachment)
+        postAttachment(alluApplicationId, attachment)
     }
 
     /** Send many attachments in parallel. */
@@ -210,12 +195,11 @@ class CableReportService(
     ) = runBlocking {
         val semaphore = Semaphore(properties.concurrentUploads)
         withContext(ioDispatcher) {
-            val token = login()
             attachments.forEach {
                 launch {
                     semaphore.withPermit {
                         val content = getContent(it)
-                        postAttachment(alluApplicationId, token, it.toAlluAttachment(content))
+                        postAttachment(alluApplicationId, it.toAlluAttachment(content))
                     }
                 }
             }
@@ -224,13 +208,7 @@ class CableReportService(
 
     fun getInformationRequests(alluApplicationId: Int): List<InformationRequest> {
         logger.info { "Fetching information request for application $alluApplicationId." }
-        val token = login()
-        return webClient
-            .get()
-            .uri("$baseUrl/v2/applications/$alluApplicationId/informationrequests")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
-            .retrieve()
+        return get("applications/$alluApplicationId/informationrequests")
             .bodyToFlux(InformationRequest::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -248,17 +226,10 @@ class CableReportService(
         updatedFields: List<InformationRequestFieldKey>,
     ) {
         logger.info { "Responding to information request." }
-        val token = login()
-        webClient
-            .post()
-            .uri(
-                "$baseUrl/v2/cablereports/$alluApplicationId/informationrequests/$requestId/response"
+        post(
+                "cablereports/$alluApplicationId/informationrequests/$requestId/response",
+                CableReportInformationRequestResponse(cableReport, updatedFields)
             )
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
-            .body(Mono.just(CableReportInformationRequestResponse(cableReport, updatedFields)))
-            .retrieve()
             .toBodilessEntity()
             .timeout(defaultTimeout)
             .block()
@@ -266,15 +237,9 @@ class CableReportService(
 
     fun getDecisionPdf(alluApplicationId: Int): ByteArray {
         logger.info { "Fetching decision pdf for application $alluApplicationId." }
-        val token = login()
-        val requestUri = "$baseUrl/v2/cablereports/$alluApplicationId/decision"
+        val requestPath = "cablereports/$alluApplicationId/decision"
         val response =
-            webClient
-                .get()
-                .uri(requestUri)
-                .accept(MediaType.APPLICATION_PDF)
-                .headers { it.setBearerAuth(token) }
-                .retrieve()
+            get(requestPath, MediaType.APPLICATION_PDF)
                 .onStatus(
                     { httpStatus -> httpStatus.value() == 404 },
                     {
@@ -295,24 +260,18 @@ class CableReportService(
 
         if (response.headers.contentType != MediaType.APPLICATION_PDF) {
             throw AlluApiException(
-                requestUri,
+                requestPath,
                 "Decision API didn't return a PDF. RequestContent-Type header: ${response.headers.contentType}"
             )
         }
         val body =
-            response.body ?: throw AlluApiException(requestUri, "Decision API returned empty body")
+            response.body ?: throw AlluApiException(requestPath, "Decision API returned empty body")
         return body.byteArray
     }
 
     fun getDecisionAttachments(alluApplicationId: Int): List<AttachmentMetadata> {
         logger.info { "Fetching decision attachments for application $alluApplicationId." }
-        val token = login()
-        return webClient
-            .get()
-            .uri("$baseUrl/v2/applications/$alluApplicationId/attachments", alluApplicationId)
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
-            .retrieve()
+        return get("$baseUrl/v2/applications/$alluApplicationId/attachments")
             .bodyToFlux(AttachmentMetadata::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -325,13 +284,7 @@ class CableReportService(
 
     fun getDecisionAttachmentData(alluApplicationId: Int, attachmentId: Int): ByteArray {
         logger.info { "Fetching decision attachment for application: $alluApplicationId." }
-        val token = login()
-        return webClient
-            .get()
-            .uri("$baseUrl/v2/applications/$alluApplicationId/attachments/$attachmentId")
-            .accept(MediaType.APPLICATION_PDF)
-            .headers { it.setBearerAuth(token) }
-            .retrieve()
+        return get("applications/$alluApplicationId/attachments/$attachmentId")
             .bodyToMono(ByteArrayResource::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -352,15 +305,7 @@ class CableReportService(
 
     private fun sendComment(alluApplicationId: Int, comment: Comment): Int {
         logger.info { "Sending comment to application: $alluApplicationId." }
-        val token = login()
-        return webClient
-            .post()
-            .uri("$baseUrl/v2/applications/$alluApplicationId/comments")
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
-            .body(Mono.just(comment))
-            .retrieve()
+        return post("applications/$alluApplicationId/comments", comment)
             .bodyToMono(Int::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -370,7 +315,7 @@ class CableReportService(
             .orElseThrow()
     }
 
-    private fun postAttachment(alluApplicationId: Int, token: String, attachment: Attachment) {
+    private fun postAttachment(alluApplicationId: Int, attachment: Attachment) {
         logger.info { "Sending attachment for application $alluApplicationId." }
 
         val builder = MultipartBodyBuilder()
@@ -386,12 +331,10 @@ class CableReportService(
             .filename("file")
         val multipartData = builder.build()
 
-        webClient
-            .post()
-            .uri("$baseUrl/v2/applications/$alluApplicationId/attachments")
-            .contentType(MediaType.MULTIPART_FORM_DATA)
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
+        postRequest(
+                "applications/$alluApplicationId/attachments",
+                contentType = MediaType.MULTIPART_FORM_DATA
+            )
             .body(BodyInserters.fromMultipartData(multipartData))
             .retrieve()
             .bodyToMono<Unit>()
@@ -401,6 +344,55 @@ class CableReportService(
             }
             .block()
     }
+
+    private fun get(
+        path: String,
+        accept: MediaType = MediaType.APPLICATION_JSON,
+    ): WebClient.ResponseSpec {
+        val token = getToken()
+        return webClient
+            .get()
+            .uri("$baseUrl/v2/$path")
+            .accept(accept)
+            .headers { it.setBearerAuth(token) }
+            .retrieve()
+    }
+
+    private fun postRequest(
+        path: String,
+        contentType: MediaType = MediaType.APPLICATION_JSON,
+        accept: MediaType = MediaType.APPLICATION_JSON
+    ): WebClient.RequestBodySpec {
+        val token = getToken()
+        return webClient
+            .post()
+            .uri("$baseUrl/v2/$path")
+            .contentType(contentType)
+            .accept(accept)
+            .headers { it.setBearerAuth(token) }
+    }
+
+    private fun post(
+        path: String,
+        body: Any,
+        contentType: MediaType = MediaType.APPLICATION_JSON,
+        accept: MediaType = MediaType.APPLICATION_JSON
+    ): WebClient.ResponseSpec = postRequest(path, contentType, accept).bodyValue(body).retrieve()
+
+    private fun putRequest(path: String): WebClient.RequestBodySpec {
+        val token = getToken()
+        return webClient
+            .put()
+            .uri("$baseUrl/v2/$path")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .headers { it.setBearerAuth(token) }
+    }
+
+    private fun put(path: String): WebClient.ResponseSpec = putRequest(path).retrieve()
+
+    private fun put(path: String, body: Any): WebClient.ResponseSpec =
+        putRequest(path).bodyValue(body).retrieve()
 
     private fun logError(msg: String, ex: WebClientResponseException) {
         logger.error {
