@@ -10,8 +10,7 @@ object HakemusDataValidator {
             when (data) {
                 is JohtoselvityshakemusData ->
                     validate { data.validateForErrors() }.and { data.validateForMissing() }
-                is KaivuilmoitusData ->
-                    validate { data.validateForErrors() }.and { data.validateForMissing() }
+                is KaivuilmoitusData -> data.validateForSend()
             }
 
         return result.okOrThrow()

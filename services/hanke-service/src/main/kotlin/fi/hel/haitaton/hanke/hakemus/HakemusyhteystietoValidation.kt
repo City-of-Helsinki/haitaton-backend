@@ -28,12 +28,6 @@ internal fun atMostOneOrderer(yhteystiedot: List<Hakemusyhteystieto>): Validatio
 internal fun List<Hakemusyhteystieto>.tilaajaCount() =
     flatMap { it.yhteyshenkilot }.count { it.tilaaja }
 
-internal fun exactlyOneOrderer(yhteystiedot: List<Hakemusyhteystieto>): ValidationResult =
-    Validators.validateTrue(
-        yhteystiedot.tilaajaCount() == 1,
-        "customersWithContacts[].contacts[].orderer"
-    )
-
 internal fun Hakemusyhteystieto.validateForMissing(path: String): ValidationResult =
     Validators.validate { Validators.notBlank(nimi, "$path.nimi") }
         .andAllIn(yhteyshenkilot, "$path.yhteyshenkilot", ::validateForMissing)
