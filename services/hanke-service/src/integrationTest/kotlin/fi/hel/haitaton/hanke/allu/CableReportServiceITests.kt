@@ -130,26 +130,6 @@ class CableReportServiceITests {
         }
     }
 
-    @Test
-    fun testCreate() {
-        val stubbedApplicationId = 1337
-        val applicationIdResponse =
-            MockResponse()
-                .setResponseCode(200)
-                .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                .setBody(stubbedApplicationId.toString())
-        mockWebServer.enqueue(applicationIdResponse)
-        val application = getTestApplication()
-
-        val actualApplicationId = service.create(application)
-
-        assertThat(actualApplicationId).isEqualTo(stubbedApplicationId)
-        val request = mockWebServer.takeRequest()
-        assertThat(request.method).isEqualTo("POST")
-        assertThat(request.path).isEqualTo("/v2/cablereports")
-        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
-    }
-
     @CsvSource("pdf,application/pdf", "png,image/png")
     @ParameterizedTest(name = "{displayName} ({arguments})")
     fun `addAttachment should upload attachment`(extension: String, contentType: String) {
@@ -188,23 +168,68 @@ class CableReportServiceITests {
         }
     }
 
-    @Test
-    fun testCreateErrorHandling() {
-        val applicationIdResponse =
-            MockResponse()
-                .setResponseCode(400)
-                .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                .setBody(
-                    """[{"errorMessage":"Cable report should have one orderer contact","additionalInfo":"customerWithContacts"}]"""
-                )
-        mockWebServer.enqueue(applicationIdResponse)
+    @Nested
+    inner class Create {
+        @Test
+        fun `calls Allu with correct path when the application is a cable report application`() {
+            val stubbedApplicationId = 1337
+            val applicationIdResponse =
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .setBody(stubbedApplicationId.toString())
+            mockWebServer.enqueue(applicationIdResponse)
+            val application = getTestApplication()
 
-        assertThrows<WebClientResponseException.BadRequest> { service.create(getTestApplication()) }
+            val actualApplicationId = service.create(application)
 
-        val createRequest = mockWebServer.takeRequest()
-        assertThat(createRequest.method).isEqualTo("POST")
-        assertThat(createRequest.path).isEqualTo("/v2/cablereports")
-        assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(actualApplicationId).isEqualTo(stubbedApplicationId)
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("POST")
+            assertThat(request.path).isEqualTo("/v2/cablereports")
+            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+        }
+
+        @Test
+        fun `calls Allu with correct path when the application is a excavation notification`() {
+            val stubbedApplicationId = 1337
+            val applicationIdResponse =
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .setBody(stubbedApplicationId.toString())
+            mockWebServer.enqueue(applicationIdResponse)
+            val application = AlluFactory.createExcavationNotificationData()
+
+            val actualApplicationId = service.create(application)
+
+            assertThat(actualApplicationId).isEqualTo(stubbedApplicationId)
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("POST")
+            assertThat(request.path).isEqualTo("/v2/excavationannouncements")
+            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+        }
+
+        @Test
+        fun `throws an exception when there's an error in the application data`() {
+            val applicationIdResponse =
+                MockResponse()
+                    .setResponseCode(400)
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .setBody(
+                        """[{"errorMessage":"Cable report should have one orderer contact","additionalInfo":"customerWithContacts"}]"""
+                    )
+            mockWebServer.enqueue(applicationIdResponse)
+
+            assertThrows<WebClientResponseException.BadRequest> {
+                service.create(getTestApplication())
+            }
+
+            val createRequest = mockWebServer.takeRequest()
+            assertThat(createRequest.method).isEqualTo("POST")
+            assertThat(createRequest.path).isEqualTo("/v2/cablereports")
+            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+        }
     }
 
     @Nested
@@ -389,37 +414,16 @@ class CableReportServiceITests {
             .sign(Algorithm.HMAC256("secret"))
 
     private fun getTestApplication(): AlluCableReportApplicationData {
-        val customer =
-            Customer(
-                type = CustomerType.COMPANY,
-                name = "Haitaton Oy Ab",
-                postalAddress = null,
-                country = "FI",
-                email = "info@haitaton.fi",
-                phone = "042-555-6125",
-                registryKey = "101010-FAKE",
-                ovt = null,
-                invoicingOperator = null,
-                sapCustomerNumber = null
+        val customerWContacts =
+            CustomerWithContacts(
+                customer = AlluFactory.customer,
+                contacts = listOf(AlluFactory.hannu)
             )
-        val hannu =
-            Contact(
-                name = "Hannu Haitaton",
-                email = "hannu@haitaton.fi",
-                phone = "042-555-5216",
-                orderer = true
-            )
-        val kerttu =
-            Contact(
-                name = "Kerttu Haitaton",
-                email = "kerttu@haitaton.fi",
-                phone = "042-555-2182",
-                orderer = false
-            )
-
-        val customerWContacts = CustomerWithContacts(customer = customer, contacts = listOf(hannu))
         val contractorWContacts =
-            CustomerWithContacts(customer = customer, contacts = listOf(kerttu))
+            CustomerWithContacts(
+                customer = AlluFactory.customer,
+                contacts = listOf(AlluFactory.kerttu)
+            )
 
         val geometry = GeometryCollection()
         geometry.add(

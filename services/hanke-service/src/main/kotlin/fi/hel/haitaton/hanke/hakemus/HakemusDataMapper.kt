@@ -30,16 +30,18 @@ object HakemusDataMapper {
         return AlluCableReportApplicationData(
             name = name,
             customerWithContacts =
-                customerWithContacts.orThrow(path("customerWithContacts")).toAlluCustomer(),
-            geometry = this.getGeometries(),
-            startTime = startTime.orThrow(path("startTime")),
-            endTime = endTime.orThrow(path("endTime")),
+                customerWithContacts?.toAlluCustomer()
+                    ?: throw nullException("customerWithContacts"),
+            geometry = getGeometries(),
+            startTime = startTime ?: throw nullException("startTime"),
+            endTime = endTime ?: throw nullException("endTime"),
             pendingOnClient = pendingOnClient,
             identificationNumber = hankeTunnus,
             clientApplicationKind = description, // intentionally copied here
             workDescription = description,
             contractorWithContacts =
-                contractorWithContacts.orThrow(path("contractorWithContacts")).toAlluCustomer(),
+                contractorWithContacts?.toAlluCustomer()
+                    ?: throw nullException("contractorWithContacts"),
             postalAddress = postalAddress?.toAlluData(),
             representativeWithContacts = representativeWithContacts?.toAlluCustomer(),
             invoicingCustomer = null,
@@ -56,66 +58,67 @@ object HakemusDataMapper {
     fun KaivuilmoitusData.toAlluExcavationNotificationData(
         hankeTunnus: String
     ): AlluExcavationNotificationData {
+        val addresses =
+            areas?.map { it.katuosoite }?.toSet()?.joinToString(", ")
+                ?: throw throw AlluDataException(path("areas"), EMPTY_OR_NULL)
+
         return AlluExcavationNotificationData(
             postalAddress =
-                PostalAddress(
-                    // TODO: this should be a combination of all area addresses (HAI-1542)
-                    streetAddress = StreetAddress(""),
-                    postalCode = "",
-                    city = ""
-                ),
+                PostalAddress(streetAddress = StreetAddress(addresses), postalCode = "", city = ""),
             name = name,
             customerWithContacts =
-                customerWithContacts.orThrow(path("customerWithContacts")).toAlluCustomer(),
+                customerWithContacts?.toAlluCustomer()
+                    ?: throw nullException("customerWithContacts"),
             representativeWithContacts = representativeWithContacts?.toAlluCustomer(),
             invoicingCustomer = invoicingCustomer?.toAlluData(),
             geometry = getGeometries(),
-            startTime = startTime.orThrow(path("startTime")),
-            endTime = endTime.orThrow(path("endTime")),
+            startTime = startTime ?: throw nullException("startTime"),
+            endTime = endTime ?: throw nullException("endTime"),
             pendingOnClient = pendingOnClient,
             identificationNumber = hankeTunnus,
             customerReference = invoicingCustomer?.asiakkaanViite,
             area = null, // currently area is not given nor calculated in Haitaton
-            clientApplicationKind = workDescription.orThrow(path("workDescription")),
+            clientApplicationKind = workDescription,
             contractorWithContacts =
-                contractorWithContacts.orThrow(path("contractorWithContacts")).toAlluCustomer(),
+                contractorWithContacts?.toAlluCustomer()
+                    ?: throw nullException("contractorWithContacts"),
             propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toAlluCustomer(),
             pksCard = null,
             constructionWork = constructionWork,
             maintenanceWork = maintenanceWork,
             emergencyWork = emergencyWork,
             propertyConnectivity = null,
-            workPurpose = workDescription.orThrow(path("workDescription")),
+            workPurpose = workDescription,
             placementContracts = placementContracts?.toList(),
             cableReports = cableReports?.toList()
         )
     }
 
     /** If areas are missing, throw an exception. */
-    private fun HakemusData.getGeometries(): GeometryCollection {
-        if (areas.isNullOrEmpty()) {
-            throw AlluDataException(path("areas"), EMPTY_OR_NULL)
-        } else {
-            // Check that all polygons have the coordinate reference system Haitaton understands
-            areas!!
-                .flatMap { area -> area.geometries().map { it.crs?.properties?.get("name") } }
-                .find { it.toString() != COORDINATE_SYSTEM_URN }
-                ?.let { throw UnsupportedCoordinateSystemException(it.toString()) }
+    internal fun HakemusData.getGeometries(): GeometryCollection =
+        areas?.ifEmpty { null }?.let { getGeometries(it) }
+            ?: throw AlluDataException(path("areas"), EMPTY_OR_NULL)
 
-            return GeometryCollection().apply {
-                // Read coordinate reference system from the first polygon. Remove the CRS from
-                // all polygons and add it to the GeometryCollection.
-                this.crs = areas!!.first().geometries().first().crs!!
-                this.geometries =
-                    areas!!.flatMap { area ->
-                        area.geometries().map { polygon ->
-                            Polygon(polygon.exteriorRing).apply {
-                                this.crs = null
-                                polygon.interiorRings.forEach { this.addInteriorRing(it) }
-                            }
+    private fun getGeometries(areas: List<Hakemusalue>): GeometryCollection {
+        // Check that all polygons have the coordinate reference system Haitaton understands
+        areas
+            .flatMap { area -> area.geometries().map { it.crs?.properties?.get("name") } }
+            .find { it.toString() != COORDINATE_SYSTEM_URN }
+            ?.let { throw UnsupportedCoordinateSystemException(it.toString()) }
+
+        return GeometryCollection().apply {
+            // Read coordinate reference system from the first polygon. Remove the CRS from
+            // all polygons and add it to the GeometryCollection.
+            this.crs = areas.first().geometries().first().crs!!
+            this.geometries =
+                areas.flatMap { area ->
+                    area.geometries().map { polygon ->
+                        Polygon(polygon.exteriorRing).apply {
+                            this.crs = null
+                            polygon.interiorRings.forEach { this.addInteriorRing(it) }
                         }
                     }
-            }
+                }
         }
     }
 
@@ -139,7 +142,7 @@ object HakemusDataMapper {
     fun Hakemusyhteyshenkilo.toAlluContact() =
         Contact("$etunimi $sukunimi".trim(), sahkoposti, puhelin, tilaaja)
 
-    private fun Laskutusyhteystieto.toAlluData(): Customer =
+    internal fun Laskutusyhteystieto.toAlluData(): Customer =
         Customer(
             type = tyyppi,
             name = nimi,
@@ -159,10 +162,10 @@ object HakemusDataMapper {
     private fun path(vararg field: String) =
         field.joinToString(separator = ".", prefix = "applicationData.")
 
-    private fun <T> T?.orThrow(path: String) = this ?: throw AlluDataException(path, NULL)
+    private fun nullException(path: String) = AlluDataException(path(path), NULL)
 
     private fun JohtoselvityshakemusData.workDescription(): String {
-        val excavation = rockExcavation.orThrow(path("rockExcavation"))
+        val excavation = rockExcavation ?: throw nullException("rockExcavation")
         return workDescription + excavationText(excavation)
     }
 
