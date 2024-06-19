@@ -100,7 +100,7 @@ object HakemusUpdateRequestFactory {
             startTime = ZonedDateTime.now(TZ_UTC),
             endTime = ZonedDateTime.now(TZ_UTC).plusDays(5),
             areas =
-                listOf(createCableReportApplicationArea("Hankealue 1", GeometriaFactory.polygon)),
+                listOf(createCableReportApplicationArea("Hankealue 1", GeometriaFactory.polygon())),
             customerWithContacts =
                 createCustomerWithContactsRequest(
                     CustomerType.COMPANY,
@@ -127,7 +127,7 @@ object HakemusUpdateRequestFactory {
                 listOf(
                     createExcavationNotificationArea(
                         "Hankealue 1",
-                        tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon))
+                        tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon()))
                     )
                 ),
             customerWithContacts =

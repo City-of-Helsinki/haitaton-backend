@@ -1,8 +1,14 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
+import fi.hel.haitaton.hanke.allu.AlluExcavationNotificationData
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
+import fi.hel.haitaton.hanke.allu.Contact
+import fi.hel.haitaton.hanke.allu.Customer
+import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.allu.CustomerWithContacts
+import org.geojson.GeometryCollection
 import org.springframework.http.MediaType
 
 object AlluFactory {
@@ -35,5 +41,51 @@ object AlluFactory {
             mimeType = mimeType,
             name = name,
             description = description,
+        )
+
+    fun createExcavationNotificationData(
+        workPurpose: String = "I am a dwarf and I'm diggin' a hole. A diggy, diggy hole."
+    ) =
+        AlluExcavationNotificationData(
+            identificationNumber = "HAI24-55",
+            pendingOnClient = false,
+            name = "Diggy diggy hole",
+            workPurpose = workPurpose,
+            clientApplicationKind = workPurpose,
+            startTime = DateFactory.getStartDatetime(),
+            endTime = DateFactory.getEndDatetime(),
+            customerWithContacts =
+                CustomerWithContacts(customer = customer, contacts = listOf(hannu)),
+            contractorWithContacts =
+                CustomerWithContacts(customer = customer, contacts = listOf(kerttu)),
+            geometry = GeometryCollection(),
+        )
+
+    val customer =
+        Customer(
+            type = CustomerType.COMPANY,
+            name = "Haitaton Oy Ab",
+            postalAddress = null,
+            country = "FI",
+            email = "info@haitaton.fi",
+            phone = "042-555-6125",
+            registryKey = "101010-FAKE",
+            ovt = null,
+            invoicingOperator = null,
+            sapCustomerNumber = null
+        )
+    val hannu =
+        Contact(
+            name = "Hannu Haitaton",
+            email = "hannu@haitaton.fi",
+            phone = "042-555-5216",
+            orderer = true
+        )
+    val kerttu =
+        Contact(
+            name = "Kerttu Haitaton",
+            email = "kerttu@haitaton.fi",
+            phone = "042-555-2182",
+            orderer = false
         )
 }

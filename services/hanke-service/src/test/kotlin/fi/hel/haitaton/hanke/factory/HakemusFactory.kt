@@ -160,6 +160,8 @@ class HakemusFactory(
             cableReportDone: Boolean = true,
             rockExcavation: Boolean? = null,
             requiredCompetence: Boolean = false,
+            cableReports: List<String>? = null,
+            placementContracts: List<String>? = null,
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             areas: List<KaivuilmoitusAlue>? =
@@ -179,6 +181,8 @@ class HakemusFactory(
                 emergencyWork = emergencyWork,
                 cableReportDone = cableReportDone,
                 rockExcavation = rockExcavation,
+                cableReports = cableReports,
+                placementContracts = placementContracts,
                 requiredCompetence = requiredCompetence,
                 startTime = startTime,
                 endTime = endTime,
@@ -188,6 +192,7 @@ class HakemusFactory(
                 representativeWithContacts = representativeWithContacts,
                 propertyDeveloperWithContacts = propertyDeveloperWithContacts,
                 invoicingCustomer = invoicingCustomer,
+                additionalInfo = null,
             )
 
         fun createEntity(
