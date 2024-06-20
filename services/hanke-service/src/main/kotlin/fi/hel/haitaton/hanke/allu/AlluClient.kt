@@ -30,7 +30,7 @@ private val logger = KotlinLogging.logger {}
 const val HAITATON_SYSTEM = "Haitaton järjestelmä"
 const val AUTH_TOKEN_SAFETY_MARGIN_SECONDS = 5L * 60L
 
-class CableReportService(
+class AlluClient(
     private val webClient: WebClient,
     private val properties: AlluProperties,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,

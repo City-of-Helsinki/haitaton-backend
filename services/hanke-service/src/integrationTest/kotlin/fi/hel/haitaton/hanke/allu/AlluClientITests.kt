@@ -46,10 +46,10 @@ import org.springframework.http.MediaType.IMAGE_PNG
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 
-class CableReportServiceITests {
+class AlluClientITests {
 
     private lateinit var mockWebServer: MockWebServer
-    private lateinit var service: CableReportService
+    private lateinit var service: AlluClient
 
     private lateinit var authToken: String
 
@@ -61,7 +61,7 @@ class CableReportServiceITests {
         val properties = AlluProperties(baseUrl, "fake_username", "any_password", 2)
         val webClient = webClientWithLargeBuffer(WebClient.builder())
         authToken = createMockToken()
-        service = CableReportService(webClient, properties)
+        service = AlluClient(webClient, properties)
         service.authToken = authToken
         service.authExpiration = Instant.now().plusSeconds(3600)
     }

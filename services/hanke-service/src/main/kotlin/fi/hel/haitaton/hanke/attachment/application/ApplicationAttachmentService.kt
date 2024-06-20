@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.application
 
-import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
@@ -26,7 +26,7 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class ApplicationAttachmentService(
-    private val cableReportService: CableReportService,
+    private val alluClient: AlluClient,
     private val metadataService: ApplicationAttachmentMetadataService,
     private val hakemusRepository: HakemusRepository,
     private val attachmentContentService: ApplicationAttachmentContentService,
@@ -146,7 +146,7 @@ class ApplicationAttachmentService(
             return
         }
 
-        cableReportService.addAttachments(alluId, attachments) { attachmentContentService.find(it) }
+        alluClient.addAttachments(alluId, attachments) { attachmentContentService.find(it) }
     }
 
     private fun findHakemus(applicationId: Long): HakemusMetaData =
