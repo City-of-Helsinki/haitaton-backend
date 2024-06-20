@@ -28,6 +28,7 @@ import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
@@ -74,6 +75,7 @@ import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.HAKIJA
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCableReportData
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluExcavationNotificationData
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AlluContactWithRole
 import fi.hel.haitaton.hanke.logging.AlluCustomerWithRole
@@ -133,6 +135,7 @@ class HakemusServiceITest(
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val alluClient: CableReportService,
     @Autowired private val alluStatusRepository: AlluStatusRepository,
+    @Autowired private val hankeService: HankeService,
 ) : IntegrationTest() {
 
     companion object {
@@ -1783,6 +1786,50 @@ class HakemusServiceITest(
                 alluClient.getApplicationInformation(alluId)
             }
         }
+
+        @Test
+        fun `works with kaivuilmoitus`() {
+            val hanke = hankeFactory.builder().withHankealue().saveEntity()
+            val hankeAlueet = hankeService.loadHanke(hanke.hankeTunnus)!!.alueet
+            val hakemus: Hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankeAlueet[0])
+                    .save()
+            val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
+            attachmentFactory.save(application = applicationEntity).withContent()
+            val hakemusData = hakemus.applicationData as KaivuilmoitusData
+            val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
+            val expectedDataAfterSend =
+                hakemusData.copy(pendingOnClient = false).setOrdererForContractor(founder.id)
+            val expectedAlluRequest =
+                expectedDataAfterSend.toAlluExcavationNotificationData(hakemus.hankeTunnus)
+            every { alluClient.create(expectedAlluRequest) } returns alluId
+            justRun { alluClient.addAttachments(alluId, any(), any()) }
+            every { alluClient.getApplicationInformation(alluId) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
+
+            assertThat(response).all {
+                prop(Hakemus::alluid).isEqualTo(alluId)
+                prop(Hakemus::applicationIdentifier)
+                    .isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_IDENTIFIER)
+                prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+                prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
+            }
+            assertThat(hakemusRepository.getReferenceById(hakemus.id)).all {
+                prop(HakemusEntity::alluid).isEqualTo(alluId)
+                prop(HakemusEntity::applicationIdentifier)
+                    .isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_IDENTIFIER)
+                prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+            }
+            verifySequence {
+                alluClient.create(expectedAlluRequest)
+                alluClient.addAttachments(alluId, any(), any())
+                alluClient.getApplicationInformation(alluId)
+            }
+        }
     }
 
     @Nested
@@ -2317,6 +2364,9 @@ private fun JohtoselvityshakemusData.setOrdererForCustomer(
 private fun JohtoselvityshakemusData.setOrdererForContractor(
     kayttajaId: UUID
 ): JohtoselvityshakemusData =
+    this.copy(contractorWithContacts = contractorWithContacts!!.setOrderer(kayttajaId))
+
+private fun KaivuilmoitusData.setOrdererForContractor(kayttajaId: UUID): KaivuilmoitusData =
     this.copy(contractorWithContacts = contractorWithContacts!!.setOrderer(kayttajaId))
 
 private fun Hakemusyhteystieto.setOrderer(kayttajaId: UUID): Hakemusyhteystieto {
