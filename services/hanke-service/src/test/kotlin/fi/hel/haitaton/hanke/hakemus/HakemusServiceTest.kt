@@ -15,11 +15,11 @@ import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatus
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
@@ -78,7 +78,7 @@ class HakemusServiceTest {
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
     private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
     private val attachmentService: ApplicationAttachmentService = mockk()
-    private val alluClient: CableReportService = mockk()
+    private val alluClient: AlluClient = mockk()
     private val alluStatusRepository: AlluStatusRepository = mockk()
     private val emailSenderService: EmailSenderService = mockk()
 

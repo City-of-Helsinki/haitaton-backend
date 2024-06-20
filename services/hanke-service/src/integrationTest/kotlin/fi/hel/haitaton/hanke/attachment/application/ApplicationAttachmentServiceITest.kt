@@ -19,7 +19,7 @@ import assertk.assertions.single
 import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
@@ -66,7 +66,7 @@ import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 private const val ALLU_ID = 42
 
 class ApplicationAttachmentServiceITest(
-    @Autowired private val cableReportService: CableReportService,
+    @Autowired private val alluClient: AlluClient,
     @Autowired private val attachmentService: ApplicationAttachmentService,
     @Autowired private val attachmentRepository: ApplicationAttachmentRepository,
     @Autowired private val applicationFactory: ApplicationFactory,
@@ -87,7 +87,7 @@ class ApplicationAttachmentServiceITest(
     fun tearDown() {
         mockClamAv.shutdown()
         checkUnnecessaryStub()
-        confirmVerified(cableReportService)
+        confirmVerified(alluClient)
     }
 
     @Nested
@@ -221,7 +221,7 @@ class ApplicationAttachmentServiceITest(
                 .transform { it.toBytes() }
                 .isEqualTo(DEFAULT_DATA)
 
-            verify { cableReportService wasNot Called }
+            verify { alluClient wasNot Called }
         }
 
         @Test
@@ -439,7 +439,7 @@ class ApplicationAttachmentServiceITest(
                     )
                 }
                 assertThat(attachmentRepository.findById(attachment.id!!)).isPresent()
-                verify { cableReportService wasNot Called }
+                verify { alluClient wasNot Called }
             }
 
             @Test
