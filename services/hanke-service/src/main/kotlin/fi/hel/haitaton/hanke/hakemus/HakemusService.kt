@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationHistory
@@ -14,7 +15,6 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
-import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
@@ -55,7 +55,7 @@ class HakemusService(
     private val disclosureLogService: DisclosureLogService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val attachmentService: ApplicationAttachmentService,
-    private val alluClient: CableReportService,
+    private val alluClient: AlluClient,
     private val alluStatusRepository: AlluStatusRepository,
     private val emailSenderService: EmailSenderService,
 ) {

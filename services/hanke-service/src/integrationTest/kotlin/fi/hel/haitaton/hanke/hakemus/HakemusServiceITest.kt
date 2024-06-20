@@ -30,9 +30,9 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTest
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -133,7 +133,7 @@ class HakemusServiceITest(
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val attachmentFactory: ApplicationAttachmentFactory,
     @Autowired private val fileClient: MockFileClient,
-    @Autowired private val alluClient: CableReportService,
+    @Autowired private val alluClient: AlluClient,
     @Autowired private val alluStatusRepository: AlluStatusRepository,
     @Autowired private val hankeService: HankeService,
 ) : IntegrationTest() {

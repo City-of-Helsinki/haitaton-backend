@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.configuration
 
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluProperties
-import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.attachment.azure.Containers
 import fi.hel.haitaton.hanke.email.EmailProperties
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
@@ -37,13 +37,13 @@ class Configuration {
 
     @Bean
     @Profile("!test")
-    fun cableReportService(webClientBuilder: WebClient.Builder): CableReportService {
+    fun alluClient(webClientBuilder: WebClient.Builder): AlluClient {
         val webClient =
             webClientWithLargeBuffer(
                 if (alluTrustInsecure) createInsecureTrustingWebClient(webClientBuilder)
                 else webClientBuilder
             )
-        return CableReportService(webClient, alluProperties)
+        return AlluClient(webClient, alluProperties)
     }
 
     private fun createInsecureTrustingWebClient(

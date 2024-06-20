@@ -20,8 +20,8 @@ import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.ExpectedHankeLogObject.expectedHankeLogObject
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
@@ -122,7 +122,7 @@ class HankeServiceITests(
     @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val hakemusFactory: HakemusFactory,
-    @Autowired private val cableReportService: CableReportService,
+    @Autowired private val alluClient: AlluClient,
 ) : IntegrationTest() {
 
     @BeforeEach
@@ -133,7 +133,7 @@ class HankeServiceITests(
     @AfterEach
     fun checkMocks() {
         checkUnnecessaryStub()
-        confirmVerified(cableReportService)
+        confirmVerified(alluClient)
     }
 
     @Nested
@@ -812,19 +812,19 @@ class HankeServiceITests(
         fun `when hakemus is pending should delete hanke`() {
             val hakemusAlluId = 356
             val hanke = initHankeWithHakemus(hakemusAlluId)
-            every { cableReportService.getApplicationInformation(hakemusAlluId) } returns
+            every { alluClient.getApplicationInformation(hakemusAlluId) } returns
                 AlluFactory.createAlluApplicationResponse(status = ApplicationStatus.PENDING)
-            justRun { cableReportService.cancel(hakemusAlluId) }
-            every { cableReportService.sendSystemComment(hakemusAlluId, any()) } returns 1324
+            justRun { alluClient.cancel(hakemusAlluId) }
+            every { alluClient.sendSystemComment(hakemusAlluId, any()) } returns 1324
 
             hankeService.deleteHanke(hanke.hankeTunnus, USERNAME)
 
             assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
             verifySequence {
-                cableReportService.getApplicationInformation(hakemusAlluId)
-                cableReportService.getApplicationInformation(hakemusAlluId)
-                cableReportService.cancel(hakemusAlluId)
-                cableReportService.sendSystemComment(hakemusAlluId, ALLU_USER_CANCELLATION_MSG)
+                alluClient.getApplicationInformation(hakemusAlluId)
+                alluClient.getApplicationInformation(hakemusAlluId)
+                alluClient.cancel(hakemusAlluId)
+                alluClient.sendSystemComment(hakemusAlluId, ALLU_USER_CANCELLATION_MSG)
             }
         }
 
@@ -841,7 +841,7 @@ class HankeServiceITests(
         fun `when hakemus is not pending or cancelled should throw`() {
             val hakemusAlluId = 123
             val hanke = initHankeWithHakemus(hakemusAlluId)
-            every { cableReportService.getApplicationInformation(hakemusAlluId) } returns
+            every { alluClient.getApplicationInformation(hakemusAlluId) } returns
                 AlluFactory.createAlluApplicationResponse(status = ApplicationStatus.HANDLING)
 
             assertThrows<HankeAlluConflictException> {
@@ -849,7 +849,7 @@ class HankeServiceITests(
             }
 
             assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNotNull()
-            verify { cableReportService.getApplicationInformation(hakemusAlluId) }
+            verify { alluClient.getApplicationInformation(hakemusAlluId) }
         }
 
         @Test
