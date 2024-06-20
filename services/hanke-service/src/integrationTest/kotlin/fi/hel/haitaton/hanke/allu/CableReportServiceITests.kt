@@ -387,7 +387,26 @@ class CableReportServiceITests {
     @Nested
     inner class GetApplicationInformation {
         @Test
-        fun `returns application information`() {
+        fun `calls the Allu endpoint with a correct request`() {
+            val alluid = 12
+            val body = AlluFactory.createAlluApplicationResponse(id = alluid)
+            val mockResponse =
+                MockResponse()
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .setResponseCode(200)
+                    .setBody(body.toJsonString())
+            mockWebServer.enqueue(mockResponse)
+
+            service.getApplicationInformation(alluid)
+
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("GET")
+            assertThat(request.path).isEqualTo("/v2/applications/$alluid")
+            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+        }
+
+        @Test
+        fun `returns application information when Allu responds with 200 OK`() {
             val alluid = 12
             val body = AlluFactory.createAlluApplicationResponse(id = alluid)
             val mockResponse =
@@ -400,10 +419,6 @@ class CableReportServiceITests {
             val response = service.getApplicationInformation(alluid)
 
             assertThat(response).isEqualTo(body)
-            val request = mockWebServer.takeRequest()
-            assertThat(request.method).isEqualTo("GET")
-            assertThat(request.path).isEqualTo("/v2/applications/$alluid")
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
         }
 
         @Test
