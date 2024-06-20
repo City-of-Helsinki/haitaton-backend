@@ -14,13 +14,13 @@ import assertk.assertions.isZero
 import assertk.assertions.prop
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
+import fi.hel.haitaton.hanke.toJsonString
 import java.time.Instant
 import java.time.ZonedDateTime
 import okhttp3.MultipartReader
@@ -340,7 +340,7 @@ class CableReportServiceITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody(OBJECT_MAPPER.writeValueAsString(histories))
+                    .setBody(histories.toJsonString())
             )
 
             val response = service.getApplicationStatusHistories(alluids, eventsAfter)
@@ -381,6 +381,55 @@ class CableReportServiceITests {
 
             assertFailure { service.getApplicationStatusHistories(alluids, eventsAfter) }
                 .hasClass(WebClientResponseException.NotFound::class)
+        }
+    }
+
+    @Nested
+    inner class GetApplicationInformation {
+        @Test
+        fun `calls the Allu endpoint with a correct request`() {
+            val alluid = 12
+            val body = AlluFactory.createAlluApplicationResponse(id = alluid)
+            val mockResponse =
+                MockResponse()
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .setResponseCode(200)
+                    .setBody(body.toJsonString())
+            mockWebServer.enqueue(mockResponse)
+
+            service.getApplicationInformation(alluid)
+
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("GET")
+            assertThat(request.path).isEqualTo("/v2/applications/$alluid")
+            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+        }
+
+        @Test
+        fun `returns application information when Allu responds with 200 OK`() {
+            val alluid = 12
+            val body = AlluFactory.createAlluApplicationResponse(id = alluid)
+            val mockResponse =
+                MockResponse()
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .setResponseCode(200)
+                    .setBody(body.toJsonString())
+            mockWebServer.enqueue(mockResponse)
+
+            val response = service.getApplicationInformation(alluid)
+
+            assertThat(response).isEqualTo(body)
+        }
+
+        @Test
+        fun `throws exception when Allu returns an error`() {
+            val alluid = 12
+            val mockResponse = MockResponse().setResponseCode(500)
+            mockWebServer.enqueue(mockResponse)
+
+            val failure = assertFailure { service.getApplicationInformation(alluid) }
+
+            failure.hasClass(WebClientResponseException.InternalServerError::class)
         }
     }
 

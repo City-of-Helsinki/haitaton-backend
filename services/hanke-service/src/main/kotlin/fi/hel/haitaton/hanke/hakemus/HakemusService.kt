@@ -181,7 +181,7 @@ class HakemusService(
     fun sendHakemus(id: Long, currentUserId: String): Hakemus {
         val hakemus = getEntityById(id)
 
-        setOrderedOnSend(hakemus, currentUserId)
+        setOrdererOnSend(hakemus, currentUserId)
 
         val hanke = hakemus.hanke
         if (!hanke.generated) {
@@ -383,7 +383,7 @@ class HakemusService(
     private fun getEntityById(id: Long): HakemusEntity =
         hakemusRepository.findOneById(id) ?: throw HakemusNotFoundException(id)
 
-    private fun setOrderedOnSend(hakemus: HakemusEntity, currentUserId: String) {
+    private fun setOrdererOnSend(hakemus: HakemusEntity, currentUserId: String) {
         val yhteyshenkilo: HakemusyhteyshenkiloEntity =
             listOf(
                     ApplicationContactType.HAKIJA,
