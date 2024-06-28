@@ -164,9 +164,9 @@ class EmailSenderServiceTest {
                 )
 
             override fun inviterInformation(name: String, email: String) =
-                "$name ($email) lade till dig i projektet"
+                "$name ($email) har bjudit in dig till projektet"
 
-            override val hankeInformation = "i projektet <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>."
+            override val hankeInformation = "projektet <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>."
         }
 
         @Nested
@@ -183,7 +183,7 @@ class EmailSenderServiceTest {
                 )
 
             override fun inviterInformation(name: String, email: String) =
-                "$name ($email) has added you to the project"
+                "$name ($email) has invited you to the project"
 
             override val hankeInformation = "to the project <b>‘$HANKE_NIMI’ ($HANKE_TUNNUS)</b>."
         }

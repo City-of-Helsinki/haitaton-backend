@@ -35,6 +35,11 @@
                     <a href="{{baseUrl}}">{{baseUrl}}</a>
                 </mj-text>
                 <mj-text mj-class="basic-txt">
+                    Observera att du för att kunna se ansökan måste ha aktiverat den identifieringslänk
+                    du fått för det projekt som ansökan gäller.
+                    Du hittar identifieringslänken i ett separat e-postmeddelande.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
                     Du hittar din ansökan genom att gå från startsidan till Egna projekt och välja rätt projekt.
                     Öppna projektets uppgifter i listvyn och välj ”Visa projektets ansökningar”.
                 </mj-text>
@@ -47,6 +52,11 @@
                     for project <b>{{hankeNimi}} ({{hankeTunnus}})</b>. You have been added to the application.
                     View the application in the Haitaton system:
                     <a href="{{baseUrl}}">{{baseUrl}}</a>
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Please note that in order to see the application, you must have activated
+                    the identification link that you have received for the project for which
+                    the application was submitted. You can find the identification link in a separate email message.
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     You can find your application by selecting ‘Own projects’ on the front page and then selecting the project in question.
