@@ -147,9 +147,9 @@ class EmailSenderServiceITest : IntegrationTest() {
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on lisätty hankkeelle HAI24-1 " +
-                        "/ Du har lagts till i projektet HAI24-1 " +
-                        "/ You have been added to project HAI24-1"
+                    "Haitaton: Sinut on kutsuttu hankkeelle HAI24-1 " +
+                        "/ Du har blivit inbjuden till projektet HAI24-1 " +
+                        "/ You have been invited to project HAI24-1"
                 )
         }
 
@@ -160,7 +160,9 @@ class EmailSenderServiceITest : IntegrationTest() {
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = email.bodies()
             assertThat(textBody).all {
-                contains("${notification.inviterName} (${notification.inviterEmail}) lisäsi sinut")
+                contains(
+                    "${notification.inviterName} (${notification.inviterEmail}) on kutsunut sinut"
+                )
                 contains("hankkeelle ${notification.hankeNimi} (${notification.hankeTunnus}).")
                 contains("http://localhost:3001/fi/kutsu?id=${notification.invitationToken}")
             }

@@ -7,12 +7,12 @@
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Sinut on lisätty hankkeelle {{hankeTunnus}} / Du har lagts till i projektet {{hankeTunnus}} / You
-                    have been added to project {{hankeTunnus}}
+                    Sinut on kutsuttu hankkeelle {{hankeTunnus}} / Du har blivit inbjuden till projektet {{hankeTunnus}} / You
+                    have been invited to project {{hankeTunnus}}
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    {{inviterName}} ({{inviterEmail}}) lisäsi sinut hankkeelle <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
-                    Tunnistaudu Haitattomaan alla olevan linkin kautta.
+                    {{inviterName}} ({{inviterEmail}}) on kutsunut sinut hankkeelle <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
+                    Nähdäksesi hankkeen, sinun tulee tunnistautua alla olevan linkin kautta. Huomioithan, että linkki on kertakäyttöinen.
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     <a href="{{baseUrl}}/fi/kutsu?id={{invitationToken}}">{{baseUrl}}/fi/kutsu?id={{invitationToken}}
@@ -26,8 +26,8 @@
                 <mj-divider mj-class="language-separator" />
 
                 <mj-text mj-class="basic-txt">
-                    {{inviterName}} ({{inviterEmail}}) lade till dig i projektet <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
-                    Identifiera dig i Haitaton via länken nedan.
+                    {{inviterName}} ({{inviterEmail}}) har bjudit in dig till projektet <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
+                    För att kunna se projektet måste du identifiera dig via nedanstående länk. Observera att länken bara kan användas en gång.
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     <a href="{{baseUrl}}/sv/inbjudan?id={{invitationToken}}">
@@ -42,9 +42,9 @@
                 <mj-divider mj-class="language-separator" />
 
                 <mj-text mj-class="basic-txt">
-                    {{inviterName}} ({{inviterEmail}}) has added you to the project <b>‘{{hankeNimi}}’
+                    {{inviterName}} ({{inviterEmail}}) has invited you to the project <b>‘{{hankeNimi}}’
                     ({{hankeTunnus}})</b>.
-                    Please log in to Haitaton via the link below.
+                    In order to see the project, you must identify yourself via the link below. Please note that the link is one-use.
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     <a href="{{baseUrl}}/en/invitation?id={{invitationToken}}">
