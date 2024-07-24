@@ -2357,8 +2357,28 @@ class HakemusServiceITest(
                 )
         }
 
-        @Test
-        fun `downloads the decision when a kaivuilmoitus gets a decision`() {
+        private fun mockAlluDownload(status: ApplicationStatus) =
+            when (status) {
+                ApplicationStatus.DECISION ->
+                    every { alluClient.getDecisionPdf(alluId) } returns PDF_BYTES
+                ApplicationStatus.OPERATIONAL_CONDITION ->
+                    every { alluClient.getOperationalConditionPdf(alluId) } returns PDF_BYTES
+                else -> throw IllegalArgumentException()
+            }
+
+        private fun verifyAlluDownload(status: ApplicationStatus) =
+            when (status) {
+                ApplicationStatus.DECISION -> verify { alluClient.getDecisionPdf(alluId) }
+                ApplicationStatus.OPERATIONAL_CONDITION ->
+                    verify { alluClient.getOperationalConditionPdf(alluId) }
+                else -> throw IllegalArgumentException()
+            }
+
+        @ParameterizedTest
+        @EnumSource(ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION"])
+        fun `downloads the document when a kaivuilmoitus gets a decision`(
+            status: ApplicationStatus
+        ) {
             val hakemus =
                 hakemusFactory
                     .builder(ApplicationType.EXCAVATION_NOTIFICATION)
@@ -2370,11 +2390,11 @@ class HakemusServiceITest(
                         alluId,
                         ApplicationHistoryFactory.createEvent(
                             applicationIdentifier = identifier,
-                            newStatus = ApplicationStatus.DECISION
+                            newStatus = status,
                         )
                     ),
                 )
-            every { alluClient.getDecisionPdf(alluId) } returns PDF_BYTES
+            mockAlluDownload(status)
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse()
 
@@ -2384,10 +2404,8 @@ class HakemusServiceITest(
                 .single()
                 .prop(TestFile::path)
                 .startsWith("${hakemus.id}/")
-            verifySequence {
-                alluClient.getDecisionPdf(alluId)
-                alluClient.getApplicationInformation(alluId)
-            }
+            verifyAlluDownload(status)
+            verify { alluClient.getApplicationInformation(alluId) }
         }
     }
 }
