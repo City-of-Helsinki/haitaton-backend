@@ -15,9 +15,9 @@ import assertk.assertions.isNotNull
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
+import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
@@ -177,7 +177,7 @@ class HankeAttachmentServiceITest(
 
             assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
             assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
-            assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
+            assertThat(result.bytes).isEqualTo(PDF_BYTES)
         }
     }
 

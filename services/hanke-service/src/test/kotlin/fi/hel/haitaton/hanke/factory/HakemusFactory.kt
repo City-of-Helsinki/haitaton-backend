@@ -51,6 +51,13 @@ class HakemusFactory(
         hankeEntity: HankeEntity = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
     ) = builder(USERNAME, hankeEntity)
 
+    fun builder(applicationType: ApplicationType) =
+        builder(
+            USERNAME,
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity(),
+            applicationType
+        )
+
     private fun builder(
         userId: String,
         hakemusEntity: HakemusEntity,

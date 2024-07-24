@@ -9,8 +9,8 @@ import assertk.assertions.hasMessage
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
+import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
@@ -66,7 +66,7 @@ class ApplicationAttachmentContentServiceITest(
                 attachmentContentService.upload(
                     FILE_NAME_PDF,
                     MediaType.APPLICATION_PDF,
-                    DEFAULT_DATA,
+                    PDF_BYTES,
                     applicationId
                 )
 

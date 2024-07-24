@@ -20,9 +20,9 @@ import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluClient
-import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
+import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
@@ -155,7 +155,7 @@ class ApplicationAttachmentServiceITest(
 
             assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
             assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
-            assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
+            assertThat(result.bytes).isEqualTo(PDF_BYTES)
         }
 
         @Test
@@ -219,7 +219,7 @@ class ApplicationAttachmentServiceITest(
                 .isNotNull()
                 .prop(DownloadResponse::content)
                 .transform { it.toBytes() }
-                .isEqualTo(DEFAULT_DATA)
+                .isEqualTo(PDF_BYTES)
 
             verify { alluClient wasNot Called }
         }
