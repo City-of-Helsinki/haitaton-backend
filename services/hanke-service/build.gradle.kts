@@ -7,7 +7,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "7.10.0"
+val sentryVersion = "7.12.1"
 
 repositories { mavenCentral() }
 
