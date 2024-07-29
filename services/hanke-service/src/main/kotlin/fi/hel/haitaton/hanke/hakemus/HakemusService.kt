@@ -338,43 +338,60 @@ class HakemusService(
     }
 
     private fun handleApplicationEvent(application: HakemusEntity, event: ApplicationStatusEvent) {
-        application.alluStatus = event.newStatus
-        application.applicationIdentifier = event.applicationIdentifier
-        logger.info {
-            "Updating hakemus with new status, " +
-                "id=${application.id}, " +
-                "alluId=${application.alluid}, " +
-                "application identifier=${application.applicationIdentifier}, " +
-                "new status=${application.alluStatus}, " +
-                "event time=${event.eventTime}"
-        }
-        if (event.newStatus == ApplicationStatus.DECISION) {
-            when (application.applicationType) {
-                ApplicationType.CABLE_REPORT ->
-                    sendDecisionReadyEmails(application, event.applicationIdentifier)
-                ApplicationType.EXCAVATION_NOTIFICATION ->
-                    paatosService.saveKaivuilmoituksenPaatos(application, event)
+        fun updateStatus() {
+            application.alluStatus = event.newStatus
+            application.applicationIdentifier = event.applicationIdentifier
+            logger.info {
+                "Updating hakemus with new status, " +
+                    "id=${application.id}, " +
+                    "alluId=${application.alluid}, " +
+                    "application identifier=${application.applicationIdentifier}, " +
+                    "new status=${application.alluStatus}, " +
+                    "event time=${event.eventTime}"
             }
         }
-        if (event.newStatus == ApplicationStatus.OPERATIONAL_CONDITION) {
-            when (application.applicationType) {
-                ApplicationType.CABLE_REPORT ->
-                    logger.error {
-                        "Got ${event.newStatus} update for a cable report. ${application.logString()}"
-                    }
-                ApplicationType.EXCAVATION_NOTIFICATION ->
-                    paatosService.saveKaivuilmoituksenToiminnallinenKunto(application, event)
+
+        when (event.newStatus) {
+            ApplicationStatus.DECISION -> {
+                updateStatus()
+                when (application.applicationType) {
+                    ApplicationType.CABLE_REPORT ->
+                        sendDecisionReadyEmails(application, event.applicationIdentifier)
+                    ApplicationType.EXCAVATION_NOTIFICATION ->
+                        paatosService.saveKaivuilmoituksenPaatos(application, event)
+                }
             }
-        }
-        if (event.newStatus == ApplicationStatus.FINISHED) {
-            when (application.applicationType) {
-                ApplicationType.CABLE_REPORT ->
-                    logger.error {
-                        "Got ${event.newStatus} update for a cable report. ${application.logString()}"
-                    }
-                ApplicationType.EXCAVATION_NOTIFICATION ->
-                    paatosService.saveKaivuilmoituksenTyoValmis(application, event)
+            ApplicationStatus.OPERATIONAL_CONDITION -> {
+                updateStatus()
+                when (application.applicationType) {
+                    ApplicationType.CABLE_REPORT ->
+                        logger.error {
+                            "Got ${event.newStatus} update for a cable report. ${application.logString()}"
+                        }
+                    ApplicationType.EXCAVATION_NOTIFICATION ->
+                        paatosService.saveKaivuilmoituksenToiminnallinenKunto(application, event)
+                }
             }
+            ApplicationStatus.FINISHED -> {
+                updateStatus()
+                when (application.applicationType) {
+                    ApplicationType.CABLE_REPORT ->
+                        logger.error {
+                            "Got ${event.newStatus} update for a cable report. ${application.logString()}"
+                        }
+                    ApplicationType.EXCAVATION_NOTIFICATION ->
+                        paatosService.saveKaivuilmoituksenTyoValmis(application, event)
+                }
+            }
+            ApplicationStatus.REPLACED -> {
+                logger.info {
+                    "A decision has been replaced. Marking the old decisions as replaced. hakemustunnus = ${event.applicationIdentifier}, ${application.logString()}"
+                }
+                // Don't update application status or identifier. A new decision has been
+                // made at the same time, so take the status and identifier from that update.
+                paatosService.markReplaced(event.applicationIdentifier)
+            }
+            else -> updateStatus()
         }
     }
 
