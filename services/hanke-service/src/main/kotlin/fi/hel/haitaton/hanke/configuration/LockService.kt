@@ -4,6 +4,7 @@ import javax.sql.DataSource
 import mu.KotlinLogging
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.integration.jdbc.lock.DefaultLockRepository
 import org.springframework.integration.jdbc.lock.JdbcLockRegistry
 import org.springframework.integration.jdbc.lock.LockRepository
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service
 private val logger = KotlinLogging.logger {}
 
 @Configuration
+@Profile("!test")
 class LockRepositories {
     /** The time to hold on to dead locks. */
     private val timeToLive = 15 * 60 * 1000 // 15 minutes in milliseconds
@@ -30,6 +32,7 @@ class LockRepositories {
 }
 
 @Service
+@Profile("!test")
 class LockService(private val jdbcLockRegistry: JdbcLockRegistry) {
 
     /** Run the given function if a lock is obtained. If the lock is not obtained, do nothing. */

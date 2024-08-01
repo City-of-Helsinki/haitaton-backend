@@ -5,12 +5,14 @@ import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.configuration.LockService
 import java.time.OffsetDateTime
 import mu.KotlinLogging
+import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
 private val logger = KotlinLogging.logger {}
 
 @Service
+@Profile("!test")
 class AlluUpdateService(
     private val hakemusRepository: HakemusRepository,
     private val alluStatusRepository: AlluStatusRepository,
