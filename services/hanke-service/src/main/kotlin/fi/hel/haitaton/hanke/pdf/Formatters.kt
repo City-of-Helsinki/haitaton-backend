@@ -13,15 +13,19 @@ fun Hakemusyhteyshenkilo.format(): String =
     listOfNotNull(kokoNimi(), sahkoposti, puhelin).filter { it.isNotBlank() }.joinToString("\n")
 
 fun Hakemusyhteystieto.format(): String =
-    listOfNotNull(
-            nimi + "\n",
-            ytunnus,
-            sahkoposti,
-            puhelinnumero,
-            "\nYhteyshenkilöt\n",
-        )
+    listOfNotNull("$nimi\n", ytunnus, sahkoposti, puhelinnumero, "\nYhteyshenkilöt\n")
         .filter { it.isNotBlank() }
         .joinToString("\n") + this.yhteyshenkilot.joinToString("\n") { "\n" + it.format() }
 
 fun ZonedDateTime?.format(): String? =
     this?.withZoneSameInstant(ZoneId.of("Europe/Helsinki"))?.format(finnishDateFormat)
+
+fun Boolean?.format(): String = this?.let { if (it) "Kyllä" else "Ei" } ?: "-"
+
+fun Float?.format(): String = "%.2f".format(this)
+
+fun Double?.format(): String = "%.2f".format(this)
+
+fun List<String>?.format(): String = if (this.isNullOrEmpty()) "-" else this.joinToString(", ")
+
+fun String?.orDash() = if (this.isNullOrEmpty()) "-" else this

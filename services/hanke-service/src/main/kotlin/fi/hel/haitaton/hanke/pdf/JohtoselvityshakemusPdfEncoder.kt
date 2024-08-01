@@ -24,7 +24,7 @@ object JohtoselvityshakemusPdfEncoder {
         val outputStream = ByteArrayOutputStream()
         val document = Document(PageSize.A4)
         PdfWriter.getInstance(document, outputStream)
-        formatPdf(
+        formatJohtoselvitysPdf(
             document,
             data,
             totalArea,
@@ -34,7 +34,7 @@ object JohtoselvityshakemusPdfEncoder {
         return outputStream.toByteArray()
     }
 
-    private fun formatPdf(
+    private fun formatJohtoselvitysPdf(
         document: Document,
         data: JohtoselvityshakemusData,
         totalArea: Float?,
@@ -45,57 +45,59 @@ object JohtoselvityshakemusPdfEncoder {
 
         document.title("Johtoselvityshakemus")
 
-        document.section("Perustiedot") { table ->
-            table.row("Työn nimi", data.name)
-            table.row("Osoitetiedot", data.postalAddress?.format())
-            table.row("Työssä on kyse", data.getWorkTargets())
-            table.row("Työn kuvaus", data.workDescription)
-            table.row("Omat tiedot", data.getOrderer()?.format())
+        document.section("Perustiedot") {
+            row("Työn nimi", data.name)
+            row("Osoitetiedot", data.postalAddress?.format())
+            row("Työssä on kyse", data.getWorkTargets())
+            row("Työn kuvaus", data.workDescription)
+            row("Omat tiedot", data.getOrderer()?.format())
         }
 
         document.newPage()
 
-        document.section("Alueet") { table ->
+        document.section("Alueet") {
             val areaNames =
                 data.areas?.mapIndexed { i, area -> area.name.ifBlank { "Työalue ${i+1}" } }
                     ?: listOf()
 
-            table.row("Työn arvioitu alkupäivä", data.startTime.format())
-            table.row("Työn arvioitu loppupäivä", data.endTime.format())
-            table.row("Alueiden kokonaispinta-ala", totalArea.toString() + " m²")
-            table.row(
+            row("Työn arvioitu alkupäivä", data.startTime.format())
+            row("Työn arvioitu loppupäivä", data.endTime.format())
+            row("Alueiden kokonaispinta-ala", totalArea.toString() + " m²")
+            row(
                 "Alueet",
                 areas
                     .mapIndexed { i, area -> "${areaNames[i]}\n\nPinta-ala: $area m²" }
-                    .joinToString("\n\n")
-            )
+                    .joinToString("\n\n"))
+            row("Alueiden kokonaispinta-ala", totalArea.format() + " m²")
+            row(
+                "Alueet",
+                areas
+                    .mapIndexed { i, area -> "${areaNames[i]}\n\nPinta-ala: ${area.format()} m²" }
+                    .joinToString("\n\n"))
         }
 
         document.newPage()
 
-        document.section("Yhteystiedot") { table ->
+        document.section("Yhteystiedot") {
             if (data.customerWithContacts != null) {
-                table.row("Työstä vastaavat", data.customerWithContacts.format())
+                row("Työstä vastaavat", data.customerWithContacts.format())
             }
             if (data.contractorWithContacts != null) {
-                table.row("Työn suorittajat", data.contractorWithContacts.format())
+                row("Työn suorittajat", data.contractorWithContacts.format())
             }
             if (data.propertyDeveloperWithContacts != null) {
-                table.row("Rakennuttajat", data.propertyDeveloperWithContacts.format())
+                row("Rakennuttajat", data.propertyDeveloperWithContacts.format())
             }
             if (data.representativeWithContacts != null) {
-                table.row("Asianhoitajat", data.representativeWithContacts.format())
+                row("Asianhoitajat", data.representativeWithContacts.format())
             }
         }
 
         document.newPage()
 
-        document.section("Liitteet") { table ->
+        document.section("Liitteet") {
             if (attachments.isNotEmpty()) {
-                table.row(
-                    "Lisätyt liitetiedostot",
-                    attachments.map { it.fileName }.joinToString("\n")
-                )
+                row("Lisätyt liitetiedostot", attachments.map { it.fileName }.joinToString("\n"))
             }
         }
 
@@ -103,10 +105,13 @@ object JohtoselvityshakemusPdfEncoder {
     }
 
     private fun JohtoselvityshakemusData.getOrderer(): Hakemusyhteyshenkilo? =
-        customerWithContacts?.yhteyshenkilot?.find { it.tilaaja }
-            ?: contractorWithContacts?.yhteyshenkilot?.find { it.tilaaja }
-            ?: representativeWithContacts?.yhteyshenkilot?.find { it.tilaaja }
-            ?: propertyDeveloperWithContacts?.yhteyshenkilot?.find { it.tilaaja }
+        listOfNotNull(
+                customerWithContacts,
+                contractorWithContacts,
+                representativeWithContacts,
+                propertyDeveloperWithContacts)
+            .flatMap { it.yhteyshenkilot }
+            .find { it.tilaaja }
 
     private fun JohtoselvityshakemusData.getWorkTargets(): String =
         listOf(
@@ -114,8 +119,7 @@ object JohtoselvityshakemusPdfEncoder {
                 maintenanceWork to "Olemassaolevan rakenteen kunnossapitotyöstä",
                 emergencyWork to
                     "Kaivutyö on aloitettu ennen johtoselvityksen tilaamista merkittävien vahinkojen välttämiseksi",
-                propertyConnectivity to "Kiinteistöliittymien rakentamisesta"
-            )
+                propertyConnectivity to "Kiinteistöliittymien rakentamisesta")
             .filter { (active, _) -> active }
             .joinToString("\n") { (_, description) -> description }
 }
