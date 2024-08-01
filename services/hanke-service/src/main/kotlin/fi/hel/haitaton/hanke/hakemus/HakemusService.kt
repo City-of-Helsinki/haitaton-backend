@@ -25,6 +25,7 @@ import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.paatos.PaatosService
+import fi.hel.haitaton.hanke.pdf.JohtoselvityshakemusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
@@ -545,7 +546,7 @@ class HakemusService(
             geometriatDao.calculateCombinedArea(data.areas?.map { it.geometry } ?: listOf())
         val areas = data.areas?.map { geometriatDao.calculateArea(it.geometry) } ?: listOf()
         val attachments = attachmentService.getMetadataList(applicationId)
-        val pdfData = HakemusPdfService.createPdf(data, totalArea, areas, attachments)
+        val pdfData = JohtoselvityshakemusPdfEncoder.createPdf(data, totalArea, areas, attachments)
         val attachmentMetadata =
             AttachmentMetadata(
                 id = null,
