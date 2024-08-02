@@ -22,6 +22,7 @@ import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
+import assertk.assertions.startsWith
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
@@ -38,10 +39,12 @@ import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
+import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
+import fi.hel.haitaton.hanke.attachment.common.TestFile
 import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
@@ -1968,7 +1971,7 @@ class HakemusServiceITest(
 
         @Test
         fun `when unknown ID should throw`() {
-            val failure = assertFailure { hakemusService.downloadDecision(1234, USERNAME) }
+            val failure = assertFailure { hakemusService.downloadDecision(1234) }
 
             failure.all {
                 hasClass(HakemusNotFoundException::class)
@@ -1980,7 +1983,7 @@ class HakemusServiceITest(
         fun `when no alluid should throw`() {
             val hakemus = hakemusFactory.builder().withNoAlluFields().save()
 
-            val failure = assertFailure { hakemusService.downloadDecision(hakemus.id, USERNAME) }
+            val failure = assertFailure { hakemusService.downloadDecision(hakemus.id) }
 
             failure.all {
                 hasClass(HakemusDecisionNotFoundException::class)
@@ -1994,7 +1997,7 @@ class HakemusServiceITest(
             val hakemus = hakemusFactory.builder().inHandling(alluId = alluId).save()
             every { alluClient.getDecisionPdf(alluId) }.throws(HakemusDecisionNotFoundException(""))
 
-            val failure = assertFailure { hakemusService.downloadDecision(hakemus.id, USERNAME) }
+            val failure = assertFailure { hakemusService.downloadDecision(hakemus.id) }
 
             failure.hasClass(HakemusDecisionNotFoundException::class)
             verify { alluClient.getDecisionPdf(alluId) }
@@ -2005,7 +2008,7 @@ class HakemusServiceITest(
             val hakemus = hakemusFactory.builder().inHandling(alluId = alluId).save()
             every { alluClient.getDecisionPdf(alluId) }.returns(decisionPdf)
 
-            val (filename, bytes) = hakemusService.downloadDecision(hakemus.id, USERNAME)
+            val (filename, bytes) = hakemusService.downloadDecision(hakemus.id)
 
             assertThat(filename).isNotNull().isEqualTo(hakemus.applicationIdentifier)
             assertThat(bytes).isEqualTo(decisionPdf)
@@ -2018,7 +2021,7 @@ class HakemusServiceITest(
                 hakemusFactory.builder().withStatus(alluId = alluId, identifier = null).save()
             every { alluClient.getDecisionPdf(alluId) }.returns(decisionPdf)
 
-            val (filename, bytes) = hakemusService.downloadDecision(hakemus.id, USERNAME)
+            val (filename, bytes) = hakemusService.downloadDecision(hakemus.id)
 
             assertThat(filename).isNotNull().isEqualTo("paatos")
             assertThat(bytes).isEqualTo(decisionPdf)
@@ -2324,7 +2327,7 @@ class HakemusServiceITest(
         }
 
         @Test
-        fun `sends email to the contacts when hakemus gets a decision`() {
+        fun `sends email to the contacts when a johtoselvityshakemus gets a decision`() {
             val hanke = hankeFactory.saveMinimal()
             val hakija = hankeKayttajaFactory.saveUser(hankeId = hanke.id)
             hakemusFactory
@@ -2352,6 +2355,39 @@ class HakemusServiceITest(
                 .isEqualTo(
                     "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier"
                 )
+        }
+
+        @Test
+        fun `downloads the decision when a kaivuilmoitus gets a decision`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
+                    .save()
+            val histories =
+                listOf(
+                    ApplicationHistoryFactory.create(
+                        alluId,
+                        ApplicationHistoryFactory.createEvent(
+                            applicationIdentifier = identifier,
+                            newStatus = ApplicationStatus.DECISION
+                        )
+                    ),
+                )
+            every { alluClient.getDecisionPdf(alluId) } returns PDF_BYTES
+            every { alluClient.getApplicationInformation(alluId) } returns
+                AlluFactory.createAlluApplicationResponse()
+
+            hakemusService.handleHakemusUpdates(histories, updateTime)
+
+            assertThat(fileClient.listBlobs(Container.PAATOKSET))
+                .single()
+                .prop(TestFile::path)
+                .startsWith("${hakemus.id}/")
+            verifySequence {
+                alluClient.getDecisionPdf(alluId)
+                alluClient.getApplicationInformation(alluId)
+            }
         }
     }
 }

@@ -9,8 +9,8 @@ import assertk.assertions.hasMessage
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
+import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
@@ -62,12 +62,7 @@ class HankeAttachmentContentServiceITest(
         @Test
         fun `Should return location of uploaded blob`() {
             val blobLocation =
-                attachmentContentService.upload(
-                    FILE_NAME_PDF,
-                    APPLICATION_PDF,
-                    DEFAULT_DATA,
-                    hankeId
-                )
+                attachmentContentService.upload(FILE_NAME_PDF, APPLICATION_PDF, PDF_BYTES, hankeId)
 
             assertThat(blobLocation).isValidBlobLocation(id = hankeId)
         }

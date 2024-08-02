@@ -314,7 +314,7 @@ class HakemusController(
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
     fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
         val userId = currentUserId()
-        val (filename, pdfBytes) = hakemusService.downloadDecision(id, userId)
+        val (filename, pdfBytes) = hakemusService.downloadDecision(id)
         val application = hakemusService.getById(id)
         disclosureLogService.saveDisclosureLogsForCableReport(application.toMetadata(), userId)
 

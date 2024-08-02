@@ -22,16 +22,14 @@ const val APPLICATION_ID = 1L
 const val CONTENT_TYPE_HEADER = "Content-Type"
 
 val DUMMY_DATA = "ABC".toByteArray()
-val DEFAULT_DATA by lazy {
-    "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
-}
-val DEFAULT_SIZE by lazy { DEFAULT_DATA.size.toLong() }
+val PDF_BYTES by lazy { "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes() }
+val DEFAULT_SIZE by lazy { PDF_BYTES.size.toLong() }
 
 fun testFile(
     fileParam: String = FILE_PARAM,
     fileName: String = FILE_NAME_PDF,
     contentType: String? = APPLICATION_PDF_VALUE,
-    data: ByteArray = DEFAULT_DATA,
+    data: ByteArray = PDF_BYTES,
 ) = MockMultipartFile(fileParam, fileName, contentType, data)
 
 fun ResultActions.andExpectError(error: HankeError): ResultActions =

@@ -8,21 +8,25 @@ import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
+import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 import org.springframework.http.MediaType
 
 object AlluFactory {
     fun createAlluApplicationResponse(
         id: Int = 42,
-        status: ApplicationStatus = ApplicationStatus.PENDING
+        status: ApplicationStatus = ApplicationStatus.PENDING,
+        name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
+        startTime: ZonedDateTime = DateFactory.getStartDatetime(),
+        endTime: ZonedDateTime = DateFactory.getEndDatetime(),
     ) =
         AlluApplicationResponse(
             id = id,
-            name = ApplicationFactory.DEFAULT_APPLICATION_NAME,
+            name = name,
             applicationId = ApplicationFactory.DEFAULT_APPLICATION_IDENTIFIER,
             status = status,
-            startTime = DateFactory.getStartDatetime(),
-            endTime = DateFactory.getEndDatetime(),
+            startTime = startTime,
+            endTime = endTime,
             owner = null,
             kindsWithSpecifiers = mapOf(),
             terms = null,
