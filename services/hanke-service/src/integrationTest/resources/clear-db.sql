@@ -15,6 +15,7 @@ TRUNCATE TABLE
     hankeyhteystieto,
     int_lock,
     kayttajakutsu,
+    paatos,
     permissions,
     tormaystarkastelutulos,
     hankkeen_haittojenhallintasuunnitelma;
