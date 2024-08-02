@@ -282,4 +282,154 @@ class PaatosServiceITest(
             }
         }
     }
+
+    @Nested
+    inner class SaveKaivuilmoituksenToiminnallinenKunto {
+        private val eventTime = ZonedDateTime.parse("2024-07-21T15:23:12Z")
+        private val alluId = 631
+        private val hakemustunnus = "KP2400414"
+        private val nameFromAllu = "Name from Allu"
+        private val startDateFromAllu = ZonedDateTime.parse("2024-07-24T15:23:12Z")
+        private val endDateFromAllu = ZonedDateTime.parse("2024-07-25T15:23:12Z")
+        private val event =
+            ApplicationStatusEvent(
+                eventTime = eventTime,
+                applicationIdentifier = hakemustunnus,
+                newStatus = ApplicationStatus.DECISION,
+                targetStatus = null,
+            )
+
+        private fun setupAlluMocks() {
+            every { alluClient.getOperationalConditionPdf(alluId) } returns PDF_BYTES
+            every { alluClient.getApplicationInformation(alluId) } returns
+                AlluFactory.createAlluApplicationResponse(
+                    id = alluId,
+                    name = nameFromAllu,
+                    startTime = startDateFromAllu,
+                    endTime = endDateFromAllu,
+                )
+        }
+
+        @Test
+        fun `saves decision PDF to blob storage`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION, alluId, hakemustunnus)
+                    .saveEntity()
+            setupAlluMocks()
+
+            paatosService.saveKaivuilmoituksenToiminnallinenKunto(hakemus, event)
+
+            val decisions = fileClient.listBlobs(Container.PAATOKSET)
+            assertThat(decisions).single().all {
+                prop(TestFile::path).startsWith("${hakemus.id}/")
+                prop(TestFile::contentType).isEqualTo(MediaType.APPLICATION_PDF)
+                prop(TestFile::contentLength).isEqualTo(PDF_BYTES.size)
+                prop(TestFile::contentDisposition)
+                    .isEqualTo(
+                        "attachment; filename*=UTF-8''$hakemustunnus-toiminnallinen-kunto.pdf"
+                    )
+                prop(TestFile::content).transform { it.toBytes() }.isEqualTo(PDF_BYTES)
+            }
+            verifySequence {
+                alluClient.getOperationalConditionPdf(alluId)
+                alluClient.getApplicationInformation(alluId)
+            }
+        }
+
+        @Test
+        fun `writes the decision data to database`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION, alluId, hakemustunnus)
+                    .saveEntity()
+            setupAlluMocks()
+
+            paatosService.saveKaivuilmoituksenToiminnallinenKunto(hakemus, event)
+
+            assertThat(paatosRepository.findAll()).single().all {
+                prop(PaatosEntity::hakemusId).isEqualTo(hakemus.id)
+                prop(PaatosEntity::hakemustunnus).isEqualTo(hakemustunnus)
+                prop(PaatosEntity::tyyppi).isEqualTo(TOIMINNALLINEN_KUNTO)
+                prop(PaatosEntity::tila).isEqualTo(NYKYINEN)
+            }
+            verifySequence {
+                alluClient.getOperationalConditionPdf(alluId)
+                alluClient.getApplicationInformation(alluId)
+            }
+        }
+
+        @Test
+        fun `reads name and dates from Allu`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION, alluId, hakemustunnus)
+                    .withName("Old name")
+                    .withStartTime(ZonedDateTime.parse("2023-07-24T15:23:12Z"))
+                    .withEndTime(ZonedDateTime.parse("2023-07-24T15:23:12Z"))
+                    .saveEntity()
+            setupAlluMocks()
+
+            paatosService.saveKaivuilmoituksenToiminnallinenKunto(hakemus, event)
+
+            assertThat(paatosRepository.findAll()).single().all {
+                prop(PaatosEntity::nimi).isEqualTo(nameFromAllu)
+                prop(PaatosEntity::alkupaiva).isEqualTo(startDateFromAllu.toLocalDate())
+                prop(PaatosEntity::loppupaiva).isEqualTo(endDateFromAllu.toLocalDate())
+            }
+            verifySequence {
+                alluClient.getOperationalConditionPdf(alluId)
+                alluClient.getApplicationInformation(alluId)
+            }
+        }
+
+        @Test
+        fun `throws exception when getting the PDF from Allu throws an exception`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION, alluId, hakemustunnus)
+                    .saveEntity()
+            every { alluClient.getOperationalConditionPdf(alluId) } throws AlluException()
+
+            val failure = assertFailure {
+                paatosService.saveKaivuilmoituksenToiminnallinenKunto(hakemus, event)
+            }
+
+            failure.isInstanceOf(AlluException::class.java)
+            assertThat(paatosRepository.findAll()).isEmpty()
+            verifySequence { alluClient.getOperationalConditionPdf(alluId) }
+        }
+
+        @Test
+        fun `doesn't save the decision when getting application information fails`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION, alluId, hakemustunnus)
+                    .saveEntity()
+            every { alluClient.getOperationalConditionPdf(alluId) } returns PDF_BYTES
+            every { alluClient.getApplicationInformation(alluId) } throws AlluException()
+
+            val failure = assertFailure {
+                paatosService.saveKaivuilmoituksenToiminnallinenKunto(hakemus, event)
+            }
+
+            failure.isInstanceOf(AlluException::class.java)
+            assertThat(paatosRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(Container.PAATOKSET)).isEmpty()
+            verifySequence {
+                alluClient.getOperationalConditionPdf(alluId)
+                alluClient.getApplicationInformation(alluId)
+            }
+        }
+    }
 }

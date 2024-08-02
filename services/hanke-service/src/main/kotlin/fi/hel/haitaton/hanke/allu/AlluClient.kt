@@ -238,14 +238,24 @@ class AlluClient(
     fun getDecisionPdf(alluApplicationId: Int): ByteArray {
         logger.info { "Fetching decision pdf for application $alluApplicationId." }
         val requestPath = "cablereports/$alluApplicationId/decision"
+        return getPdf(alluApplicationId, requestPath)
+    }
+
+    fun getOperationalConditionPdf(alluApplicationId: Int): ByteArray {
+        logger.info { "Fetching operational condition pdf for application $alluApplicationId." }
+        val requestPath = "excavationannouncements/$alluApplicationId/approval/operationalcondition"
+        return getPdf(alluApplicationId, requestPath)
+    }
+
+    private fun getPdf(alluApplicationId: Int, path: String): ByteArray {
         val response =
-            get(requestPath, MediaType.APPLICATION_PDF)
+            get(path, MediaType.APPLICATION_PDF)
                 .onStatus(
                     { httpStatus -> httpStatus.value() == 404 },
                     {
                         Mono.error(
                             HakemusDecisionNotFoundException(
-                                "Decision not found in Allu. alluApplicationId=$alluApplicationId"
+                                "Document not found in Allu. alluApplicationId=$alluApplicationId"
                             )
                         )
                     }
@@ -253,25 +263,24 @@ class AlluClient(
                 .toEntity(ByteArrayResource::class.java)
                 .timeout(defaultTimeout)
                 .doOnError(WebClientResponseException::class.java) {
-                    logError("Error getting decision PDF from Allu", it)
+                    logError("Error getting PDF from Allu", it)
                 }
                 .blockOptional()
                 .orElseThrow()
 
         if (response.headers.contentType != MediaType.APPLICATION_PDF) {
             throw AlluApiException(
-                requestPath,
+                path,
                 "Decision API didn't return a PDF. RequestContent-Type header: ${response.headers.contentType}"
             )
         }
-        val body =
-            response.body ?: throw AlluApiException(requestPath, "Decision API returned empty body")
+        val body = response.body ?: throw AlluApiException(path, "Document API returned empty body")
         return body.byteArray
     }
 
     fun getDecisionAttachments(alluApplicationId: Int): List<AttachmentMetadata> {
         logger.info { "Fetching decision attachments for application $alluApplicationId." }
-        return get("$baseUrl/v2/applications/$alluApplicationId/attachments")
+        return get("applications/$alluApplicationId/attachments")
             .bodyToFlux(AttachmentMetadata::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {

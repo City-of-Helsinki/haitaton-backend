@@ -22,16 +22,52 @@ class PaatosService(
         val alluId = hakemus.alluid!!
         val pdfData = alluClient.getDecisionPdf(alluId)
 
+        val filename = "${event.applicationIdentifier}-paatos.pdf"
+        createPaatos(
+            pdfData,
+            filename,
+            hakemus.id,
+            alluId,
+            event.applicationIdentifier,
+            PaatosTyyppi.PAATOS,
+        )
+    }
+
+    fun saveKaivuilmoituksenToiminnallinenKunto(
+        hakemus: HakemusEntity,
+        event: ApplicationStatusEvent
+    ) {
+        val alluId = hakemus.alluid!!
+        val pdfData = alluClient.getOperationalConditionPdf(alluId)
+
+        val filename = "${event.applicationIdentifier}-toiminnallinen-kunto.pdf"
+        createPaatos(
+            pdfData,
+            filename,
+            hakemus.id,
+            alluId,
+            event.applicationIdentifier,
+            PaatosTyyppi.TOIMINNALLINEN_KUNTO,
+        )
+    }
+
+    private fun createPaatos(
+        pdfData: ByteArray,
+        filename: String,
+        hakemusId: Long,
+        alluId: Int,
+        hakemustunnus: String,
+        tyyppi: PaatosTyyppi,
+    ) {
         val applicationResponse = alluClient.getApplicationInformation(alluId)
 
-        val filename = "${event.applicationIdentifier}-paatos.pdf"
-        val path = uploadPaatos(pdfData, filename, hakemus.id)
+        val path = uploadPaatos(pdfData, filename, hakemusId)
 
         paatosRepository.save(
             PaatosEntity(
-                hakemusId = hakemus.id,
-                hakemustunnus = event.applicationIdentifier,
-                tyyppi = PaatosTyyppi.PAATOS,
+                hakemusId = hakemusId,
+                hakemustunnus = hakemustunnus,
+                tyyppi = tyyppi,
                 tila = PaatosTila.NYKYINEN,
                 nimi = applicationResponse.name,
                 alkupaiva = applicationResponse.startTime.toLocalDate(),
