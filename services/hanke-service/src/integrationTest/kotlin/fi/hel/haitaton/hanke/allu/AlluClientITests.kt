@@ -234,12 +234,6 @@ class AlluClientITests {
 
     @Nested
     inner class GetDecisionPdf {
-        private fun pdfContent(): Buffer {
-            val buffer = Buffer()
-            buffer.write(PDF_BYTES)
-            return buffer
-        }
-
         @Test
         fun `returns PDF file as bytes`() {
             mockWebServer.enqueue(
@@ -328,12 +322,6 @@ class AlluClientITests {
 
     @Nested
     inner class GetOperationalConditionPdf {
-        private fun pdfContent(): Buffer {
-            val buffer = Buffer()
-            buffer.write(PDF_BYTES)
-            return buffer
-        }
-
         @Test
         fun `returns PDF file as bytes`() {
             mockWebServer.enqueue(
@@ -420,6 +408,96 @@ class AlluClientITests {
             )
 
             assertThrows<AlluApiException> { service.getOperationalConditionPdf(12) }
+        }
+    }
+
+    @Nested
+    inner class GetWorkFinishedPdf {
+
+        @Test
+        fun `returns PDF file as bytes`() {
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
+                    .setBody(pdfContent())
+            )
+
+            val response = service.getWorkFinishedPdf(12)
+
+            assertThat(response).isEqualTo(PDF_BYTES)
+            val createRequest = mockWebServer.takeRequest()
+            assertThat(createRequest.method).isEqualTo("GET")
+            assertThat(createRequest.path)
+                .isEqualTo("/v2/excavationannouncements/12/approval/workfinished")
+            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+        }
+
+        @Test
+        fun `returns big PDF file as bytes`() {
+            val content = Buffer()
+            repeat(1000000 / PDF_BYTES.size + 1) { content.write(PDF_BYTES) }
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
+                    .setBody(content)
+            )
+
+            val response = service.getOperationalConditionPdf(12)
+
+            assertThat(response).isEqualTo(content.readByteArray())
+        }
+
+        @Test
+        fun `throws ApplicationDecisionNotFoundException on 404`() {
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(404)
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .setBody("Not found")
+            )
+
+            val exception =
+                assertThrows<HakemusDecisionNotFoundException> { service.getWorkFinishedPdf(12) }
+
+            assertThat(exception).hasMessage("Document not found in Allu. alluApplicationId=12")
+        }
+
+        @Test
+        fun `throws WebClientResponseException on other error codes`() {
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(500)
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .setBody("Other error")
+            )
+
+            assertThrows<WebClientResponseException> { service.getWorkFinishedPdf(12) }
+        }
+
+        @Test
+        fun `throws AlluApiException if the response does not have PDF Content-Type`() {
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(CONTENT_TYPE, IMAGE_PNG)
+                    .setBody(pdfContent())
+            )
+
+            assertThrows<AlluApiException> { service.getWorkFinishedPdf(12) }
+        }
+
+        @Test
+        fun `throws AlluApiException if the response body is empty`() {
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(CONTENT_TYPE, APPLICATION_PDF)
+                    .setBody("")
+            )
+
+            assertThrows<AlluApiException> { service.getWorkFinishedPdf(12) }
         }
     }
 
@@ -549,6 +627,12 @@ class AlluClientITests {
                 .setBody(stubbedBearer)
         mockWebServer.enqueue(loginResponse)
         return stubbedBearer
+    }
+
+    private fun pdfContent(): Buffer {
+        val buffer = Buffer()
+        buffer.write(PDF_BYTES)
+        return buffer
     }
 
     private fun createMockToken(secondsToAdd: Long = 3600) =

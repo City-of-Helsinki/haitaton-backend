@@ -2247,7 +2247,7 @@ class HakemusServiceITest(
         private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")
         private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
         private val alluId = 42
-        private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
+        private val identifier = ApplicationHistoryFactory.DEFAULT_APPLICATION_IDENTIFIER
 
         @Test
         fun `updates the last updated time with empty histories`() {
@@ -2363,6 +2363,8 @@ class HakemusServiceITest(
                     every { alluClient.getDecisionPdf(alluId) } returns PDF_BYTES
                 ApplicationStatus.OPERATIONAL_CONDITION ->
                     every { alluClient.getOperationalConditionPdf(alluId) } returns PDF_BYTES
+                ApplicationStatus.FINISHED ->
+                    every { alluClient.getWorkFinishedPdf(alluId) } returns PDF_BYTES
                 else -> throw IllegalArgumentException()
             }
 
@@ -2371,11 +2373,15 @@ class HakemusServiceITest(
                 ApplicationStatus.DECISION -> verify { alluClient.getDecisionPdf(alluId) }
                 ApplicationStatus.OPERATIONAL_CONDITION ->
                     verify { alluClient.getOperationalConditionPdf(alluId) }
+                ApplicationStatus.FINISHED -> verify { alluClient.getWorkFinishedPdf(alluId) }
                 else -> throw IllegalArgumentException()
             }
 
         @ParameterizedTest
-        @EnumSource(ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION"])
+        @EnumSource(
+            ApplicationStatus::class,
+            names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"]
+        )
         fun `downloads the document when a kaivuilmoitus gets a decision`(
             status: ApplicationStatus
         ) {

@@ -5,9 +5,12 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.FileClient
-import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
+import mu.KotlinLogging
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+
+private val logger = KotlinLogging.logger {}
 
 @Service
 class PaatosService(
@@ -18,7 +21,7 @@ class PaatosService(
     fun findByHakemusId(hakemusId: Long): List<Paatos> =
         paatosRepository.findByHakemusId(hakemusId).map { it.toDomain() }
 
-    fun saveKaivuilmoituksenPaatos(hakemus: HakemusEntity, event: ApplicationStatusEvent) {
+    fun saveKaivuilmoituksenPaatos(hakemus: HakemusIdentifier, event: ApplicationStatusEvent) {
         val alluId = hakemus.alluid!!
         val pdfData = alluClient.getDecisionPdf(alluId)
 
@@ -26,15 +29,13 @@ class PaatosService(
         createPaatos(
             pdfData,
             filename,
-            hakemus.id,
-            alluId,
-            event.applicationIdentifier,
+            hakemus,
             PaatosTyyppi.PAATOS,
         )
     }
 
     fun saveKaivuilmoituksenToiminnallinenKunto(
-        hakemus: HakemusEntity,
+        hakemus: HakemusIdentifier,
         event: ApplicationStatusEvent
     ) {
         val alluId = hakemus.alluid!!
@@ -44,29 +45,46 @@ class PaatosService(
         createPaatos(
             pdfData,
             filename,
-            hakemus.id,
-            alluId,
-            event.applicationIdentifier,
+            hakemus,
             PaatosTyyppi.TOIMINNALLINEN_KUNTO,
+        )
+    }
+
+    fun saveKaivuilmoituksenTyoValmis(hakemus: HakemusIdentifier, event: ApplicationStatusEvent) {
+        val alluId = hakemus.alluid!!
+        val pdfData = alluClient.getWorkFinishedPdf(alluId)
+
+        val filename = "${event.applicationIdentifier}-tyo-valmis.pdf"
+        createPaatos(
+            pdfData,
+            filename,
+            hakemus,
+            PaatosTyyppi.TYO_VALMIS,
         )
     }
 
     private fun createPaatos(
         pdfData: ByteArray,
         filename: String,
-        hakemusId: Long,
-        alluId: Int,
-        hakemustunnus: String,
+        hakemus: HakemusIdentifier,
         tyyppi: PaatosTyyppi,
     ) {
-        val applicationResponse = alluClient.getApplicationInformation(alluId)
+        logger.info { "Getting current hakemus name and dates from Allu. ${hakemus.logString()}" }
+        val applicationResponse = alluClient.getApplicationInformation(hakemus.alluid!!)
 
-        val path = uploadPaatos(pdfData, filename, hakemusId)
+        logger.info {
+            "Uploading a new document for hakemus. ${hakemus.logString()}, " +
+                "tyyppi = $tyyppi, tila = ${PaatosTila.NYKYINEN}"
+        }
+        val path = uploadPaatos(pdfData, filename, hakemus.id)
 
+        logger.info {
+            "Saving the uploaded document info and the current hakemus info to paatos table. ${hakemus.logString()}"
+        }
         paatosRepository.save(
             PaatosEntity(
-                hakemusId = hakemusId,
-                hakemustunnus = hakemustunnus,
+                hakemusId = hakemus.id,
+                hakemustunnus = hakemus.applicationIdentifier!!,
                 tyyppi = tyyppi,
                 tila = PaatosTila.NYKYINEN,
                 nimi = applicationResponse.name,
