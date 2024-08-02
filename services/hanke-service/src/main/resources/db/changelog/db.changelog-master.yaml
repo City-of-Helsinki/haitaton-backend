@@ -183,3 +183,5 @@ databaseChangeLog:
       file: db/changelog/changesets/076-create-hankkeen-haittojenhallintasuunnitelma-table.sql
   - include:
       file: db/changelog/changesets/077-add-car-traffic-classification.yml
+  - include:
+      file: db/changelog/changesets/078-create-paatos-table.sql
