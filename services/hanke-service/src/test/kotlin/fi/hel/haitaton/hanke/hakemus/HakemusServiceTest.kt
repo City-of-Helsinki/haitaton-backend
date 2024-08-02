@@ -65,6 +65,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
@@ -493,7 +494,7 @@ class HakemusServiceTest {
         private val hankeTunnus = "HAI23-1"
         private val receiver = HakemusyhteyshenkiloFactory.DEFAULT_SAHKOPOSTI
         private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
-        private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
+        private val identifier = ApplicationHistoryFactory.DEFAULT_APPLICATION_IDENTIFIER
 
         @Test
         fun `sends email to the contacts when hakemus gets a decision`() {
@@ -509,7 +510,7 @@ class HakemusServiceTest {
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { alluStatusRepository.save(any()) } answers { firstArg() }
 
-            hakemusService.handleHakemusUpdates(historiesWithDecision(), updateTime)
+            hakemusService.handleHakemusUpdates(createHistories(), updateTime)
 
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
@@ -559,7 +560,7 @@ class HakemusServiceTest {
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { alluStatusRepository.save(any()) } answers { firstArg() }
 
-            hakemusService.handleHakemusUpdates(historiesWithDecision(), updateTime)
+            hakemusService.handleHakemusUpdates(createHistories(), updateTime)
 
             assertThat(output)
                 .contains("No receivers found for decision ready email, not sending any.")
@@ -569,6 +570,35 @@ class HakemusServiceTest {
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
             }
+        }
+
+        @ParameterizedTest
+        @EnumSource(ApplicationStatus::class, names = ["OPERATIONAL_CONDITION", "FINISHED"])
+        fun `logs an error when a johtoselvityshakemus gets a supervision document`(
+            status: ApplicationStatus,
+            output: CapturedOutput
+        ) {
+            every { hakemusRepository.getOneByAlluid(alluid) } returns
+                applicationEntityWithoutCustomer()
+            every { hakemusRepository.save(any()) } answers { firstArg() }
+            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { alluStatusRepository.save(any()) } answers { firstArg() }
+
+            hakemusService.handleHakemusUpdates(createHistories(status), updateTime)
+
+            assertThat(output).all {
+                contains("Got $status update for a cable report.")
+                contains("id=$applicationId")
+                contains("alluId=$alluid")
+                contains("identifier=$identifier")
+            }
+            verifySequence {
+                hakemusRepository.getOneByAlluid(42)
+                hakemusRepository.save(any())
+                alluStatusRepository.getReferenceById(1)
+                alluStatusRepository.save(any())
+            }
+            verify { alluClient wasNot called }
         }
 
         private fun applicationEntityWithoutCustomer(id: Long = applicationId): HakemusEntity {
@@ -593,13 +623,13 @@ class HakemusServiceTest {
             return entity
         }
 
-        private fun historiesWithDecision() =
+        private fun createHistories(status: ApplicationStatus = ApplicationStatus.DECISION) =
             listOf(
                 ApplicationHistoryFactory.create(
                     alluid,
                     ApplicationHistoryFactory.createEvent(
                         applicationIdentifier = identifier,
-                        newStatus = ApplicationStatus.DECISION
+                        newStatus = status,
                     )
                 ),
             )

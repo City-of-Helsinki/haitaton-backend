@@ -360,10 +360,20 @@ class HakemusService(
             when (application.applicationType) {
                 ApplicationType.CABLE_REPORT ->
                     logger.error {
-                        "Got operational condition update for a cable report. ${application.logString()}"
+                        "Got ${event.newStatus} update for a cable report. ${application.logString()}"
                     }
                 ApplicationType.EXCAVATION_NOTIFICATION ->
                     paatosService.saveKaivuilmoituksenToiminnallinenKunto(application, event)
+            }
+        }
+        if (event.newStatus == ApplicationStatus.FINISHED) {
+            when (application.applicationType) {
+                ApplicationType.CABLE_REPORT ->
+                    logger.error {
+                        "Got ${event.newStatus} update for a cable report. ${application.logString()}"
+                    }
+                ApplicationType.EXCAVATION_NOTIFICATION ->
+                    paatosService.saveKaivuilmoituksenTyoValmis(application, event)
             }
         }
     }

@@ -247,6 +247,12 @@ class AlluClient(
         return getPdf(alluApplicationId, requestPath)
     }
 
+    fun getWorkFinishedPdf(alluApplicationId: Int): ByteArray {
+        logger.info { "Fetching work finished pdf for application $alluApplicationId." }
+        val requestPath = "excavationannouncements/$alluApplicationId/approval/workfinished"
+        return getPdf(alluApplicationId, requestPath)
+    }
+
     private fun getPdf(alluApplicationId: Int, path: String): ByteArray {
         val response =
             get(path, MediaType.APPLICATION_PDF)
