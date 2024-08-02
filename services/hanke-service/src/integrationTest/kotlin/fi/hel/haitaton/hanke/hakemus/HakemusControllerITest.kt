@@ -862,14 +862,14 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @Test
         fun `when application has no decision should return 404`() {
             every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
-            every { hakemusService.downloadDecision(id, USERNAME) } throws
+            every { hakemusService.downloadDecision(id) } throws
                 HakemusDecisionNotFoundException("Decision not found in Allu. alluid=23")
 
             get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2006))
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
-                hakemusService.downloadDecision(id, USERNAME)
+                hakemusService.downloadDecision(id)
             }
         }
 
@@ -878,7 +878,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val applicationIdentifier = "JS230001"
             val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
             every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
-            every { hakemusService.downloadDecision(id, USERNAME) } returns
+            every { hakemusService.downloadDecision(id) } returns
                 Pair(applicationIdentifier, pdfBytes)
             every { hakemusService.getById(id) } returns
                 HakemusFactory.create(applicationIdentifier = applicationIdentifier)
@@ -893,7 +893,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
-                hakemusService.downloadDecision(id, USERNAME)
+                hakemusService.downloadDecision(id)
                 hakemusService.getById(id)
             }
         }
@@ -904,7 +904,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val hakemus = HakemusFactory.create(applicationIdentifier = applicationIdentifier)
             val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
             every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
-            every { hakemusService.downloadDecision(id, USERNAME) } returns
+            every { hakemusService.downloadDecision(id) } returns
                 Pair(applicationIdentifier, pdfBytes)
             every { hakemusService.getById(id) } returns hakemus
 
@@ -912,7 +912,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
-                hakemusService.downloadDecision(id, USERNAME)
+                hakemusService.downloadDecision(id)
                 hakemusService.getById(id)
                 disclosureLogService.saveDisclosureLogsForCableReport(
                     hakemus.toMetadata(),

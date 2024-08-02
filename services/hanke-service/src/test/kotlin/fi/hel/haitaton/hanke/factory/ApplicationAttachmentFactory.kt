@@ -1,8 +1,8 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
+import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService.Companion.generateBlobPath
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
@@ -57,7 +57,7 @@ class ApplicationAttachmentFactory(
         path: String,
         filename: String = FILE_NAME_PDF,
         mediaType: MediaType = MEDIA_TYPE,
-        bytes: ByteArray = DEFAULT_DATA
+        bytes: ByteArray = PDF_BYTES
     ) {
         fileClient.upload(HAKEMUS_LIITTEET, path, filename, mediaType, bytes)
     }

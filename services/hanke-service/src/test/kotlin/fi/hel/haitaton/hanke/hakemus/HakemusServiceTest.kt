@@ -39,6 +39,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -81,6 +82,7 @@ class HakemusServiceTest {
     private val alluClient: AlluClient = mockk()
     private val alluStatusRepository: AlluStatusRepository = mockk()
     private val emailSenderService: EmailSenderService = mockk()
+    private val paatosService: PaatosService = mockk()
 
     private val hakemusService =
         HakemusService(
@@ -96,6 +98,7 @@ class HakemusServiceTest {
             alluClient,
             alluStatusRepository,
             emailSenderService,
+            paatosService,
         )
 
     @BeforeEach

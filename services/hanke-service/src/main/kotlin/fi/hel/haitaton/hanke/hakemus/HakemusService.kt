@@ -24,6 +24,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
@@ -58,6 +59,7 @@ class HakemusService(
     private val alluClient: AlluClient,
     private val alluStatusRepository: AlluStatusRepository,
     private val emailSenderService: EmailSenderService,
+    private val paatosService: PaatosService,
 ) {
 
     @Transactional(readOnly = true)
@@ -254,7 +256,7 @@ class HakemusService(
     }
 
     @Transactional(readOnly = true)
-    fun downloadDecision(hakemusId: Long, userId: String): Pair<String, ByteArray> {
+    fun downloadDecision(hakemusId: Long): Pair<String, ByteArray> {
         val hakemus = getById(hakemusId)
         val alluid =
             hakemus.alluid
@@ -347,7 +349,12 @@ class HakemusService(
                 "event time=${event.eventTime}"
         }
         if (event.newStatus == ApplicationStatus.DECISION) {
-            sendDecisionReadyEmails(application, event.applicationIdentifier)
+            when (application.applicationType) {
+                ApplicationType.CABLE_REPORT ->
+                    sendDecisionReadyEmails(application, event.applicationIdentifier)
+                ApplicationType.EXCAVATION_NOTIFICATION ->
+                    paatosService.saveKaivuilmoituksenPaatos(application, event)
+            }
         }
     }
 
