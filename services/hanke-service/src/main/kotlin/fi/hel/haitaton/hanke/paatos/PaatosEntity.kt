@@ -9,17 +9,6 @@ import jakarta.persistence.Table
 import java.time.LocalDate
 import java.util.UUID
 
-enum class PaatosTyyppi {
-    PAATOS,
-    TOIMINNALLINEN_KUNTO,
-    TYO_VALMIS,
-}
-
-enum class PaatosTila {
-    NYKYINEN,
-    KORVATTU,
-}
-
 @Entity
 @Table(name = "paatos")
 class PaatosEntity(
