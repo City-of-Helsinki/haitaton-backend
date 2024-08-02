@@ -356,6 +356,16 @@ class HakemusService(
                     paatosService.saveKaivuilmoituksenPaatos(application, event)
             }
         }
+        if (event.newStatus == ApplicationStatus.OPERATIONAL_CONDITION) {
+            when (application.applicationType) {
+                ApplicationType.CABLE_REPORT ->
+                    logger.error {
+                        "Got operational condition update for a cable report. ${application.logString()}"
+                    }
+                ApplicationType.EXCAVATION_NOTIFICATION ->
+                    paatosService.saveKaivuilmoituksenToiminnallinenKunto(application, event)
+            }
+        }
     }
 
     private fun sendDecisionReadyEmails(application: HakemusEntity, applicationIdentifier: String) {
