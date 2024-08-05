@@ -99,7 +99,7 @@ dependencies {
     testImplementation("com.icegreen:greenmail-junit5:2.0.1")
 
     // Testcontainers
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.0"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.1"))
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
