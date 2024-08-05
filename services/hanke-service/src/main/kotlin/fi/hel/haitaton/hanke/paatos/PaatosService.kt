@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import mu.KotlinLogging
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
@@ -18,9 +19,16 @@ class PaatosService(
     private val alluClient: AlluClient,
     private val fileClient: FileClient,
 ) {
+    @Transactional(readOnly = true)
     fun findByHakemusId(hakemusId: Long): List<Paatos> =
         paatosRepository.findByHakemusId(hakemusId).map { it.toDomain() }
 
+    @Transactional
+    fun markReplaced(hakemustunnus: String) {
+        paatosRepository.markReplacedByHakemustunnus(hakemustunnus)
+    }
+
+    @Transactional
     fun saveKaivuilmoituksenPaatos(hakemus: HakemusIdentifier, event: ApplicationStatusEvent) {
         val alluId = hakemus.alluid!!
         val pdfData = alluClient.getDecisionPdf(alluId)
@@ -34,6 +42,7 @@ class PaatosService(
         )
     }
 
+    @Transactional
     fun saveKaivuilmoituksenToiminnallinenKunto(
         hakemus: HakemusIdentifier,
         event: ApplicationStatusEvent
@@ -50,6 +59,7 @@ class PaatosService(
         )
     }
 
+    @Transactional
     fun saveKaivuilmoituksenTyoValmis(hakemus: HakemusIdentifier, event: ApplicationStatusEvent) {
         val alluId = hakemus.alluid!!
         val pdfData = alluClient.getWorkFinishedPdf(alluId)

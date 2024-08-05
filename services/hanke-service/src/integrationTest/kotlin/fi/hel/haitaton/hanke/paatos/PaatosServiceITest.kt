@@ -4,6 +4,7 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.extracting
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
@@ -458,6 +459,43 @@ class PaatosServiceITest(
                 alluClient.getWorkFinishedPdf(alluId)
                 alluClient.getApplicationInformation(alluId)
             }
+        }
+    }
+
+    @Nested
+    inner class MarkReplaced {
+
+        @Test
+        fun `doesn't throw if there are no decisions`() {
+            paatosService.markReplaced("KP2400001-3")
+        }
+
+        @Test
+        fun `updates the status to KORVATTU for the correct decisions`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .save()
+            paatosFactory.save(hakemus, "KP2400001-2", PAATOS, KORVATTU)
+            paatosFactory.save(hakemus, "KP2400001-3", PAATOS, NYKYINEN)
+            paatosFactory.save(hakemus, "KP2400001-4", PAATOS, NYKYINEN)
+            paatosFactory.save(hakemus, "KP2400001-2", TOIMINNALLINEN_KUNTO, KORVATTU)
+            paatosFactory.save(hakemus, "KP2400001-3", TOIMINNALLINEN_KUNTO, NYKYINEN)
+            paatosFactory.save(hakemus, "KP2400001-3", TYO_VALMIS, NYKYINEN)
+
+            paatosService.markReplaced("KP2400001-3")
+
+            assertThat(paatosRepository.findAll())
+                .extracting { t -> listOf(t.hakemustunnus, t.tyyppi.toString(), t.tila.toString()) }
+                .containsExactlyInAnyOrder(
+                    listOf("KP2400001-2", PAATOS.toString(), KORVATTU.toString()),
+                    listOf("KP2400001-3", PAATOS.toString(), KORVATTU.toString()),
+                    listOf("KP2400001-4", PAATOS.toString(), NYKYINEN.toString()),
+                    listOf("KP2400001-2", TOIMINNALLINEN_KUNTO.toString(), KORVATTU.toString()),
+                    listOf("KP2400001-3", TOIMINNALLINEN_KUNTO.toString(), KORVATTU.toString()),
+                    listOf("KP2400001-3", TYO_VALMIS.toString(), KORVATTU.toString()),
+                )
         }
     }
 
