@@ -185,3 +185,5 @@ databaseChangeLog:
       file: db/changelog/changesets/077-add-car-traffic-classification.yml
   - include:
       file: db/changelog/changesets/078-create-paatos-table.sql
+  - include:
+      file: db/changelog/changesets/079-add-hakemustunnus-index-to-paatos.sql

@@ -2262,11 +2262,7 @@ class HakemusServiceITest(
 
         @Test
         fun `updates the hakemus statuses in the correct order`() {
-            assertThat(hakemusRepository.findAll()).isEmpty()
-            assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
-                .isEqualTo(placeholderUpdateTime)
-            val hanke = hankeFactory.saveMinimal()
-            hakemusFactory.builder(USERNAME, hanke).withStatus(alluId = alluId).save()
+            hakemusFactory.builder(USERNAME).withStatus(alluId = alluId).save()
             val firstEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
             val history =
                 ApplicationHistoryFactory.create(
@@ -2294,6 +2290,34 @@ class HakemusServiceITest(
                 .prop("alluStatus", HakemusEntity::alluStatus)
                 .isEqualTo(ApplicationStatus.HANDLING)
             assertThat(application!!.applicationIdentifier).isEqualTo(identifier)
+        }
+
+        @Test
+        fun `doesn't update status or identifier when the update status is REPLACED`() {
+            val originalTunnus = "JS2400001-12"
+            hakemusFactory
+                .builder(USERNAME)
+                .withStatus(
+                    alluId = alluId,
+                    status = ApplicationStatus.DECISION,
+                    identifier = originalTunnus,
+                )
+                .save()
+            val history =
+                ApplicationHistoryFactory.create(
+                    alluId,
+                    ApplicationHistoryFactory.createEvent(
+                        applicationIdentifier = "JS2400001-13",
+                        newStatus = ApplicationStatus.REPLACED,
+                    ),
+                )
+
+            hakemusService.handleHakemusUpdates(listOf(history), updateTime)
+
+            assertThat(hakemusRepository.findAll()).single().all {
+                prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.DECISION)
+                prop(HakemusEntity::applicationIdentifier).isEqualTo(originalTunnus)
+            }
         }
 
         @Test
