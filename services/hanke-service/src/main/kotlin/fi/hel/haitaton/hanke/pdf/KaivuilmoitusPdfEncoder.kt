@@ -6,7 +6,6 @@ import com.lowagie.text.pdf.PdfWriter
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
-import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import java.io.ByteArrayOutputStream
 
@@ -121,10 +120,10 @@ object KaivuilmoitusPdfEncoder {
 
     private fun KaivuilmoitusData.getOrderer(): Hakemusyhteyshenkilo? =
         listOfNotNull(
-            customerWithContacts,
-            contractorWithContacts,
-            representativeWithContacts,
-            propertyDeveloperWithContacts)
+                customerWithContacts,
+                contractorWithContacts,
+                representativeWithContacts,
+                propertyDeveloperWithContacts)
             .flatMap { it.yhteyshenkilot }
             .find { it.tilaaja }
 

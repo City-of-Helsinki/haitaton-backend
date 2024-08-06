@@ -8,15 +8,12 @@ import com.lowagie.text.Paragraph
 import com.lowagie.text.Phrase
 import com.lowagie.text.Rectangle
 import com.lowagie.text.pdf.PdfPTable
-import java.time.format.DateTimeFormatter
 
 val titleFont = Font(Font.HELVETICA, 18f, Font.BOLD)
 val sectionFont = Font(Font.HELVETICA, 15f, Font.BOLD)
 
 val headerFont = Font(Font.HELVETICA, 10f, Font.BOLD)
 val textFont = Font(Font.HELVETICA, 10f, Font.NORMAL)
-
-val finnishDateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.uuuu")
 
 fun Document.newline() {
     this.add(Paragraph(Chunk.NEWLINE))

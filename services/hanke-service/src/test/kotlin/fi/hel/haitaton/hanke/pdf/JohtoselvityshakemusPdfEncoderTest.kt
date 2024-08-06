@@ -151,13 +151,13 @@ class JohtoselvityshakemusPdfEncoderTest {
             assertThat(getPdfAsText(pdfData)).all {
                 contains("18.11.2022")
                 contains("28.11.2022")
-                contains("614.0 m²")
+                contains("614,00 m²")
                 contains("Ensimmäinen työalue")
-                contains("185.0 m²")
+                contains("185,00 m²")
                 contains("Toinen alue")
-                contains("231.0 m²")
+                contains("231,00 m²")
                 contains("Työalue 3")
-                contains("198.0 m²")
+                contains("198,00 m²")
             }
         }
 

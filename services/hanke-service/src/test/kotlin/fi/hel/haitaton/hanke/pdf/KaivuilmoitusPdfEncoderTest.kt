@@ -76,13 +76,15 @@ class KaivuilmoitusPdfEncoderTest {
                     rockExcavation = false,
                     placementContracts = listOf("Sopimus1", "Sopimus2"),
                     requiredCompetence = true,
-                    contractorWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(
-                        etunimi = "Tapio",
-                        sukunimi = "Tilaaja",
-                        sahkoposti = "tapio@tilaaja.test",
-                        puhelin = "09876543",
-                        tilaaja = true,)
-                )
+                    contractorWithContacts =
+                        HakemusyhteystietoFactory.create()
+                            .withYhteyshenkilo(
+                                etunimi = "Tapio",
+                                sukunimi = "Tilaaja",
+                                sahkoposti = "tapio@tilaaja.test",
+                                puhelin = "09876543",
+                                tilaaja = true,
+                            ))
 
             val pdfData = KaivuilmoitusPdfEncoder.createPdf(applicationData, 1f, listOf(), listOf())
 

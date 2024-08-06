@@ -62,12 +62,6 @@ object JohtoselvityshakemusPdfEncoder {
 
             row("Työn arvioitu alkupäivä", data.startTime.format())
             row("Työn arvioitu loppupäivä", data.endTime.format())
-            row("Alueiden kokonaispinta-ala", totalArea.toString() + " m²")
-            row(
-                "Alueet",
-                areas
-                    .mapIndexed { i, area -> "${areaNames[i]}\n\nPinta-ala: $area m²" }
-                    .joinToString("\n\n"))
             row("Alueiden kokonaispinta-ala", totalArea.format() + " m²")
             row(
                 "Alueet",
