@@ -1,91 +1,19 @@
-package fi.hel.haitaton.hanke.hakemus
+package fi.hel.haitaton.hanke.pdf
 
-import com.lowagie.text.Chunk
 import com.lowagie.text.Document
-import com.lowagie.text.Element
-import com.lowagie.text.Font
 import com.lowagie.text.PageSize
-import com.lowagie.text.Paragraph
-import com.lowagie.text.Phrase
-import com.lowagie.text.Rectangle
-import com.lowagie.text.pdf.PdfPTable
 import com.lowagie.text.pdf.PdfWriter
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import java.io.ByteArrayOutputStream
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
 /**
  * Transform an application to a PDF. The PDF is added as an attachment when sending the application
  * to Allu. It will be archived along the application and decision to show how the user inputted the
  * application in Haitaton, as the data models of Haitaton and Allu differ slightly.
  */
-object HakemusPdfService {
-    private val titleFont = Font(Font.HELVETICA, 18f, Font.BOLD)
-    private val sectionFont = Font(Font.HELVETICA, 15f, Font.BOLD)
-
-    private val headerFont = Font(Font.HELVETICA, 10f, Font.BOLD)
-    private val textFont = Font(Font.HELVETICA, 10f, Font.NORMAL)
-
-    private val finnishDateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.uuuu")
-
-    private fun Document.newline() {
-        this.add(Paragraph(Chunk.NEWLINE))
-    }
-
-    private fun Document.title(title: String) {
-        val paragraph = Paragraph(title, titleFont)
-        paragraph.alignment = Element.ALIGN_CENTER
-        this.add(paragraph)
-        this.newline()
-    }
-
-    private fun Document.sectionTitle(sectionTitle: String) {
-        val paragraph = Paragraph(sectionTitle, sectionFont)
-        this.add(paragraph)
-        this.newline()
-    }
-
-    fun PdfPTable.row(key: String, value: Any?) {
-        this.addCell(Phrase("$key ", headerFont))
-        this.addCell(Phrase(value?.toString() ?: "<Tyhjä>", textFont))
-    }
-
-    private fun Document.section(sectionTitle: String, addRows: (table: PdfPTable) -> Unit) {
-        this.sectionTitle(sectionTitle)
-
-        val table = PdfPTable(2)
-        table.widthPercentage = 100f
-        table.setWidths(floatArrayOf(1.5f, 3.5f))
-        table.setSpacingBefore(10f)
-        table.defaultCell.border = Rectangle.NO_BORDER
-        table.defaultCell.paddingBottom = 15f
-
-        addRows(table)
-
-        this.add(table)
-    }
-
-    private fun PostalAddress.format(): String =
-        "${this.streetAddress.streetName}\n${this.postalCode} ${this.city}"
-
-    private fun Hakemusyhteyshenkilo.format(): String =
-        listOfNotNull(kokoNimi(), sahkoposti, puhelin).filter { it.isNotBlank() }.joinToString("\n")
-
-    private fun Hakemusyhteystieto.format(): String =
-        listOfNotNull(
-                nimi + "\n",
-                ytunnus,
-                sahkoposti,
-                puhelinnumero,
-                "\nYhteyshenkilöt\n",
-            )
-            .filter { it.isNotBlank() }
-            .joinToString("\n") + this.yhteyshenkilot.joinToString("\n") { "\n" + it.format() }
-
-    private fun ZonedDateTime?.format(): String? =
-        this?.withZoneSameInstant(ZoneId.of("Europe/Helsinki"))?.format(finnishDateFormat)
+object JohtoselvityshakemusPdfEncoder {
 
     fun createPdf(
         data: JohtoselvityshakemusData,
