@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.hakemus
+package fi.hel.haitaton.hanke.pdf
 
 import assertk.all
 import assertk.assertThat
@@ -8,17 +8,17 @@ import com.lowagie.text.pdf.PdfReader
 import com.lowagie.text.pdf.parser.PdfTextExtractor
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createPostalAddress
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class HakemusPdfServiceTest {
+class JohtoselvityshakemusPdfEncoderTest {
 
     @Nested
     inner class CreatePdf {
@@ -26,7 +26,8 @@ class HakemusPdfServiceTest {
         fun `created PDF contains title and section headers`() {
             val hakemusData = HakemusFactory.createJohtoselvityshakemusData()
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 1f, listOf(), listOf())
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData))
                 .contains("Johtoselvityshakemus", "Perustiedot", "Alueet", "Yhteystiedot")
@@ -36,7 +37,8 @@ class HakemusPdfServiceTest {
         fun `created PDF contains headers for basic information`() {
             val hakemusData = HakemusFactory.createJohtoselvityshakemusData()
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf(), listOf())
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Työn nimi")
@@ -51,7 +53,7 @@ class HakemusPdfServiceTest {
         fun `created PDF contains basic information`() {
             val applicationData =
                 HakemusFactory.createJohtoselvityshakemusData(
-                    postalAddress = createPostalAddress(),
+                    postalAddress = ApplicationFactory.createPostalAddress(),
                     customerWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
                     constructionWork = true,
                     maintenanceWork = true,
@@ -59,7 +61,8 @@ class HakemusPdfServiceTest {
                     propertyConnectivity = true,
                 )
 
-            val pdfData = HakemusPdfService.createPdf(applicationData, 1f, listOf(), listOf())
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(applicationData, 1f, listOf(), listOf())
 
             val pdfText = getPdfAsText(pdfData)
             assertThat(pdfText).all {
@@ -102,7 +105,8 @@ class HakemusPdfServiceTest {
                     propertyConnectivity = false,
                 )
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 1f, listOf(), listOf())
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 doesNotContain("Uuden rakenteen tai johdon rakentamisesta")
@@ -116,7 +120,8 @@ class HakemusPdfServiceTest {
         fun `created PDF contains headers for area information`() {
             val hakemusData = HakemusFactory.createJohtoselvityshakemusData()
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf(), listOf())
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Työn arvioitu alkupäivä")
@@ -141,7 +146,12 @@ class HakemusPdfServiceTest {
                 )
 
             val pdfData =
-                HakemusPdfService.createPdf(hakemusData, 614f, listOf(185f, 231f, 198f), listOf())
+                JohtoselvityshakemusPdfEncoder.createPdf(
+                    hakemusData,
+                    614f,
+                    listOf(185f, 231f, 198f),
+                    listOf()
+                )
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("18.11.2022")
@@ -168,7 +178,8 @@ class HakemusPdfServiceTest {
                         HakemusyhteystietoFactory.create().withYhteyshenkilo()
                 )
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 1f, listOf(), listOf())
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Työstä vastaavat")
@@ -189,7 +200,8 @@ class HakemusPdfServiceTest {
                     propertyDeveloperWithContacts = null,
                 )
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf(), listOf())
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Työstä vastaavat")
@@ -263,7 +275,8 @@ class HakemusPdfServiceTest {
                     propertyDeveloperWithContacts = rakennuttaja,
                 )
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf(), listOf())
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Company Ltd")
@@ -312,7 +325,8 @@ class HakemusPdfServiceTest {
                     ApplicationAttachmentFactory.create(fileName = "third.gt"),
                 )
 
-            val pdfData = HakemusPdfService.createPdf(hakemusData, 614f, listOf(), attachments)
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), attachments)
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("first.pdf")
