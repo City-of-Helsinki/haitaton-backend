@@ -31,12 +31,10 @@ import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
-import java.io.File
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.reflect.KClass
-import kotlin.system.exitProcess
 import mu.KotlinLogging
 import org.geojson.Polygon
 import org.springframework.http.MediaType
@@ -66,22 +64,6 @@ class HakemusService(
     private val emailSenderService: EmailSenderService,
     private val paatosService: PaatosService,
 ) {
-
-    // @EventListener(ApplicationReadyEvent::class)
-    @Transactional
-    fun testPdf() {
-        logger.info { "Finding application with hardcoded id..." }
-        val hakemus = getById(14L)
-
-        logger.info { "Creating PDF..." }
-        val attachment = getApplicationDataAsPdf(hakemus.id, "HAI24-12", hakemus.applicationData)
-
-        logger.info { "Writing PDF to file ${attachment.metadata.name}..." }
-        File(attachment.metadata.name).writeBytes(attachment.file)
-
-        logger.info { "PDF test complete." }
-        exitProcess(0)
-    }
 
     @Transactional(readOnly = true)
     fun getById(applicationId: Long): Hakemus = getEntityById(applicationId).toHakemus()
