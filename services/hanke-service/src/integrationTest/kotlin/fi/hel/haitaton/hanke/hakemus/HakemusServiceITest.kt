@@ -1809,7 +1809,7 @@ class HakemusServiceITest(
             val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
             val expectedJohtoselvityshakemusDataAfterSend =
                 (applicationEntity.hakemusEntityData as KaivuilmoitusEntityData)
-                    .toJohtoselvityshakemusEntityData()
+                    .createAccompanyingJohtoselvityshakemusData()
                     .toHakemusData(hakemusData.yhteystiedotMap())
                     .setOrdererForContractor(founder.id)
             val expectedKaivuilmoitusDataAfterSend =

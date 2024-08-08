@@ -126,7 +126,7 @@ data class KaivuilmoitusEntityData(
             additionalInfo = additionalInfo,
         )
 
-    fun toJohtoselvityshakemusEntityData(): JohtoselvityshakemusEntityData =
+    fun createAccompanyingJohtoselvityshakemusData(): JohtoselvityshakemusEntityData =
         JohtoselvityshakemusEntityData(
             applicationType = ApplicationType.CABLE_REPORT,
             pendingOnClient = pendingOnClient,
@@ -140,7 +140,7 @@ data class KaivuilmoitusEntityData(
             workDescription = workDescription,
             startTime = startTime,
             endTime = endTime,
-            areas = areas?.flatMap { it.toJohtoselvitysHakemusalues() },
+            areas = areas?.flatMap { it.geometries() }?.map { JohtoselvitysHakemusalue("", it) },
         )
 }
 

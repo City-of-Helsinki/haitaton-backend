@@ -249,7 +249,8 @@ class HakemusService(
             return null
         }
         logger.info("Creating a new johtoselvityshakemus for a kaivuilmoitus. id=${hakemus.id}")
-        val johtoselvityshakemusData = hakemusEntityData.toJohtoselvityshakemusEntityData()
+        val johtoselvityshakemusData =
+            hakemusEntityData.createAccompanyingJohtoselvityshakemusData()
         val johtoselvityshakemus =
             hakemus
                 .copy(

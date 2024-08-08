@@ -34,9 +34,6 @@ data class KaivuilmoitusAlue(
     val lisatiedot: String?,
 ) : Hakemusalue {
     override fun geometries(): List<Polygon> = tyoalueet.map { it.geometry }
-
-    fun toJohtoselvitysHakemusalues(): List<JohtoselvitysHakemusalue> =
-        tyoalueet.map { JohtoselvitysHakemusalue("", it.geometry) }
 }
 
 data class Tyoalue(
