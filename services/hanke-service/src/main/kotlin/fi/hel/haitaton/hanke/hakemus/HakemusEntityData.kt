@@ -126,6 +126,23 @@ data class KaivuilmoitusEntityData(
             invoicingCustomer = invoicingCustomer.toLaskutusyhteystieto(customerReference),
             additionalInfo = additionalInfo,
         )
+
+    fun toJohtoselvityshakemusEntityData(): JohtoselvityshakemusEntityData =
+        JohtoselvityshakemusEntityData(
+            applicationType = ApplicationType.CABLE_REPORT,
+            pendingOnClient = pendingOnClient,
+            name = name,
+            postalAddress = areas.toPostalAddress(),
+            constructionWork = constructionWork,
+            maintenanceWork = maintenanceWork,
+            propertyConnectivity = false,
+            emergencyWork = emergencyWork,
+            rockExcavation = rockExcavation,
+            workDescription = workDescription,
+            startTime = startTime,
+            endTime = endTime,
+            areas = areas?.flatMap { it.toJohtoselvitysHakemusalues() },
+        )
 }
 
 fun InvoicingCustomer?.toLaskutusyhteystieto(customerReference: String?): Laskutusyhteystieto? =

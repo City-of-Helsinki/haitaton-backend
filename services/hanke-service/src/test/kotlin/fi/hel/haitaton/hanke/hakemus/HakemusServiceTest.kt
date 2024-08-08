@@ -338,7 +338,6 @@ class HakemusServiceTest {
             val applicationEntity = applicationEntity()
             applicationEntity.hakemusEntityData = hakemusEntityData
             every { hakemusRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
                 .all {
@@ -346,10 +345,7 @@ class HakemusServiceTest {
                     hasMessage("Application contains invalid data. Errors at paths: $path")
                 }
 
-            verifySequence {
-                hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
-            }
+            verifySequence { hakemusRepository.findOneById(3) }
         }
 
         @Test
@@ -357,7 +353,6 @@ class HakemusServiceTest {
             val applicationEntity = applicationEntity()
             applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]!!.nimi = ""
             every { hakemusRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
                 .all {
@@ -366,10 +361,7 @@ class HakemusServiceTest {
                         "Application contains invalid data. Errors at paths: applicationData.customerWithContacts.nimi")
                 }
 
-            verifySequence {
-                hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
-            }
+            verifySequence { hakemusRepository.findOneById(3) }
         }
 
         @Test
@@ -380,7 +372,6 @@ class HakemusServiceTest {
             hankekayttaja.etunimi = ""
             hankekayttaja.sukunimi = ""
             every { hakemusRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
                 .all {
@@ -390,10 +381,7 @@ class HakemusServiceTest {
                             "applicationData.contractorWithContacts.yhteyshenkilot[0].etunimi")
                 }
 
-            verifySequence {
-                hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
-            }
+            verifySequence { hakemusRepository.findOneById(3) }
         }
 
         @Test
@@ -405,7 +393,6 @@ class HakemusServiceTest {
                     .withYhteyshenkilo(
                         permission = PermissionFactory.createEntity(userId = USERNAME))
             every { hakemusRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
                 .all {
@@ -415,10 +402,7 @@ class HakemusServiceTest {
                             "applicationData.propertyDeveloperWithContacts.sahkoposti")
                 }
 
-            verifySequence {
-                hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
-            }
+            verifySequence { hakemusRepository.findOneById(3) }
         }
 
         @Test
@@ -430,7 +414,6 @@ class HakemusServiceTest {
                     .withYhteyshenkilo(
                         permission = PermissionFactory.createEntity(userId = USERNAME))
             every { hakemusRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
                 .all {
@@ -440,10 +423,7 @@ class HakemusServiceTest {
                             "applicationData.representativeWithContacts.puhelinnumero")
                 }
 
-            verifySequence {
-                hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
-            }
+            verifySequence { hakemusRepository.findOneById(3) }
         }
 
         private fun applicationEntity(): HakemusEntity {

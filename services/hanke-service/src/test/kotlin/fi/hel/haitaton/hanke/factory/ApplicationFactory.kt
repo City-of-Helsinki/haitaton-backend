@@ -37,7 +37,8 @@ class ApplicationFactory(
     companion object {
         const val DEFAULT_APPLICATION_ID: Long = 1
         const val DEFAULT_APPLICATION_NAME: String = "Hakemuksen oletusnimi"
-        const val DEFAULT_APPLICATION_IDENTIFIER: String = "JS230014"
+        const val DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER: String = "JS2300014"
+        const val DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER: String = "KP2300015"
         const val DEFAULT_WORK_DESCRIPTION: String = "Työn kuvaus."
         const val TEPPO = "Teppo"
         const val TESTIHENKILO = "Testihenkilö"

@@ -34,6 +34,9 @@ data class KaivuilmoitusAlue(
     val lisatiedot: String?,
 ) : Hakemusalue {
     override fun geometries(): List<Polygon> = tyoalueet.map { it.geometry }
+
+    fun toJohtoselvitysHakemusalues(): List<JohtoselvitysHakemusalue> =
+        tyoalueet.map { JohtoselvitysHakemusalue("", it.geometry) }
 }
 
 data class Tyoalue(
@@ -41,3 +44,10 @@ data class Tyoalue(
     val area: Double,
     val tormaystarkasteluTulos: TormaystarkasteluTulos?,
 )
+
+fun List<KaivuilmoitusAlue>?.toPostalAddress(): PostalAddress? =
+    this?.map { it.katuosoite }
+        ?.toSet()
+        ?.joinToString(", ")
+        ?.let { StreetAddress(it) }
+        ?.let { PostalAddress(it, "", "") }

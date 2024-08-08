@@ -129,6 +129,18 @@ data class HakemusBuilder(
             { copy(endTime = time) },
         )
 
+    fun withoutCableReports() =
+        updateApplicationData(
+            { throw InvalidParameterException("Not available for cable reports.") },
+            { copy(cableReportDone = false, cableReports = null) },
+        )
+
+    fun withCableReports(cableReports: List<String>) =
+        updateApplicationData(
+            { throw InvalidParameterException("Not available for cable reports.") },
+            { copy(cableReportDone = true, cableReports = cableReports) },
+        )
+
     fun withRockExcavation(rockExcavation: Boolean?) =
         updateApplicationData(
             { copy(rockExcavation = rockExcavation) },
@@ -192,7 +204,9 @@ data class HakemusBuilder(
                     .withStartTime()
                     .withEndTime()
                     .withArea(hankealue?.id)
-                    .withRockExcavation(false)
+                    .withCableReports(
+                        listOf(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                    )
                     .withWorkInvolves()
                     .withRequiredCompetence()
                     .hakija()

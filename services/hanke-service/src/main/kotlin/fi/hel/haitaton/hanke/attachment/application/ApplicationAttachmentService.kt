@@ -78,19 +78,31 @@ class ApplicationAttachmentService(
         scanAttachment(filename, attachment.bytes)
         metadataService.ensureRoomForAttachment(applicationId)
 
+        val newAttachment =
+            saveAttachment(hakemus, attachment.bytes, filename, contentType, attachmentType)
+
+        return newAttachment.toDto()
+    }
+
+    fun saveAttachment(
+        hakemus: HakemusMetaData,
+        content: ByteArray,
+        filename: String,
+        contentType: MediaType,
+        attachmentType: ApplicationAttachmentType
+    ): ApplicationAttachmentMetadata {
         logger.info { "Saving attachment content for application. ${hakemus.logString()}" }
-        val blobPath =
-            attachmentContentService.upload(filename, contentType, attachment.bytes, applicationId)
+        val blobPath = attachmentContentService.upload(filename, contentType, content, hakemus.id)
         logger.info { "Saving attachment metadata for application. ${hakemus.logString()}" }
         val newAttachment =
             try {
                 metadataService.create(
                     filename,
                     contentType.toString(),
-                    attachment.size,
+                    content.size.toLong(),
                     blobPath,
                     attachmentType,
-                    applicationId
+                    hakemus.id
                 )
             } catch (e: Exception) {
                 logger.error(e) {
@@ -99,11 +111,10 @@ class ApplicationAttachmentService(
                 attachmentContentService.delete(blobPath)
                 throw e
             }
-
         logger.info {
             "Added attachment metadata ${newAttachment.id} and content $blobPath for application. ${hakemus.logString()}"
         }
-        return newAttachment.toDto()
+        return newAttachment
     }
 
     /** Attachment can be deleted if the application has not been sent to Allu (alluId null). */

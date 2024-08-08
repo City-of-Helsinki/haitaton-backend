@@ -62,6 +62,18 @@ class HakemusyhteystietoEntity(
                     )
                 }
         )
+
+    fun copyToHakemus(hakemus: HakemusEntity) =
+        HakemusyhteystietoEntity(
+            tyyppi = tyyppi,
+            rooli = rooli,
+            nimi = nimi,
+            sahkoposti = sahkoposti,
+            puhelinnumero = puhelinnumero,
+            ytunnus = ytunnus,
+            application = hakemus,
+            yhteyshenkilot = yhteyshenkilot.map { it.copyToYhteystieto(this) }.toMutableList()
+        )
 }
 
 @Entity
@@ -75,7 +87,14 @@ class HakemusyhteyshenkiloEntity(
     @JoinColumn(name = "hankekayttaja_id")
     var hankekayttaja: HankekayttajaEntity,
     var tilaaja: Boolean
-)
+) {
+    fun copyToYhteystieto(yhteystieto: HakemusyhteystietoEntity) =
+        HakemusyhteyshenkiloEntity(
+            hakemusyhteystieto = yhteystieto,
+            hankekayttaja = hankekayttaja,
+            tilaaja = tilaaja
+        )
+}
 
 interface HakemusyhteystietoRepository : JpaRepository<HakemusyhteystietoEntity, UUID>
 
