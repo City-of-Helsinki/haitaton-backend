@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentAuthorizer
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
+import fi.hel.haitaton.hanke.banners.BannerService
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
@@ -44,23 +45,19 @@ import org.springframework.security.web.SecurityFilterChain
 @EnableMethodSecurity(prePostEnabled = true)
 class IntegrationTestConfiguration {
 
-    @Bean fun jdbcOperations(): JdbcOperations = mockk()
+    @Bean fun applicationAttachmentMetadataService(): ApplicationAttachmentMetadataService = mockk()
 
-    @Bean fun hankeRepository(): HankeRepository = mockk()
+    @Bean fun applicationAttachmentService(): ApplicationAttachmentService = mockk()
 
     @Bean fun auditLogRepository(): AuditLogRepository = mockk()
 
-    @Bean fun hanketunnusService(): HanketunnusService = mockk()
+    @Bean fun bannerService(): BannerService = mockk()
 
-    @Bean fun hankeService(): HankeService = mockk()
+    @Bean fun disclosureLogService(): DisclosureLogService = mockk(relaxUnitFun = true)
 
-    @Bean fun hakemusService(): HakemusService = mockk()
+    @Bean fun featureService(featureFlags: FeatureFlags) = FeatureService(featureFlags)
 
     @Bean fun gdprService(): GdprService = mockk(relaxUnitFun = true)
-
-    @Bean fun testDataService(): TestDataService = mockk(relaxUnitFun = true)
-
-    @Bean fun permissionService(): PermissionService = mockk()
 
     @Bean fun geometriatDao(jdbcOperations: JdbcOperations): GeometriatDao = mockk()
 
@@ -68,36 +65,42 @@ class IntegrationTestConfiguration {
     fun geometriatService(service: HankeService, geometriatDao: GeometriatDao): GeometriatService =
         mockk()
 
+    @Bean fun hakemusAuthorizer(): HakemusAuthorizer = mockk(relaxUnitFun = true)
+
+    @Bean fun hakemusService(): HakemusService = mockk()
+
+    @Bean fun hankeAttachmentAuthorizer(): HankeAttachmentAuthorizer = mockk(relaxUnitFun = true)
+
+    @Bean fun hankeAttachmentMetadataService(): HankeAttachmentMetadataService = mockk()
+
+    @Bean fun hankeAttachmentService(): HankeAttachmentService = mockk()
+
+    @Bean fun hankeAuthorizer(): HankeAuthorizer = mockk(relaxUnitFun = true)
+
+    @Bean fun hankeKayttajaAuthorizer(): HankeKayttajaAuthorizer = mockk(relaxUnitFun = true)
+
+    @Bean fun hankekayttajaDeleteService(): HankekayttajaDeleteService = mockk()
+
+    @Bean fun hankeKayttajaService(): HankeKayttajaService = mockk()
+
+    @Bean fun hankeRepository(): HankeRepository = mockk()
+
+    @Bean fun hankeService(): HankeService = mockk()
+
+    @Bean fun hanketunnusService(): HanketunnusService = mockk()
+
+    @Bean fun jdbcOperations(): JdbcOperations = mockk()
+
+    @Bean fun permissionService(): PermissionService = mockk()
+
+    @Bean fun profiiliClient(): ProfiiliClient = mockk()
+
+    @Bean fun testDataService(): TestDataService = mockk(relaxUnitFun = true)
+
     @Bean
     fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService = mockk()
 
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
-
-    @Bean fun disclosureLogService(): DisclosureLogService = mockk(relaxUnitFun = true)
-
-    @Bean fun hankeAttachmentService(): HankeAttachmentService = mockk()
-
-    @Bean fun hankeAttachmentMetadataService(): HankeAttachmentMetadataService = mockk()
-
-    @Bean fun applicationAttachmentMetadataService(): ApplicationAttachmentMetadataService = mockk()
-
-    @Bean fun applicationAttachmentService(): ApplicationAttachmentService = mockk()
-
-    @Bean fun hankeKayttajaService(): HankeKayttajaService = mockk()
-
-    @Bean fun hankekayttajaDeleteService(): HankekayttajaDeleteService = mockk()
-
-    @Bean fun hankeKayttajaAuthorizer(): HankeKayttajaAuthorizer = mockk(relaxUnitFun = true)
-
-    @Bean fun hankeAuthorizer(): HankeAuthorizer = mockk(relaxUnitFun = true)
-
-    @Bean fun hakemusAuthorizer(): HakemusAuthorizer = mockk(relaxUnitFun = true)
-
-    @Bean fun hankeAttachmentAuthorizer(): HankeAttachmentAuthorizer = mockk(relaxUnitFun = true)
-
-    @Bean fun featureService(featureFlags: FeatureFlags) = FeatureService(featureFlags)
-
-    @Bean fun profiiliClient(): ProfiiliClient = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {

@@ -21,6 +21,7 @@ object AccessRules {
                         "/actuator/health/liveness",
                         "/actuator/health/readiness",
                         "/status",
+                        "/banners",
                         "/public-hankkeet",
                         "/swagger-ui.html",
                         "/swagger-ui/**",

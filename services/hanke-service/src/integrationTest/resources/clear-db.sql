@@ -7,16 +7,17 @@ TRUNCATE TABLE
     hakemusyhteystieto,
     hanke,
     hanke_attachment,
-    hankekayttaja,
     hankealue,
     hankegeometria,
+    hankekayttaja,
     hanketyomaatyyppi,
     hankeyhteyshenkilo,
     hankeyhteystieto,
+    hankkeen_haittojenhallintasuunnitelma,
     int_lock,
     kayttajakutsu,
     paatos,
     permissions,
     tormaystarkastelutulos,
-    hankkeen_haittojenhallintasuunnitelma;
+    ui_notification_banner;
 UPDATE allu_status SET history_last_updated = '2017-01-01T00:00:00Z';
