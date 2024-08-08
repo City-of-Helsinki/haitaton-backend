@@ -111,9 +111,7 @@ data class HakemusBuilder(
                 copy(
                     areas =
                         (areas ?: listOf()).plus(
-                            createExcavationNotificationArea(hankealueId = hankealueId ?: 0)
-                        )
-                )
+                            createExcavationNotificationArea(hankealueId = hankealueId ?: 0)))
             },
         )
 
@@ -205,8 +203,7 @@ data class HakemusBuilder(
                     .withEndTime()
                     .withArea(hankealue?.id)
                     .withCableReports(
-                        listOf(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
-                    )
+                        listOf(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER))
                     .withWorkInvolves()
                     .withRequiredCompetence()
                     .hakija()
@@ -376,8 +373,5 @@ data class HakemusBuilder(
         tilaaja: Boolean = false
     ) =
         HakemusyhteyshenkiloEntity(
-            hankekayttaja = kayttaja,
-            hakemusyhteystieto = yhteystietoEntity,
-            tilaaja = tilaaja
-        )
+            hankekayttaja = kayttaja, hakemusyhteystieto = yhteystietoEntity, tilaaja = tilaaja)
 }

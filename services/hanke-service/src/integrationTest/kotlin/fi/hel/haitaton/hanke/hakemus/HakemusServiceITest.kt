@@ -1818,14 +1818,14 @@ class HakemusServiceITest(
                 expectedJohtoselvityshakemusDataAfterSend.toAlluCableReportData(hakemus.hankeTunnus)
             val expectedExcavationAnnouncementAlluRequest =
                 expectedKaivuilmoitusDataAfterSend.toAlluExcavationNotificationData(
-                    hakemus.hankeTunnus
-                )
+                    hakemus.hankeTunnus)
             val cableReportAlluId = alluId
             val excavationAnnouncenemtAlluId = alluId + 1
             every { alluClient.create(expectedCableReportAlluRequest) } returns cableReportAlluId
             every { alluClient.create(expectedExcavationAnnouncementAlluRequest) } returns
                 excavationAnnouncenemtAlluId
             justRun { alluClient.addAttachment(cableReportAlluId, any()) }
+            justRun { alluClient.addAttachment(excavationAnnouncenemtAlluId, any()) }
             justRun { alluClient.addAttachments(cableReportAlluId, any(), any()) }
             justRun { alluClient.addAttachments(excavationAnnouncenemtAlluId, any(), any()) }
             every { alluClient.getApplicationInformation(cableReportAlluId) } returns
@@ -1833,8 +1833,7 @@ class HakemusServiceITest(
             every { alluClient.getApplicationInformation(excavationAnnouncenemtAlluId) } returns
                 AlluFactory.createAlluApplicationResponse(
                     excavationAnnouncenemtAlluId,
-                    applicationId = DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER
-                )
+                    applicationId = DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER)
 
             val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
 
@@ -1865,6 +1864,7 @@ class HakemusServiceITest(
                 alluClient.getApplicationInformation(cableReportAlluId)
                 // then the excavation announcement is sent
                 alluClient.create(expectedExcavationAnnouncementAlluRequest)
+                alluClient.addAttachment(excavationAnnouncenemtAlluId, any())
                 alluClient.addAttachments(excavationAnnouncenemtAlluId, any(), any())
                 alluClient.getApplicationInformation(excavationAnnouncenemtAlluId)
             }

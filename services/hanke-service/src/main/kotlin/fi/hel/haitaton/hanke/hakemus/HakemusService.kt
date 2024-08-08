@@ -215,9 +215,7 @@ class HakemusService(
                 hakemusEntityData.copy(
                     cableReports =
                         hakemusEntityData.cableReports?.plus(
-                            sentJohtoselvityshakemus.applicationIdentifier!!
-                        )
-                )
+                            sentJohtoselvityshakemus.applicationIdentifier!!))
         }
 
         logger.info("Sending hakemus id=$id")
@@ -268,8 +266,7 @@ class HakemusService(
         val savedJohtoselvityshakemus = hakemusRepository.save(johtoselvityshakemus)
         copyOtherAttachments(hakemus, savedJohtoselvityshakemus)
         logger.info(
-            "Created a new johtoselvityshakemus (${savedJohtoselvityshakemus.id}) for a kaivuilmoitus (${hakemus.id})"
-        )
+            "Created a new johtoselvityshakemus (${savedJohtoselvityshakemus.id}) for a kaivuilmoitus (${hakemus.id})")
         return savedJohtoselvityshakemus
     }
 
@@ -292,8 +289,7 @@ class HakemusService(
                     content.bytes,
                     metadata.fileName,
                     MediaType.parseMediaType(metadata.contentType),
-                    ApplicationAttachmentType.MUU
-                )
+                    ApplicationAttachmentType.MUU)
             }
     }
 

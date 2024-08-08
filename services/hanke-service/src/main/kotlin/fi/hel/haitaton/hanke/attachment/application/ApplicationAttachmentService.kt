@@ -102,8 +102,7 @@ class ApplicationAttachmentService(
                     content.size.toLong(),
                     blobPath,
                     attachmentType,
-                    hakemus.id
-                )
+                    hakemus.id)
             } catch (e: Exception) {
                 logger.error(e) {
                     "Attachment metadata save failed, deleting attachment content $blobPath"

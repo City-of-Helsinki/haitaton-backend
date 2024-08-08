@@ -20,8 +20,7 @@ enum class ApplicationContactType {
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "applicationType",
-    visible = true
-)
+    visible = true)
 @JsonSubTypes(
     JsonSubTypes.Type(value = JohtoselvityshakemusEntityData::class, name = "CABLE_REPORT"),
     JsonSubTypes.Type(value = KaivuilmoitusEntityData::class, name = "EXCAVATION_NOTIFICATION"),
@@ -158,8 +157,7 @@ fun InvoicingCustomer?.toLaskutusyhteystieto(customerReference: String?): Laskut
             it.postalAddress?.postalCode,
             it.postalAddress?.city,
             it.email,
-            it.phone
-        )
+            it.phone)
     }
 
 class AlluDataException(path: String, error: AlluDataError) :

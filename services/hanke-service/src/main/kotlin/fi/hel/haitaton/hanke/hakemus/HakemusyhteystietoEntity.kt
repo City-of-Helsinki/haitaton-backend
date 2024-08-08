@@ -34,8 +34,7 @@ class HakemusyhteystietoEntity(
         fetch = FetchType.LAZY,
         mappedBy = "hakemusyhteystieto",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
-    )
+        orphanRemoval = true)
     @BatchSize(size = 100)
     val yhteyshenkilot: MutableList<HakemusyhteyshenkiloEntity> = mutableListOf(),
 ) {
@@ -60,8 +59,7 @@ class HakemusyhteystietoEntity(
                         puhelin = yhteyshenkilo.hankekayttaja.puhelin,
                         tilaaja = yhteyshenkilo.tilaaja,
                     )
-                }
-        )
+                })
 
     fun copyToHakemus(hakemus: HakemusEntity) =
         HakemusyhteystietoEntity(
@@ -72,8 +70,7 @@ class HakemusyhteystietoEntity(
             puhelinnumero = puhelinnumero,
             ytunnus = ytunnus,
             application = hakemus,
-            yhteyshenkilot = yhteyshenkilot.map { it.copyToYhteystieto(this) }.toMutableList()
-        )
+            yhteyshenkilot = yhteyshenkilot.map { it.copyToYhteystieto(this) }.toMutableList())
 }
 
 @Entity
@@ -90,10 +87,7 @@ class HakemusyhteyshenkiloEntity(
 ) {
     fun copyToYhteystieto(yhteystieto: HakemusyhteystietoEntity) =
         HakemusyhteyshenkiloEntity(
-            hakemusyhteystieto = yhteystieto,
-            hankekayttaja = hankekayttaja,
-            tilaaja = tilaaja
-        )
+            hakemusyhteystieto = yhteystieto, hankekayttaja = hankekayttaja, tilaaja = tilaaja)
 }
 
 interface HakemusyhteystietoRepository : JpaRepository<HakemusyhteystietoEntity, UUID>

@@ -120,11 +120,7 @@ class ApplicationFactory(
             area: Double = 100.0,
             tormaystarkasteluTulos: TormaystarkasteluTulos =
                 TormaystarkasteluTulos(
-                    TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
-                    3.0f,
-                    5.0f,
-                    5.0f
-                ),
+                    TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU, 3.0f, 5.0f, 5.0f),
         ) = Tyoalue(geometry, area, tormaystarkasteluTulos)
 
         fun createBlankApplicationData(applicationType: ApplicationType): HakemusEntityData =
@@ -164,8 +160,7 @@ class ApplicationFactory(
                 pendingOnClient = false,
                 workDescription = "",
                 rockExcavation = false,
-                postalAddress = PostalAddress(StreetAddress(""), "", "")
-            )
+                postalAddress = PostalAddress(StreetAddress(""), "", ""))
 
         fun createExcavationNotificationData(
             pendingOnClient: Boolean = false,
@@ -212,8 +207,7 @@ class ApplicationFactory(
                 areas = null,
                 startTime = null,
                 endTime = null,
-                additionalInfo = null
-            )
+                additionalInfo = null)
 
         fun createApplicationEntity(
             id: Long = 3,

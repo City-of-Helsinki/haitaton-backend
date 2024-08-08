@@ -51,8 +51,7 @@ object HakemusDataMapper {
             constructionWork = constructionWork,
             maintenanceWork = maintenanceWork,
             emergencyWork = emergencyWork,
-            propertyConnectivity = propertyConnectivity
-        )
+            propertyConnectivity = propertyConnectivity)
     }
 
     fun KaivuilmoitusData.toAlluExcavationNotificationData(
@@ -85,8 +84,7 @@ object HakemusDataMapper {
             propertyConnectivity = null,
             workPurpose = workDescription,
             placementContracts = placementContracts?.toList(),
-            cableReports = cableReports?.toList()
-        )
+            cableReports = cableReports?.toList())
 
     /** If areas are missing, throw an exception. */
     internal fun HakemusData.getGeometries(): GeometryCollection =
@@ -130,8 +128,7 @@ object HakemusDataMapper {
                 invoicingOperator = null,
                 sapCustomerNumber = null,
             ),
-            yhteyshenkilot.map { it.toAlluContact() }
-        )
+            yhteyshenkilot.map { it.toAlluContact() })
 
     fun Hakemusyhteyshenkilo.toAlluContact() =
         Contact("$etunimi $sukunimi".trim(), sahkoposti, puhelin, tilaaja)
