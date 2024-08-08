@@ -1,132 +1,138 @@
 package fi.hel.haitaton.hanke.pdf
 
+import assertk.Assert
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.contains
+import assertk.assertions.containsMatch
 import assertk.assertions.doesNotContain
 import com.lowagie.text.pdf.PdfReader
 import com.lowagie.text.pdf.parser.PdfTextExtractor
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
-import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
-import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
+import fi.hel.haitaton.hanke.hakemus.Tyoalue
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.ZonedDateTime
-import org.geojson.Polygon
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class JohtoselvityshakemusPdfEncoderTest {
+class KaivuilmoitusPdfEncoderTest {
 
     @Nested
     inner class CreatePdf {
         @Test
         fun `created PDF contains title and section headers`() {
-            val hakemusData = HakemusFactory.createJohtoselvityshakemusData()
+            val hakemusData = HakemusFactory.createKaivuilmoitusData()
 
-            val pdfData =
-                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData))
                 .contains(
-                    "Johtoselvityshakemus", "Perustiedot", "Alueet", "Yhteystiedot", "Liitteet")
+                    "Kaivuilmoitus",
+                    "Perustiedot",
+                    "Alueet",
+                    "Yhteystiedot",
+                    "Liitteet ja lisätiedot")
         }
 
         @Test
         fun `created PDF contains headers for basic information`() {
-            val hakemusData = HakemusFactory.createJohtoselvityshakemusData()
+            val hakemusData = HakemusFactory.createKaivuilmoitusData(cableReportDone = false)
 
-            val pdfData =
-                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Työn nimi")
-                contains("Osoitetiedot")
-                contains("Työssä on kyse")
                 contains("Työn kuvaus")
-                contains("Omat tiedot")
+                contains("Työssä on kyse")
+                hasPhrase("Tehtyjen johtoselvitysten tunnukset")
+                contains("Uusi johtoselvitys")
+                contains("Sijoitussopimustunnukset")
+                contains("Työhön vaadittavat pätevyydet")
+                contains("Tilaaja")
             }
         }
 
         @Test
         fun `created PDF contains basic information`() {
             val applicationData =
-                HakemusFactory.createJohtoselvityshakemusData(
-                    postalAddress = ApplicationFactory.createPostalAddress(),
-                    customerWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
+                HakemusFactory.createKaivuilmoitusData(
                     constructionWork = true,
                     maintenanceWork = true,
                     emergencyWork = true,
-                    propertyConnectivity = true,
-                )
+                    cableReports = listOf("JS2400001", "JS2400002"),
+                    cableReportDone = false,
+                    rockExcavation = false,
+                    placementContracts = listOf("Sopimus1", "Sopimus2"),
+                    requiredCompetence = true,
+                    contractorWithContacts =
+                        HakemusyhteystietoFactory.create()
+                            .withYhteyshenkilo(
+                                etunimi = "Tapio",
+                                sukunimi = "Tilaaja",
+                                sahkoposti = "tapio@tilaaja.test",
+                                puhelin = "09876543",
+                                tilaaja = true,
+                            ))
 
-            val pdfData =
-                JohtoselvityshakemusPdfEncoder.createPdf(applicationData, 1f, listOf(), listOf())
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(applicationData, 1f, listOf(), listOf())
 
             val pdfText = getPdfAsText(pdfData)
             assertThat(pdfText).all {
                 contains(ApplicationFactory.DEFAULT_APPLICATION_NAME)
-                contains("Katu 1")
-                contains("00100")
-                contains("Helsinki")
+                contains(ApplicationFactory.DEFAULT_WORK_DESCRIPTION)
                 contains("Uuden rakenteen tai johdon rakentamisesta")
                 contains("Olemassaolevan rakenteen kunnossapitotyöstä")
-                // This is too long to fit on one line in the PDF. It's not found as a continuous
-                // String. Check for each word instead.
-                contains(
-                    "Kaivutyö",
-                    "on",
-                    "aloitettu",
-                    "ennen",
-                    "johtoselvityksen",
-                    "tilaamista",
-                    "merkittävien",
-                    "vahinkojen",
-                    "välttämiseksi",
-                )
-                contains("Kiinteistöliittymien rakentamisesta")
-                contains(ApplicationFactory.DEFAULT_WORK_DESCRIPTION)
-                contains(
-                    "${HakemusyhteyshenkiloFactory.DEFAULT_ETUNIMI} ${HakemusyhteyshenkiloFactory.DEFAULT_SUKUNIMI}")
-                contains(HakemusyhteyshenkiloFactory.DEFAULT_SAHKOPOSTI)
-                contains(HakemusyhteyshenkiloFactory.DEFAULT_PUHELIN)
+                hasPhrase(
+                    "Kaivutyö on aloitettu ennen kaivuilmoituksen tekemistä " +
+                        "merkittävien vahinkojen välttämiseksi")
+                contains("JS2400001, JS2400002")
+                hasPhrase("Louhitaanko työn yhteydessä, esimerkiksi maaperää? Ei")
+                contains("Sopimus1, Sopimus2")
+                contains("Kyllä")
+                hasPhrase("Tapio Tilaaja tapio@tilaaja.test 09876543")
             }
         }
 
         @Test
         fun `created PDF doesn't have this work involves fields if none are selected`() {
             val hakemusData =
-                HakemusFactory.createJohtoselvityshakemusData(
+                HakemusFactory.createKaivuilmoitusData(
                     constructionWork = false,
                     maintenanceWork = false,
                     emergencyWork = false,
-                    propertyConnectivity = false,
                 )
 
-            val pdfData =
-                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 doesNotContain("Uuden rakenteen tai johdon rakentamisesta")
                 doesNotContain("Olemassaolevan rakenteen kunnossapitotyöstä")
                 doesNotContain("välttämiseksi")
-                doesNotContain("Kiinteistöliittymien rakentamisesta")
             }
         }
 
         @Test
         fun `created PDF contains headers for area information`() {
-            val hakemusData = HakemusFactory.createJohtoselvityshakemusData()
+            val hakemusData = HakemusFactory.createKaivuilmoitusData()
 
-            val pdfData =
-                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
+                contains("Alueiden kokonaispinta-ala")
                 contains("Työn arvioitu alkupäivä")
                 contains("Työn arvioitu loppupäivä")
-                contains("Alueiden kokonaispinta-ala")
                 contains("Alueet")
             }
         }
@@ -134,37 +140,58 @@ class JohtoselvityshakemusPdfEncoderTest {
         @Test
         fun `created PDF contains area information`() {
             val hakemusData =
-                HakemusFactory.createJohtoselvityshakemusData(
+                HakemusFactory.createKaivuilmoitusData(
                     startTime = ZonedDateTime.parse("2022-11-17T22:00:00.000Z"),
                     endTime = ZonedDateTime.parse("2022-11-28T21:59:59.999Z"),
-                    areas =
-                        listOf(
-                            JohtoselvitysHakemusalue("Ensimmäinen työalue", Polygon()),
-                            JohtoselvitysHakemusalue("Toinen alue", Polygon()),
-                            JohtoselvitysHakemusalue("", Polygon()),
-                        ))
+                    areas = listOf())
+            val area =
+                EnrichedKaivuilmoitusalue(
+                    223.41411f,
+                    "Ensimmäinen hankealue",
+                    KaivuilmoitusAlue(
+                        name = "Hakemusalue",
+                        hankealueId = 11,
+                        tyoalueet =
+                            listOf(
+                                Tyoalue(GeometriaFactory.secondPolygon(), 147.5799, null),
+                                Tyoalue(GeometriaFactory.secondPolygon(), 75.83421, null),
+                            ),
+                        katuosoite = "Hakemusalueen osoite",
+                        tyonTarkoitukset = setOf(TyomaaTyyppi.VESI, TyomaaTyyppi.KAASUJOHTO),
+                        meluhaitta = Meluhaitta.TOISTUVA_MELUHAITTA,
+                        polyhaitta = Polyhaitta.SATUNNAINEN_POLYHAITTA,
+                        tarinahaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
+                        kaistahaitta = VaikutusAutoliikenteenKaistamaariin.EI_VAIKUTA,
+                        kaistahaittojenPituus =
+                            AutoliikenteenKaistavaikutustenPituus.EI_VAIKUTA_KAISTAJARJESTELYIHIN,
+                        lisatiedot = "Lisätiedot hakemusalueesta.",
+                    ))
 
             val pdfData =
-                JohtoselvityshakemusPdfEncoder.createPdf(
-                    hakemusData, 614f, listOf(185f, 231f, 198f), listOf())
+                KaivuilmoitusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf(area))
 
             assertThat(getPdfAsText(pdfData)).all {
+                contains("614,00 m²")
                 contains("18.11.2022")
                 contains("28.11.2022")
-                contains("614,00 m²")
-                contains("Ensimmäinen työalue")
-                contains("185,00 m²")
-                contains("Toinen alue")
-                contains("231,00 m²")
-                contains("Työalue 3")
-                contains("198,00 m²")
+                contains("Työalueet (Ensimmäinen hankealue)")
+                contains("Työalue 1: (147,58 m²)")
+                contains("Työalue 2: (75,83 m²)")
+                contains("Pinta-ala: 223,41 m²")
+                contains("Katuosoite: Hakemusalueen osoite")
+                contains("Työn tarkoitus: Vesi, Kaasujohto")
+                contains("Meluhaitta: Toistuva meluhaitta")
+                contains("Pölyhaitta: Satunnainen pölyhaitta")
+                contains("Tärinähaitta: Jatkuva tärinähaitta")
+                contains("Kaistahaittojen pituus: Ei vaikuta")
+                contains("Lisätietoja alueesta: Lisätiedot hakemusalueesta.")
             }
         }
 
         @Test
         fun `contains headers for contact information`() {
             val hakemusData =
-                HakemusFactory.createJohtoselvityshakemusData(
+                HakemusFactory.createKaivuilmoitusData(
                     customerWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
                     contractorWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
                     representativeWithContacts =
@@ -172,14 +199,13 @@ class JohtoselvityshakemusPdfEncoderTest {
                     propertyDeveloperWithContacts =
                         HakemusyhteystietoFactory.create().withYhteyshenkilo())
 
-            val pdfData =
-                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
-                contains("Työstä vastaavat")
-                contains("Työn suorittajat")
-                contains("Rakennuttajat")
-                contains("Asianhoitajat")
+                contains("Työstä vastaava")
+                contains("Työn suorittaja")
+                contains("Rakennuttaja")
+                contains("Asianhoitaja")
                 contains("Yhteyshenkilöt")
             }
         }
@@ -187,21 +213,20 @@ class JohtoselvityshakemusPdfEncoderTest {
         @Test
         fun `doesn't contain headers for missing optional contacts`() {
             val hakemusData =
-                HakemusFactory.createJohtoselvityshakemusData(
+                HakemusFactory.createKaivuilmoitusData(
                     customerWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
                     contractorWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
                     representativeWithContacts = null,
                     propertyDeveloperWithContacts = null,
                 )
 
-            val pdfData =
-                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
-                contains("Työstä vastaavat")
-                contains("Työn suorittajat")
-                doesNotContain("Rakennuttajat")
-                doesNotContain("Asianhoitajat")
+                contains("Työstä vastaava")
+                contains("Työn suorittaja")
+                doesNotContain("Rakennuttaja")
+                doesNotContain("Asianhoitaja")
             }
         }
 
@@ -260,15 +285,14 @@ class JohtoselvityshakemusPdfEncoderTest {
                         puhelin = "0502222222")
 
             val hakemusData =
-                HakemusFactory.createJohtoselvityshakemusData(
+                HakemusFactory.createKaivuilmoitusData(
                     customerWithContacts = hakija,
                     contractorWithContacts = tyonSuorittaja,
                     representativeWithContacts = asianhoitaja,
                     propertyDeveloperWithContacts = rakennuttaja,
                 )
 
-            val pdfData =
-                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Company Ltd")
@@ -305,24 +329,32 @@ class JohtoselvityshakemusPdfEncoderTest {
         @Test
         fun `created PDF contains attachment information`() {
             val hakemusData =
-                HakemusFactory.createJohtoselvityshakemusData(
+                HakemusFactory.createKaivuilmoitusData(
                     startTime = ZonedDateTime.parse("2022-11-17T22:00:00.000Z"),
                     endTime = ZonedDateTime.parse("2022-11-28T21:59:59.999Z"),
-                    areas = listOf())
+                )
             val attachments =
                 listOf(
                     ApplicationAttachmentFactory.create(fileName = "first.pdf"),
                     ApplicationAttachmentFactory.create(fileName = "second.png"),
                     ApplicationAttachmentFactory.create(fileName = "third.gt"),
+                    ApplicationAttachmentFactory.create(
+                        fileName = "valtakirja.pdf",
+                        attachmentType = ApplicationAttachmentType.VALTAKIRJA),
+                    ApplicationAttachmentFactory.create(
+                        fileName = "liikenne.pdf",
+                        attachmentType = ApplicationAttachmentType.LIIKENNEJARJESTELY),
                 )
 
             val pdfData =
-                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), attachments)
+                KaivuilmoitusPdfEncoder.createPdf(hakemusData, 614f, attachments, listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("first.pdf")
                 contains("second.png")
                 contains("third.gt")
+                contains("valtakirja.pdf")
+                contains("liikenne.pdf")
             }
         }
     }
@@ -333,4 +365,10 @@ class JohtoselvityshakemusPdfEncoderTest {
         val textExtractor = PdfTextExtractor(reader)
         return (1..pages).joinToString("\n") { textExtractor.getTextFromPage(it) }
     }
+
+    private fun phraseAsRegexWithEscapes(phrase: String): Regex =
+        phrase.splitToSequence(' ').map { "\\Q$it\\E" }.joinToString("\\s+").toRegex()
+
+    private fun Assert<String>.hasPhrase(phrase: String) =
+        containsMatch(phraseAsRegexWithEscapes(phrase))
 }
