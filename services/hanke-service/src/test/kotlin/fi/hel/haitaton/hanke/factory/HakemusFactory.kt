@@ -53,10 +53,7 @@ class HakemusFactory(
 
     fun builder(applicationType: ApplicationType) =
         builder(
-            USERNAME,
-            hankeFactory.builder(USERNAME).withHankealue().saveEntity(),
-            applicationType
-        )
+            USERNAME, hankeFactory.builder(USERNAME).withHankealue().saveEntity(), applicationType)
 
     private fun builder(
         userId: String,
@@ -160,7 +157,7 @@ class HakemusFactory(
         fun createKaivuilmoitusData(
             pendingOnClient: Boolean = false,
             name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
-            workDescription: String = "Work description.",
+            workDescription: String = ApplicationFactory.DEFAULT_WORK_DESCRIPTION,
             constructionWork: Boolean = false,
             maintenanceWork: Boolean = false,
             emergencyWork: Boolean = false,

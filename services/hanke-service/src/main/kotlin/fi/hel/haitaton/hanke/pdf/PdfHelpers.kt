@@ -8,15 +8,12 @@ import com.lowagie.text.Paragraph
 import com.lowagie.text.Phrase
 import com.lowagie.text.Rectangle
 import com.lowagie.text.pdf.PdfPTable
-import java.time.format.DateTimeFormatter
 
 val titleFont = Font(Font.HELVETICA, 18f, Font.BOLD)
 val sectionFont = Font(Font.HELVETICA, 15f, Font.BOLD)
 
 val headerFont = Font(Font.HELVETICA, 10f, Font.BOLD)
 val textFont = Font(Font.HELVETICA, 10f, Font.NORMAL)
-
-val finnishDateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.uuuu")
 
 fun Document.newline() {
     this.add(Paragraph(Chunk.NEWLINE))
@@ -40,7 +37,13 @@ fun PdfPTable.row(key: String, value: Any?) {
     this.addCell(Phrase(value?.toString() ?: "<Tyhjä>", textFont))
 }
 
-fun Document.section(sectionTitle: String, addRows: (table: PdfPTable) -> Unit) {
+fun PdfPTable.rowIfNotBlank(title: String, content: String?) {
+    if (!content.isNullOrBlank()) {
+        row(title, content)
+    }
+}
+
+fun Document.section(sectionTitle: String, addRows: PdfPTable.() -> Unit) {
     this.sectionTitle(sectionTitle)
 
     val table = PdfPTable(2)
@@ -50,7 +53,7 @@ fun Document.section(sectionTitle: String, addRows: (table: PdfPTable) -> Unit) 
     table.defaultCell.border = Rectangle.NO_BORDER
     table.defaultCell.paddingBottom = 15f
 
-    addRows(table)
+    table.addRows()
 
     this.add(table)
 }
