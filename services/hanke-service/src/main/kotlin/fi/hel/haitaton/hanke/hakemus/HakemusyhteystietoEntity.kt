@@ -61,16 +61,19 @@ class HakemusyhteystietoEntity(
                     )
                 })
 
-    fun copyToHakemus(hakemus: HakemusEntity) =
+    fun copyWithHakemus(hakemus: HakemusEntity) =
         HakemusyhteystietoEntity(
-            tyyppi = tyyppi,
-            rooli = rooli,
-            nimi = nimi,
-            sahkoposti = sahkoposti,
-            puhelinnumero = puhelinnumero,
-            ytunnus = ytunnus,
-            application = hakemus,
-            yhteyshenkilot = yhteyshenkilot.map { it.copyToYhteystieto(this) }.toMutableList())
+                tyyppi = tyyppi,
+                rooli = rooli,
+                nimi = nimi,
+                sahkoposti = sahkoposti,
+                puhelinnumero = puhelinnumero,
+                ytunnus = ytunnus,
+                application = hakemus)
+            .also { newEntity ->
+                newEntity.yhteyshenkilot.addAll(
+                    yhteyshenkilot.map { it.copyWithYhteystieto(newEntity) })
+            }
 }
 
 @Entity
@@ -85,7 +88,7 @@ class HakemusyhteyshenkiloEntity(
     var hankekayttaja: HankekayttajaEntity,
     var tilaaja: Boolean
 ) {
-    fun copyToYhteystieto(yhteystieto: HakemusyhteystietoEntity) =
+    fun copyWithYhteystieto(yhteystieto: HakemusyhteystietoEntity) =
         HakemusyhteyshenkiloEntity(
             hakemusyhteystieto = yhteystieto, hankekayttaja = hankekayttaja, tilaaja = tilaaja)
 }

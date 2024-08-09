@@ -42,7 +42,7 @@ data class Tyoalue(
     val tormaystarkasteluTulos: TormaystarkasteluTulos?,
 )
 
-fun List<KaivuilmoitusAlue>?.toPostalAddress(): PostalAddress? =
+fun List<KaivuilmoitusAlue>?.combinedAddress(): PostalAddress? =
     this?.map { it.katuosoite }
         ?.toSet()
         ?.joinToString(", ")

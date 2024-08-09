@@ -31,7 +31,9 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTest
+import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluClient
+import fi.hel.haitaton.hanke.allu.AlluExcavationNotificationData
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Contact
@@ -49,6 +51,7 @@ import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
@@ -1746,132 +1749,192 @@ class HakemusServiceITest(
             }
         }
 
-        @Test
-        fun `kaivuilmoitus with existing johtoselvitys works`() {
-            val hanke = hankeFactory.builder().withHankealue().saveEntity()
-            val hankeAlueet = hankeService.loadHanke(hanke.hankeTunnus)!!.alueet
-            val hakemus: Hakemus =
-                hakemusFactory
-                    .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
-                    .withMandatoryFields(hankeAlueet[0])
-                    .save()
-            val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
-            attachmentFactory.save(application = applicationEntity).withContent()
-            val hakemusData = hakemus.applicationData as KaivuilmoitusData
-            val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
-            val expectedDataAfterSend =
-                hakemusData.copy(pendingOnClient = false).setOrdererForContractor(founder.id)
-            val expectedAlluRequest =
-                expectedDataAfterSend.toAlluExcavationNotificationData(hakemus.hankeTunnus)
-            every { alluClient.create(expectedAlluRequest) } returns alluId
-            justRun { alluClient.addAttachment(alluId, any()) }
-            justRun { alluClient.addAttachments(alluId, any(), any()) }
-            every { alluClient.getApplicationInformation(alluId) } returns
-                AlluFactory.createAlluApplicationResponse(alluId)
+        @Nested
+        inner class Kaivuilmoitus {
 
-            val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
+            @Nested
+            inner class ExistingJohtoselvitys {
 
-            assertThat(response).all {
-                prop(Hakemus::alluid).isEqualTo(alluId)
-                prop(Hakemus::applicationIdentifier)
-                    .isEqualTo(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
-                prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
-                prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
+                @Test
+                fun `creates a new application to Allu and saves the ID and status to database`() {
+                    val hanke = hankeFactory.builder().withHankealue().saveEntity()
+                    val hankeAlueet = hankeService.loadHanke(hanke.hankeTunnus)!!.alueet
+                    val hakemus: Hakemus =
+                        hakemusFactory
+                            .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                            .withMandatoryFields(hankeAlueet[0])
+                            .save()
+                    val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
+                    attachmentFactory.save(application = applicationEntity).withContent()
+                    val hakemusData = hakemus.applicationData as KaivuilmoitusData
+                    val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
+                    val expectedDataAfterSend =
+                        hakemusData
+                            .copy(pendingOnClient = false)
+                            .setOrdererForContractor(founder.id)
+                    val expectedAlluRequest =
+                        expectedDataAfterSend.toAlluExcavationNotificationData(hakemus.hankeTunnus)
+                    every { alluClient.create(expectedAlluRequest) } returns alluId
+                    justRun { alluClient.addAttachment(alluId, any()) }
+                    justRun { alluClient.addAttachments(alluId, any(), any()) }
+                    every { alluClient.getApplicationInformation(alluId) } returns
+                        AlluFactory.createAlluApplicationResponse(
+                            alluId, applicationId = DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER)
+
+                    val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
+
+                    assertThat(response).all {
+                        prop(Hakemus::alluid).isEqualTo(alluId)
+                        prop(Hakemus::applicationIdentifier)
+                            .isEqualTo(
+                                ApplicationFactory.DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER)
+                        prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+                        prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
+                    }
+                    assertThat(hakemusRepository.getReferenceById(hakemus.id)).all {
+                        prop(HakemusEntity::alluid).isEqualTo(alluId)
+                        prop(HakemusEntity::applicationIdentifier)
+                            .isEqualTo(
+                                ApplicationFactory.DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER)
+                        prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+                    }
+                    verifySequence {
+                        alluClient.create(expectedAlluRequest)
+                        alluClient.addAttachment(alluId, any())
+                        alluClient.addAttachments(alluId, any(), any())
+                        alluClient.getApplicationInformation(alluId)
+                    }
+                }
             }
-            assertThat(hakemusRepository.getReferenceById(hakemus.id)).all {
-                prop(HakemusEntity::alluid).isEqualTo(alluId)
-                prop(HakemusEntity::applicationIdentifier)
-                    .isEqualTo(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
-                prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
-            }
-            verifySequence {
-                alluClient.create(expectedAlluRequest)
-                alluClient.addAttachment(alluId, any())
-                alluClient.addAttachments(alluId, any(), any())
-                alluClient.getApplicationInformation(alluId)
+
+            @Nested
+            inner class AccompanyingJohtoselvitys {
+
+                private var kaivuilmoitusHakemusId: Long = 0
+                private var cableReportAlluId: Int = 0
+                private var excavationAnnouncenemtAlluId: Int = 0
+                private lateinit var expectedCableReportAlluRequest: AlluCableReportApplicationData
+                private lateinit var expectedExcavationAnnouncementAlluRequest:
+                    AlluExcavationNotificationData
+                private lateinit var expectedJohtoselvitysHakemusEntityData:
+                    JohtoselvityshakemusEntityData
+                private lateinit var expectedKaivuilmoitusDataAfterSend: KaivuilmoitusData
+
+                @BeforeEach
+                fun setUp() {
+                    val hanke = hankeFactory.builder().withHankealue().saveEntity()
+                    val hankeAlueet = hankeService.loadHanke(hanke.hankeTunnus)!!.alueet
+                    val hakemus =
+                        hakemusFactory
+                            .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                            .withMandatoryFields(hankeAlueet[0])
+                            .withoutCableReports()
+                            .withRockExcavation(false)
+                            .save()
+                    kaivuilmoitusHakemusId = hakemus.id
+                    val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
+                    attachmentFactory.save(application = applicationEntity).withContent()
+                    val hakemusData = hakemus.applicationData as KaivuilmoitusData
+                    val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
+                    expectedJohtoselvitysHakemusEntityData =
+                        (applicationEntity.hakemusEntityData as KaivuilmoitusEntityData)
+                            .createAccompanyingJohtoselvityshakemusData()
+                    val expectedJohtoselvityshakemusDataAfterSend =
+                        expectedJohtoselvitysHakemusEntityData
+                            .toHakemusData(hakemusData.yhteystiedotMap())
+                            .setOrdererForContractor(founder.id)
+                    expectedKaivuilmoitusDataAfterSend =
+                        hakemusData
+                            .copy(
+                                pendingOnClient = false,
+                                cableReports = listOf(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER))
+                            .setOrdererForContractor(founder.id)
+                    expectedCableReportAlluRequest =
+                        expectedJohtoselvityshakemusDataAfterSend.toAlluCableReportData(
+                            hakemus.hankeTunnus)
+                    expectedExcavationAnnouncementAlluRequest =
+                        expectedKaivuilmoitusDataAfterSend.toAlluExcavationNotificationData(
+                            hakemus.hankeTunnus)
+                    cableReportAlluId = alluId
+                    excavationAnnouncenemtAlluId = alluId + 1
+                    every { alluClient.create(expectedCableReportAlluRequest) } returns
+                        cableReportAlluId
+                    every { alluClient.create(expectedExcavationAnnouncementAlluRequest) } returns
+                        excavationAnnouncenemtAlluId
+                    justRun { alluClient.addAttachment(cableReportAlluId, any()) }
+                    justRun { alluClient.addAttachment(excavationAnnouncenemtAlluId, any()) }
+                    justRun { alluClient.addAttachments(cableReportAlluId, any(), any()) }
+                    justRun {
+                        alluClient.addAttachments(excavationAnnouncenemtAlluId, any(), any())
+                    }
+                    every { alluClient.getApplicationInformation(cableReportAlluId) } returns
+                        AlluFactory.createAlluApplicationResponse(cableReportAlluId)
+                    every {
+                        alluClient.getApplicationInformation(excavationAnnouncenemtAlluId)
+                    } returns
+                        AlluFactory.createAlluApplicationResponse(
+                            excavationAnnouncenemtAlluId,
+                            applicationId = DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER)
+                }
+
+                @AfterEach
+                fun checkMocks() {
+                    clearAllMocks()
+                }
+
+                @Test
+                fun `saves johtoselvitys to DB`() {
+                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, USERNAME)
+
+                    assertThat(hakemusRepository.getOneByAlluid(cableReportAlluId))
+                        .isNotNull()
+                        .all {
+                            prop(HakemusEntity::alluid).isEqualTo(cableReportAlluId)
+                            prop(HakemusEntity::applicationIdentifier)
+                                .isEqualTo(
+                                    ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                            prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+                            prop(HakemusEntity::hakemusEntityData)
+                                .isEqualTo(expectedJohtoselvitysHakemusEntityData)
+                        }
+                }
+
+                @Test
+                fun `sends johtoselvitys and kaivuilmoitus to Allu`() {
+                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, USERNAME)
+
+                    verifySequence {
+                        // first the cable report is sent
+                        alluClient.create(expectedCableReportAlluRequest)
+                        alluClient.addAttachment(cableReportAlluId, any())
+                        alluClient.addAttachments(cableReportAlluId, any(), any())
+                        alluClient.getApplicationInformation(cableReportAlluId)
+                        // then the excavation announcement is sent
+                        alluClient.create(expectedExcavationAnnouncementAlluRequest)
+                        alluClient.addAttachment(excavationAnnouncenemtAlluId, any())
+                        alluClient.addAttachments(excavationAnnouncenemtAlluId, any(), any())
+                        alluClient.getApplicationInformation(excavationAnnouncenemtAlluId)
+                    }
+                }
+
+                @Test
+                fun `returns the created kaivuilmoitus`() {
+                    val response = hakemusService.sendHakemus(kaivuilmoitusHakemusId, USERNAME)
+
+                    assertThat(response).all {
+                        prop(Hakemus::alluid).isEqualTo(excavationAnnouncenemtAlluId)
+                        prop(Hakemus::applicationIdentifier)
+                            .isEqualTo(
+                                ApplicationFactory.DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER)
+                        prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+                        prop(Hakemus::applicationData).isEqualTo(expectedKaivuilmoitusDataAfterSend)
+                    }
+                }
+
+                fun HakemusData.yhteystiedotMap(): Map<ApplicationContactType, Hakemusyhteystieto> =
+                    this.yhteystiedot().associateBy { it.rooli }
             }
         }
-
-        @Test
-        fun `kaivuilmoitus with new johtoselvitys works`() {
-            val hanke = hankeFactory.builder().withHankealue().saveEntity()
-            val hankeAlueet = hankeService.loadHanke(hanke.hankeTunnus)!!.alueet
-            val hakemus: Hakemus =
-                hakemusFactory
-                    .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
-                    .withMandatoryFields(hankeAlueet[0])
-                    .withoutCableReports()
-                    .withRockExcavation(false)
-                    .save()
-            val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
-            attachmentFactory.save(application = applicationEntity).withContent()
-            val hakemusData = hakemus.applicationData as KaivuilmoitusData
-            val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
-            val expectedJohtoselvityshakemusDataAfterSend =
-                (applicationEntity.hakemusEntityData as KaivuilmoitusEntityData)
-                    .createAccompanyingJohtoselvityshakemusData()
-                    .toHakemusData(hakemusData.yhteystiedotMap())
-                    .setOrdererForContractor(founder.id)
-            val expectedKaivuilmoitusDataAfterSend =
-                hakemusData.copy(pendingOnClient = false).setOrdererForContractor(founder.id)
-            val expectedCableReportAlluRequest =
-                expectedJohtoselvityshakemusDataAfterSend.toAlluCableReportData(hakemus.hankeTunnus)
-            val expectedExcavationAnnouncementAlluRequest =
-                expectedKaivuilmoitusDataAfterSend.toAlluExcavationNotificationData(
-                    hakemus.hankeTunnus)
-            val cableReportAlluId = alluId
-            val excavationAnnouncenemtAlluId = alluId + 1
-            every { alluClient.create(expectedCableReportAlluRequest) } returns cableReportAlluId
-            every { alluClient.create(expectedExcavationAnnouncementAlluRequest) } returns
-                excavationAnnouncenemtAlluId
-            justRun { alluClient.addAttachment(cableReportAlluId, any()) }
-            justRun { alluClient.addAttachment(excavationAnnouncenemtAlluId, any()) }
-            justRun { alluClient.addAttachments(cableReportAlluId, any(), any()) }
-            justRun { alluClient.addAttachments(excavationAnnouncenemtAlluId, any(), any()) }
-            every { alluClient.getApplicationInformation(cableReportAlluId) } returns
-                AlluFactory.createAlluApplicationResponse(cableReportAlluId)
-            every { alluClient.getApplicationInformation(excavationAnnouncenemtAlluId) } returns
-                AlluFactory.createAlluApplicationResponse(
-                    excavationAnnouncenemtAlluId,
-                    applicationId = DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER)
-
-            val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
-
-            assertThat(response).all {
-                prop(Hakemus::alluid).isEqualTo(excavationAnnouncenemtAlluId)
-                prop(Hakemus::applicationIdentifier)
-                    .isEqualTo(ApplicationFactory.DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER)
-                prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
-                prop(Hakemus::applicationData).isEqualTo(expectedKaivuilmoitusDataAfterSend)
-            }
-            assertThat(hakemusRepository.getReferenceById(hakemus.id)).all {
-                prop(HakemusEntity::alluid).isEqualTo(excavationAnnouncenemtAlluId)
-                prop(HakemusEntity::applicationIdentifier)
-                    .isEqualTo(ApplicationFactory.DEFAULT_EXCAVATION_ANNOUNCEMENT_IDENTIFIER)
-                prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
-            }
-            assertThat(hakemusRepository.getReferenceById(hakemus.id + 1)).all {
-                prop(HakemusEntity::alluid).isEqualTo(cableReportAlluId)
-                prop(HakemusEntity::applicationIdentifier)
-                    .isEqualTo(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
-                prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
-            }
-            verifySequence {
-                // first the cable report is sent
-                alluClient.create(expectedCableReportAlluRequest)
-                alluClient.addAttachment(cableReportAlluId, any())
-                alluClient.addAttachments(cableReportAlluId, any(), any())
-                alluClient.getApplicationInformation(cableReportAlluId)
-                // then the excavation announcement is sent
-                alluClient.create(expectedExcavationAnnouncementAlluRequest)
-                alluClient.addAttachment(excavationAnnouncenemtAlluId, any())
-                alluClient.addAttachments(excavationAnnouncenemtAlluId, any(), any())
-                alluClient.getApplicationInformation(excavationAnnouncenemtAlluId)
-            }
-        }
-
-        fun HakemusData.yhteystiedotMap(): Map<ApplicationContactType, Hakemusyhteystieto> =
-            this.yhteystiedot().associateBy { it.rooli }
     }
 
     @Nested

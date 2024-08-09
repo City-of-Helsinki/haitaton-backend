@@ -58,7 +58,7 @@ object HakemusDataMapper {
         hankeTunnus: String
     ): AlluExcavationNotificationData =
         AlluExcavationNotificationData(
-            postalAddress = areas.toPostalAddress()?.toAlluData(),
+            postalAddress = areas.combinedAddress()?.toAlluData(),
             name = name,
             customerWithContacts =
                 customerWithContacts?.toAlluCustomer()

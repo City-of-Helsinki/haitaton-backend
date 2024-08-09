@@ -131,7 +131,7 @@ data class KaivuilmoitusEntityData(
             applicationType = ApplicationType.CABLE_REPORT,
             pendingOnClient = pendingOnClient,
             name = name,
-            postalAddress = areas.toPostalAddress(),
+            postalAddress = areas.combinedAddress(),
             constructionWork = constructionWork,
             maintenanceWork = maintenanceWork,
             propertyConnectivity = false,

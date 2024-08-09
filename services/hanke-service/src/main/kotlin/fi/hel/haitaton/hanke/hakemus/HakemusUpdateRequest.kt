@@ -13,12 +13,10 @@ import java.util.UUID
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "applicationType",
-    visible = true
-)
+    visible = true)
 @JsonSubTypes(
     JsonSubTypes.Type(value = JohtoselvityshakemusUpdateRequest::class, name = "CABLE_REPORT"),
-    JsonSubTypes.Type(value = KaivuilmoitusUpdateRequest::class, name = "EXCAVATION_NOTIFICATION")
-)
+    JsonSubTypes.Type(value = KaivuilmoitusUpdateRequest::class, name = "EXCAVATION_NOTIFICATION"))
 @JsonInclude(JsonInclude.Include.NON_NULL)
 sealed interface HakemusUpdateRequest {
     val applicationType: ApplicationType
@@ -103,17 +101,13 @@ data class JohtoselvityshakemusUpdateRequest(
             endTime != applicationData.endTime ||
             areas != applicationData.areas ||
             customerWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]) ||
             contractorWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]) ||
             propertyDeveloperWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]) ||
             representativeWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]
-            )
+                hakemusEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA])
     }
 
     override fun toEntityData(baseData: HakemusEntityData) =
@@ -209,21 +203,15 @@ data class KaivuilmoitusUpdateRequest(
             endTime != applicationData.endTime ||
             areas != applicationData.areas ||
             customerWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]) ||
             contractorWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]) ||
             propertyDeveloperWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]) ||
             representativeWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]) ||
             invoicingCustomer.hasChanges(
-                applicationData.invoicingCustomer,
-                applicationData.customerReference
-            ) ||
+                applicationData.invoicingCustomer, applicationData.customerReference) ||
             additionalInfo != applicationData.additionalInfo
     }
 
@@ -374,7 +362,7 @@ fun InvoicingCustomerRequest?.toCustomer(): InvoicingCustomer? =
         InvoicingCustomer(
             type = it.type,
             name = it.name ?: "",
-            postalAddress = it.postalAddress?.toPostalAddress(),
+            postalAddress = it.postalAddress?.combinedAddress(),
             email = it.email,
             phone = it.phone,
             registryKey = it.registryKey,
@@ -383,7 +371,7 @@ fun InvoicingCustomerRequest?.toCustomer(): InvoicingCustomer? =
         )
     }
 
-fun InvoicingPostalAddressRequest?.toPostalAddress(): PostalAddress? =
+fun InvoicingPostalAddressRequest?.combinedAddress(): PostalAddress? =
     this?.let {
         PostalAddress(
             streetAddress = StreetAddress(it.streetAddress?.streetName),
