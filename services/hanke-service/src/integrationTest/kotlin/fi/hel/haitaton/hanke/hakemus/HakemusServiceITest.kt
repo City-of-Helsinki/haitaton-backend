@@ -69,6 +69,7 @@ import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
+import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -86,6 +87,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
+import fi.hel.haitaton.hanke.paatos.PaatosTila
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.test.AlluException
@@ -135,6 +137,7 @@ class HakemusServiceITest(
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val attachmentFactory: ApplicationAttachmentFactory,
+    @Autowired private val paatosFactory: PaatosFactory,
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val alluClient: AlluClient,
     @Autowired private val alluStatusRepository: AlluStatusRepository,
@@ -198,6 +201,53 @@ class HakemusServiceITest(
                         )
                     each { it.prop(Hakemusyhteystieto::tyyppi).isEqualTo(CustomerType.COMPANY) }
                 }
+        }
+    }
+
+    @Nested
+    inner class GetWithPaatokset {
+        @Test
+        fun `throws an exception when the hakemus does not exist`() {
+            val failure = assertFailure { hakemusService.getWithPaatokset(1234) }
+
+            failure.all {
+                hasClass(HakemusNotFoundException::class)
+                messageContains("id 1234")
+            }
+        }
+
+        @Test
+        fun `returns hakemus`() {
+            val hakemus = hakemusFactory.builder(USERNAME).withMandatoryFields().save()
+
+            val response = hakemusService.getWithPaatokset(hakemus.id)
+
+            assertThat(response.hakemus).all {
+                prop(Hakemus::id).isEqualTo(hakemus.id)
+                prop(Hakemus::applicationIdentifier).isNull()
+                prop(Hakemus::hankeId).isEqualTo(hakemus.hankeId)
+                prop(Hakemus::id).isEqualTo(hakemus.id)
+                prop(Hakemus::applicationData).isInstanceOf(JohtoselvityshakemusData::class).all {
+                    prop(JohtoselvityshakemusData::name).isEqualTo(hakemus.applicationData.name)
+                }
+            }
+            assertThat(response.paatokset).isEmpty()
+        }
+
+        @Test
+        fun `returns paatokset when they exist`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .save()
+            val paatos1 = paatosFactory.save(hakemus, tila = PaatosTila.KORVATTU)
+            val paatos2 = paatosFactory.save(hakemus, hakemus.applicationIdentifier + "-1")
+
+            val response = hakemusService.getWithPaatokset(hakemus.id)
+
+            assertThat(response.paatokset).containsExactlyInAnyOrder(paatos1, paatos2)
         }
     }
 
