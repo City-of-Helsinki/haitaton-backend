@@ -20,8 +20,7 @@ enum class ApplicationContactType {
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "applicationType",
-    visible = true
-)
+    visible = true)
 @JsonSubTypes(
     JsonSubTypes.Type(value = JohtoselvityshakemusEntityData::class, name = "CABLE_REPORT"),
     JsonSubTypes.Type(value = KaivuilmoitusEntityData::class, name = "EXCAVATION_NOTIFICATION"),
@@ -126,6 +125,23 @@ data class KaivuilmoitusEntityData(
             invoicingCustomer = invoicingCustomer.toLaskutusyhteystieto(customerReference),
             additionalInfo = additionalInfo,
         )
+
+    fun createAccompanyingJohtoselvityshakemusData(): JohtoselvityshakemusEntityData =
+        JohtoselvityshakemusEntityData(
+            applicationType = ApplicationType.CABLE_REPORT,
+            pendingOnClient = pendingOnClient,
+            name = name,
+            postalAddress = areas.combinedAddress(),
+            constructionWork = constructionWork,
+            maintenanceWork = maintenanceWork,
+            propertyConnectivity = false,
+            emergencyWork = emergencyWork,
+            rockExcavation = rockExcavation,
+            workDescription = workDescription,
+            startTime = startTime,
+            endTime = endTime,
+            areas = areas?.flatMap { it.geometries() }?.map { JohtoselvitysHakemusalue("", it) },
+        )
 }
 
 fun InvoicingCustomer?.toLaskutusyhteystieto(customerReference: String?): Laskutusyhteystieto? =
@@ -141,8 +157,7 @@ fun InvoicingCustomer?.toLaskutusyhteystieto(customerReference: String?): Laskut
             it.postalAddress?.postalCode,
             it.postalAddress?.city,
             it.email,
-            it.phone
-        )
+            it.phone)
     }
 
 class AlluDataException(path: String, error: AlluDataError) :

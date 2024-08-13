@@ -111,9 +111,7 @@ data class HakemusBuilder(
                 copy(
                     areas =
                         (areas ?: listOf()).plus(
-                            createExcavationNotificationArea(hankealueId = hankealueId ?: 0)
-                        )
-                )
+                            createExcavationNotificationArea(hankealueId = hankealueId ?: 0)))
             },
         )
 
@@ -127,6 +125,18 @@ data class HakemusBuilder(
         updateApplicationData(
             { copy(endTime = time) },
             { copy(endTime = time) },
+        )
+
+    fun withoutCableReports() =
+        updateApplicationData(
+            { throw InvalidParameterException("Not available for cable reports.") },
+            { copy(cableReportDone = false, cableReports = null) },
+        )
+
+    fun withCableReports(cableReports: List<String>) =
+        updateApplicationData(
+            { throw InvalidParameterException("Not available for cable reports.") },
+            { copy(cableReportDone = true, cableReports = cableReports) },
         )
 
     fun withRockExcavation(rockExcavation: Boolean?) =
@@ -192,7 +202,8 @@ data class HakemusBuilder(
                     .withStartTime()
                     .withEndTime()
                     .withArea(hankealue?.id)
-                    .withRockExcavation(false)
+                    .withCableReports(
+                        listOf(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER))
                     .withWorkInvolves()
                     .withRequiredCompetence()
                     .hakija()
@@ -362,8 +373,5 @@ data class HakemusBuilder(
         tilaaja: Boolean = false
     ) =
         HakemusyhteyshenkiloEntity(
-            hankekayttaja = kayttaja,
-            hakemusyhteystieto = yhteystietoEntity,
-            tilaaja = tilaaja
-        )
+            hankekayttaja = kayttaja, hakemusyhteystieto = yhteystietoEntity, tilaaja = tilaaja)
 }

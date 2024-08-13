@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -182,6 +183,8 @@ class HakemusService(
     fun sendHakemus(id: Long, currentUserId: String): Hakemus {
         val hakemus = getEntityById(id)
 
+        HakemusDataValidator.ensureValidForSend(hakemus.toHakemus().applicationData)
+
         setOrdererOnSend(hakemus, currentUserId)
 
         val hanke = hakemus.hanke
@@ -200,6 +203,22 @@ class HakemusService(
         // The application should no longer be a draft
         hakemus.hakemusEntityData = hakemus.hakemusEntityData.copy(pendingOnClient = false)
 
+        // For excavation announcements, a cable report can be applied for at the same time.
+        // If so, it should be sent before the excavation announcement.
+        val accompanyingJohtoselvityshakemus = createAccompanyingJohtoselvityshakemus(hakemus)
+        if (accompanyingJohtoselvityshakemus != null) {
+            val sentJohtoselvityshakemus =
+                sendHakemus(accompanyingJohtoselvityshakemus.id, currentUserId)
+            // add the application identifier of the cable report to the list of cable reports in
+            // the excavation announcement
+            val hakemusEntityData = hakemus.hakemusEntityData as KaivuilmoitusEntityData
+            val cableReports = hakemusEntityData.cableReports ?: emptyList()
+            hakemus.hakemusEntityData =
+                hakemusEntityData.copy(
+                    cableReports =
+                        cableReports.plus(sentJohtoselvityshakemus.applicationIdentifier!!))
+        }
+
         logger.info("Sending hakemus id=$id")
         hakemus.alluid = createApplicationInAllu(hakemus.toHakemus())
 
@@ -212,6 +231,71 @@ class HakemusService(
         logger.info("Sent hakemus. ${hakemus.logString()}, alluStatus = ${hakemus.alluStatus}")
         // Save only if sendApplicationToAllu didn't throw an exception
         return hakemusRepository.save(hakemus).toHakemus()
+    }
+
+    /**
+     * Create a new cable report application for an excavation announcement that has a cable report
+     * applied for.
+     *
+     * @return the new cable report application entity or null if no new application was applied for
+     */
+    private fun createAccompanyingJohtoselvityshakemus(hakemus: HakemusEntity): HakemusEntity? =
+        when (val hakemusData = hakemus.hakemusEntityData) {
+            is KaivuilmoitusEntityData ->
+                if (!hakemusData.cableReportDone)
+                    createAccompanyingJohtoselvityshakemus(hakemus, hakemusData)
+                else null
+            else -> null
+        }
+
+    private fun createAccompanyingJohtoselvityshakemus(
+        hakemus: HakemusEntity,
+        hakemusData: KaivuilmoitusEntityData
+    ): HakemusEntity {
+        logger.info(
+            "Creating a new johtoselvityshakemus for a kaivuilmoitus. ${hakemus.logString()}")
+        val johtoselvityshakemusData = hakemusData.createAccompanyingJohtoselvityshakemusData()
+        val johtoselvityshakemus =
+            hakemus
+                .copy(
+                    id = 0,
+                    applicationType = ApplicationType.CABLE_REPORT,
+                    hakemusEntityData = johtoselvityshakemusData,
+                )
+                .apply {
+                    yhteystiedot =
+                        hakemus.yhteystiedot
+                            .mapValues { it.value.copyWithHakemus(this) }
+                            .toMutableMap()
+                }
+        val savedJohtoselvityshakemus = hakemusRepository.save(johtoselvityshakemus)
+        copyOtherAttachments(hakemus, savedJohtoselvityshakemus)
+        logger.info(
+            "Created a new johtoselvityshakemus (${savedJohtoselvityshakemus.logString()}) for a kaivuilmoitus. ${hakemus.logString()}")
+        return savedJohtoselvityshakemus
+    }
+
+    /**
+     * Copy other attachments from excavation announcement to cable report application. This is used
+     * when a cable report is applied for at the same time as an excavation announcement is sent.
+     */
+    private fun copyOtherAttachments(
+        kaivuilmoitus: HakemusEntity,
+        johtoselvityshakemus: HakemusEntity
+    ) {
+        val johtoselvityshakemusMetadata = johtoselvityshakemus.toMetadata()
+        attachmentService
+            .getMetadataList(kaivuilmoitus.id)
+            .filter { it.attachmentType == ApplicationAttachmentType.MUU }
+            .forEach { metadata ->
+                val content = attachmentService.getContent(metadata.id)
+                attachmentService.saveAttachment(
+                    johtoselvityshakemusMetadata,
+                    content.bytes,
+                    metadata.fileName,
+                    MediaType.parseMediaType(metadata.contentType),
+                    ApplicationAttachmentType.MUU)
+            }
     }
 
     /**
@@ -456,7 +540,6 @@ class HakemusService(
 
     /** Creates new application in Allu. All attachments are sent after creation. */
     private fun createApplicationInAllu(hakemus: Hakemus): Int {
-        HakemusDataValidator.ensureValidForSend(hakemus.applicationData)
         val alluId =
             createApplicationToAllu(hakemus.id, hakemus.hankeTunnus, hakemus.applicationData)
         try {
