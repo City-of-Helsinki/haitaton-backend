@@ -17,13 +17,14 @@ object AlluFactory {
         id: Int = 42,
         status: ApplicationStatus = ApplicationStatus.PENDING,
         name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
+        applicationId: String = ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER,
         startTime: ZonedDateTime = DateFactory.getStartDatetime(),
         endTime: ZonedDateTime = DateFactory.getEndDatetime(),
     ) =
         AlluApplicationResponse(
             id = id,
             name = name,
-            applicationId = ApplicationFactory.DEFAULT_APPLICATION_IDENTIFIER,
+            applicationId = applicationId,
             status = status,
             startTime = startTime,
             endTime = endTime,
@@ -31,8 +32,7 @@ object AlluFactory {
             kindsWithSpecifiers = mapOf(),
             terms = null,
             customerReference = null,
-            surveyRequired = false
-        )
+            surveyRequired = false)
 
     fun createAttachmentMetadata(
         id: Int? = null,
@@ -76,20 +76,17 @@ object AlluFactory {
             registryKey = "101010-FAKE",
             ovt = null,
             invoicingOperator = null,
-            sapCustomerNumber = null
-        )
+            sapCustomerNumber = null)
     val hannu =
         Contact(
             name = "Hannu Haitaton",
             email = "hannu@haitaton.fi",
             phone = "042-555-5216",
-            orderer = true
-        )
+            orderer = true)
     val kerttu =
         Contact(
             name = "Kerttu Haitaton",
             email = "kerttu@haitaton.fi",
             phone = "042-555-2182",
-            orderer = false
-        )
+            orderer = false)
 }

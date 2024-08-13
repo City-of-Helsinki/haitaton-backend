@@ -41,3 +41,10 @@ data class Tyoalue(
     val area: Double,
     val tormaystarkasteluTulos: TormaystarkasteluTulos?,
 )
+
+fun List<KaivuilmoitusAlue>?.combinedAddress(): PostalAddress? =
+    this?.map { it.katuosoite }
+        ?.toSet()
+        ?.joinToString(", ")
+        ?.let { StreetAddress(it) }
+        ?.let { PostalAddress(it, "", "") }

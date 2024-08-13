@@ -37,7 +37,8 @@ class ApplicationFactory(
     companion object {
         const val DEFAULT_APPLICATION_ID: Long = 1
         const val DEFAULT_APPLICATION_NAME: String = "Hakemuksen oletusnimi"
-        const val DEFAULT_APPLICATION_IDENTIFIER: String = "JS230014"
+        const val DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER: String = "JS2300014"
+        const val DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER: String = "KP2300015"
         const val DEFAULT_WORK_DESCRIPTION: String = "Työn kuvaus."
         const val TEPPO = "Teppo"
         const val TESTIHENKILO = "Testihenkilö"
@@ -119,11 +120,7 @@ class ApplicationFactory(
             area: Double = 100.0,
             tormaystarkasteluTulos: TormaystarkasteluTulos =
                 TormaystarkasteluTulos(
-                    TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
-                    3.0f,
-                    5.0f,
-                    5.0f
-                ),
+                    TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU, 3.0f, 5.0f, 5.0f),
         ) = Tyoalue(geometry, area, tormaystarkasteluTulos)
 
         fun createBlankApplicationData(applicationType: ApplicationType): HakemusEntityData =
@@ -163,8 +160,7 @@ class ApplicationFactory(
                 pendingOnClient = false,
                 workDescription = "",
                 rockExcavation = false,
-                postalAddress = PostalAddress(StreetAddress(""), "", "")
-            )
+                postalAddress = PostalAddress(StreetAddress(""), "", ""))
 
         fun createExcavationNotificationData(
             pendingOnClient: Boolean = false,
@@ -211,8 +207,7 @@ class ApplicationFactory(
                 areas = null,
                 startTime = null,
                 endTime = null,
-                additionalInfo = null
-            )
+                additionalInfo = null)
 
         fun createApplicationEntity(
             id: Long = 3,

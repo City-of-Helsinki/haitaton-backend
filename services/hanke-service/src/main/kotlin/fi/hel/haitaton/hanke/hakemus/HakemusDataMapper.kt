@@ -51,20 +51,14 @@ object HakemusDataMapper {
             constructionWork = constructionWork,
             maintenanceWork = maintenanceWork,
             emergencyWork = emergencyWork,
-            propertyConnectivity = propertyConnectivity
-        )
+            propertyConnectivity = propertyConnectivity)
     }
 
     fun KaivuilmoitusData.toAlluExcavationNotificationData(
         hankeTunnus: String
-    ): AlluExcavationNotificationData {
-        val addresses =
-            areas?.map { it.katuosoite }?.toSet()?.joinToString(", ")
-                ?: throw throw AlluDataException(path("areas"), EMPTY_OR_NULL)
-
-        return AlluExcavationNotificationData(
-            postalAddress =
-                PostalAddress(streetAddress = StreetAddress(addresses), postalCode = "", city = ""),
+    ): AlluExcavationNotificationData =
+        AlluExcavationNotificationData(
+            postalAddress = areas.combinedAddress()?.toAlluData(),
             name = name,
             customerWithContacts =
                 customerWithContacts?.toAlluCustomer()
@@ -90,9 +84,7 @@ object HakemusDataMapper {
             propertyConnectivity = null,
             workPurpose = workDescription,
             placementContracts = placementContracts?.toList(),
-            cableReports = cableReports?.toList()
-        )
-    }
+            cableReports = cableReports?.toList())
 
     /** If areas are missing, throw an exception. */
     internal fun HakemusData.getGeometries(): GeometryCollection =
@@ -136,8 +128,7 @@ object HakemusDataMapper {
                 invoicingOperator = null,
                 sapCustomerNumber = null,
             ),
-            yhteyshenkilot.map { it.toAlluContact() }
-        )
+            yhteyshenkilot.map { it.toAlluContact() })
 
     fun Hakemusyhteyshenkilo.toAlluContact() =
         Contact("$etunimi $sukunimi".trim(), sahkoposti, puhelin, tilaaja)
