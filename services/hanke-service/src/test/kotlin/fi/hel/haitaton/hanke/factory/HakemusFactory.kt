@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusService
+import fi.hel.haitaton.hanke.hakemus.HakemusWithPaatokset
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
@@ -21,6 +22,7 @@ import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
+import fi.hel.haitaton.hanke.paatos.Paatos
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.ZonedDateTime
@@ -219,6 +221,31 @@ class HakemusFactory(
                 applicationType = applicationType,
                 hakemusEntityData = hakemusEntityData,
                 hanke = hanke,
+            )
+
+        fun createWithPaatokset(
+            id: Long = 1,
+            alluid: Int? = null,
+            alluStatus: ApplicationStatus? = null,
+            applicationIdentifier: String? = null,
+            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
+            applicationData: HakemusData = createHakemusData(applicationType),
+            hankeTunnus: String = "HAI-1234",
+            hankeId: Int = 1,
+            paatokset: List<Paatos>,
+        ) =
+            HakemusWithPaatokset(
+                create(
+                    id,
+                    alluid,
+                    alluStatus,
+                    applicationIdentifier,
+                    applicationType,
+                    applicationData,
+                    hankeTunnus,
+                    hankeId,
+                ),
+                paatokset,
             )
     }
 }

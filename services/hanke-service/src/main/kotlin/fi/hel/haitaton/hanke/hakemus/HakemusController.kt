@@ -50,7 +50,9 @@ class HakemusController(
     @GetMapping("/hakemukset/{id}")
     @Operation(
         summary = "Get one application",
-        description = "Returns one application if it exists and the user can access it."
+        description =
+            "Returns one application if it exists and the user can access it. " +
+                "Returns any decisions for the application as well.",
     )
     @ApiResponses(
         value =
@@ -59,37 +61,35 @@ class HakemusController(
                 ApiResponse(
                     description = "An application was not found with the given id",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ]
-    )
+            ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
-    fun getById(@PathVariable(name = "id") id: Long): HakemusResponse {
+    fun getById(@PathVariable(name = "id") id: Long): HakemusWithPaatoksetResponse {
         logger.info { "Finding application $id" }
-        val response = hakemusService.hakemusResponse(id)
-        disclosureLogService.saveDisclosureLogsForHakemusResponse(response, currentUserId())
+        val response = hakemusService.getWithPaatokset(id).toResponse()
+        disclosureLogService.saveDisclosureLogsForHakemusResponse(response.hakemus, currentUserId())
         return response
     }
 
     @GetMapping("/hankkeet/{hankeTunnus}/hakemukset")
     @Operation(
         summary = "Get hanke applications",
-        description = "Returns list of applications belonging to the given hanke."
+        description = "Returns list of applications belonging to the given hanke.",
     )
     @ApiResponses(
         value =
             [
                 ApiResponse(
                     description = "Applications of the requested hanke",
-                    responseCode = "200"
+                    responseCode = "200",
                 ),
                 ApiResponse(
                     description = "Hanke was not found with the given id",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ]
-    )
+            ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankkeenHakemukset(@PathVariable hankeTunnus: String): HankkeenHakemuksetResponse {
         logger.info { "Finding applications for hanke $hankeTunnus" }
@@ -103,7 +103,7 @@ class HakemusController(
         summary = "Create a new application",
         description =
             "Returns the created application. The new application is created as a draft, " +
-                "i.e. with true in pendingOnClient. The draft is not sent to Allu."
+                "i.e. with true in pendingOnClient. The draft is not sent to Allu.",
     )
     @ApiResponses(
         value =
@@ -112,10 +112,9 @@ class HakemusController(
                 ApiResponse(
                     description = "The request body was invalid",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ]
-    )
+            ])
     @PreAuthorize("@hakemusAuthorizer.authorizeCreate(#createHakemusRequest)")
     fun create(
         @ValidCreateHakemusRequest @RequestBody createHakemusRequest: CreateHakemusRequest
@@ -131,7 +130,7 @@ class HakemusController(
             "Generates new hanke from a cable report application and saves an application to it.",
         description =
             "Returns the created application. The new application is created as a draft, " +
-                "i.e. with true in pendingOnClient. The draft is not sent to Allu. "
+                "i.e. with true in pendingOnClient. The draft is not sent to Allu. ",
     )
     @ApiResponses(
         value =
@@ -140,10 +139,9 @@ class HakemusController(
                 ApiResponse(
                     description = "The request body was invalid",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ]
-    )
+            ])
     fun createWithGeneratedHanke(
         @ValidCreateHankeRequest @RequestBody request: CreateHankeRequest,
         @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext,
@@ -165,7 +163,7 @@ class HakemusController(
                If the application hasn't changed since the last update, nothing more is done.
                The pendingOnClient value can't be changed with this endpoint.
                Use [POST /hakemukset/{id}/laheta](#/application-controller/sendHakemus) for that.
-            """
+            """,
     )
     @ApiResponses(
         value =
@@ -184,30 +182,28 @@ class HakemusController(
                                         ExampleObject(
                                             name = "Validation error",
                                             summary = "Validation error example",
-                                            value = "{hankeError: 'HAI2008', errorPaths: ['name']}"
+                                            value = "{hankeError: 'HAI2008', errorPaths: ['name']}",
                                         ),
                                         ExampleObject(
                                             name = "Incompatible request",
                                             summary = "Incompatible request example",
-                                            value = "{hankeError: 'HAI2002'}"
+                                            value = "{hankeError: 'HAI2002'}",
                                         ),
-                                    ]
-                            )
-                        ]
+                                    ],
+                            )],
                 ),
                 ApiResponse(
                     description = "An application was not found with the given id",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
                 ApiResponse(
                     description =
                         "The application can't be updated because it has been sent to Allu",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ]
-    )
+            ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun update(
         @PathVariable(name = "id") id: Long,
@@ -227,8 +223,7 @@ class HakemusController(
                If the application hasn't been sent to Allu, delete it directly.
                If the application is pending in Allu, cancel it in Allu before deleting it locally.
                If the application has proceeded beyond pending in Allu, refuse to delete it.
-            """
-    )
+            """)
     @ApiResponses(
         value =
             [
@@ -236,16 +231,13 @@ class HakemusController(
                 ApiResponse(
                     description = "An application was not found with the given id",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                ),
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
                 ApiResponse(
                     description =
                         "The application is already processing in Allu and can't be deleted",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                ),
-            ]
-    )
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+            ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun delete(@PathVariable(name = "id") id: Long): HakemusDeletionResultDto {
         val userId = currentUserId()
@@ -263,8 +255,7 @@ class HakemusController(
                - A clerk at Allu can start processing the application after this call.
                - The application cannot be edited after it has been sent.
                - The caller needs to be a contact on the application for at least one customer. 
-            """
-    )
+            """)
     @ApiResponses(
         value =
             [
@@ -272,20 +263,16 @@ class HakemusController(
                 ApiResponse(
                     description = "Application contains invalid data",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeErrorDetail::class))]
-                ),
+                    content = [Content(schema = Schema(implementation = HankeErrorDetail::class))]),
                 ApiResponse(
                     description = "An application was not found with the given id",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                ),
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
                 ApiResponse(
                     description = "The application has been sent already",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                ),
-            ]
-    )
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+            ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun sendHakemus(@PathVariable(name = "id") id: Long): HakemusResponse =
         hakemusService.sendHakemus(id, currentUserId()).toResponse()
@@ -293,7 +280,7 @@ class HakemusController(
     @GetMapping("/hakemukset/{id}/paatos")
     @Operation(
         summary = "Download a decision",
-        description = "Downloads a decision for this application from Allu."
+        description = "Downloads a decision for this application from Allu.",
     )
     @ApiResponses(
         value =
@@ -301,16 +288,15 @@ class HakemusController(
                 ApiResponse(
                     description = "The decision PDF",
                     responseCode = "200",
-                    content = [Content(mediaType = MediaType.APPLICATION_PDF_VALUE)]
+                    content = [Content(mediaType = MediaType.APPLICATION_PDF_VALUE)],
                 ),
                 ApiResponse(
                     description =
                         "An application was not found with the given id or the application didn't have a decision",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ]
-    )
+            ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
     fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
         val userId = currentUserId()
