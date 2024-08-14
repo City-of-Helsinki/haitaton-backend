@@ -70,6 +70,13 @@ class HakemusService(
     fun getById(applicationId: Long): Hakemus = getEntityById(applicationId).toHakemus()
 
     @Transactional(readOnly = true)
+    fun getWithPaatokset(applicationId: Long): HakemusWithPaatokset {
+        val hakemus = getById(applicationId)
+        val paatokset = paatosService.findByHakemusId(applicationId)
+        return HakemusWithPaatokset(hakemus, paatokset)
+    }
+
+    @Transactional(readOnly = true)
     fun hakemusResponse(applicationId: Long): HakemusResponse = getById(applicationId).toResponse()
 
     @Transactional(readOnly = true)

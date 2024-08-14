@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.paatos
 import java.time.LocalDate
 import java.util.UUID
 
-data class Paatos(
+data class PaatosResponse(
     val id: UUID,
     val hakemusId: Long,
     val hakemustunnus: String,
@@ -12,10 +12,5 @@ data class Paatos(
     val nimi: String,
     val alkupaiva: LocalDate,
     val loppupaiva: LocalDate,
-    val blobLocation: String,
     val size: Int,
-) {
-    fun toResponse(): PaatosResponse =
-        PaatosResponse(
-            id, hakemusId, hakemustunnus, tyyppi, tila, nimi, alkupaiva, loppupaiva, size)
-}
+)
