@@ -1,10 +1,13 @@
 package fi.hel.haitaton.hanke.allu
 
 import com.auth0.jwt.JWT
+import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
+import fi.hel.haitaton.hanke.toJsonString
 import java.time.Duration.ofSeconds
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZonedDateTime
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -149,7 +152,7 @@ class AlluClient(
                     alluApplicationId,
                     application,
                     "excavationannouncements",
-                    "excavation announcement"
+                    "excavation announcement",
                 )
         }
     }
@@ -206,6 +209,18 @@ class AlluClient(
         }
     }
 
+    fun operationalCondition(alluApplicationId: Int, operationalConditionDate: LocalDate) {
+        put(
+                "excavationannouncements/$alluApplicationId/operationalcondition",
+                operationalConditionDate.atStartOfDay(TZ_UTC).toJsonString())
+            .bodyToMono(Void::class.java)
+            .timeout(defaultTimeout)
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error canceling application in Allu", it)
+            }
+            .block()
+    }
+
     fun getInformationRequests(alluApplicationId: Int): List<InformationRequest> {
         logger.info { "Fetching information request for application $alluApplicationId." }
         return get("applications/$alluApplicationId/informationrequests")
@@ -228,7 +243,7 @@ class AlluClient(
         logger.info { "Responding to information request." }
         post(
                 "cablereports/$alluApplicationId/informationrequests/$requestId/response",
-                CableReportInformationRequestResponse(cableReport, updatedFields)
+                CableReportInformationRequestResponse(cableReport, updatedFields),
             )
             .toBodilessEntity()
             .timeout(defaultTimeout)
@@ -261,11 +276,8 @@ class AlluClient(
                     {
                         Mono.error(
                             HakemusDecisionNotFoundException(
-                                "Document not found in Allu. alluApplicationId=$alluApplicationId"
-                            )
-                        )
-                    }
-                )
+                                "Document not found in Allu. alluApplicationId=$alluApplicationId"))
+                    })
                 .toEntity(ByteArrayResource::class.java)
                 .timeout(defaultTimeout)
                 .doOnError(WebClientResponseException::class.java) {
@@ -277,7 +289,7 @@ class AlluClient(
         if (response.headers.contentType != MediaType.APPLICATION_PDF) {
             throw AlluApiException(
                 path,
-                "Decision API didn't return a PDF. RequestContent-Type header: ${response.headers.contentType}"
+                "Decision API didn't return a PDF. RequestContent-Type header: ${response.headers.contentType}",
             )
         }
         val body = response.body ?: throw AlluApiException(path, "Document API returned empty body")
@@ -341,14 +353,14 @@ class AlluClient(
             .part(
                 "file",
                 ByteArrayResource(attachment.file),
-                parseMediaType(attachment.metadata.mimeType)
+                parseMediaType(attachment.metadata.mimeType),
             )
             .filename("file")
         val multipartData = builder.build()
 
         postRequest(
                 "applications/$alluApplicationId/attachments",
-                contentType = MediaType.MULTIPART_FORM_DATA
+                contentType = MediaType.MULTIPART_FORM_DATA,
             )
             .body(BodyInserters.fromMultipartData(multipartData))
             .retrieve()
@@ -436,7 +448,7 @@ data class Attachment(
         content: ByteArray
     ) : this(
         AttachmentMetadata(id = null, mimeType = contentType, name = fileName, description = null),
-        content
+        content,
     )
 }
 

@@ -114,6 +114,7 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifySequence
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -2114,6 +2115,77 @@ class HakemusServiceITest(
             assertThat(hankekayttajaRepository.findAll()).isEmpty()
             assertThat(hakemusyhteystietoRepository.findAll()).isEmpty()
             assertThat(hakemusyhteyshenkiloRepository.findAll()).isEmpty()
+        }
+    }
+
+    @Nested
+    inner class OperationalCondition {
+        private val date: LocalDate = LocalDate.parse("2024-08-13")
+        private val startDate: ZonedDateTime = ZonedDateTime.parse("2024-08-08T00:00Z")
+        private val endDate: ZonedDateTime = ZonedDateTime.parse("2024-08-12T00:00Z")
+
+        @Test
+        fun `throws exception when hakemus is not found`() {
+            val failure = assertFailure { hakemusService.operationalCondition(414L, date) }
+
+            failure.all {
+                hasClass(HakemusNotFoundException::class)
+                messageContains("with id 414")
+            }
+        }
+
+        @Test
+        fun `throws exception when hakemus is not in Allu`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withNoAlluFields()
+                    .save()
+
+            val failure = assertFailure { hakemusService.operationalCondition(hakemus.id, date) }
+
+            failure.all {
+                hasClass(HakemusNotYetInAlluException::class)
+                messageContains("Hakemus is not yet in Allu")
+                messageContains("id=${hakemus.id}")
+            }
+        }
+
+        @ParameterizedTest
+        @EnumSource(
+            ApplicationType::class,
+            names = ["EXCAVATION_NOTIFICATION"],
+            mode = EnumSource.Mode.EXCLUDE,
+        )
+        fun `throws exception when hakemus is of wrong type`(type: ApplicationType) {
+            val hakemus = hakemusFactory.builder(type).withStatus().save()
+
+            val failure = assertFailure { hakemusService.operationalCondition(hakemus.id, date) }
+
+            failure.all {
+                hasClass(WrongHakemusTypeException::class)
+                messageContains("Wrong application type for this action")
+                messageContains("type=$type")
+                messageContains("allowed types=EXCAVATION_NOTIFICATION")
+                messageContains("id=${hakemus.id}")
+            }
+        }
+
+        @Test
+        fun `sends the date to Allu when the hakemus passes all checks`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.PENDING)
+                    .withStartTime(startDate)
+                    .withEndTime(endDate)
+                    .save()
+            justRun { alluClient.operationalCondition(hakemus.alluid!!, date) }
+
+            hakemusService.operationalCondition(hakemus.id, date)
+
+            verifySequence { alluClient.operationalCondition(hakemus.alluid!!, date) }
         }
     }
 

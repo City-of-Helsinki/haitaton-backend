@@ -10,6 +10,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
+import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeRepository
@@ -53,7 +54,9 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifySequence
+import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 import java.util.stream.Stream
 import org.geojson.Polygon
 import org.junit.jupiter.api.AfterEach
@@ -67,6 +70,8 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.NullSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
 
@@ -443,6 +448,157 @@ class HakemusServiceTest {
                     .withYhteyshenkilo(
                         permission = PermissionFactory.createEntity(userId = USERNAME))
             return applicationEntity
+        }
+    }
+
+    @Nested
+    inner class OperationalCondition {
+        private val today: LocalDate = LocalDate.now()
+        private val tomorrow: LocalDate = today.plusDays(1)
+        private val startDate: ZonedDateTime = ZonedDateTime.parse("2024-08-08T00:00Z")
+        private val beforeStart: LocalDate = LocalDate.parse("2024-08-07")
+        private val endDate: ZonedDateTime = ZonedDateTime.parse("2024-08-12T00:00Z")
+
+        private val id = 16984L
+        private val alluId = 4141
+        private val applicationIdentifier = "JS2400014"
+        private val hanke = HankeFactory.createEntity()
+        private val hakemusData =
+            ApplicationFactory.createExcavationNotificationData(
+                startTime = startDate,
+                endTime = endDate,
+            )
+        private val hakemus =
+            HakemusFactory.createEntity(
+                id = id,
+                alluid = alluId,
+                alluStatus = ApplicationStatus.PENDING,
+                applicationIdentifier = applicationIdentifier,
+                userId = USERNAME,
+                applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
+                hakemusEntityData = hakemusData,
+                hanke = hanke,
+            )
+
+        @ParameterizedTest
+        @ValueSource(
+            strings =
+                [
+                    "2024-08-08", // Start date
+                    "2024-08-09", // After start date
+                    "2024-08-12", // End date
+                    "2024-08-13", // After end date
+                ])
+        fun `sends the date to Allu when the date is between the hakemus start date and today`(
+            date: LocalDate
+        ) {
+            every { hakemusRepository.findOneById(id) } returns hakemus
+            justRun { alluClient.operationalCondition(alluId, date) }
+
+            hakemusService.operationalCondition(hakemus.id, date)
+
+            verifySequence {
+                hakemusRepository.findOneById(id)
+                alluClient.operationalCondition(alluId, date)
+            }
+        }
+
+        @Test
+        fun `throws exception when date is before the start date of the application`() {
+            every { hakemusRepository.findOneById(id) } returns hakemus
+
+            val failure = assertFailure { hakemusService.operationalCondition(id, beforeStart) }
+
+            failure.all {
+                hasClass(OperationalConditionDateException::class)
+                messageContains("Invalid date in operational condition report")
+                messageContains("Date is before the hakemus start date")
+                messageContains("start date: 2024-08-08T00:00")
+                messageContains("date=2024-08-07")
+                messageContains("id=${hakemus.id}")
+            }
+            verifySequence { hakemusRepository.findOneById(id) }
+        }
+
+        @Test
+        fun `throws exception when date is in the future`() {
+            every { hakemusRepository.findOneById(id) } returns
+                hakemus.copy(
+                    hakemusEntityData =
+                        hakemusData.copy(
+                            startTime = ZonedDateTime.now().minusDays(5),
+                            endTime = ZonedDateTime.now().plusDays(5),
+                        ))
+
+            val failure = assertFailure {
+                hakemusService.operationalCondition(hakemus.id, tomorrow)
+            }
+
+            failure.all {
+                hasClass(OperationalConditionDateException::class)
+                messageContains("Invalid date in operational condition report")
+                messageContains("Date is in the future")
+                messageContains("date=$tomorrow")
+                messageContains("id=${hakemus.id}")
+            }
+            verifySequence { hakemusRepository.findOneById(id) }
+        }
+
+        @ParameterizedTest
+        @EnumSource(
+            ApplicationStatus::class,
+            names =
+                [
+                    "PENDING",
+                    "HANDLING",
+                    "INFORMATION_RECEIVED",
+                    "RETURNED_TO_PREPARATION",
+                    "DECISIONMAKING",
+                    "DECISION",
+                ],
+        )
+        fun `sends the date to Allu when the date is today and the status is allowed`(
+            status: ApplicationStatus
+        ) {
+            every { hakemusRepository.findOneById(id) } returns hakemus.copy(alluStatus = status)
+            justRun { alluClient.operationalCondition(alluId, today) }
+
+            hakemusService.operationalCondition(hakemus.id, today)
+
+            verifySequence {
+                hakemusRepository.findOneById(id)
+                alluClient.operationalCondition(hakemus.alluid!!, today)
+            }
+        }
+
+        @ParameterizedTest
+        @NullSource
+        @EnumSource(
+            ApplicationStatus::class,
+            names =
+                [
+                    "PENDING",
+                    "HANDLING",
+                    "INFORMATION_RECEIVED",
+                    "RETURNED_TO_PREPARATION",
+                    "DECISIONMAKING",
+                    "DECISION",
+                ],
+            mode = EnumSource.Mode.EXCLUDE,
+        )
+        fun `throws exception when application status is not allowed`(status: ApplicationStatus?) {
+            every { hakemusRepository.findOneById(id) } returns hakemus.copy(alluStatus = status)
+
+            val failure = assertFailure { hakemusService.operationalCondition(hakemus.id, today) }
+
+            failure.all {
+                hasClass(HakemusInWrongStatusException::class)
+                messageContains("Hakemus is in the wrong status for this operation")
+                messageContains("status=${status?.name}")
+                messageContains(
+                    "allowed statuses=PENDING, HANDLING, INFORMATION_RECEIVED, RETURNED_TO_PREPARATION, DECISIONMAKING, DECISION")
+            }
+            verifySequence { hakemusRepository.findOneById(id) }
         }
     }
 
