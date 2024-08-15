@@ -284,7 +284,7 @@ class HakemusService(
         copyOtherAttachments(hakemus, savedJohtoselvityshakemus)
         logger.info(
             "Created a new johtoselvityshakemus (${savedJohtoselvityshakemus.logString()}) for a kaivuilmoitus. ${hakemus.logString()}")
-        hakemusLoggingService.logCreate(johtoselvityshakemus.toHakemus(), currentUserId)
+        hakemusLoggingService.logCreate(savedJohtoselvityshakemus.toHakemus(), currentUserId)
         return savedJohtoselvityshakemus
     }
 
