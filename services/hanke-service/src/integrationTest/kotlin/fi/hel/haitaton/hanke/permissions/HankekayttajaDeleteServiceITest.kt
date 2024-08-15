@@ -43,6 +43,7 @@ import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService.DeleteInfo
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
@@ -264,9 +265,7 @@ class HankekayttajaDeleteServiceITest(
             val hanke = hankeFactory.builder().save()
             val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
             hankeKayttajaFactory.saveUnidentifiedUser(
-                hanke.id,
-                kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
-            )
+                hanke.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
 
             val failure = assertFailure { deleteService.delete(founder.id, USERNAME) }
 
@@ -430,7 +429,7 @@ class HankekayttajaDeleteServiceITest(
             hankeKayttajaFactory.saveIdentifiedUser(
                 hanke.id,
                 sahkoposti = "Something else",
-                kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
+                kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
             )
             val kayttaja = hankeKayttajaService.getKayttaja(founder.id)
             auditLogRepository.deleteAll()
@@ -444,7 +443,7 @@ class HankekayttajaDeleteServiceITest(
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.HANKE_KAYTTAJA)
                     hasId(founder.id)
                     hasObjectBefore(kayttaja)
-                    prop(AuditLogTarget::objectAfter).isNull()
+                    hasNoObjectAfter()
                 }
             }
         }
@@ -456,7 +455,7 @@ class HankekayttajaDeleteServiceITest(
             hankeKayttajaFactory.saveIdentifiedUser(
                 hanke.id,
                 sahkoposti = "Something else",
-                kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
+                kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
             )
             val permission = permissionRepository.findOneByHankeIdAndUserId(hanke.id, USERNAME)!!
             auditLogRepository.deleteAll()
@@ -470,7 +469,7 @@ class HankekayttajaDeleteServiceITest(
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.PERMISSION)
                     hasId(permission.id)
                     hasObjectBefore(permission.toDomain())
-                    prop(AuditLogTarget::objectAfter).isNull()
+                    hasNoObjectAfter()
                 }
             }
         }

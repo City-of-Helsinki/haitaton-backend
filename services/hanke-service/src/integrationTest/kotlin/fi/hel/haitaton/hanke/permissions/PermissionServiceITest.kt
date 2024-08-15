@@ -22,6 +22,7 @@ import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.auditEvent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
@@ -190,7 +191,7 @@ class PermissionServiceITest : IntegrationTest() {
                 withTarget {
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.PERMISSION)
                     hasId(permission.id)
-                    prop(AuditLogTarget::objectBefore).isNull()
+                    hasNoObjectBefore()
                     hasObjectAfter(expectedObject)
                 }
                 prop(AuditLogEvent::operation).isEqualTo(Operation.CREATE)
@@ -248,8 +249,7 @@ class PermissionServiceITest : IntegrationTest() {
                     hasId(permission.id)
                     hasObjectBefore(expectedObject)
                     hasObjectAfter(
-                        expectedObject.copy(kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI)
-                    )
+                        expectedObject.copy(kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI))
                 }
                 hasUserActor(USERNAME)
             }
