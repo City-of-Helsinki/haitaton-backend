@@ -209,14 +209,15 @@ class AlluClient(
         }
     }
 
-    fun operationalCondition(alluApplicationId: Int, operationalConditionDate: LocalDate) {
+    fun reportOperationalCondition(alluApplicationId: Int, operationalConditionDate: LocalDate) {
+        logger.info { "Reporting operational condition for application $alluApplicationId." }
         put(
                 "excavationannouncements/$alluApplicationId/operationalcondition",
                 operationalConditionDate.atStartOfDay(TZ_UTC).toJsonString())
             .bodyToMono(Void::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
-                logError("Error canceling application in Allu", it)
+                logError("Error reporting operation condition to Allu", it)
             }
             .block()
     }

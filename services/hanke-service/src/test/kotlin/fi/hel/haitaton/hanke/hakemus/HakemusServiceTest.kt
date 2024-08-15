@@ -493,13 +493,13 @@ class HakemusServiceTest {
             date: LocalDate
         ) {
             every { hakemusRepository.findOneById(id) } returns hakemus
-            justRun { alluClient.operationalCondition(alluId, date) }
+            justRun { alluClient.reportOperationalCondition(alluId, date) }
 
-            hakemusService.operationalCondition(hakemus.id, date)
+            hakemusService.reportOperationalCondition(hakemus.id, date)
 
             verifySequence {
                 hakemusRepository.findOneById(id)
-                alluClient.operationalCondition(alluId, date)
+                alluClient.reportOperationalCondition(alluId, date)
             }
         }
 
@@ -507,7 +507,9 @@ class HakemusServiceTest {
         fun `throws exception when date is before the start date of the application`() {
             every { hakemusRepository.findOneById(id) } returns hakemus
 
-            val failure = assertFailure { hakemusService.operationalCondition(id, beforeStart) }
+            val failure = assertFailure {
+                hakemusService.reportOperationalCondition(id, beforeStart)
+            }
 
             failure.all {
                 hasClass(OperationalConditionDateException::class)
@@ -531,7 +533,7 @@ class HakemusServiceTest {
                         ))
 
             val failure = assertFailure {
-                hakemusService.operationalCondition(hakemus.id, tomorrow)
+                hakemusService.reportOperationalCondition(hakemus.id, tomorrow)
             }
 
             failure.all {
@@ -561,13 +563,13 @@ class HakemusServiceTest {
             status: ApplicationStatus
         ) {
             every { hakemusRepository.findOneById(id) } returns hakemus.copy(alluStatus = status)
-            justRun { alluClient.operationalCondition(alluId, today) }
+            justRun { alluClient.reportOperationalCondition(alluId, today) }
 
-            hakemusService.operationalCondition(hakemus.id, today)
+            hakemusService.reportOperationalCondition(hakemus.id, today)
 
             verifySequence {
                 hakemusRepository.findOneById(id)
-                alluClient.operationalCondition(hakemus.alluid!!, today)
+                alluClient.reportOperationalCondition(hakemus.alluid!!, today)
             }
         }
 
@@ -589,7 +591,9 @@ class HakemusServiceTest {
         fun `throws exception when application status is not allowed`(status: ApplicationStatus?) {
             every { hakemusRepository.findOneById(id) } returns hakemus.copy(alluStatus = status)
 
-            val failure = assertFailure { hakemusService.operationalCondition(hakemus.id, today) }
+            val failure = assertFailure {
+                hakemusService.reportOperationalCondition(hakemus.id, today)
+            }
 
             failure.all {
                 hasClass(HakemusInWrongStatusException::class)

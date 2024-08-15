@@ -2119,14 +2119,14 @@ class HakemusServiceITest(
     }
 
     @Nested
-    inner class OperationalCondition {
+    inner class ReportOperationalCondition {
         private val date: LocalDate = LocalDate.parse("2024-08-13")
         private val startDate: ZonedDateTime = ZonedDateTime.parse("2024-08-08T00:00Z")
         private val endDate: ZonedDateTime = ZonedDateTime.parse("2024-08-12T00:00Z")
 
         @Test
         fun `throws exception when hakemus is not found`() {
-            val failure = assertFailure { hakemusService.operationalCondition(414L, date) }
+            val failure = assertFailure { hakemusService.reportOperationalCondition(414L, date) }
 
             failure.all {
                 hasClass(HakemusNotFoundException::class)
@@ -2142,7 +2142,9 @@ class HakemusServiceITest(
                     .withNoAlluFields()
                     .save()
 
-            val failure = assertFailure { hakemusService.operationalCondition(hakemus.id, date) }
+            val failure = assertFailure {
+                hakemusService.reportOperationalCondition(hakemus.id, date)
+            }
 
             failure.all {
                 hasClass(HakemusNotYetInAlluException::class)
@@ -2160,7 +2162,9 @@ class HakemusServiceITest(
         fun `throws exception when hakemus is of wrong type`(type: ApplicationType) {
             val hakemus = hakemusFactory.builder(type).withStatus().save()
 
-            val failure = assertFailure { hakemusService.operationalCondition(hakemus.id, date) }
+            val failure = assertFailure {
+                hakemusService.reportOperationalCondition(hakemus.id, date)
+            }
 
             failure.all {
                 hasClass(WrongHakemusTypeException::class)
@@ -2181,11 +2185,11 @@ class HakemusServiceITest(
                     .withStartTime(startDate)
                     .withEndTime(endDate)
                     .save()
-            justRun { alluClient.operationalCondition(hakemus.alluid!!, date) }
+            justRun { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
 
-            hakemusService.operationalCondition(hakemus.id, date)
+            hakemusService.reportOperationalCondition(hakemus.id, date)
 
-            verifySequence { alluClient.operationalCondition(hakemus.alluid!!, date) }
+            verifySequence { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
         }
     }
 

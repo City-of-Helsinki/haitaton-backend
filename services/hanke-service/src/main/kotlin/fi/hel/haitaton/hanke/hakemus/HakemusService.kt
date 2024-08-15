@@ -347,7 +347,7 @@ class HakemusService(
     }
 
     @Transactional
-    fun operationalCondition(hakemusId: Long, date: LocalDate) {
+    fun reportOperationalCondition(hakemusId: Long, date: LocalDate) {
         val hakemus = getById(hakemusId)
         val alluid = hakemus.alluid ?: throw HakemusNotYetInAlluException(hakemus)
 
@@ -385,7 +385,7 @@ class HakemusService(
         logger.info {
             "Reporting operational condition for hakemus with the date $date. ${hakemus.logString()}"
         }
-        alluClient.operationalCondition(alluid, date)
+        alluClient.reportOperationalCondition(alluid, date)
     }
 
     @Transactional(readOnly = true)

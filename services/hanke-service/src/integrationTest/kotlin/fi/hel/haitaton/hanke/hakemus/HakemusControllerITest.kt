@@ -691,7 +691,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
     }
 
     @Nested
-    inner class OperationalCondition {
+    inner class ReportOperationalCondition {
         private val url = "/hakemukset/$id/toiminnallinen-kunto"
         private val date = LocalDate.of(2024, 8, 8)
         private val request = DateReportRequest(date)
@@ -716,13 +716,13 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            justRun { hakemusService.operationalCondition(id, date) }
+            justRun { hakemusService.reportOperationalCondition(id, date) }
 
             post(url, request).andExpect(status().isOk).andExpect(content().string(""))
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-                hakemusService.operationalCondition(id, date)
+                hakemusService.reportOperationalCondition(id, date)
             }
         }
 
@@ -741,25 +741,11 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             }
         }
 
-        private fun RuntimeException.whenThrown(f: () -> Unit) {
-            every {
-                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-            } returns true
-            every { hakemusService.operationalCondition(id, date) } throws this
-
-            f()
-
-            verifySequence {
-                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-                hakemusService.operationalCondition(id, date)
-            }
-        }
-
         @Test
         fun `returns 409 when the application is not yet in Allu`() {
             val exception = HakemusNotYetInAlluException(HakemusFactory.create(id = id))
 
-            exception.whenThrown {
+            withMockedException(exception) {
                 post(url, request)
                     .andExpect(status().isConflict)
                     .andExpect(hankeError(HankeError.HAI2013))
@@ -767,7 +753,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         }
 
         @Test
-        fun `returns 409 when the application is not a kaivuilmoitus`() {
+        fun `returns 400 when the application is not a kaivuilmoitus`() {
             val exception =
                 WrongHakemusTypeException(
                     HakemusFactory.create(id = id),
@@ -775,9 +761,9 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                     listOf(ApplicationType.EXCAVATION_NOTIFICATION),
                 )
 
-            exception.whenThrown {
+            withMockedException(exception) {
                 post(url, request)
-                    .andExpect(status().isConflict)
+                    .andExpect(status().isBadRequest)
                     .andExpect(hankeError(HankeError.HAI2002))
             }
         }
@@ -788,7 +774,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 OperationalConditionDateException(
                     "Date is in the future.", date, HakemusFactory.create(id = id))
 
-            exception.whenThrown {
+            withMockedException(exception) {
                 post(url, request)
                     .andExpect(status().isBadRequest)
                     .andExpect(hankeError(HankeError.HAI2014))
@@ -804,10 +790,24 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                     allowed = listOf(),
                 )
 
-            exception.whenThrown {
+            withMockedException(exception) {
                 post(url, request)
                     .andExpect(status().isConflict)
                     .andExpect(hankeError(HankeError.HAI2015))
+            }
+        }
+
+        private fun withMockedException(ex: RuntimeException, f: () -> Unit) {
+            every {
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { hakemusService.reportOperationalCondition(id, date) } throws ex
+
+            f()
+
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                hakemusService.reportOperationalCondition(id, date)
             }
         }
     }

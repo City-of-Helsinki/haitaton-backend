@@ -248,10 +248,10 @@ class HakemusController(
 
     @PostMapping("/hakemukset/{id}/toiminnallinen-kunto")
     @Operation(
-        summary = "Report the operational condition date for a excavation notification",
+        summary = "Report the operational condition date for an excavation notification",
         description =
             """
-Report the operational condition date for a excavation notification.
+Report the operational condition date for an excavation notification.
 The reported date will be sent to Allu as the operational condition date.
 
 The excavation notification needs to be in a valid state to accept the report.
@@ -264,11 +264,31 @@ The valid states are:
   - DECISION.
 
 The date cannot be before the application was started and not in the future.
-The id needs to reference a excavation notification.
+The id needs to reference an excavation notification.
 """,
     )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Operational condition reported, no body", responseCode = "200"),
+                ApiResponse(
+                    description =
+                        "The date is malformed, the date isn't in the allowed bounds " +
+                            "or the application not an excavation notification",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                ApiResponse(
+                    description = "An application was not found with the given id",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                ApiResponse(
+                    description = "The application is not in one of the allowed states",
+                    responseCode = "409",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+            ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
-    fun operationalCondition(
+    fun reportOperationalCondition(
         @PathVariable(name = "id") id: Long,
         @RequestBody request: DateReportRequest,
     ) {
@@ -276,7 +296,7 @@ The id needs to reference a excavation notification.
         logger.info {
             "Received request to report application to operational condition id=$id, date=$date"
         }
-        hakemusService.operationalCondition(id, date)
+        hakemusService.reportOperationalCondition(id, date)
     }
 
     @PostMapping("/hakemukset/{id}/laheta")
@@ -438,7 +458,7 @@ The id needs to reference a excavation notification.
     }
 
     @ExceptionHandler(WrongHakemusTypeException::class)
-    @ResponseStatus(HttpStatus.CONFLICT)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
     fun wrongHakemusTypeException(ex: WrongHakemusTypeException): HankeError {
         logger.warn(ex) { ex.message }

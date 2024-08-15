@@ -194,7 +194,7 @@ class AlluClientITests {
         }
 
         @Test
-        fun `calls Allu with correct path when the application is a excavation notification`() {
+        fun `calls Allu with correct path when the application is an excavation notification`() {
             val stubbedApplicationId = 1337
             val applicationIdResponse =
                 MockResponse()
@@ -243,7 +243,7 @@ class AlluClientITests {
         fun `calls Allu with the correct path and time`() {
             mockWebServer.enqueue(MockResponse().setResponseCode(200))
 
-            service.operationalCondition(applicationId, date)
+            service.reportOperationalCondition(applicationId, date)
 
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("PUT")
@@ -256,7 +256,7 @@ class AlluClientITests {
         fun `throws an exception if there's a problem with the call`() {
             mockWebServer.enqueue(MockResponse().setResponseCode(409))
 
-            val failure = assertFailure { service.operationalCondition(applicationId, date) }
+            val failure = assertFailure { service.reportOperationalCondition(applicationId, date) }
 
             failure.all {
                 hasClass(WebClientResponseException.Conflict::class)
