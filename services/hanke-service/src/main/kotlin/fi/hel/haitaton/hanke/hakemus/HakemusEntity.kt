@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.ilmoitus.IlmoitusEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.CascadeType
@@ -18,6 +19,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.MapKey
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
+import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.Type
 
 @Entity
@@ -37,10 +39,19 @@ data class HakemusEntity(
         fetch = FetchType.LAZY,
         mappedBy = "application",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     @MapKey(name = "rooli")
+    @BatchSize(size = 100)
     var yhteystiedot: MutableMap<ApplicationContactType, HakemusyhteystietoEntity> = mutableMapOf(),
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "hakemus",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true,
+    )
+    @BatchSize(size = 100)
+    val ilmoitukset: MutableList<IlmoitusEntity> = mutableListOf(),
 ) : HakemusIdentifier {
     fun toMetadata(): HakemusMetaData =
         HakemusMetaData(
@@ -58,8 +69,7 @@ data class HakemusEntity(
             when (hakemusEntityData) {
                 is JohtoselvityshakemusEntityData ->
                     (this.hakemusEntityData as JohtoselvityshakemusEntityData).toHakemusData(
-                        yhteystiedot
-                    )
+                        yhteystiedot)
                 is KaivuilmoitusEntityData ->
                     (this.hakemusEntityData as KaivuilmoitusEntityData).toHakemusData(yhteystiedot)
             }
@@ -72,6 +82,7 @@ data class HakemusEntity(
             applicationData = applicationData,
             hankeTunnus = hanke.hankeTunnus,
             hankeId = hanke.id,
+            ilmoitukset = ilmoitukset.map { it.toDomain() }.groupBy { it.type },
         )
     }
 

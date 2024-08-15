@@ -19,6 +19,7 @@ import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
+import assertk.assertions.key
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
@@ -85,6 +86,8 @@ import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCableReportData
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluExcavationNotificationData
 import fi.hel.haitaton.hanke.hasSameElementsAs
+import fi.hel.haitaton.hanke.ilmoitus.Ilmoitus
+import fi.hel.haitaton.hanke.ilmoitus.IlmoitusType
 import fi.hel.haitaton.hanke.logging.AlluContactWithRole
 import fi.hel.haitaton.hanke.logging.AlluCustomerWithRole
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -96,6 +99,7 @@ import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasStreetName
+import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectBefore
@@ -2216,6 +2220,32 @@ class HakemusServiceITest(
 
             hakemusService.reportOperationalCondition(hakemus.id, date)
 
+            verifySequence { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
+        }
+
+        @Test
+        fun `saves the report event to database`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.PENDING)
+                    .withStartTime(startDate)
+                    .withEndTime(endDate)
+                    .save()
+            justRun { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
+
+            hakemusService.reportOperationalCondition(hakemus.id, date)
+
+            val savedHakemus: Hakemus = hakemusService.getById(hakemus.id)
+            assertThat(savedHakemus.ilmoitukset)
+                .key(IlmoitusType.TOIMINNALLINEN_KUNTO)
+                .single()
+                .all {
+                    prop(Ilmoitus::type).isEqualTo(IlmoitusType.TOIMINNALLINEN_KUNTO)
+                    prop(Ilmoitus::dateReported).isEqualTo(date)
+                    prop(Ilmoitus::createdAt).isRecent()
+                }
             verifySequence { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
         }
     }

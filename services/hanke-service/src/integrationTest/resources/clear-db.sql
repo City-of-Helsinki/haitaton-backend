@@ -14,6 +14,7 @@ TRUNCATE TABLE
     hankeyhteyshenkilo,
     hankeyhteystieto,
     hankkeen_haittojenhallintasuunnitelma,
+    ilmoitus,
     int_lock,
     kayttajakutsu,
     paatos,

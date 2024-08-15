@@ -22,6 +22,7 @@ import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
+import fi.hel.haitaton.hanke.ilmoitus.Ilmoitus
 import fi.hel.haitaton.hanke.paatos.Paatos
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -100,6 +101,7 @@ class HakemusFactory(
             applicationData: HakemusData = createHakemusData(applicationType),
             hankeTunnus: String = "HAI-1234",
             hankeId: Int = 1,
+            ilmoitukset: List<Ilmoitus> = listOf(),
         ): Hakemus =
             Hakemus(
                 id = id,
@@ -110,6 +112,7 @@ class HakemusFactory(
                 applicationData = applicationData,
                 hankeTunnus = hankeTunnus,
                 hankeId = hankeId,
+                ilmoitukset = ilmoitukset.groupBy { it.type },
             )
 
         private fun createHakemusData(type: ApplicationType): HakemusData =

@@ -189,3 +189,5 @@ databaseChangeLog:
       file: db/changelog/changesets/079-add-hakemustunnus-index-to-paatos.sql
   - include:
       file: db/changelog/changesets/080-create-ui-banners-table.sql
+  - include:
+      file: db/changelog/changesets/081-create-ilmoitukset.sql

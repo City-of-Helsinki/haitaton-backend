@@ -22,6 +22,8 @@ import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
+import fi.hel.haitaton.hanke.ilmoitus.IlmoitusEntity
+import fi.hel.haitaton.hanke.ilmoitus.IlmoitusType
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
@@ -356,7 +358,8 @@ class HakemusService(
 
     @Transactional
     fun reportOperationalCondition(hakemusId: Long, date: LocalDate) {
-        val hakemus = getById(hakemusId)
+        val entity = getEntityById(hakemusId)
+        val hakemus = entity.toHakemus()
         val alluid = hakemus.alluid ?: throw HakemusNotYetInAlluException(hakemus)
 
         val hakemusData =
@@ -394,6 +397,12 @@ class HakemusService(
             "Reporting operational condition for hakemus with the date $date. ${hakemus.logString()}"
         }
         alluClient.reportOperationalCondition(alluid, date)
+        entity.ilmoitukset.add(
+            IlmoitusEntity(
+                type = IlmoitusType.TOIMINNALLINEN_KUNTO,
+                dateReported = date,
+                hakemus = entity,
+            ))
     }
 
     @Transactional(readOnly = true)

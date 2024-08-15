@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.ilmoitus.IlmoitusResponse
+import fi.hel.haitaton.hanke.ilmoitus.IlmoitusType
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -15,6 +17,8 @@ data class HakemusResponse(
     val applicationType: ApplicationType,
     val applicationData: HakemusDataResponse,
     val hankeTunnus: String,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    val ilmoitukset: Map<IlmoitusType, List<IlmoitusResponse>>?,
 )
 
 sealed interface HakemusDataResponse {

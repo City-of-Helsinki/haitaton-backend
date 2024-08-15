@@ -15,6 +15,7 @@ import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusDataResponse
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.hakemus.StreetAddress
+import fi.hel.haitaton.hanke.ilmoitus.IlmoitusResponse
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -29,7 +30,8 @@ object HakemusResponseFactory {
         alluStatus: ApplicationStatus? = null,
         applicationIdentifier: String? = null,
         applicationData: HakemusDataResponse = createHakemusDataResponse(applicationType),
-        hankeTunnus: String = "HAI-1234"
+        hankeTunnus: String = "HAI-1234",
+        ilmoitukset: List<IlmoitusResponse> = listOf(),
     ): HakemusResponse =
         HakemusResponse(
             applicationId,
@@ -38,7 +40,8 @@ object HakemusResponseFactory {
             applicationIdentifier,
             applicationData.applicationType,
             applicationData,
-            hankeTunnus
+            hankeTunnus,
+            ilmoitukset.groupBy { it.type },
         )
 
     private fun createHakemusDataResponse(applicationType: ApplicationType): HakemusDataResponse =
@@ -60,12 +63,12 @@ object HakemusResponseFactory {
         customerWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
                 createCompanyCustomerResponse(),
-                listOf(createContactResponse())
+                listOf(createContactResponse()),
             ),
         contractorWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
                 createPersonCustomerResponse(),
-                listOf(createContactResponse())
+                listOf(createContactResponse()),
             ),
         representativeWithContacts: CustomerWithContactsResponse? = null,
         propertyDeveloperWithContacts: CustomerWithContactsResponse? = null,
@@ -105,12 +108,12 @@ object HakemusResponseFactory {
         customerWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
                 createCompanyCustomerResponse(),
-                listOf(createContactResponse())
+                listOf(createContactResponse()),
             ),
         contractorWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
                 createPersonCustomerResponse(),
-                listOf(createContactResponse())
+                listOf(createContactResponse()),
             ),
         representativeWithContacts: CustomerWithContactsResponse? = null,
         propertyDeveloperWithContacts: CustomerWithContactsResponse? = null,
@@ -241,6 +244,6 @@ object HakemusResponseFactory {
             customerReference,
             postalAddress,
             email,
-            phone
+            phone,
         )
 }
