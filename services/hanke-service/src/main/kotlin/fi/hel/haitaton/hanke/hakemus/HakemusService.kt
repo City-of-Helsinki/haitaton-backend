@@ -212,7 +212,8 @@ class HakemusService(
 
         // For excavation announcements, a cable report can be applied for at the same time.
         // If so, it should be sent before the excavation announcement.
-        val accompanyingJohtoselvityshakemus = createAccompanyingJohtoselvityshakemus(hakemus)
+        val accompanyingJohtoselvityshakemus =
+            createAccompanyingJohtoselvityshakemus(hakemus, currentUserId)
         if (accompanyingJohtoselvityshakemus != null) {
             val sentJohtoselvityshakemus =
                 sendHakemus(accompanyingJohtoselvityshakemus.id, currentUserId)
@@ -246,39 +247,44 @@ class HakemusService(
      *
      * @return the new cable report application entity or null if no new application was applied for
      */
-    private fun createAccompanyingJohtoselvityshakemus(hakemus: HakemusEntity): HakemusEntity? =
+    private fun createAccompanyingJohtoselvityshakemus(
+        hakemus: HakemusEntity,
+        currentUserId: String,
+    ): HakemusEntity? =
         when (val hakemusData = hakemus.hakemusEntityData) {
             is KaivuilmoitusEntityData ->
                 if (!hakemusData.cableReportDone)
-                    createAccompanyingJohtoselvityshakemus(hakemus, hakemusData)
+                    createAccompanyingJohtoselvityshakemus(hakemus, hakemusData, currentUserId)
                 else null
             else -> null
         }
 
     private fun createAccompanyingJohtoselvityshakemus(
         hakemus: HakemusEntity,
-        hakemusData: KaivuilmoitusEntityData
+        hakemusData: KaivuilmoitusEntityData,
+        currentUserId: String,
     ): HakemusEntity {
         logger.info(
             "Creating a new johtoselvityshakemus for a kaivuilmoitus. ${hakemus.logString()}")
         val johtoselvityshakemusData = hakemusData.createAccompanyingJohtoselvityshakemusData()
         val johtoselvityshakemus =
-            hakemus
-                .copy(
-                    id = 0,
-                    applicationType = ApplicationType.CABLE_REPORT,
-                    hakemusEntityData = johtoselvityshakemusData,
-                )
-                .apply {
-                    yhteystiedot =
-                        hakemus.yhteystiedot
-                            .mapValues { it.value.copyWithHakemus(this) }
-                            .toMutableMap()
-                }
+            HakemusEntity(
+                id = 0,
+                alluid = null,
+                alluStatus = null,
+                applicationIdentifier = null,
+                userId = currentUserId,
+                applicationType = ApplicationType.CABLE_REPORT,
+                hakemusEntityData = johtoselvityshakemusData,
+                hanke = hakemus.hanke,
+            )
+        johtoselvityshakemus.yhteystiedot.putAll(
+            hakemus.yhteystiedot.mapValues { it.value.copyWithHakemus(johtoselvityshakemus) })
         val savedJohtoselvityshakemus = hakemusRepository.save(johtoselvityshakemus)
         copyOtherAttachments(hakemus, savedJohtoselvityshakemus)
         logger.info(
             "Created a new johtoselvityshakemus (${savedJohtoselvityshakemus.logString()}) for a kaivuilmoitus. ${hakemus.logString()}")
+        hakemusLoggingService.logCreate(johtoselvityshakemus.toHakemus(), currentUserId)
         return savedJohtoselvityshakemus
     }
 

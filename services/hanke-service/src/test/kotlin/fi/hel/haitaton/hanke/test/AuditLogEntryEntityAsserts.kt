@@ -53,6 +53,8 @@ object AuditLogEntryEntityAsserts {
     fun Assert<AuditLogEvent>.withTarget(body: Assert<AuditLogTarget>.() -> Unit) =
         prop(AuditLogEvent::target).all(body)
 
+    fun Assert<AuditLogTarget>.hasNoObjectBefore() = prop(AuditLogTarget::objectBefore).isNull()
+
     inline fun <reified T> Assert<AuditLogTarget>.hasObjectBefore(before: T) =
         hasObjectBefore<T> { isEqualTo(before) }
 
@@ -74,6 +76,8 @@ object AuditLogEntryEntityAsserts {
             .isNotNull()
             .transform { it.parseJson<T>() }
             .all { body(this) }
+
+    fun Assert<AuditLogTarget>.hasNoObjectAfter() = prop(AuditLogTarget::objectAfter).isNull()
 
     fun Assert<AuditLogTarget>.hasId(id: Any) =
         prop(AuditLogTarget::id).isNotNull().isEqualTo(id.toString())
