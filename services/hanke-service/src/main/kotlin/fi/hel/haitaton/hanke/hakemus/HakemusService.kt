@@ -32,6 +32,7 @@ import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -343,6 +344,48 @@ class HakemusService(
         }
 
         return HakemusDeletionResultDto(hankeDeleted = false)
+    }
+
+    @Transactional
+    fun reportOperationalCondition(hakemusId: Long, date: LocalDate) {
+        val hakemus = getById(hakemusId)
+        val alluid = hakemus.alluid ?: throw HakemusNotYetInAlluException(hakemus)
+
+        val hakemusData =
+            when (hakemus.applicationData) {
+                is JohtoselvityshakemusData ->
+                    throw WrongHakemusTypeException(
+                        hakemus,
+                        hakemus.applicationType,
+                        listOf(ApplicationType.EXCAVATION_NOTIFICATION))
+                is KaivuilmoitusData -> hakemus.applicationData
+            }
+
+        if (hakemusData.startTime == null || date.isBefore(hakemusData.startTime.toLocalDate())) {
+            throw OperationalConditionDateException(
+                "Date is before the hakemus start date: ${hakemusData.startTime}", date, hakemus)
+        }
+        if (date.isAfter(LocalDate.now())) {
+            throw OperationalConditionDateException("Date is in the future.", date, hakemus)
+        }
+
+        val allowedStatuses =
+            listOf(
+                ApplicationStatus.PENDING,
+                ApplicationStatus.HANDLING,
+                ApplicationStatus.INFORMATION_RECEIVED,
+                ApplicationStatus.RETURNED_TO_PREPARATION,
+                ApplicationStatus.DECISIONMAKING,
+                ApplicationStatus.DECISION,
+            )
+        if (hakemus.alluStatus !in allowedStatuses) {
+            throw HakemusInWrongStatusException(hakemus, hakemus.alluStatus, allowedStatuses)
+        }
+
+        logger.info {
+            "Reporting operational condition for hakemus with the date $date. ${hakemus.logString()}"
+        }
+        alluClient.reportOperationalCondition(alluid, date)
     }
 
     @Transactional(readOnly = true)
@@ -1050,3 +1093,32 @@ class HakemusGeometryException(message: String) : RuntimeException(message)
 class HakemusGeometryNotInsideHankeException(message: String) : RuntimeException(message)
 
 class HakemusDecisionNotFoundException(message: String) : RuntimeException(message)
+
+class HakemusNotYetInAlluException(hakemus: HakemusIdentifier) :
+    RuntimeException("Hakemus is not yet in Allu. ${hakemus.logString()}")
+
+class WrongHakemusTypeException(
+    hakemus: HakemusIdentifier,
+    type: ApplicationType,
+    allowed: List<ApplicationType>
+) :
+    RuntimeException(
+        "Wrong application type for this action. type=$type, " +
+            "allowed types=${allowed.joinToString(", ")}, ${hakemus.logString()}")
+
+class HakemusInWrongStatusException(
+    hakemus: HakemusIdentifier,
+    status: ApplicationStatus?,
+    allowed: List<ApplicationStatus>
+) :
+    RuntimeException(
+        "Hakemus is in the wrong status for this operation. status=$status, " +
+            "allowed statuses=${allowed.joinToString(", ")}, ${hakemus.logString()}, ")
+
+class OperationalConditionDateException(
+    error: String,
+    date: LocalDate,
+    hakemus: HakemusIdentifier,
+) :
+    RuntimeException(
+        "Invalid date in operational condition report. $error date=$date, ${hakemus.logString()}")
