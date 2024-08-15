@@ -39,6 +39,7 @@ import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.identifier
+import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -50,7 +51,10 @@ import fi.hel.haitaton.hanke.test.Asserts.hasReceivers
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.auditEvent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectAfter
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectAfter
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasTargetType
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
@@ -206,11 +210,11 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                     Pair(KAYTTAJA_INPUT_OMISTAJA.email, arrayOf(ContactType.OMISTAJA)),
                     Pair(
                         KAYTTAJA_INPUT_RAKENNUTTAJA.email,
-                        arrayOf(ContactType.RAKENNUTTAJA, ContactType.TOTEUTTAJA)
+                        arrayOf(ContactType.RAKENNUTTAJA, ContactType.TOTEUTTAJA),
                     ),
                     Pair(KAYTTAJA_INPUT_SUORITTAJA.email, arrayOf(ContactType.TOTEUTTAJA)),
                     Pair(KAYTTAJA_INPUT_ASIANHOITAJA.email, arrayOf(ContactType.MUU)),
-                    Pair(KAYTTAJA_INPUT_MUU.email, arrayOf(ContactType.MUU))
+                    Pair(KAYTTAJA_INPUT_MUU.email, arrayOf(ContactType.MUU)),
                 )
 
             val result: List<HankeKayttajaDto> =
@@ -342,7 +346,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                 withTarget {
                     prop(AuditLogTarget::id).isNotNull()
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.HANKE_KAYTTAJA)
-                    prop(AuditLogTarget::objectBefore).isNull()
+                    hasNoObjectBefore()
                     hasObjectAfter {
                         prop(HankeKayttaja::id).isNotNull()
                         prop(HankeKayttaja::hankeId).isEqualTo(savedHankeId)
@@ -362,7 +366,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                 withTarget {
                     prop(AuditLogTarget::id).isNotNull()
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.PERMISSION)
-                    prop(AuditLogTarget::objectBefore).isNull()
+                    hasNoObjectBefore()
                     hasObjectAfter {
                         prop(Permission::kayttooikeustaso)
                             .isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
@@ -462,11 +466,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             assertThat(capturedEmails).hasSize(1)
             assertThat(capturedEmails.first())
                 .isValidHankeInvitation(
-                    inviter.fullName(),
-                    inviter.sahkoposti,
-                    hanke.nimi,
-                    hanke.hankeTunnus
-                )
+                    inviter.fullName(), inviter.sahkoposti, hanke.nimi, hanke.hankeTunnus)
         }
 
         @Test
@@ -546,8 +546,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                         .isEqualTo(
                             permission
                                 .copy(kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS)
-                                .toChangeLogJsonString()
-                        )
+                                .toChangeLogJsonString())
                 }
             }
         }
@@ -589,8 +588,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                         .isEqualTo(
                             expectedTunniste
                                 .copy(kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS)
-                                .toChangeLogJsonString()
-                        )
+                                .toChangeLogJsonString())
                 }
                 prop(AuditLogEvent::operation).isEqualTo(Operation.UPDATE)
                 hasUserActor(USERNAME)
@@ -605,8 +603,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                     hanke.id,
                     etunimi = "Kolmas",
                     sukunimi = "Kehveli",
-                    sahkoposti = "kolmas@kehveli.test"
-                )
+                    sahkoposti = "kolmas@kehveli.test")
             kayttajaFactory.addToken(kayttaja, "token for both", Kayttooikeustaso.KATSELUOIKEUS)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
@@ -628,17 +625,12 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                 kayttajaFactory.saveIdentifiedUser(
                     hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKIEN_MUOKKAUS,
-                    userId = USERNAME
-                )
+                    userId = USERNAME)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier,
-                        updates,
-                        false,
-                        USERNAME
-                    )
+                        hankeIdentifier, updates, false, USERNAME)
                 }
                 .all {
                     hasClass(ChangingOwnPermissionException::class)
@@ -654,11 +646,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier,
-                        updates,
-                        false,
-                        USERNAME
-                    )
+                        hankeIdentifier, updates, false, USERNAME)
                 }
                 .all {
                     hasClass(HankeKayttajatNotFoundException::class)
@@ -692,11 +680,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier,
-                        updates,
-                        false,
-                        USERNAME
-                    )
+                        hankeIdentifier, updates, false, USERNAME)
                 }
                 .all {
                     hasClass(UsersWithoutKayttooikeustasoException::class)
@@ -709,18 +693,12 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveIdentifiedUser(
-                    hankeIdentifier.id,
-                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
-                )
+                    hankeIdentifier.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier,
-                        updates,
-                        false,
-                        USERNAME
-                    )
+                        hankeIdentifier, updates, false, USERNAME)
                 }
                 .all {
                     hasClass(MissingAdminPermissionException::class)
@@ -733,18 +711,12 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveUnidentifiedUser(
-                    hankeIdentifier.id,
-                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
-                )
+                    hankeIdentifier.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier,
-                        updates,
-                        false,
-                        USERNAME
-                    )
+                        hankeIdentifier, updates, false, USERNAME)
                 }
                 .all {
                     hasClass(MissingAdminPermissionException::class)
@@ -757,9 +729,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveIdentifiedUser(
-                    hankeIdentifier.id,
-                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
-                )
+                    hankeIdentifier.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
@@ -776,9 +746,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveUnidentifiedUser(
-                    hankeIdentifier.id,
-                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
-                )
+                    hankeIdentifier.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
@@ -798,11 +766,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier,
-                        updates,
-                        false,
-                        USERNAME
-                    )
+                        hankeIdentifier, updates, false, USERNAME)
                 }
                 .all {
                     hasClass(MissingAdminPermissionException::class)
@@ -830,9 +794,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             val hanke = hankeFactory.saveMinimal()
             val kayttaja =
                 kayttajaFactory.saveIdentifiedUser(
-                    hanke.id,
-                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
-                )
+                    hanke.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
             kayttajaFactory.saveIdentifiedUser(
                 hanke.id,
                 kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS,
@@ -861,9 +823,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             permissionService.create(hankeIdentifier.id, USERNAME, Kayttooikeustaso.KAIKKI_OIKEUDET)
             val kayttaja =
                 kayttajaFactory.saveIdentifiedUser(
-                    hankeIdentifier.id,
-                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
-                )
+                    hankeIdentifier.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
@@ -891,7 +851,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                     hanke.nimi,
                     updater.fullName(),
                     updater.sahkoposti,
-                    "Hankemuokkaus"
+                    "Hankemuokkaus",
                 )
         }
     }
@@ -912,10 +872,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
         fun `throws exception if tunniste doesn't exist`() {
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
-                        newUserId,
-                        "fake",
-                        securityContext
-                    )
+                        newUserId, "fake", securityContext)
                 }
                 .all {
                     hasClass(TunnisteNotFoundException::class)
@@ -933,10 +890,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
-                        newUserId,
-                        tunniste,
-                        securityContext
-                    )
+                        newUserId, tunniste, securityContext)
                 }
                 .all {
                     hasClass(VerifiedNameNotFound::class)
@@ -956,10 +910,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
-                        newUserId,
-                        "existing",
-                        securityContext
-                    )
+                        newUserId, "existing", securityContext)
                 }
                 .all {
                     hasClass(UserAlreadyHasPermissionException::class)
@@ -977,15 +928,11 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                 permissionService.create(
                     userId = newUserId,
                     hankeId = hanke.id,
-                    kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS
-                )
+                    kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS)
 
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
-                        newUserId,
-                        tunniste,
-                        securityContext
-                    )
+                        newUserId, tunniste, securityContext)
                 }
                 .all {
                     hasClass(UserAlreadyHasPermissionException::class)
@@ -1003,10 +950,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
-                        newUserId,
-                        "existing",
-                        securityContext
-                    )
+                        newUserId, "existing", securityContext)
                 }
                 .all {
                     hasClass(PermissionAlreadyExistsException::class)
@@ -1073,15 +1017,12 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             hankeKayttajaService.createPermissionFromToken(newUserId, tunniste, securityContext)
 
-            val logs =
-                auditLogRepository.findAll().filter {
-                    it.message.auditEvent.target.type == ObjectType.KAYTTAJA_TUNNISTE
-                }
+            val logs = auditLogRepository.findByType(ObjectType.KAYTTAJA_TUNNISTE)
             assertThat(logs).single().isSuccess(Operation.DELETE) {
                 hasUserActor(newUserId)
                 withTarget {
-                    prop(AuditLogTarget::type).isEqualTo(ObjectType.KAYTTAJA_TUNNISTE)
-                    prop(AuditLogTarget::objectAfter).isNull()
+                    hasTargetType(ObjectType.KAYTTAJA_TUNNISTE)
+                    hasNoObjectAfter()
                 }
             }
         }
@@ -1283,10 +1224,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             val failure = assertFailure {
                 hankeKayttajaService.updateKayttajaInfo(
-                    hanke.hankeTunnus,
-                    update,
-                    identifiedUser.id
-                )
+                    hanke.hankeTunnus, update, identifiedUser.id)
             }
 
             failure.all {

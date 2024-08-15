@@ -97,9 +97,12 @@ import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasStreetName
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectAfter
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasServiceActor
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasTargetType
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
@@ -464,7 +467,7 @@ class HakemusServiceITest(
                     withTarget {
                         hasId(result.id)
                         prop(AuditLogTarget::type).isEqualTo(ObjectType.HAKEMUS)
-                        prop(AuditLogTarget::objectBefore).isNull()
+                        hasNoObjectBefore()
                         hasObjectAfter(result)
                     }
                 }
@@ -611,7 +614,7 @@ class HakemusServiceITest(
             assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.CREATE) {
                 hasUserActor(USERNAME)
                 withTarget {
-                    prop(AuditLogTarget::objectBefore).isNull()
+                    hasNoObjectBefore()
                     hasObjectAfter<Hakemus> { prop(Hakemus::id).isEqualTo(hakemus.id) }
                 }
             }
@@ -1744,7 +1747,7 @@ class HakemusServiceITest(
                     withTarget {
                         hasId(hakemus.id)
                         prop(AuditLogTarget::objectBefore).isNotNull()
-                        prop(AuditLogTarget::objectAfter).isNull()
+                        hasNoObjectAfter()
                     }
                 }
             }
@@ -1878,33 +1881,39 @@ class HakemusServiceITest(
                  */
                 @BeforeEach
                 fun setUp() {
-                    val hanke = hankeFactory.builder().withHankealue().saveEntity()
+                    val hanke = hankeFactory.builder("Other user").withHankealue().saveEntity()
                     val hankeAlueet = hankeService.loadHanke(hanke.hankeTunnus)!!.alueet
+                    val currentUser =
+                        hankeKayttajaFactory.saveIdentifiedUser(
+                            hanke.id,
+                            userId = USERNAME,
+                            kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
+                        )
                     val hakemus =
                         hakemusFactory
-                            .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                            .builder("Other user", hanke, ApplicationType.EXCAVATION_NOTIFICATION)
                             .withMandatoryFields(hankeAlueet[0])
                             .withoutCableReports()
                             .withRockExcavation(false)
+                            .asianhoitaja(currentUser)
                             .save()
                     kaivuilmoitusHakemusId = hakemus.id
                     val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
                     attachmentFactory.save(application = applicationEntity).withContent()
                     val hakemusData = hakemus.applicationData as KaivuilmoitusData
-                    val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
                     expectedJohtoselvitysHakemusEntityData =
                         (applicationEntity.hakemusEntityData as KaivuilmoitusEntityData)
                             .createAccompanyingJohtoselvityshakemusData()
                     val expectedJohtoselvityshakemusDataAfterSend =
                         expectedJohtoselvitysHakemusEntityData
                             .toHakemusData(hakemusData.yhteystiedotMap())
-                            .setOrdererForContractor(founder.id)
+                            .setOrdererForRepresentative(currentUser.id)
                     expectedKaivuilmoitusDataAfterSend =
                         hakemusData
                             .copy(
                                 pendingOnClient = false,
                                 cableReports = listOf(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER))
-                            .setOrdererForContractor(founder.id)
+                            .setOrdererForRepresentative(currentUser.id)
                     expectedCableReportAlluRequest =
                         expectedJohtoselvityshakemusDataAfterSend.toAlluCableReportData(
                             hakemus.hankeTunnus)
@@ -1957,6 +1966,7 @@ class HakemusServiceITest(
                             prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                             prop(HakemusEntity::hakemusEntityData)
                                 .isEqualTo(expectedJohtoselvitysHakemusEntityData)
+                            prop(HakemusEntity::userId).isEqualTo(USERNAME)
                         }
                 }
 
@@ -1989,6 +1999,26 @@ class HakemusServiceITest(
                                 ApplicationFactory.DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
                         prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                         prop(Hakemus::applicationData).isEqualTo(expectedKaivuilmoitusDataAfterSend)
+                    }
+                }
+
+                @Test
+                fun `writes the created hakemus to audit logs`() {
+                    auditLogRepository.deleteAll()
+
+                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, USERNAME)
+
+                    val logs = auditLogRepository.findByType(ObjectType.HAKEMUS)
+                    assertThat(logs).single().isSuccess(Operation.CREATE) {
+                        hasUserActor(USERNAME)
+                        withTarget {
+                            hasTargetType(ObjectType.HAKEMUS)
+                            hasNoObjectBefore()
+                            hasObjectAfter<Hakemus> {
+                                prop(Hakemus::applicationType)
+                                    .isEqualTo(ApplicationType.CABLE_REPORT)
+                            }
+                        }
                     }
                 }
 
@@ -2330,7 +2360,7 @@ class HakemusServiceITest(
                     prop(AuditLogTarget::id).isEqualTo(hakemus.id.toString())
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.HAKEMUS)
                     hasObjectBefore(hakemus)
-                    prop(AuditLogTarget::objectAfter).isNull()
+                    hasNoObjectAfter()
                 }
             }
         }
@@ -2656,8 +2686,16 @@ private fun JohtoselvityshakemusData.setOrdererForContractor(
 ): JohtoselvityshakemusData =
     this.copy(contractorWithContacts = contractorWithContacts!!.setOrderer(kayttajaId))
 
+private fun JohtoselvityshakemusData.setOrdererForRepresentative(
+    kayttajaId: UUID
+): JohtoselvityshakemusData =
+    this.copy(representativeWithContacts = representativeWithContacts!!.setOrderer(kayttajaId))
+
 private fun KaivuilmoitusData.setOrdererForContractor(kayttajaId: UUID): KaivuilmoitusData =
     this.copy(contractorWithContacts = contractorWithContacts!!.setOrderer(kayttajaId))
+
+private fun KaivuilmoitusData.setOrdererForRepresentative(kayttajaId: UUID): KaivuilmoitusData =
+    this.copy(representativeWithContacts = representativeWithContacts!!.setOrderer(kayttajaId))
 
 private fun Hakemusyhteystieto.setOrderer(kayttajaId: UUID): Hakemusyhteystieto {
     val yhteyshenkilot =
