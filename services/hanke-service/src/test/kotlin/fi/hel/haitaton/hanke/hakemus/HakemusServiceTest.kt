@@ -452,7 +452,7 @@ class HakemusServiceTest {
     }
 
     @Nested
-    inner class OperationalCondition {
+    inner class ReportOperationalCondition {
         private val today: LocalDate = LocalDate.now()
         private val tomorrow: LocalDate = today.plusDays(1)
         private val startDate: ZonedDateTime = ZonedDateTime.parse("2024-08-08T00:00Z")

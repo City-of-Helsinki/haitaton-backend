@@ -235,7 +235,7 @@ class AlluClientITests {
     }
 
     @Nested
-    inner class OperationalCondition {
+    inner class ReportOperationalCondition {
         private val applicationId = 241
         private val date = LocalDate.of(2024, 8, 12)
 
