@@ -210,6 +210,17 @@ data class HakemusBuilder(
                     .tyonSuorittaja(founder())
         }
 
+    /**
+     * Make the hakemus appear like it has been just sent. I.e. it has mandatory fields and allu
+     * status fields filled.
+     */
+    fun asSent(
+        status: ApplicationStatus? = ApplicationStatus.PENDING,
+        alluId: Int? = 1,
+        identifier: String? = "JS000$alluId",
+        hankealue: SavedHankealue? = null
+    ) = this.withMandatoryFields(hankealue).withStatus(status, alluId, identifier)
+
     private fun founder(): HankekayttajaEntity =
         hankeKayttajaService.getKayttajaByUserId(hankeId, userId)!!
 

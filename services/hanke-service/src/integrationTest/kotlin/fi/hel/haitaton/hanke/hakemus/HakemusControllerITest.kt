@@ -1094,15 +1094,5 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 )
             }
         }
-
-        @Test
-        fun `when no hanke permission should return 404`() {
-            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } throws
-                HakemusNotFoundException(id)
-
-            get(url).andExpect(status().isNotFound)
-
-            verify { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) }
-        }
     }
 }

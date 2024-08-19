@@ -672,16 +672,14 @@ class HakemusServiceITest(
             fun `does not create a new audit log entry when the application has not changed`() {
                 val entity = hakemusFactory.builder().saveEntity()
                 val hakemus = hakemusService.hakemusResponse(entity.id)
-                val originalAuditLogSize =
-                    auditLogRepository.findByType(ObjectType.APPLICATION).size
+                val originalAuditLogSize = auditLogRepository.findByType(ObjectType.HAKEMUS).size
                 // The saved hakemus has null in areas, but the response replaces it with an empty
-                // list,
-                // so set the value back to null in the request.
+                // list, so set the value back to null in the request.
                 val request = hakemus.toUpdateRequest().withAreas(null)
 
                 hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
-                val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
+                val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
                 assertThat(applicationLogs).hasSize(originalAuditLogSize)
             }
 
@@ -1041,8 +1039,7 @@ class HakemusServiceITest(
                             applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
                         .saveEntity()
                 val hakemus = hakemusService.hakemusResponse(entity.id)
-                val originalAuditLogSize =
-                    auditLogRepository.findByType(ObjectType.APPLICATION).size
+                val originalAuditLogSize = auditLogRepository.findByType(ObjectType.HAKEMUS).size
                 // The saved hakemus has null in areas, but the response replaces it with an empty
                 // list,
                 // so set the value back to null in the request.
@@ -1050,7 +1047,7 @@ class HakemusServiceITest(
 
                 hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
-                val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
+                val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
                 assertThat(applicationLogs).hasSize(originalAuditLogSize)
             }
 
