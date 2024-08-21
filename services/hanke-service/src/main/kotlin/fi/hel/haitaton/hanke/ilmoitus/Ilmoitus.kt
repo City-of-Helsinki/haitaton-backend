@@ -7,6 +7,7 @@ import java.util.UUID
 data class Ilmoitus(
     val id: UUID,
     val type: IlmoitusType,
+    val hakemustunnus: String,
     val dateReported: LocalDate,
     val createdAt: OffsetDateTime,
 ) {

@@ -400,6 +400,7 @@ class HakemusService(
         entity.ilmoitukset.add(
             IlmoitusEntity(
                 type = IlmoitusType.TOIMINNALLINEN_KUNTO,
+                hakemustunnus = entity.applicationIdentifier!!,
                 dateReported = date,
                 hakemus = entity,
             ))

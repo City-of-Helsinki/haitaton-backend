@@ -14,17 +14,19 @@ import jakarta.persistence.Table
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
+import org.springframework.data.jpa.domain.AbstractPersistable_.id
 
 @Entity
 @Table(name = "ilmoitus")
 class IlmoitusEntity(
     @Id val id: UUID = UUID.randomUUID(),
     @Enumerated(EnumType.STRING) val type: IlmoitusType,
+    val hakemustunnus: String,
     @Column(name = "date_reported") val dateReported: LocalDate,
     @Column(name = "created_at") val createdAt: OffsetDateTime = OffsetDateTime.now(),
     @ManyToOne(fetch = FetchType.EAGER, cascade = [CascadeType.ALL])
     @JoinColumn(name = "application_id")
     var hakemus: HakemusEntity,
 ) {
-    fun toDomain() = Ilmoitus(id, type, dateReported, createdAt)
+    fun toDomain() = Ilmoitus(id, type, hakemustunnus, dateReported, createdAt)
 }

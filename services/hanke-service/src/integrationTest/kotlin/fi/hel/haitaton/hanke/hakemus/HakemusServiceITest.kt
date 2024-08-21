@@ -2245,6 +2245,7 @@ class HakemusServiceITest(
                     prop(Ilmoitus::type).isEqualTo(IlmoitusType.TOIMINNALLINEN_KUNTO)
                     prop(Ilmoitus::dateReported).isEqualTo(date)
                     prop(Ilmoitus::createdAt).isRecent()
+                    prop(Ilmoitus::hakemustunnus).isEqualTo(hakemus.applicationIdentifier)
                 }
             verifySequence { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
         }
