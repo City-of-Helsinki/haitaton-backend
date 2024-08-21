@@ -45,9 +45,8 @@ haitaton:
     issuer: ${HAITATON_GDPR_ISSUER:http://gdpr-api-tester:8888/}
     query-scope: ${HAITATON_GDPR_QUERY_SCOPE:haitaton.gdprquery}
   profiili-api:
-    api-tokens-url: ${PROFIILI_API_TOKENS_URL:https://tunnistamo.test.hel.ninja/api-tokens/}
     graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
-    audience: ${PROFIILI_AUDIENCE:https://api.hel.fi/auth/helsinkiprofile}
+    audience: ${PROFIILI_AUDIENCE:profile-api-test}
   testdata:
     enabled: ${HAITATON_TESTDATA_ENABLED:false}  # For dev and test environments, enable the testdata controller for resetting data
 
@@ -72,14 +71,6 @@ management:
       enabled: true
   server:
     port: 8081
-
-security:
-  oauth2:
-    client:
-      client-id: ${HAITATON_OAUTH2_CLIENT_ID:iTestMock}
-    resource:
-      prefer-token-info: false
-      user-info-uri: ${HAITATON_OAUTH2_USER_INFO_URI:iTestMock}
 
 sentry:
   # DSN is a public detail.
@@ -129,6 +120,11 @@ spring:
       # REST API request parameter parsing to work for date values
       date: yyyy-MM-dd
   security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${HAITATON_OAUTH2_ISSUER:https://tunnistus.test.hel.ninja/auth/realms/helsinki-tunnistus}
+          audiences: ${HAITATON_OAUTH2_AUDIENCE:haitaton-api-dev}
     filter:
       order: -100
   servlet:
