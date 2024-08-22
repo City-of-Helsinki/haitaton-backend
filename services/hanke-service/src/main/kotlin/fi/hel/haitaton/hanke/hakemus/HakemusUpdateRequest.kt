@@ -5,18 +5,6 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
-import fi.hel.haitaton.hanke.application.ExcavationNotificationData
-import fi.hel.haitaton.hanke.application.InvoicingCustomer
-import fi.hel.haitaton.hanke.application.PostalAddress
-import fi.hel.haitaton.hanke.application.StreetAddress
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -25,12 +13,10 @@ import java.util.UUID
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "applicationType",
-    visible = true
-)
+    visible = true)
 @JsonSubTypes(
     JsonSubTypes.Type(value = JohtoselvityshakemusUpdateRequest::class, name = "CABLE_REPORT"),
-    JsonSubTypes.Type(value = KaivuilmoitusUpdateRequest::class, name = "EXCAVATION_NOTIFICATION")
-)
+    JsonSubTypes.Type(value = KaivuilmoitusUpdateRequest::class, name = "EXCAVATION_NOTIFICATION"))
 @JsonInclude(JsonInclude.Include.NON_NULL)
 sealed interface HakemusUpdateRequest {
     val applicationType: ApplicationType
@@ -38,22 +24,22 @@ sealed interface HakemusUpdateRequest {
     val workDescription: String
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
-    val areas: List<ApplicationArea>?
+    val areas: List<Hakemusalue>?
     val customerWithContacts: CustomerWithContactsRequest?
     val representativeWithContacts: CustomerWithContactsRequest?
 
     /**
      * Returns true if this application update request has changes compared to the given
-     * [applicationEntity].
+     * [hakemusEntity].
      */
-    fun hasChanges(applicationEntity: ApplicationEntity): Boolean
+    fun hasChanges(hakemusEntity: HakemusEntity): Boolean
 
     /**
-     * Converts this update request to an [ApplicationData] object using the given [baseData] as a
+     * Converts this update request to an [HakemusEntityData] object using the given [baseData] as a
      * basis. This means that we take the values in [baseData] and replace only the ones that are
      * defined in this request.
      */
-    fun toApplicationData(baseData: ApplicationData): ApplicationData
+    fun toEntityData(baseData: HakemusEntityData): HakemusEntityData
 
     fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsRequest?>
 }
@@ -86,7 +72,7 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Työn arvioitu loppupäivä */
     override val endTime: ZonedDateTime? = null,
     /** Työalueet */
-    override val areas: List<CableReportApplicationArea>? = null,
+    override val areas: List<JohtoselvitysHakemusalue>? = null,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
     override val customerWithContacts: CustomerWithContactsRequest? = null,
@@ -100,8 +86,8 @@ data class JohtoselvityshakemusUpdateRequest(
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusUpdateRequest {
 
-    override fun hasChanges(applicationEntity: ApplicationEntity): Boolean {
-        val applicationData = applicationEntity.applicationData as CableReportApplicationData
+    override fun hasChanges(hakemusEntity: HakemusEntity): Boolean {
+        val applicationData = hakemusEntity.hakemusEntityData as JohtoselvityshakemusEntityData
         return name != applicationData.name ||
             (postalAddress?.streetAddress?.streetName ?: "") !=
                 (applicationData.postalAddress?.streetAddress?.streetName ?: "") ||
@@ -115,21 +101,17 @@ data class JohtoselvityshakemusUpdateRequest(
             endTime != applicationData.endTime ||
             areas != applicationData.areas ||
             customerWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]) ||
             contractorWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]) ||
             propertyDeveloperWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]) ||
             representativeWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]
-            )
+                hakemusEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA])
     }
 
-    override fun toApplicationData(baseData: ApplicationData) =
-        (baseData as CableReportApplicationData).copy(
+    override fun toEntityData(baseData: HakemusEntityData) =
+        (baseData as JohtoselvityshakemusEntityData).copy(
             name = this.name,
             postalAddress =
                 PostalAddress(StreetAddress(this.postalAddress?.streetAddress?.streetName), "", ""),
@@ -188,7 +170,7 @@ data class KaivuilmoitusUpdateRequest(
     /** Työn arvioitu loppupäivä */
     override val endTime: ZonedDateTime? = null,
     /** Työalueet */
-    override val areas: List<ExcavationNotificationArea>? = null,
+    override val areas: List<KaivuilmoitusAlue>? = null,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
     override val customerWithContacts: CustomerWithContactsRequest? = null,
@@ -205,8 +187,8 @@ data class KaivuilmoitusUpdateRequest(
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusUpdateRequest {
 
-    override fun hasChanges(applicationEntity: ApplicationEntity): Boolean {
-        val applicationData = applicationEntity.applicationData as ExcavationNotificationData
+    override fun hasChanges(hakemusEntity: HakemusEntity): Boolean {
+        val applicationData = hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData
         return name != applicationData.name ||
             workDescription != applicationData.workDescription ||
             constructionWork != applicationData.constructionWork ||
@@ -221,26 +203,20 @@ data class KaivuilmoitusUpdateRequest(
             endTime != applicationData.endTime ||
             areas != applicationData.areas ||
             customerWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]) ||
             contractorWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]) ||
             propertyDeveloperWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]) ||
             representativeWithContacts.hasChanges(
-                applicationEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]
-            ) ||
+                hakemusEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]) ||
             invoicingCustomer.hasChanges(
-                applicationData.invoicingCustomer,
-                applicationData.customerReference
-            ) ||
+                applicationData.invoicingCustomer, applicationData.customerReference) ||
             additionalInfo != applicationData.additionalInfo
     }
 
-    override fun toApplicationData(baseData: ApplicationData) =
-        (baseData as ExcavationNotificationData).copy(
+    override fun toEntityData(baseData: HakemusEntityData) =
+        (baseData as KaivuilmoitusEntityData).copy(
             name = this.name,
             workDescription = this.workDescription,
             constructionWork = this.constructionWork,
@@ -386,7 +362,7 @@ fun InvoicingCustomerRequest?.toCustomer(): InvoicingCustomer? =
         InvoicingCustomer(
             type = it.type,
             name = it.name ?: "",
-            postalAddress = it.postalAddress?.toPostalAddress(),
+            postalAddress = it.postalAddress?.combinedAddress(),
             email = it.email,
             phone = it.phone,
             registryKey = it.registryKey,
@@ -395,7 +371,7 @@ fun InvoicingCustomerRequest?.toCustomer(): InvoicingCustomer? =
         )
     }
 
-fun InvoicingPostalAddressRequest?.toPostalAddress(): PostalAddress? =
+fun InvoicingPostalAddressRequest?.combinedAddress(): PostalAddress? =
     this?.let {
         PostalAddress(
             streetAddress = StreetAddress(it.streetAddress?.streetName),

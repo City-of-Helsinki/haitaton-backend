@@ -2,24 +2,24 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
-import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.ContactRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
+import fi.hel.haitaton.hanke.hakemus.Hakemusalue
 import fi.hel.haitaton.hanke.hakemus.InvoicingCustomerRequest
 import fi.hel.haitaton.hanke.hakemus.InvoicingPostalAddressRequest
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.PostalAddressRequest
+import fi.hel.haitaton.hanke.hakemus.StreetAddress
 import fi.hel.haitaton.hanke.parseJson
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.ZonedDateTime
@@ -100,7 +100,7 @@ object HakemusUpdateRequestFactory {
             startTime = ZonedDateTime.now(TZ_UTC),
             endTime = ZonedDateTime.now(TZ_UTC).plusDays(5),
             areas =
-                listOf(createCableReportApplicationArea("Hankealue 1", GeometriaFactory.polygon)),
+                listOf(createCableReportApplicationArea("Hankealue 1", GeometriaFactory.polygon())),
             customerWithContacts =
                 createCustomerWithContactsRequest(
                     CustomerType.COMPANY,
@@ -127,7 +127,7 @@ object HakemusUpdateRequestFactory {
                 listOf(
                     createExcavationNotificationArea(
                         "Hankealue 1",
-                        tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon))
+                        tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon()))
                     )
                 ),
             customerWithContacts =
@@ -272,14 +272,14 @@ object HakemusUpdateRequestFactory {
             is KaivuilmoitusUpdateRequest -> this.copy(requiredCompetence = requiredCompetence)
         }
 
-    fun HakemusUpdateRequest.withArea(area: ApplicationArea?) = withAreas(area?.let { listOf(it) })
+    fun HakemusUpdateRequest.withArea(area: Hakemusalue?) = withAreas(area?.let { listOf(it) })
 
-    fun HakemusUpdateRequest.withAreas(areas: List<ApplicationArea>?) =
+    fun HakemusUpdateRequest.withAreas(areas: List<Hakemusalue>?) =
         when (this) {
             is JohtoselvityshakemusUpdateRequest ->
-                this.copy(areas = areas?.map { it as CableReportApplicationArea })
+                this.copy(areas = areas?.map { it as JohtoselvitysHakemusalue })
             is KaivuilmoitusUpdateRequest ->
-                this.copy(areas = areas?.map { it as ExcavationNotificationArea })
+                this.copy(areas = areas?.map { it as KaivuilmoitusAlue })
         }
 
     fun HakemusUpdateRequest.withTimes(startTime: ZonedDateTime?, endTime: ZonedDateTime?) =

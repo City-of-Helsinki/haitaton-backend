@@ -22,48 +22,37 @@ import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
+import assertk.assertions.startsWith
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTest
+import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
+import fi.hel.haitaton.hanke.allu.AlluClient
+import fi.hel.haitaton.hanke.allu.AlluExcavationNotificationData
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG
-import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
-import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
-import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
-import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
-import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationGeometryException
-import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
-import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
-import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
+import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
+import fi.hel.haitaton.hanke.attachment.common.TestFile
 import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
@@ -88,7 +77,12 @@ import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.getResourceAsBytes
-import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.ASIANHOITAJA
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.HAKIJA
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.RAKENNUTTAJA
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.TYON_SUORITTAJA
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCableReportData
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluExcavationNotificationData
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AlluContactWithRole
 import fi.hel.haitaton.hanke.logging.AlluCustomerWithRole
@@ -133,7 +127,7 @@ import org.springframework.beans.factory.annotation.Autowired
 
 class HakemusServiceITest(
     @Autowired private val hakemusService: HakemusService,
-    @Autowired private val applicationRepository: ApplicationRepository,
+    @Autowired private val hakemusRepository: HakemusRepository,
     @Autowired private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     @Autowired private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
     @Autowired private val hankeRepository: HankeRepository,
@@ -146,8 +140,9 @@ class HakemusServiceITest(
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val attachmentFactory: ApplicationAttachmentFactory,
     @Autowired private val fileClient: MockFileClient,
-    @Autowired private val alluClient: CableReportService,
+    @Autowired private val alluClient: AlluClient,
     @Autowired private val alluStatusRepository: AlluStatusRepository,
+    @Autowired private val hankeService: HankeService,
 ) : IntegrationTest() {
 
     companion object {
@@ -176,7 +171,7 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.getById(1234) }
 
             failure.all {
-                hasClass(ApplicationNotFoundException::class)
+                hasClass(HakemusNotFoundException::class)
                 messageContains("id 1234")
             }
         }
@@ -214,11 +209,11 @@ class HakemusServiceITest(
     inner class HakemusResponse {
         @Test
         fun `when application does not exist should throw`() {
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
 
             val exception = assertFailure { hakemusService.hakemusResponse(1234) }
 
-            exception.hasClass(ApplicationNotFoundException::class)
+            exception.hasClass(HakemusNotFoundException::class)
         }
 
         @Nested
@@ -334,12 +329,11 @@ class HakemusServiceITest(
         inner class WithJohtoselvityshakemus {
             @Test
             fun `returns applications`() {
-                val (_, hanke) = hankeFactory.builder(USERNAME).saveAsGenerated()
+                val hakemus = hakemusFactory.builderWithGeneratedHanke().save()
 
-                val result = hakemusService.hankkeenHakemuksetResponse(hanke.hankeTunnus)
+                val result = hakemusService.hankkeenHakemuksetResponse(hakemus.hankeTunnus)
 
-                val expectedHakemus =
-                    HankkeenHakemusResponse(applicationRepository.findAll().single())
+                val expectedHakemus = HankkeenHakemusResponse(hakemusRepository.findAll().single())
                 assertThat(result.applications).hasSameElementsAs(listOf(expectedHakemus))
             }
         }
@@ -356,8 +350,7 @@ class HakemusServiceITest(
 
                 val result = hakemusService.hankkeenHakemuksetResponse(hanke.hankeTunnus)
 
-                val expectedHakemus =
-                    HankkeenHakemusResponse(applicationRepository.findAll().single())
+                val expectedHakemus = HankkeenHakemusResponse(hakemusRepository.findAll().single())
                 assertThat(result.applications).hasSameElementsAs(listOf(expectedHakemus))
             }
         }
@@ -511,24 +504,23 @@ class HakemusServiceITest(
 
             hakemusService.createJohtoselvitys(hanke, USERNAME)
 
-            assertThat(applicationRepository.findAll()).single().all {
-                prop(ApplicationEntity::id).isNotNull()
-                prop(ApplicationEntity::alluid).isNull()
-                prop(ApplicationEntity::alluStatus).isNull()
-                prop(ApplicationEntity::applicationIdentifier).isNull()
-                prop(ApplicationEntity::userId).isEqualTo(USERNAME)
-                prop(ApplicationEntity::applicationType).isEqualTo(ApplicationType.CABLE_REPORT)
-                prop(ApplicationEntity::applicationData)
-                    .isInstanceOf(CableReportApplicationData::class)
+            assertThat(hakemusRepository.findAll()).single().all {
+                prop(HakemusEntity::id).isNotNull()
+                prop(HakemusEntity::alluid).isNull()
+                prop(HakemusEntity::alluStatus).isNull()
+                prop(HakemusEntity::applicationIdentifier).isNull()
+                prop(HakemusEntity::userId).isEqualTo(USERNAME)
+                prop(HakemusEntity::applicationType).isEqualTo(ApplicationType.CABLE_REPORT)
+                prop(HakemusEntity::hakemusEntityData)
+                    .isInstanceOf(JohtoselvityshakemusEntityData::class)
                     .all {
-                        prop(ApplicationData::name).isEqualTo(hakemusNimi)
-                        prop(ApplicationData::applicationType)
+                        prop(HakemusEntityData::name).isEqualTo(hakemusNimi)
+                        prop(HakemusEntityData::applicationType)
                             .isEqualTo(ApplicationType.CABLE_REPORT)
-                        prop(ApplicationData::pendingOnClient).isTrue()
-                        prop(ApplicationData::areas).isNull()
-                        prop(ApplicationData::customersWithContacts).isEmpty()
-                        prop(CableReportApplicationData::startTime).isNull()
-                        prop(CableReportApplicationData::endTime).isNull()
+                        prop(HakemusEntityData::pendingOnClient).isTrue()
+                        prop(HakemusEntityData::areas).isNull()
+                        prop(JohtoselvityshakemusEntityData::startTime).isNull()
+                        prop(JohtoselvityshakemusEntityData::endTime).isNull()
                     }
             }
         }
@@ -586,18 +578,15 @@ class HakemusServiceITest(
                     name = "area",
                     geometry =
                         "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json"
-                            .asJsonResource()
-                )
+                            .asJsonResource())
 
             private val notInHankeArea =
                 ApplicationFactory.createCableReportApplicationArea(
-                    name = "area",
-                    geometry = GeometriaFactory.polygon
-                )
+                    name = "area", geometry = GeometriaFactory.polygon())
 
             @Test
             fun `throws exception when the application does not exist`() {
-                assertThat(applicationRepository.findAll()).isEmpty()
+                assertThat(hakemusRepository.findAll()).isEmpty()
                 val request =
                     HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
 
@@ -605,7 +594,7 @@ class HakemusServiceITest(
                     hakemusService.updateHakemus(1234, request, USERNAME)
                 }
 
-                exception.hasClass(ApplicationNotFoundException::class)
+                exception.hasClass(HakemusNotFoundException::class)
             }
 
             @Test
@@ -619,7 +608,7 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationAlreadySentException::class)
+                    hasClass(HakemusAlreadySentException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains("alluId=21")
                 }
@@ -653,12 +642,11 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationGeometryException::class)
+                    hasClass(HakemusGeometryException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains("reason=Self-intersection")
                     messageContains(
-                        "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}"
-                    )
+                        "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}")
                 }
             }
 
@@ -743,7 +731,7 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationGeometryNotInsideHankeException::class)
+                    hasClass(HakemusGeometryNotInsideHankeException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains(hanke.logString())
                     messageContains("geometry=${notInHankeArea.geometry.toJsonString()}")
@@ -768,11 +756,7 @@ class HakemusServiceITest(
                     hakemus
                         .toUpdateRequest()
                         .withCustomer(
-                            CustomerType.COMPANY,
-                            yhteystieto.id,
-                            kayttaja.id,
-                            newKayttaja.id
-                        )
+                            CustomerType.COMPANY, yhteystieto.id, kayttaja.id, newKayttaja.id)
                         .withWorkDescription("New work description")
 
                 val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
@@ -823,10 +807,7 @@ class HakemusServiceITest(
                     hakemus
                         .toUpdateRequest()
                         .withContractor(
-                            CustomerType.COMPANY,
-                            tyonSuorittaja.id,
-                            hankekayttajaIds = arrayOf()
-                        )
+                            CustomerType.COMPANY, tyonSuorittaja.id, hankekayttajaIds = arrayOf())
 
                 val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
@@ -863,8 +844,7 @@ class HakemusServiceITest(
                         .withCustomer(
                             CustomerType.COMPANY,
                             yhteystietoId = null,
-                            hankekayttajaIds = arrayOf(newKayttaja.id)
-                        )
+                            hankekayttajaIds = arrayOf(newKayttaja.id))
 
                 val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
@@ -906,12 +886,10 @@ class HakemusServiceITest(
                     .isEqualTo(newKayttaja.sahkoposti)
                 assertThat(email.subject)
                     .isEqualTo(
-                        "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application"
-                    )
+                        "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application")
                 assertThat(email.textBody())
                     .contains(
-                        "laatimassa johtoselvityshakemusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})"
-                    )
+                        "laatimassa johtoselvityshakemusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})")
             }
 
             @Test
@@ -956,27 +934,25 @@ class HakemusServiceITest(
                         listOf(
                             createTyoalue(
                                 "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json"
-                                    .asJsonResource()
-                            )
-                        ),
+                                    .asJsonResource())),
                 )
 
             private val notInHankeArea =
                 createExcavationNotificationArea(
                     name = "area",
-                    tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon)),
+                    tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon())),
                 )
 
             @Test
             fun `throws exception when the application does not exist`() {
-                assertThat(applicationRepository.findAll()).isEmpty()
+                assertThat(hakemusRepository.findAll()).isEmpty()
                 val request = HakemusUpdateRequestFactory.createFilledKaivuilmoitusUpdateRequest()
 
                 val exception = assertFailure {
                     hakemusService.updateHakemus(1234, request, USERNAME)
                 }
 
-                exception.hasClass(ApplicationNotFoundException::class)
+                exception.hasClass(HakemusNotFoundException::class)
             }
 
             @Test
@@ -985,8 +961,7 @@ class HakemusServiceITest(
                     hakemusFactory
                         .builder(
                             userId = USERNAME,
-                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                        )
+                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
                         .withStatus(alluId = 21)
                         .saveEntity()
                 val hakemus = hakemusService.hakemusResponse(entity.id)
@@ -997,7 +972,7 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationAlreadySentException::class)
+                    hasClass(HakemusAlreadySentException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains("alluId=21")
                 }
@@ -1009,8 +984,7 @@ class HakemusServiceITest(
                     hakemusFactory
                         .builder(
                             userId = USERNAME,
-                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                        )
+                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
                         .saveEntity()
                 val hakemus = hakemusService.hakemusResponse(entity.id)
                 val originalAuditLogSize =
@@ -1032,8 +1006,7 @@ class HakemusServiceITest(
                     hakemusFactory
                         .builder(
                             userId = USERNAME,
-                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                        )
+                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
                         .saveEntity()
                 val hakemus = hakemusService.hakemusResponse(entity.id)
                 val request = hakemus.toUpdateRequest().withAreas(listOf(intersectingArea))
@@ -1043,12 +1016,11 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationGeometryException::class)
+                    hasClass(HakemusGeometryException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains("reason=Self-intersection")
                     messageContains(
-                        "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}"
-                    )
+                        "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}")
                 }
             }
 
@@ -1058,8 +1030,7 @@ class HakemusServiceITest(
                     hakemusFactory
                         .builder(
                             userId = USERNAME,
-                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                        )
+                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
                         .saveEntity()
                 val hakemus = hakemusService.hakemusResponse(entity.id)
                 val requestYhteystietoId = UUID.randomUUID()
@@ -1087,8 +1058,7 @@ class HakemusServiceITest(
                     hakemusFactory
                         .builder(
                             userId = USERNAME,
-                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                        )
+                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
                         .hakija()
                         .saveEntity()
                 val hakemus = hakemusService.hakemusResponse(entity.id)
@@ -1118,8 +1088,7 @@ class HakemusServiceITest(
                     hakemusFactory
                         .builder(
                             userId = USERNAME,
-                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                        )
+                            applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
                         .hakija()
                         .saveEntity()
                 val hakemus = hakemusService.hakemusResponse(entity.id)
@@ -1129,10 +1098,7 @@ class HakemusServiceITest(
                     hakemus
                         .toUpdateRequest()
                         .withCustomerWithContactsRequest(
-                            CustomerType.COMPANY,
-                            yhteystieto.id,
-                            requestHankekayttajaId
-                        )
+                            CustomerType.COMPANY, yhteystieto.id, requestHankekayttajaId)
 
                 val exception = assertFailure {
                     hakemusService.updateHakemus(hakemus.id, request, USERNAME)
@@ -1160,12 +1126,11 @@ class HakemusServiceITest(
                 }
 
                 exception.all {
-                    hasClass(ApplicationGeometryNotInsideHankeException::class)
+                    hasClass(HakemusGeometryNotInsideHankeException::class)
                     messageContains("id=${hakemus.id}")
                     messageContains(hanke.logString())
                     messageContains(
-                        "geometry=${notInHankeArea.tyoalueet.single().geometry.toJsonString()}"
-                    )
+                        "geometry=${notInHankeArea.tyoalueet.single().geometry.toJsonString()}")
                 }
             }
 
@@ -1190,11 +1155,7 @@ class HakemusServiceITest(
                     hakemus
                         .toUpdateRequest()
                         .withCustomerWithContactsRequest(
-                            CustomerType.COMPANY,
-                            yhteystieto.id,
-                            kayttaja.id,
-                            newKayttaja.id
-                        )
+                            CustomerType.COMPANY, yhteystieto.id, kayttaja.id, newKayttaja.id)
                         .withWorkDescription("New work description")
                         .withRequiredCompetence(true)
                         .withArea(area)
@@ -1250,10 +1211,7 @@ class HakemusServiceITest(
                     hakemus
                         .toUpdateRequest()
                         .withContractor(
-                            CustomerType.COMPANY,
-                            tyonSuorittaja.id,
-                            hankekayttajaIds = arrayOf()
-                        )
+                            CustomerType.COMPANY, tyonSuorittaja.id, hankekayttajaIds = arrayOf())
 
                 val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
@@ -1282,8 +1240,7 @@ class HakemusServiceITest(
                         .withCustomer(
                             CustomerType.COMPANY,
                             yhteystietoId = null,
-                            hankekayttajaIds = arrayOf(newKayttaja.id)
-                        )
+                            hankekayttajaIds = arrayOf(newKayttaja.id))
 
                 val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
@@ -1329,12 +1286,10 @@ class HakemusServiceITest(
                     .isEqualTo(newKayttaja.sahkoposti)
                 assertThat(email.subject)
                     .isEqualTo(
-                        "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application"
-                    )
+                        "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application")
                 assertThat(email.textBody())
                     .contains(
-                        "laatimassa kaivuilmoitusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})"
-                    )
+                        "laatimassa kaivuilmoitusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})")
             }
 
             @Test
@@ -1380,17 +1335,16 @@ class HakemusServiceITest(
     inner class SendHakemus {
         private val alluId = 35124
 
-        private val areaOutsideDefaultHanke: CableReportApplicationArea =
+        private val areaOutsideDefaultHanke: JohtoselvitysHakemusalue =
             ApplicationFactory.createCableReportApplicationArea(
-                geometry = GeometriaFactory.thirdPolygon
-            )
+                geometry = GeometriaFactory.thirdPolygon())
 
         @Test
         fun `throws exception when the application doesn't exist`() {
             val failure = assertFailure { hakemusService.sendHakemus(1234, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationNotFoundException::class)
+                hasClass(HakemusNotFoundException::class)
                 messageContains("id 1234")
             }
         }
@@ -1403,7 +1357,7 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.sendHakemus(application.id, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationAlreadySentException::class)
+                hasClass(HakemusAlreadySentException::class)
                 messageContains("id=${application.id}")
                 messageContains("alluId=$alluId")
                 messageContains("status=PENDING")
@@ -1431,10 +1385,7 @@ class HakemusServiceITest(
             hankeRepository.save(hanke.apply { alueet = mutableListOf() })
             assertThat(
                     geometriatDao.isInsideHankeAlueet(
-                        hanke.id,
-                        areas.single().geometries().single()
-                    )
-                )
+                        hanke.id, areas.single().geometries().single()))
                 .isFalse()
             every { alluClient.create(any()) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
@@ -1463,7 +1414,7 @@ class HakemusServiceITest(
             val applicationData =
                 (hakemus.applicationData as JohtoselvityshakemusData)
                     .setOrdererForContractor(founder.id)
-                    .toAlluData(hanke.hankeTunnus)
+                    .toAlluCableReportData(hanke.hankeTunnus)
                     .copy(pendingOnClient = false)
             every { alluClient.create(applicationData) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
@@ -1474,9 +1425,9 @@ class HakemusServiceITest(
 
             val responseApplicationData = response.applicationData as JohtoselvityshakemusData
             assertThat(responseApplicationData.pendingOnClient).isFalse()
-            val savedApplication = applicationRepository.findById(hakemus.id).get()
+            val savedApplication = hakemusRepository.findById(hakemus.id).get()
             val savedApplicationData =
-                savedApplication.applicationData as CableReportApplicationData
+                savedApplication.hakemusEntityData as JohtoselvityshakemusEntityData
             assertThat(savedApplicationData.pendingOnClient).isFalse()
             verifySequence {
                 alluClient.create(applicationData)
@@ -1498,7 +1449,7 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.sendHakemus(application.id, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationAlreadySentException::class)
+                hasClass(HakemusAlreadySentException::class)
                 messageContains("id=${application.id}")
                 messageContains("alluId=$alluId")
                 messageContains("status=HANDLING")
@@ -1510,7 +1461,7 @@ class HakemusServiceITest(
             val hanke = hankeFactory.saveWithAlue()
             val application =
                 hakemusFactory.builder(hankeEntity = hanke).withMandatoryFields().saveEntity()
-            val applicationData = application.applicationData as CableReportApplicationData
+            val applicationData = application.hakemusEntityData as JohtoselvityshakemusEntityData
             val expectedDataAfterSend = applicationData.copy(pendingOnClient = false)
             every { alluClient.create(any()) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
@@ -1523,11 +1474,11 @@ class HakemusServiceITest(
                 prop(Hakemus::applicationIdentifier).isNull()
                 prop(Hakemus::alluStatus).isNull()
             }
-            assertThat(applicationRepository.getReferenceById(application.id)).all {
-                prop(ApplicationEntity::alluid).isEqualTo(alluId)
-                prop(ApplicationEntity::applicationData).isEqualTo(expectedDataAfterSend)
-                prop(ApplicationEntity::applicationIdentifier).isNull()
-                prop(ApplicationEntity::alluStatus).isNull()
+            assertThat(hakemusRepository.getReferenceById(application.id)).all {
+                prop(HakemusEntity::alluid).isEqualTo(alluId)
+                prop(HakemusEntity::hakemusEntityData).isEqualTo(expectedDataAfterSend)
+                prop(HakemusEntity::applicationIdentifier).isNull()
+                prop(HakemusEntity::alluStatus).isNull()
             }
 
             verifySequence {
@@ -1550,19 +1501,18 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.sendHakemus(hakemus.id, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationGeometryNotInsideHankeException::class)
+                hasClass(HakemusGeometryNotInsideHankeException::class)
                 messageContains(hakemus.logString())
                 messageContains(hanke.logString())
                 messageContains(
-                    "hakemus geometry=${areaOutsideDefaultHanke.geometry.toJsonString()}"
-                )
+                    "hakemus geometry=${areaOutsideDefaultHanke.geometry.toJsonString()}")
             }
         }
 
         @Test
         fun `cancels the sent application before throwing when uploading initial attachments fails`() {
             val hakemus = hakemusFactory.builder().withMandatoryFields().save()
-            val applicationEntity = applicationRepository.getReferenceById(hakemus.id)
+            val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
             attachmentFactory.save(application = applicationEntity).withContent()
             every { alluClient.create(any()) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
@@ -1594,7 +1544,7 @@ class HakemusServiceITest(
 
             assertThat(response.alluid).isEqualTo(alluId)
             assertThat(response.alluStatus).isEqualTo(ApplicationStatus.PENDING)
-            val savedHakemus = applicationRepository.getReferenceById(hakemus.id)
+            val savedHakemus = hakemusRepository.getReferenceById(hakemus.id)
             assertThat(savedHakemus.alluid).isEqualTo(alluId)
             assertThat(savedHakemus.alluStatus).isEqualTo(ApplicationStatus.PENDING)
             verifySequence {
@@ -1607,13 +1557,14 @@ class HakemusServiceITest(
         @Test
         fun `creates a new application to Allu and saves the ID and status to database`() {
             val hakemus = hakemusFactory.builder().withMandatoryFields().save()
-            val applicationEntity = applicationRepository.getReferenceById(hakemus.id)
+            val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
             attachmentFactory.save(application = applicationEntity).withContent()
             val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
             val hakemusData = hakemus.applicationData as JohtoselvityshakemusData
             val expectedDataAfterSend =
                 hakemusData.copy(pendingOnClient = false).setOrdererForContractor(founder.id)
-            val expectedAlluRequest = expectedDataAfterSend.toAlluData(hakemus.hankeTunnus)
+            val expectedAlluRequest =
+                expectedDataAfterSend.toAlluCableReportData(hakemus.hankeTunnus)
             every { alluClient.create(expectedAlluRequest) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
             justRun { alluClient.addAttachments(alluId, any(), any()) }
@@ -1625,15 +1576,15 @@ class HakemusServiceITest(
             assertThat(response).all {
                 prop(Hakemus::alluid).isEqualTo(alluId)
                 prop(Hakemus::applicationIdentifier)
-                    .isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_IDENTIFIER)
+                    .isEqualTo(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
                 prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                 prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
             }
-            assertThat(applicationRepository.getReferenceById(hakemus.id)).all {
-                prop(ApplicationEntity::alluid).isEqualTo(alluId)
-                prop(ApplicationEntity::applicationIdentifier)
-                    .isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_IDENTIFIER)
-                prop(ApplicationEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+            assertThat(hakemusRepository.getReferenceById(hakemus.id)).all {
+                prop(HakemusEntity::alluid).isEqualTo(alluId)
+                prop(HakemusEntity::applicationIdentifier)
+                    .isEqualTo(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
             }
             verifySequence {
                 alluClient.create(expectedAlluRequest)
@@ -1661,7 +1612,8 @@ class HakemusServiceITest(
             val hakemusData = hakemus.applicationData as JohtoselvityshakemusData
             val expectedDataAfterSend =
                 hakemusData.copy(pendingOnClient = false).setOrdererForCustomer(founder.id)
-            val expectedAlluRequest = expectedDataAfterSend.toAlluData(hakemus.hankeTunnus)
+            val expectedAlluRequest =
+                expectedDataAfterSend.toAlluCableReportData(hakemus.hankeTunnus)
             every { alluClient.create(expectedAlluRequest) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
             every { alluClient.getApplicationInformation(alluId) } returns
@@ -1714,8 +1666,7 @@ class HakemusServiceITest(
                 hakijaYhteystieto.copy(
                     nimi = "Tytti Työläinen",
                     sahkoposti = "tytti@hakeus.info",
-                    puhelinnumero = "999888777"
-                )
+                    puhelinnumero = "999888777")
             val hakemus =
                 hakemusFactory
                     .builder(userId = "Other user")
@@ -1786,9 +1737,7 @@ class HakemusServiceITest(
                     AlluCustomerWithRole(TYON_SUORITTAJA, expectedAsianhoitajaCustomer),
                     AlluContactWithRole(HAKIJA, expectedPerustajaContact),
                     AlluContactWithRole(
-                        TYON_SUORITTAJA,
-                        expectedPerustajaContact.copy(orderer = false)
-                    ),
+                        TYON_SUORITTAJA, expectedPerustajaContact.copy(orderer = false)),
                     AlluContactWithRole(ASIANHOITAJA, expectedAsianhoitajaContact),
                 )
             assertThat(yhteystietoEntries.map { it.message.auditEvent.target.objectBefore })
@@ -1797,6 +1746,203 @@ class HakemusServiceITest(
                 alluClient.create(any())
                 alluClient.addAttachment(alluId, any())
                 alluClient.getApplicationInformation(alluId)
+            }
+        }
+
+        @Nested
+        inner class Kaivuilmoitus {
+
+            @Nested
+            inner class ExistingJohtoselvitys {
+
+                @Test
+                fun `creates a new application to Allu and saves the ID and status to database`() {
+                    val hanke = hankeFactory.builder().withHankealue().saveEntity()
+                    val hankeAlueet = hankeService.loadHanke(hanke.hankeTunnus)!!.alueet
+                    val hakemus: Hakemus =
+                        hakemusFactory
+                            .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                            .withMandatoryFields(hankeAlueet[0])
+                            .save()
+                    val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
+                    attachmentFactory.save(application = applicationEntity).withContent()
+                    val hakemusData = hakemus.applicationData as KaivuilmoitusData
+                    val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
+                    val expectedDataAfterSend =
+                        hakemusData
+                            .copy(pendingOnClient = false)
+                            .setOrdererForContractor(founder.id)
+                    val expectedAlluRequest =
+                        expectedDataAfterSend.toAlluExcavationNotificationData(hakemus.hankeTunnus)
+                    every { alluClient.create(expectedAlluRequest) } returns alluId
+                    justRun { alluClient.addAttachment(alluId, any()) }
+                    justRun { alluClient.addAttachments(alluId, any(), any()) }
+                    every { alluClient.getApplicationInformation(alluId) } returns
+                        AlluFactory.createAlluApplicationResponse(
+                            alluId, applicationId = DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
+
+                    val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
+
+                    assertThat(response).all {
+                        prop(Hakemus::alluid).isEqualTo(alluId)
+                        prop(Hakemus::applicationIdentifier)
+                            .isEqualTo(
+                                ApplicationFactory.DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
+                        prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+                        prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
+                    }
+                    assertThat(hakemusRepository.getReferenceById(hakemus.id)).all {
+                        prop(HakemusEntity::alluid).isEqualTo(alluId)
+                        prop(HakemusEntity::applicationIdentifier)
+                            .isEqualTo(
+                                ApplicationFactory.DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
+                        prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+                    }
+                    verifySequence {
+                        alluClient.create(expectedAlluRequest)
+                        alluClient.addAttachment(alluId, any())
+                        alluClient.addAttachments(alluId, any(), any())
+                        alluClient.getApplicationInformation(alluId)
+                    }
+                }
+            }
+
+            @Nested
+            inner class AccompanyingJohtoselvitys {
+
+                private var kaivuilmoitusHakemusId: Long = 0
+                private val cableReportAlluId: Int = alluId
+                private val excavationNotificationAlluId: Int = alluId + 1
+                private lateinit var expectedCableReportAlluRequest: AlluCableReportApplicationData
+                private lateinit var expectedExcavationNotificationAlluRequest:
+                    AlluExcavationNotificationData
+                private lateinit var expectedJohtoselvitysHakemusEntityData:
+                    JohtoselvityshakemusEntityData
+                private lateinit var expectedKaivuilmoitusDataAfterSend: KaivuilmoitusData
+
+                /**
+                 * Set up the test environment before each test. All the necessary mocks and data
+                 * are set up here even though the mocked calls are not verified in all tests in
+                 * order to keep the tests clean and readable.
+                 */
+                @BeforeEach
+                fun setUp() {
+                    val hanke = hankeFactory.builder().withHankealue().saveEntity()
+                    val hankeAlueet = hankeService.loadHanke(hanke.hankeTunnus)!!.alueet
+                    val hakemus =
+                        hakemusFactory
+                            .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                            .withMandatoryFields(hankeAlueet[0])
+                            .withoutCableReports()
+                            .withRockExcavation(false)
+                            .save()
+                    kaivuilmoitusHakemusId = hakemus.id
+                    val applicationEntity = hakemusRepository.getReferenceById(hakemus.id)
+                    attachmentFactory.save(application = applicationEntity).withContent()
+                    val hakemusData = hakemus.applicationData as KaivuilmoitusData
+                    val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
+                    expectedJohtoselvitysHakemusEntityData =
+                        (applicationEntity.hakemusEntityData as KaivuilmoitusEntityData)
+                            .createAccompanyingJohtoselvityshakemusData()
+                    val expectedJohtoselvityshakemusDataAfterSend =
+                        expectedJohtoselvitysHakemusEntityData
+                            .toHakemusData(hakemusData.yhteystiedotMap())
+                            .setOrdererForContractor(founder.id)
+                    expectedKaivuilmoitusDataAfterSend =
+                        hakemusData
+                            .copy(
+                                pendingOnClient = false,
+                                cableReports = listOf(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER))
+                            .setOrdererForContractor(founder.id)
+                    expectedCableReportAlluRequest =
+                        expectedJohtoselvityshakemusDataAfterSend.toAlluCableReportData(
+                            hakemus.hankeTunnus)
+                    expectedExcavationNotificationAlluRequest =
+                        expectedKaivuilmoitusDataAfterSend.toAlluExcavationNotificationData(
+                            hakemus.hankeTunnus)
+                    every { alluClient.create(expectedCableReportAlluRequest) } returns
+                        cableReportAlluId
+                    every { alluClient.create(expectedExcavationNotificationAlluRequest) } returns
+                        excavationNotificationAlluId
+                    justRun { alluClient.addAttachment(cableReportAlluId, any()) }
+                    justRun { alluClient.addAttachment(excavationNotificationAlluId, any()) }
+                    justRun { alluClient.addAttachments(cableReportAlluId, any(), any()) }
+                    justRun {
+                        alluClient.addAttachments(excavationNotificationAlluId, any(), any())
+                    }
+                    every { alluClient.getApplicationInformation(cableReportAlluId) } returns
+                        AlluFactory.createAlluApplicationResponse(cableReportAlluId)
+                    every {
+                        alluClient.getApplicationInformation(excavationNotificationAlluId)
+                    } returns
+                        AlluFactory.createAlluApplicationResponse(
+                            excavationNotificationAlluId,
+                            applicationId = DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
+                }
+
+                /**
+                 * Clear all mocks after each test. This is mandatory to do here in order to
+                 * override the upper level @AfterEach method [checkMocks] which checks that all
+                 * mocked calls were made and verifies their order. These checks cannot be done here
+                 * because the calls described in [setUp] are not verified in all tests. Clearing
+                 * the mocks has to be done nevertheless.
+                 */
+                @AfterEach
+                fun clearMocks() {
+                    clearAllMocks()
+                }
+
+                @Test
+                fun `saves johtoselvitys to DB`() {
+                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, USERNAME)
+
+                    assertThat(hakemusRepository.getOneByAlluid(cableReportAlluId))
+                        .isNotNull()
+                        .all {
+                            prop(HakemusEntity::alluid).isEqualTo(cableReportAlluId)
+                            prop(HakemusEntity::applicationIdentifier)
+                                .isEqualTo(
+                                    ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                            prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+                            prop(HakemusEntity::hakemusEntityData)
+                                .isEqualTo(expectedJohtoselvitysHakemusEntityData)
+                        }
+                }
+
+                @Test
+                fun `sends johtoselvitys and kaivuilmoitus to Allu`() {
+                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, USERNAME)
+
+                    verifySequence {
+                        // first the cable report is sent
+                        alluClient.create(expectedCableReportAlluRequest)
+                        alluClient.addAttachment(cableReportAlluId, any())
+                        alluClient.addAttachments(cableReportAlluId, any(), any())
+                        alluClient.getApplicationInformation(cableReportAlluId)
+                        // then the excavation notification is sent
+                        alluClient.create(expectedExcavationNotificationAlluRequest)
+                        alluClient.addAttachment(excavationNotificationAlluId, any())
+                        alluClient.addAttachments(excavationNotificationAlluId, any(), any())
+                        alluClient.getApplicationInformation(excavationNotificationAlluId)
+                    }
+                }
+
+                @Test
+                fun `returns the created kaivuilmoitus`() {
+                    val response = hakemusService.sendHakemus(kaivuilmoitusHakemusId, USERNAME)
+
+                    assertThat(response).all {
+                        prop(Hakemus::alluid).isEqualTo(excavationNotificationAlluId)
+                        prop(Hakemus::applicationIdentifier)
+                            .isEqualTo(
+                                ApplicationFactory.DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
+                        prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+                        prop(Hakemus::applicationData).isEqualTo(expectedKaivuilmoitusDataAfterSend)
+                    }
+                }
+
+                fun HakemusData.yhteystiedotMap(): Map<ApplicationContactType, Hakemusyhteystieto> =
+                    this.yhteystiedot().associateBy { it.rooli }
             }
         }
     }
@@ -1810,8 +1956,8 @@ class HakemusServiceITest(
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = true))
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             val auditLogEntry = auditLogRepository.findByType(ObjectType.HANKE)
             assertThat(auditLogEntry).single().isSuccess(Operation.DELETE) {
@@ -1828,22 +1974,18 @@ class HakemusServiceITest(
             assertThat(
                     fileClient.list(
                         Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(hakemus.id)
-                    )
-                )
+                        ApplicationAttachmentContentService.prefix(hakemus.id)))
                 .hasSize(2)
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = true))
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             assertThat(
                     fileClient.list(
                         Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(hakemus.id)
-                    )
-                )
+                        ApplicationAttachmentContentService.prefix(hakemus.id)))
                 .isEmpty()
             assertThat(applicationAttachmentRepository.findByApplicationId(hakemus.id)).isEmpty()
         }
@@ -1857,24 +1999,20 @@ class HakemusServiceITest(
             assertThat(
                     fileClient.list(
                         Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(hakemus.id)
-                    )
-                )
+                        ApplicationAttachmentContentService.prefix(hakemus.id)))
                 .hasSize(2)
             fileClient.connected = false
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
             fileClient.connected = true
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = true))
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             assertThat(
                     fileClient.list(
                         Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(hakemus.id)
-                    )
-                )
+                        ApplicationAttachmentContentService.prefix(hakemus.id)))
                 .hasSize(2)
             assertThat(applicationAttachmentRepository.findByApplicationId(hakemus.id)).isEmpty()
         }
@@ -1885,8 +2023,8 @@ class HakemusServiceITest(
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = false))
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)).isNotNull()
         }
 
@@ -1895,14 +2033,14 @@ class HakemusServiceITest(
             val hanke = hankeFactory.saveMinimal(generated = true)
             val hakemus1 = hakemusFactory.builder(hanke).withNoAlluFields().saveEntity()
             val hakemus2 = hakemusFactory.builder(hanke).withNoAlluFields().saveEntity()
-            assertThat(applicationRepository.findAll()).hasSize(2)
+            assertThat(hakemusRepository.findAll()).hasSize(2)
 
             val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus1.id, USERNAME)
 
-            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
-            assertThat(applicationRepository.findAll())
+            assertThat(result).isEqualTo(HakemusDeletionResultDto(hankeDeleted = false))
+            assertThat(hakemusRepository.findAll())
                 .single()
-                .prop(ApplicationEntity::id)
+                .prop(HakemusEntity::id)
                 .isEqualTo(hakemus2.id)
             assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus)).isNotNull()
         }
@@ -1921,7 +2059,7 @@ class HakemusServiceITest(
 
             hakemusService.deleteWithOrphanGeneratedHankeRemoval(application.id, USERNAME)
 
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             assertThat(hankekayttajaRepository.findAll()).isEmpty()
             assertThat(hakemusyhteystietoRepository.findAll()).isEmpty()
@@ -1937,10 +2075,10 @@ class HakemusServiceITest(
 
         @Test
         fun `when unknown ID should throw`() {
-            val failure = assertFailure { hakemusService.downloadDecision(1234, USERNAME) }
+            val failure = assertFailure { hakemusService.downloadDecision(1234) }
 
             failure.all {
-                hasClass(ApplicationNotFoundException::class)
+                hasClass(HakemusNotFoundException::class)
                 messageContains("id 1234")
             }
         }
@@ -1949,10 +2087,10 @@ class HakemusServiceITest(
         fun `when no alluid should throw`() {
             val hakemus = hakemusFactory.builder().withNoAlluFields().save()
 
-            val failure = assertFailure { hakemusService.downloadDecision(hakemus.id, USERNAME) }
+            val failure = assertFailure { hakemusService.downloadDecision(hakemus.id) }
 
             failure.all {
-                hasClass(ApplicationDecisionNotFoundException::class)
+                hasClass(HakemusDecisionNotFoundException::class)
                 messageContains("id=${hakemus.id}")
             }
             verify { alluClient wasNot Called }
@@ -1961,12 +2099,11 @@ class HakemusServiceITest(
         @Test
         fun `when no decision in Allu should throw`() {
             val hakemus = hakemusFactory.builder().inHandling(alluId = alluId).save()
-            every { alluClient.getDecisionPdf(alluId) }
-                .throws(ApplicationDecisionNotFoundException(""))
+            every { alluClient.getDecisionPdf(alluId) }.throws(HakemusDecisionNotFoundException(""))
 
-            val failure = assertFailure { hakemusService.downloadDecision(hakemus.id, USERNAME) }
+            val failure = assertFailure { hakemusService.downloadDecision(hakemus.id) }
 
-            failure.hasClass(ApplicationDecisionNotFoundException::class)
+            failure.hasClass(HakemusDecisionNotFoundException::class)
             verify { alluClient.getDecisionPdf(alluId) }
         }
 
@@ -1975,7 +2112,7 @@ class HakemusServiceITest(
             val hakemus = hakemusFactory.builder().inHandling(alluId = alluId).save()
             every { alluClient.getDecisionPdf(alluId) }.returns(decisionPdf)
 
-            val (filename, bytes) = hakemusService.downloadDecision(hakemus.id, USERNAME)
+            val (filename, bytes) = hakemusService.downloadDecision(hakemus.id)
 
             assertThat(filename).isNotNull().isEqualTo(hakemus.applicationIdentifier)
             assertThat(bytes).isEqualTo(decisionPdf)
@@ -1988,7 +2125,7 @@ class HakemusServiceITest(
                 hakemusFactory.builder().withStatus(alluId = alluId, identifier = null).save()
             every { alluClient.getDecisionPdf(alluId) }.returns(decisionPdf)
 
-            val (filename, bytes) = hakemusService.downloadDecision(hakemus.id, USERNAME)
+            val (filename, bytes) = hakemusService.downloadDecision(hakemus.id)
 
             assertThat(filename).isNotNull().isEqualTo("paatos")
             assertThat(bytes).isEqualTo(decisionPdf)
@@ -2009,22 +2146,18 @@ class HakemusServiceITest(
             assertThat(
                     fileClient.list(
                         Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(application.id)
-                    )
-                )
+                        ApplicationAttachmentContentService.prefix(application.id)))
                 .hasSize(2)
             assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
                 .hasSize(2)
 
             hakemusService.cancelAndDelete(hakemus, USERNAME)
 
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(
                     fileClient.list(
                         Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(application.id)
-                    )
-                )
+                        ApplicationAttachmentContentService.prefix(application.id)))
                 .isEmpty()
             assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
                 .isEmpty()
@@ -2039,9 +2172,7 @@ class HakemusServiceITest(
             assertThat(
                     fileClient.list(
                         Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(application.id)
-                    )
-                )
+                        ApplicationAttachmentContentService.prefix(application.id)))
                 .hasSize(2)
             assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
                 .hasSize(2)
@@ -2053,9 +2184,7 @@ class HakemusServiceITest(
             assertThat(
                     fileClient.list(
                         Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(application.id)
-                    )
-                )
+                        ApplicationAttachmentContentService.prefix(application.id)))
                 .hasSize(2)
             assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
                 .isEmpty()
@@ -2091,7 +2220,7 @@ class HakemusServiceITest(
 
             hakemusService.cancelAndDelete(hakemus, USERNAME)
 
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             verifySequence {
                 alluClient.getApplicationInformation(alluId)
                 alluClient.cancel(alluId)
@@ -2109,11 +2238,11 @@ class HakemusServiceITest(
             val failure = assertFailure { hakemusService.cancelAndDelete(hakemus, USERNAME) }
 
             failure.all {
-                hasClass(ApplicationAlreadyProcessingException::class)
+                hasClass(HakemusAlreadyProcessingException::class)
                 messageContains("id=${hakemus.id}")
                 messageContains("alluId=$alluId")
             }
-            assertThat(applicationRepository.findAll()).hasSize(1)
+            assertThat(hakemusRepository.findAll()).hasSize(1)
             verifySequence { alluClient.getApplicationInformation(alluId) }
         }
 
@@ -2131,7 +2260,7 @@ class HakemusServiceITest(
 
             hakemusService.cancelAndDelete(hakemus, USERNAME)
 
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hakemusyhteystietoRepository.findAll()).isEmpty()
             assertThat(hakemusyhteyshenkiloRepository.findAll()).isEmpty()
             assertThat(hankekayttajaRepository.count())
@@ -2149,7 +2278,7 @@ class HakemusServiceITest(
 
             hakemusService.cancelAndDelete(hakemus, USERNAME)
 
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
         }
     }
 
@@ -2172,8 +2301,7 @@ class HakemusServiceITest(
         fun `returns true when status is pending and allu confirms it`(status: ApplicationStatus?) {
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(
-                    status = status ?: ApplicationStatus.PENDING
-                )
+                    status = status ?: ApplicationStatus.PENDING)
 
             assertThat(hakemusService.isStillPending(alluId, status)).isTrue()
 
@@ -2198,8 +2326,7 @@ class HakemusServiceITest(
         @EnumSource(
             value = ApplicationStatus::class,
             mode = EnumSource.Mode.EXCLUDE,
-            names = ["PENDING", "PENDING_CLIENT"]
-        )
+            names = ["PENDING", "PENDING_CLIENT"])
         fun `returns false when status is not pending`(status: ApplicationStatus) {
             assertThat(hakemusService.isStillPending(alluId, status)).isFalse()
 
@@ -2214,11 +2341,11 @@ class HakemusServiceITest(
         private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")
         private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
         private val alluId = 42
-        private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
+        private val identifier = ApplicationHistoryFactory.DEFAULT_APPLICATION_IDENTIFIER
 
         @Test
         fun `updates the last updated time with empty histories`() {
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
                 .isEqualTo(placeholderUpdateTime)
 
@@ -2229,43 +2356,61 @@ class HakemusServiceITest(
 
         @Test
         fun `updates the hakemus statuses in the correct order`() {
-            assertThat(applicationRepository.findAll()).isEmpty()
-            assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
-                .isEqualTo(placeholderUpdateTime)
-            val hanke = hankeFactory.saveMinimal()
-            hakemusFactory.builder(USERNAME, hanke).withStatus(alluId = alluId).save()
+            hakemusFactory.builder(USERNAME).withStatus(alluId = alluId).save()
             val firstEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
             val history =
                 ApplicationHistoryFactory.create(
                     alluId,
                     ApplicationHistoryFactory.createEvent(
-                        firstEventTime.plusDays(5),
-                        ApplicationStatus.PENDING
-                    ),
+                        firstEventTime.plusDays(5), ApplicationStatus.PENDING),
                     ApplicationHistoryFactory.createEvent(
-                        firstEventTime.plusDays(10),
-                        ApplicationStatus.HANDLING
-                    ),
+                        firstEventTime.plusDays(10), ApplicationStatus.HANDLING),
                     ApplicationHistoryFactory.createEvent(
-                        firstEventTime,
-                        ApplicationStatus.PENDING
-                    ),
+                        firstEventTime, ApplicationStatus.PENDING),
                 )
 
             hakemusService.handleHakemusUpdates(listOf(history), updateTime)
 
             assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isEqualTo(updateTime)
-            val application = applicationRepository.getOneByAlluid(alluId)
+            val application = hakemusRepository.getOneByAlluid(alluId)
             assertThat(application)
                 .isNotNull()
-                .prop("alluStatus", ApplicationEntity::alluStatus)
+                .prop("alluStatus", HakemusEntity::alluStatus)
                 .isEqualTo(ApplicationStatus.HANDLING)
             assertThat(application!!.applicationIdentifier).isEqualTo(identifier)
         }
 
         @Test
+        fun `doesn't update status or identifier when the update status is REPLACED`() {
+            val originalTunnus = "JS2400001-12"
+            hakemusFactory
+                .builder(USERNAME)
+                .withStatus(
+                    alluId = alluId,
+                    status = ApplicationStatus.DECISION,
+                    identifier = originalTunnus,
+                )
+                .save()
+            val history =
+                ApplicationHistoryFactory.create(
+                    alluId,
+                    ApplicationHistoryFactory.createEvent(
+                        applicationIdentifier = "JS2400001-13",
+                        newStatus = ApplicationStatus.REPLACED,
+                    ),
+                )
+
+            hakemusService.handleHakemusUpdates(listOf(history), updateTime)
+
+            assertThat(hakemusRepository.findAll()).single().all {
+                prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.DECISION)
+                prop(HakemusEntity::applicationIdentifier).isEqualTo(originalTunnus)
+            }
+        }
+
+        @Test
         fun `ignores missing hakemus`() {
-            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
                 .isEqualTo(placeholderUpdateTime)
             val hanke = hankeFactory.saveMinimal()
@@ -2281,20 +2426,18 @@ class HakemusServiceITest(
             hakemusService.handleHakemusUpdates(histories, updateTime)
 
             assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isEqualTo(updateTime)
-            val applications = applicationRepository.findAll()
+            val applications = hakemusRepository.findAll()
             assertThat(applications).hasSize(2)
             assertThat(applications.map { it.alluid }).containsExactlyInAnyOrder(alluId, alluId + 2)
             assertThat(applications.map { it.alluStatus })
                 .containsExactlyInAnyOrder(
-                    ApplicationStatus.PENDING_CLIENT,
-                    ApplicationStatus.PENDING_CLIENT
-                )
+                    ApplicationStatus.PENDING_CLIENT, ApplicationStatus.PENDING_CLIENT)
             assertThat(applications.map { it.applicationIdentifier })
                 .containsExactlyInAnyOrder("JS2300082", "JS2300084")
         }
 
         @Test
-        fun `sends email to the contacts when hakemus gets a decision`() {
+        fun `sends email to the contacts when a johtoselvityshakemus gets a decision`() {
             val hanke = hankeFactory.saveMinimal()
             val hakija = hankeKayttajaFactory.saveUser(hankeId = hanke.id)
             hakemusFactory
@@ -2308,9 +2451,7 @@ class HakemusServiceITest(
                         alluId,
                         ApplicationHistoryFactory.createEvent(
                             applicationIdentifier = identifier,
-                            newStatus = ApplicationStatus.DECISION
-                        )
-                    ),
+                            newStatus = ApplicationStatus.DECISION)),
                 )
 
             hakemusService.handleHakemusUpdates(histories, updateTime)
@@ -2320,8 +2461,61 @@ class HakemusServiceITest(
             assertThat(email.allRecipients[0].toString()).isEqualTo(hakija.sahkoposti)
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier"
+                    "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier")
+        }
+
+        private fun mockAlluDownload(status: ApplicationStatus) =
+            when (status) {
+                ApplicationStatus.DECISION ->
+                    every { alluClient.getDecisionPdf(alluId) } returns PDF_BYTES
+                ApplicationStatus.OPERATIONAL_CONDITION ->
+                    every { alluClient.getOperationalConditionPdf(alluId) } returns PDF_BYTES
+                ApplicationStatus.FINISHED ->
+                    every { alluClient.getWorkFinishedPdf(alluId) } returns PDF_BYTES
+                else -> throw IllegalArgumentException()
+            }
+
+        private fun verifyAlluDownload(status: ApplicationStatus) =
+            when (status) {
+                ApplicationStatus.DECISION -> verify { alluClient.getDecisionPdf(alluId) }
+                ApplicationStatus.OPERATIONAL_CONDITION ->
+                    verify { alluClient.getOperationalConditionPdf(alluId) }
+                ApplicationStatus.FINISHED -> verify { alluClient.getWorkFinishedPdf(alluId) }
+                else -> throw IllegalArgumentException()
+            }
+
+        @ParameterizedTest
+        @EnumSource(
+            ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"])
+        fun `downloads the document when a kaivuilmoitus gets a decision`(
+            status: ApplicationStatus
+        ) {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
+                    .save()
+            val histories =
+                listOf(
+                    ApplicationHistoryFactory.create(
+                        alluId,
+                        ApplicationHistoryFactory.createEvent(
+                            applicationIdentifier = identifier,
+                            newStatus = status,
+                        )),
                 )
+            mockAlluDownload(status)
+            every { alluClient.getApplicationInformation(alluId) } returns
+                AlluFactory.createAlluApplicationResponse()
+
+            hakemusService.handleHakemusUpdates(histories, updateTime)
+
+            assertThat(fileClient.listBlobs(Container.PAATOKSET))
+                .single()
+                .prop(TestFile::path)
+                .startsWith("${hakemus.id}/")
+            verifyAlluDownload(status)
+            verify { alluClient.getApplicationInformation(alluId) }
         }
     }
 }
@@ -2334,6 +2528,9 @@ private fun JohtoselvityshakemusData.setOrdererForCustomer(
 private fun JohtoselvityshakemusData.setOrdererForContractor(
     kayttajaId: UUID
 ): JohtoselvityshakemusData =
+    this.copy(contractorWithContacts = contractorWithContacts!!.setOrderer(kayttajaId))
+
+private fun KaivuilmoitusData.setOrdererForContractor(kayttajaId: UUID): KaivuilmoitusData =
     this.copy(contractorWithContacts = contractorWithContacts!!.setOrderer(kayttajaId))
 
 private fun Hakemusyhteystieto.setOrderer(kayttajaId: UUID): Hakemusyhteystieto {

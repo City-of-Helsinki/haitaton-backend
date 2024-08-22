@@ -3,23 +3,24 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
-import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.HankePerustaja
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
+import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
+import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.ZonedDateTime
@@ -29,7 +30,7 @@ import org.springframework.stereotype.Component
 class HakemusFactory(
     private val hankeKayttajaService: HankeKayttajaService,
     private val hakemusService: HakemusService,
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val hankeRepository: HankeRepository,
     private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
@@ -50,19 +51,23 @@ class HakemusFactory(
         hankeEntity: HankeEntity = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
     ) = builder(USERNAME, hankeEntity)
 
+    fun builder(applicationType: ApplicationType) =
+        builder(
+            USERNAME, hankeFactory.builder(USERNAME).withHankealue().saveEntity(), applicationType)
+
     private fun builder(
         userId: String,
-        applicationEntity: ApplicationEntity,
+        hakemusEntity: HakemusEntity,
         hankeId: Int,
     ): HakemusBuilder =
         HakemusBuilder(
-            applicationEntity,
+            hakemusEntity,
             hankeId,
             userId,
             this,
             hakemusService,
             hankeKayttajaService,
-            applicationRepository,
+            hakemusRepository,
             hankeRepository,
             hankeKayttajaFactory,
             hakemusyhteystietoRepository,
@@ -119,7 +124,7 @@ class HakemusFactory(
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
-            areas: List<CableReportApplicationArea>? =
+            areas: List<JohtoselvitysHakemusalue>? =
                 listOf(ApplicationFactory.createCableReportApplicationArea()),
             customerWithContacts: Hakemusyhteystieto? = null,
             contractorWithContacts: Hakemusyhteystieto? = null,
@@ -149,23 +154,40 @@ class HakemusFactory(
                 propertyDeveloperWithContacts = propertyDeveloperWithContacts,
             )
 
-        private fun createKaivuilmoitusData(
+        fun createKaivuilmoitusData(
             pendingOnClient: Boolean = false,
             name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
-            workDescription: String = "Work description.",
+            workDescription: String = ApplicationFactory.DEFAULT_WORK_DESCRIPTION,
+            constructionWork: Boolean = false,
+            maintenanceWork: Boolean = false,
+            emergencyWork: Boolean = false,
+            cableReportDone: Boolean = true,
+            rockExcavation: Boolean? = null,
+            requiredCompetence: Boolean = false,
+            cableReports: List<String>? = null,
+            placementContracts: List<String>? = null,
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-            areas: List<ExcavationNotificationArea>? =
+            areas: List<KaivuilmoitusAlue>? =
                 listOf(ApplicationFactory.createExcavationNotificationArea()),
             customerWithContacts: Hakemusyhteystieto? = null,
             contractorWithContacts: Hakemusyhteystieto? = null,
             representativeWithContacts: Hakemusyhteystieto? = null,
             propertyDeveloperWithContacts: Hakemusyhteystieto? = null,
+            invoicingCustomer: Laskutusyhteystieto? = null,
         ): KaivuilmoitusData =
             KaivuilmoitusData(
                 pendingOnClient = pendingOnClient,
                 name = name,
                 workDescription = workDescription,
+                constructionWork = constructionWork,
+                maintenanceWork = maintenanceWork,
+                emergencyWork = emergencyWork,
+                cableReportDone = cableReportDone,
+                rockExcavation = rockExcavation,
+                cableReports = cableReports,
+                placementContracts = placementContracts,
+                requiredCompetence = requiredCompetence,
                 startTime = startTime,
                 endTime = endTime,
                 areas = areas,
@@ -173,6 +195,8 @@ class HakemusFactory(
                 contractorWithContacts = contractorWithContacts,
                 representativeWithContacts = representativeWithContacts,
                 propertyDeveloperWithContacts = propertyDeveloperWithContacts,
+                invoicingCustomer = invoicingCustomer,
+                additionalInfo = null,
             )
 
         fun createEntity(
@@ -182,18 +206,18 @@ class HakemusFactory(
             applicationIdentifier: String? = null,
             userId: String,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-            applicationData: ApplicationData =
+            hakemusEntityData: HakemusEntityData =
                 ApplicationFactory.createBlankApplicationData(applicationType),
             hanke: HankeEntity,
-        ): ApplicationEntity =
-            ApplicationEntity(
+        ): HakemusEntity =
+            HakemusEntity(
                 id = id,
                 alluid = alluid,
                 alluStatus = alluStatus,
                 applicationIdentifier = applicationIdentifier,
                 userId = userId,
                 applicationType = applicationType,
-                applicationData = applicationData,
+                hakemusEntityData = hakemusEntityData,
                 hanke = hanke,
             )
     }

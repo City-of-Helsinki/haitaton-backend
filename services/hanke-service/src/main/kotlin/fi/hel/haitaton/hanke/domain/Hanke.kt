@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.domain
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeIdentifier
@@ -122,11 +121,7 @@ data class Hanke(
     )
     var alueet = mutableListOf<SavedHankealue>()
 
-    /** Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days) */
-    val haittaAjanKestoDays: Int?
-        @JsonIgnore get() = alueet.haittaAjanKestoDays()
-
-    @JsonView(ChangeLogView::class)
+    @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Collision review result, set by the service.")
     var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
 

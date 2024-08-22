@@ -1,7 +1,10 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import fi.hel.haitaton.hanke.toJsonString
 import java.util.Collections
+import org.geojson.GeoJsonObject
 import org.springframework.jdbc.core.JdbcOperations
+import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Service
 
 @Service
@@ -11,9 +14,16 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
     fun anyIntersectsYleinenKatuosa(geometriaIds: Set<Int>): Boolean =
         anyIntersectsWith(geometriaIds, "tormays_ylre_parts_polys")
 
+    fun anyIntersectsYleinenKatuosa(geometry: GeoJsonObject): Boolean =
+        anyIntersectsWith(geometry, "tormays_ylre_parts_polys")
+
     /** yleinen katualue, ylre_classes */
     fun maxIntersectingYleinenkatualueKatuluokka(geometriaIds: Set<Int>): Int? =
         getDistinctValuesIntersectingRows(geometriaIds, "tormays_ylre_classes_polys", "ylre_class")
+            .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
+
+    fun maxIntersectingYleinenkatualueKatuluokka(geometry: GeoJsonObject): Int? =
+        getDistinctValuesIntersectingRows(geometry, "tormays_ylre_classes_polys", "ylre_class")
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
     /** liikenteellinen katuluokka, street_classes */
@@ -23,6 +33,10 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
                 "tormays_street_classes_polys",
                 "street_class"
             )
+            .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
+
+    fun maxIntersectingLiikenteellinenKatuluokka(geometry: GeoJsonObject): Int? =
+        getDistinctValuesIntersectingRows(geometry, "tormays_street_classes_polys", "street_class")
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
     /** kantakaupunki, central_business_area */
@@ -36,69 +50,98 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
         if (geometriaIds.isEmpty()) return null
         val placeholders = Collections.nCopies(geometriaIds.size, "?").joinToString(", ")
         val tableName = "tormays_volumes${etaisyys.radius}_polys"
-        with(jdbcOperations) {
-            return queryForObject(
-                    """
+        val sql =
+            """
             SELECT max($tableName.volume)
             FROM $tableName, hankegeometria
             WHERE hankegeometria.hankegeometriatid in ($placeholders)
             AND ST_Intersects($tableName.geom, hankegeometria.geometria)
             """
-                        .trimIndent(),
-                    Integer::class.java,
-                    *geometriaIds.toTypedArray()
-                )
-                ?.toInt()
-        }
+                .trimIndent()
+        return jdbcOperations
+            .queryForObject(sql, Integer::class.java, *geometriaIds.toTypedArray())
+            ?.toInt()
+    }
+
+    fun maxLiikennemaara(
+        geometry: GeoJsonObject,
+        etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
+    ): Int? {
+        val tableName = "tormays_volumes${etaisyys.radius}_polys"
+        val sql =
+            """
+            SELECT max($tableName.volume)
+            FROM $tableName
+            WHERE ST_Intersects($tableName.geom, ST_GeomFromGeoJSON(?))
+            """
+                .trimIndent()
+        return jdbcOperations.queryForObject(sql, Int::class.java, geometry.toJsonString())
     }
 
     fun anyIntersectsCriticalBusRoutes(geometriaIds: Set<Int>) =
         anyIntersectsWith(geometriaIds, "tormays_critical_area_polys")
 
+    fun anyIntersectsCriticalBusRoutes(geometria: GeoJsonObject) =
+        anyIntersectsWith(geometria, "tormays_critical_area_polys")
+
     fun getIntersectingBusRoutes(geometriaIds: Set<Int>): Set<TormaystarkasteluBussireitti> {
         if (geometriaIds.isEmpty()) return setOf()
         val placeholders = Collections.nCopies(geometriaIds.size, "?").joinToString(", ")
-        with(jdbcOperations) {
-            // TODO: DISTINCT ON (route_id, direction_id) at the database level
-            return query(
-                    """
-                SELECT 
-                    tormays_buses_polys.fid,
-                    tormays_buses_polys.route_id,
-                    tormays_buses_polys.direction_id,
-                    tormays_buses_polys.rush_hour,
-                    tormays_buses_polys.trunk,
-                    hankegeometria.id
-                FROM tormays_buses_polys, hankegeometria
-                WHERE hankegeometria.hankegeometriatid in ($placeholders)
-                AND ST_Intersects(tormays_buses_polys.geom, hankegeometria.geometria)
-                """
-                        .trimIndent(),
-                    { rs, _ ->
-                        TormaystarkasteluBussireitti(
-                            rs.getString(2),
-                            rs.getInt(3),
-                            rs.getInt(4),
-                            TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(5))
-                        )
-                    },
-                    *geometriaIds.toTypedArray()
-                )
-                .toHashSet()
-        }
+        val sql =
+            """
+            SELECT DISTINCT ON (buses.route_id, buses.direction_id)
+                buses.route_id,
+                buses.direction_id,
+                buses.rush_hour,
+                buses.trunk
+            FROM tormays_buses_polys buses, hankegeometria
+            WHERE hankegeometria.hankegeometriatid in ($placeholders)
+            AND ST_Intersects(buses.geom, hankegeometria.geometria)
+            ORDER BY buses.route_id, buses.direction_id, buses.trunk DESC, buses.rush_hour DESC
+            """
+                .trimIndent()
+
+        return jdbcOperations
+            .query(sql, bussireittiRowMapper, *geometriaIds.toTypedArray())
+            .toHashSet()
+    }
+
+    fun getIntersectingBusRoutes(geometria: GeoJsonObject): Set<TormaystarkasteluBussireitti> {
+        val sql =
+            """
+            SELECT DISTINCT ON (route_id, direction_id)
+                route_id,
+                direction_id,
+                rush_hour,
+                trunk
+            FROM tormays_buses_polys
+            WHERE ST_Intersects(tormays_buses_polys.geom, ST_GeomFromGeoJSON(?))
+            ORDER BY route_id, direction_id, trunk DESC, rush_hour DESC
+            """
+                .trimIndent()
+
+        return jdbcOperations.query(sql, bussireittiRowMapper, geometria.toJsonString()).toHashSet()
     }
 
     fun anyIntersectsWithTramLines(geometriaIds: Set<Int>) =
         anyIntersectsWith(geometriaIds, "tormays_tram_lines_polys")
 
+    fun anyIntersectsWithTramLines(geometria: GeoJsonObject) =
+        anyIntersectsWith(geometria, "tormays_tram_lines_polys")
+
     fun anyIntersectsWithTramInfra(geometriaIds: Set<Int>) =
         anyIntersectsWith(geometriaIds, "tormays_tram_infra_polys")
 
-    fun anyIntersectsWithCyclewaysPriority(geometriaIds: Set<Int>) =
-        anyIntersectsWith(geometriaIds, "tormays_cycleways_priority_polys")
+    fun anyIntersectsWithTramInfra(geometria: GeoJsonObject) =
+        anyIntersectsWith(geometria, "tormays_tram_infra_polys")
 
-    fun anyIntersectsWithCyclewaysMain(geometriaIds: Set<Int>) =
-        anyIntersectsWith(geometriaIds, "tormays_cycleways_main_polys")
+    fun maxIntersectingPyoraliikenneHierarkia(geometriaIds: Set<Int>): Int? =
+        getDistinctValuesIntersectingRows(geometriaIds, "tormays_cycle_infra_polys", "hierarkia")
+            .maxOfOrNull { PyoraliikenteenHierarkia.valueOfHierarkia(it).value }
+
+    fun maxIntersectingPyoraliikenneHierarkia(geometry: GeoJsonObject): Int? =
+        getDistinctValuesIntersectingRows(geometry, "tormays_cycle_infra_polys", "hierarkia")
+            .maxOfOrNull { PyoraliikenteenHierarkia.valueOfHierarkia(it).value }
 
     private fun getDistinctValuesIntersectingRows(
         geometriaIds: Set<Int>,
@@ -107,40 +150,88 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
     ): List<String> {
         if (geometriaIds.isEmpty()) return listOf()
         val placeholders = Collections.nCopies(geometriaIds.size, "?").joinToString(", ")
-        with(jdbcOperations) {
-            return query(
-                """
+        val sql =
+            """
             SELECT DISTINCT $table.$column
             FROM $table, hankegeometria
             WHERE hankegeometria.hankegeometriatid in ($placeholders)
             AND ST_Intersects($table.geom, hankegeometria.geometria)
             """
-                    .trimIndent(),
-                { rs, _ -> rs.getString(1) },
-                *geometriaIds.toTypedArray()
-            )
-        }
+                .trimIndent()
+        return jdbcOperations.queryForList(sql, String::class.java, *geometriaIds.toTypedArray())
+    }
+
+    private fun getDistinctValuesIntersectingRows(
+        geometria: GeoJsonObject,
+        table: String,
+        column: String
+    ): List<String> {
+        val sql =
+            """
+            SELECT DISTINCT $table.$column
+            FROM $table
+            WHERE ST_Intersects($table.geom, ST_GeomFromGeoJSON(?))
+            """
+                .trimIndent()
+        return jdbcOperations.queryForList(sql, String::class.java, geometria.toJsonString())
     }
 
     private fun anyIntersectsWith(geometriat: Set<Int>, table: String): Boolean {
         if (geometriat.isEmpty()) return false
         val placeholders = Collections.nCopies(geometriat.size, "?").joinToString(", ")
-        return jdbcOperations.queryForObject(
+        val sql =
             """
             SELECT count(*)
             FROM $table, hankegeometria
             WHERE hankegeometria.hankegeometriatid in ($placeholders)
             AND ST_Intersects($table.geom, hankegeometria.geometria)
             """
-                .trimIndent(),
-            Int::class.java,
-            *geometriat.toTypedArray()
-        )!! > 0
+                .trimIndent()
+        return jdbcOperations.queryForObject(sql, Int::class.java, *geometriat.toTypedArray())!! > 0
+    }
+
+    private fun anyIntersectsWith(geometria: GeoJsonObject, table: String): Boolean {
+        val sql =
+            """
+            SELECT exists(
+              SELECT
+              FROM $table
+              WHERE ST_Intersects($table.geom, ST_GeomFromGeoJSON(?))
+            )
+            """
+                .trimIndent()
+        return jdbcOperations.queryForObject(sql, Boolean::class.java, geometria.toJsonString())!!
+    }
+
+    companion object {
+        private val bussireittiRowMapper = RowMapper { rs, _ ->
+            TormaystarkasteluBussireitti(
+                rs.getString(1),
+                rs.getInt(2),
+                rs.getInt(3),
+                TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(4))
+            )
+        }
     }
 }
 
 // Enum classes that associate the strings used in this database dataset with integer classification
 // values
+
+enum class PyoraliikenteenHierarkia(val value: Int, val hierarkia: String) {
+    MUU_YHTEYS(2, "Muu yhteys"),
+    MUU_PYORAREITTI(3, "Muu pyöräreitti"),
+    BAANA(5, "Baana"),
+    PAAPYORAREITTI(5, "Pääpyöräreitti"),
+    ;
+
+    companion object {
+        fun valueOfHierarkia(hierarkia: String?): PyoraliikenteenHierarkia =
+            hierarkia?.let {
+                return entries.first { it.hierarkia == hierarkia }
+            } ?: MUU_PYORAREITTI
+    }
+}
 
 enum class TormaystarkasteluKatuluokka(val value: Int, val katuluokka: String) {
     /**

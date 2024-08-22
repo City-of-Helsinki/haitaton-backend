@@ -5,18 +5,14 @@ import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.Contact as AlluContact
 import fi.hel.haitaton.hanke.allu.Customer as AlluCustomer
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.Application
-import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.ApplicationMetaData
-import fi.hel.haitaton.hanke.application.Contact
-import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusDataResponse
+import fi.hel.haitaton.hanke.hakemus.HakemusMetaData
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.InvoicingCustomerResponse
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusDataResponse
@@ -87,28 +83,9 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
      *
      * Cable reports contain private information, so their reads need to be logged.
      */
-    fun saveDisclosureLogsForCableReport(metaData: ApplicationMetaData, userId: String) {
+    fun saveDisclosureLogsForCableReport(metaData: HakemusMetaData, userId: String) {
         val entry = disclosureLogEntry(ObjectType.CABLE_REPORT, metaData.id, metaData)
         saveDisclosureLog(userId, UserRole.USER, entry)
-    }
-
-    /**
-     * Save disclosure logs for when a user accesses an application. Write disclosure log entries
-     * for the customers and contacts in the application.
-     */
-    fun saveDisclosureLogsForApplication(application: Application?, userId: String) {
-        if (application == null) return
-        saveDisclosureLogsForApplications(listOf(application), userId)
-    }
-
-    /**
-     * Save disclosure logs for when a user accesses applications. Write disclosure log entries for
-     * the customers and contacts in the applications.
-     */
-    fun saveDisclosureLogsForApplications(applications: List<Application>, userId: String) {
-        val entries =
-            auditLogEntriesForCustomers(applications) + auditLogEntriesForContacts(applications)
-        saveDisclosureLogs(userId, UserRole.USER, entries)
     }
 
     /**
@@ -175,22 +152,6 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
 
     private fun auditLogEntriesForCustomers(
         applicationId: Long,
-        applicationData: ApplicationData,
-        status: Status = Status.SUCCESS,
-        failureDescription: String? = null
-    ): List<AuditLogEntry> =
-        extractCustomers(applicationData).toSet().map { customer ->
-            disclosureLogEntry(
-                ObjectType.APPLICATION_CUSTOMER,
-                applicationId,
-                customer,
-                status,
-                failureDescription
-            )
-        }
-
-    private fun auditLogEntriesForCustomers(
-        applicationId: Long,
         applicationData: AlluApplicationData,
         status: Status,
         failureDescription: String?,
@@ -241,11 +202,6 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
                 )
             } ?: emptyList())
 
-    private fun auditLogEntriesForCustomers(
-        applications: List<Application>,
-    ): Set<AuditLogEntry> =
-        applications.flatMap { auditLogEntriesForCustomers(it.id, it.applicationData) }.toSet()
-
     private fun auditLogEntriesForHakemusResponseCustomers(
         hakemusResponses: List<HakemusResponse>,
         objectType: ObjectType = ObjectType.APPLICATION_CUSTOMER,
@@ -262,22 +218,6 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
 
     private fun auditLogEntriesForContacts(
         applicationId: Long,
-        applicationData: ApplicationData,
-        status: Status = Status.SUCCESS,
-        failureDescription: String? = null,
-    ): List<AuditLogEntry> =
-        extractContacts(applicationData).toSet().map { contact ->
-            disclosureLogEntry(
-                ObjectType.APPLICATION_CONTACT,
-                applicationId,
-                contact,
-                status,
-                failureDescription
-            )
-        }
-
-    private fun auditLogEntriesForContacts(
-        applicationId: Long,
         applicationData: AlluApplicationData,
         status: Status,
         failureDescription: String?,
@@ -291,9 +231,6 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
                 failureDescription
             )
         }
-
-    private fun auditLogEntriesForContacts(applications: List<Application>): Set<AuditLogEntry> =
-        applications.flatMap { auditLogEntriesForContacts(it.id, it.applicationData) }.toSet()
 
     private fun auditLogEntriesForHakemusDataResponseContacts(
         applicationId: Long,
@@ -322,12 +259,6 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             .flatMap { (role, customer) -> customer.contacts.map { AlluContactWithRole(role, it) } }
             .filter { it.contact.hasInformation() }
 
-    private fun extractContacts(applicationData: ApplicationData): List<ContactWithRole> =
-        applicationData
-            .customersByRole()
-            .flatMap { (role, customer) -> customer.contacts.map { ContactWithRole(role, it) } }
-            .filter { it.contact.hasInformation() }
-
     private fun extractHakemusDataResponseContacts(
         hakemusDataResponse: HakemusDataResponse
     ): List<ContactResponseWithRole> =
@@ -337,14 +268,6 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
                 customer.contacts.map { ContactResponseWithRole(role, it) }
             }
             .filter { it.contact.hasInformation() }
-
-    private fun extractCustomers(applicationData: ApplicationData): List<CustomerWithRole> =
-        applicationData
-            .customersByRole()
-            .map { (role, customer) -> CustomerWithRole(role, customer.customer) }
-            // Only personal data needs to be logged, not other types of customers.
-            .filter { it.customer.type == CustomerType.PERSON }
-            .filter { it.customer.hasPersonalInformation() }
 
     private fun extractCustomers(applicationData: AlluApplicationData): List<AlluCustomerWithRole> =
         applicationData
@@ -413,11 +336,6 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     }
 }
 
-data class CustomerWithRole(
-    val role: ApplicationContactType,
-    @JsonUnwrapped val customer: Customer,
-)
-
 data class AlluCustomerWithRole(
     val role: ApplicationContactType,
     @JsonUnwrapped val customer: AlluCustomer,
@@ -431,11 +349,6 @@ data class AlluMetaCustomerWithRole(
 data class CustomerResponseWithRole(
     val role: ApplicationContactType,
     @JsonUnwrapped val customer: CustomerResponse,
-)
-
-data class ContactWithRole(
-    val role: ApplicationContactType,
-    @JsonUnwrapped val contact: Contact,
 )
 
 data class AlluContactWithRole(

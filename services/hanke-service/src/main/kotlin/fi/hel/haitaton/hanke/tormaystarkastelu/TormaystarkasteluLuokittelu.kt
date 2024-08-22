@@ -1,13 +1,5 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-enum class LuokitteluType {
-    HAITTA_AJAN_KESTO,
-    VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN,
-    AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS,
-    KATULUOKKA,
-    AUTOLIIKENTEEN_MAARA
-}
-
 interface Luokittelu {
     val value: Int
 }
@@ -31,24 +23,27 @@ enum class AutoliikenteenKaistavaikutustenPituus(override val value: Int) : Luok
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class Meluhaitta {
-    SATUNNAINEN_HAITTA,
-    LYHYTAIKAINEN_TOISTUVA_HAITTA,
-    PITKAKESTOINEN_TOISTUVA_HAITTA
+enum class Meluhaitta(override val value: Int) : Luokittelu {
+    EI_MELUHAITTAA(0),
+    SATUNNAINEN_MELUHAITTA(1),
+    TOISTUVA_MELUHAITTA(3),
+    JATKUVA_MELUHAITTA(5),
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class Polyhaitta {
-    SATUNNAINEN_HAITTA,
-    LYHYTAIKAINEN_TOISTUVA_HAITTA,
-    PITKAKESTOINEN_TOISTUVA_HAITTA
+enum class Polyhaitta(override val value: Int) : Luokittelu {
+    EI_POLYHAITTAA(0),
+    SATUNNAINEN_POLYHAITTA(1),
+    TOISTUVA_POLYHAITTA(3),
+    JATKUVA_POLYHAITTA(5),
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class Tarinahaitta {
-    SATUNNAINEN_HAITTA,
-    LYHYTAIKAINEN_TOISTUVA_HAITTA,
-    PITKAKESTOINEN_TOISTUVA_HAITTA
+enum class Tarinahaitta(override val value: Int) : Luokittelu {
+    EI_TARINAHAITTAA(0),
+    SATUNNAINEN_TARINAHAITTA(1),
+    TOISTUVA_TARINAHAITTA(3),
+    JATKUVA_TARINAHAITTA(5),
 }
 
 enum class HaittaAjanKestoLuokittelu(override val value: Int) : Luokittelu {
@@ -64,12 +59,6 @@ enum class Liikennemaaraluokittelu(override val value: Int) : Luokittelu {
     LIIKENNEMAARA_500_1499(2),
     LIIKENNEMAARA_ALLE_500(1),
     EI_LIIKENNETTA(0)
-}
-
-enum class Pyoraliikenneluokittelu(override val value: Int) : Luokittelu {
-    PRIORISOITU_REITTI_TAI_PRIORISOIDUN_REITIN_OSANA_TOIMIVA_KATU(5),
-    PAAREITTI_TAI_PAAREITIN_OSANA_TOIMIVA_KATU(4),
-    EI_VAIKUTA_PYORALIIKENTEESEEN(0)
 }
 
 enum class Linjaautoliikenneluokittelu(override val value: Int) : Luokittelu {

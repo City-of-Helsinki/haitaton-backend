@@ -1,10 +1,8 @@
 package fi.hel.haitaton.hanke.email
 
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.configuration.Feature
-import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.getResource
 import fi.hel.haitaton.hanke.getResourceAsText
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import jakarta.mail.internet.MimeMessage
 import mu.KotlinLogging
@@ -82,7 +80,6 @@ enum class EmailTemplate(val value: String) {
 class EmailSenderService(
     private val mailSender: JavaMailSender,
     private val emailConfig: EmailProperties,
-    private val featureFlags: FeatureFlags,
 ) {
     val templatePath = "/email/template"
 
@@ -121,10 +118,6 @@ class EmailSenderService(
     }
 
     fun sendApplicationNotificationEmail(data: ApplicationNotificationData) {
-        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
-            return
-        }
-
         logger.info { "Sending notification email for application" }
 
         val templateData =
@@ -142,10 +135,6 @@ class EmailSenderService(
     }
 
     fun sendAccessRightsUpdateNotificationEmail(data: AccessRightsUpdateNotificationData) {
-        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
-            return
-        }
-
         logger.info { "Sending notification email for access rights update" }
 
         val templateData =
@@ -168,10 +157,6 @@ class EmailSenderService(
     }
 
     fun sendRemovalFromHankeNotificationEmail(data: RemovalFromHankeNotificationData) {
-        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
-            return
-        }
-
         logger.info { "Sending notification email for removal from hanke" }
 
         val templateData =

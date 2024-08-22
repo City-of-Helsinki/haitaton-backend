@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.allu
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include
-import fi.hel.haitaton.hanke.application.ApplicationContactType
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 

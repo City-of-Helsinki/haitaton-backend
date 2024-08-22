@@ -7,10 +7,12 @@ import org.geojson.Polygon
 
 object GeometriaFactory {
 
-    val polygon: Polygon = "/fi/hel/haitaton/hanke/geometria/polygon.json".asJsonResource()
-    val secondPolygon: Polygon =
+    fun polygon(): Polygon = "/fi/hel/haitaton/hanke/geometria/polygon.json".asJsonResource()
+
+    fun secondPolygon(): Polygon =
         "/fi/hel/haitaton/hanke/geometria/toinen_polygoni.json".asJsonResource()
-    val thirdPolygon: Polygon =
+
+    fun thirdPolygon(): Polygon =
         "/fi/hel/haitaton/hanke/geometria/kolmas_polygoni.json".asJsonResource()
 
     /**

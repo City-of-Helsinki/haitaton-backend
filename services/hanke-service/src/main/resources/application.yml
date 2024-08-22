@@ -34,7 +34,6 @@ haitaton:
     # Disable endpoints that are e.g. in development and should not be in production.
   features:
     hanke-editing: ${HAITATON_FEATURE_HANKE_EDITING:false}
-    user-management: ${HAITATON_FEATURE_USER_MANAGEMENT:false}
     # GDPR API is disabled by default for tests and local running.
     # Spring Security will otherwise try to call the issuer's openid-configuration URL,
     # which will fail, unless the developer has also started profile-gdpr-api-tester.
@@ -42,18 +41,15 @@ haitaton:
     audience: ${HAITATON_GDPR_AUDIENCE:http://localhost:8080/haitaton}
     authorization-field: ${HAITATON_GDPR_AUTHORIZATION_FIELD:http://localhost:8080}
     delete-scope: ${HAITATON_GDPR_DELETE_SCOPE:haitaton.gdprdelete}
-    disabled: ${HAITATON_GDPR_DISABLED:true}
+    disabled: ${HAITATON_GDPR_DISABLED:false}
     issuer: ${HAITATON_GDPR_ISSUER:http://gdpr-api-tester:8888/}
     query-scope: ${HAITATON_GDPR_QUERY_SCOPE:haitaton.gdprquery}
-    # For dev and test environments, enable the testdata controller for resetting data
-  migration:
-    enabled: ${HAITATON_MIGRATION_ENABLED:false}
   profiili-api:
     api-tokens-url: ${PROFIILI_API_TOKENS_URL:https://tunnistamo.test.hel.ninja/api-tokens/}
     graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
     audience: ${PROFIILI_AUDIENCE:https://api.hel.fi/auth/helsinkiprofile}
   testdata:
-    enabled: ${HAITATON_TESTDATA_ENABLED:false}
+    enabled: ${HAITATON_TESTDATA_ENABLED:false}  # For dev and test environments, enable the testdata controller for resetting data
 
 info:
   java-vendor: ${java.specification.vendor}

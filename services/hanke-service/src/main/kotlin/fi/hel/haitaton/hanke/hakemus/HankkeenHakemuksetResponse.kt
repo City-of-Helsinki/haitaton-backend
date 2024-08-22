@@ -1,10 +1,6 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import java.time.ZonedDateTime
 
 data class HankkeenHakemuksetResponse(val applications: List<HankkeenHakemusResponse>)
@@ -18,21 +14,21 @@ data class HankkeenHakemusResponse(
     val applicationData: HankkeenHakemusDataResponse,
 ) {
     constructor(
-        application: ApplicationEntity
+        application: HakemusEntity
     ) : this(
         application.id,
         application.alluid,
         application.alluStatus,
         application.applicationIdentifier,
         application.applicationType,
-        when (application.applicationData) {
-            is CableReportApplicationData ->
+        when (application.hakemusEntityData) {
+            is JohtoselvityshakemusEntityData ->
                 HankkeenHakemusDataResponse(
-                    application.applicationData as CableReportApplicationData
+                    application.hakemusEntityData as JohtoselvityshakemusEntityData
                 )
-            is ExcavationNotificationData ->
+            is KaivuilmoitusEntityData ->
                 HankkeenHakemusDataResponse(
-                    application.applicationData as ExcavationNotificationData
+                    application.hakemusEntityData as KaivuilmoitusEntityData
                 )
         },
     )
@@ -45,7 +41,7 @@ data class HankkeenHakemusDataResponse(
     val pendingOnClient: Boolean,
 ) {
     constructor(
-        cableReportApplicationData: CableReportApplicationData
+        cableReportApplicationData: JohtoselvityshakemusEntityData
     ) : this(
         cableReportApplicationData.name,
         cableReportApplicationData.startTime,
@@ -54,11 +50,11 @@ data class HankkeenHakemusDataResponse(
     )
 
     constructor(
-        excavationNotificationData: ExcavationNotificationData
+        kaivuilmoitusEntityData: KaivuilmoitusEntityData
     ) : this(
-        excavationNotificationData.name,
-        excavationNotificationData.startTime,
-        excavationNotificationData.endTime,
-        excavationNotificationData.pendingOnClient
+        kaivuilmoitusEntityData.name,
+        kaivuilmoitusEntityData.startTime,
+        kaivuilmoitusEntityData.endTime,
+        kaivuilmoitusEntityData.pendingOnClient
     )
 }

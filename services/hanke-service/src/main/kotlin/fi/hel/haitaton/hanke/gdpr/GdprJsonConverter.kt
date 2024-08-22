@@ -1,27 +1,10 @@
 package fi.hel.haitaton.hanke.gdpr
 
-import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.Application
-import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.Contact
-import fi.hel.haitaton.hanke.application.Customer
-import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.permissions.HankeKayttaja
 
 object GdprJsonConverter {
-
-    fun createGdprJson(applications: List<Application>, userId: String): CollectionNode? {
-        val infos: Set<GdprInfo> =
-            applications.flatMap { getCreatorInfoFromApplication(it.applicationData) }.toSet()
-
-        val combinedNodes = combineGdprInfos(infos, userId)
-        if (combinedNodes.isEmpty()) {
-            return null
-        }
-        return CollectionNode("user", combinedNodes)
-    }
 
     fun createGdprJson(
         kayttajat: List<HankeKayttaja>,
@@ -109,55 +92,6 @@ object GdprJsonConverter {
         value?.let { StringNode(key, value) }
 
     private fun getIntNode(key: String, value: Int?): IntNode? = value?.let { IntNode(key, value) }
-
-    internal fun getCreatorInfoFromApplication(applicationData: ApplicationData): List<GdprInfo> {
-        return applicationData
-            .customersWithContacts()
-            .filter { it.contacts.any { contact -> contact.orderer } }
-            .flatMap { getCreatorInfoFromCustomerWithContacts(it) }
-    }
-
-    internal fun getCreatorInfoFromCustomerWithContacts(
-        customerWithContacts: CustomerWithContacts,
-    ): List<GdprInfo> {
-        val organisation = getOrganisationFromCustomer(customerWithContacts.customer)
-
-        val orderers = customerWithContacts.contacts.filter { it.orderer }
-
-        return getGdprInfosFromContacts(orderers, organisation)
-    }
-
-    internal fun getOrganisationFromCustomer(customer: Customer): GdprOrganisation? =
-        if (isOrganisation(customer.type)) {
-            GdprOrganisation(name = customer.name, registryKey = customer.registryKey)
-        } else {
-            null
-        }
-
-    private fun isOrganisation(customerType: CustomerType?): Boolean =
-        when (customerType) {
-            CustomerType.COMPANY -> true
-            CustomerType.ASSOCIATION -> true
-            else -> false
-        }
-
-    internal fun getGdprInfosFromContacts(
-        contacts: List<Contact>,
-        organisation: GdprOrganisation?,
-    ): List<GdprInfo> = contacts.map { getGdprInfosFromApplicationContact(it, organisation) }
-
-    internal fun getGdprInfosFromApplicationContact(
-        contact: Contact,
-        organisation: GdprOrganisation?,
-    ): GdprInfo {
-        return GdprInfo(
-            firstName = contact.firstName,
-            lastName = contact.lastName,
-            phone = contact.phone,
-            email = contact.email,
-            organisation = organisation,
-        )
-    }
 
     private fun getGdprInfosFromHankekayttaja(kayttaja: HankeKayttaja) =
         GdprInfo(

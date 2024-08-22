@@ -1,14 +1,13 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.domain.Hankealue
-import fi.hel.haitaton.hanke.domain.alkuPvm
-import fi.hel.haitaton.hanke.domain.autoliikenteenKaistavaikutustenPituus
-import fi.hel.haitaton.hanke.domain.geometriat
-import fi.hel.haitaton.hanke.domain.haittaAjanKestoDays
-import fi.hel.haitaton.hanke.domain.loppuPvm
-import fi.hel.haitaton.hanke.domain.vaikutusAutoliikenteenKaistamaariin
+import fi.hel.haitaton.hanke.HankealueEntity
+import fi.hel.haitaton.hanke.SRID
 import fi.hel.haitaton.hanke.roundToOneDecimal
 import kotlin.math.max
+import org.geojson.Crs
+import org.geojson.FeatureCollection
+import org.geojson.GeoJsonObject
+import org.geojson.GeometryCollection
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -17,18 +16,16 @@ class TormaystarkasteluLaskentaService(
     @Autowired private val tormaysService: TormaystarkasteluTormaysService
 ) {
 
-    fun calculateTormaystarkastelu(
-        alueet: List<Hankealue>,
-        geometriaIds: Set<Int>
-    ): TormaystarkasteluTulos? {
-        if (!hasAllRequiredInformation(alueet)) {
+    fun calculateTormaystarkastelu(alue: HankealueEntity): TormaystarkasteluTulos? {
+        if (!hasAllRequiredInformation(alue)) {
             return null
         }
 
-        val autoliikenneindeksi = calculateAutoliikenneindeksi(alueet, geometriaIds)
-        val pyoraliikenneindeksi = calculatePyoraliikenneindeksi(geometriaIds)
-        val linjaautoliikenneindeksi = calculateLinjaautoliikenneindeksi(geometriaIds)
-        val raitioliikenneindeksi = calculateRaitioliikenneindeksi(geometriaIds)
+        val autoliikenneindeksi = calculateAutoliikenneindeksi(alue)
+        val pyoraliikenneindeksi = calculatePyoraliikenneindeksi(setOf(alue.geometriat!!))
+        val linjaautoliikenneindeksi =
+            calculateLinjaautoliikenneindeksi(setOf(alue.geometriat!!)).toFloat()
+        val raitioliikenneindeksi = calculateRaitioliikenneindeksi(setOf(alue.geometriat!!))
 
         return TormaystarkasteluTulos(
             autoliikenneindeksi,
@@ -38,57 +35,124 @@ class TormaystarkasteluLaskentaService(
         )
     }
 
-    private fun hasAllRequiredInformation(alueet: List<Hankealue>): Boolean {
-        return (alueet.alkuPvm() != null &&
-            alueet.loppuPvm() != null &&
-            alueet.vaikutusAutoliikenteenKaistamaariin().isNotEmpty() &&
-            alueet.autoliikenteenKaistavaikutustenPituus().isNotEmpty() &&
-            alueet.geometriat().isNotEmpty())
+    fun calculateTormaystarkastelu(
+        geometriat: FeatureCollection,
+        haittaajanKestoDays: Int,
+        kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
+        kaistapituushaitta: AutoliikenteenKaistavaikutustenPituus,
+    ): TormaystarkasteluTulos {
+
+        val geometryCollection = GeometryCollection()
+        geometryCollection.crs = Crs()
+        geometryCollection.crs.properties["name"] = "EPSG:$SRID"
+        geometryCollection.geometries = geometriat.features.map { it.geometry }
+
+        return TormaystarkasteluTulos(
+            calculateAutoliikenneindeksi(
+                geometryCollection,
+                haittaajanKestoDays,
+                kaistahaitta,
+                kaistapituushaitta,
+            ),
+            calculatePyoraliikenneindeksi(geometryCollection),
+            calculateLinjaautoliikenneindeksi(geometryCollection).toFloat(),
+            calculateRaitioliikenneindeksi(geometryCollection),
+        )
+    }
+
+    private fun hasAllRequiredInformation(alue: HankealueEntity): Boolean {
+        return (alue.haittaAlkuPvm != null &&
+            alue.haittaLoppuPvm != null &&
+            alue.kaistaHaitta != null &&
+            alue.kaistaPituusHaitta != null &&
+            alue.geometriat != null)
+    }
+
+    private fun calculateAutoliikenneindeksi(alue: HankealueEntity): Autoliikenneluokittelu {
+        val haittaajankesto =
+            RajaArvoLuokittelija.haittaajankestoluokka(alue.haittaAjanKestoDays()!!)
+        val katuluokka = katuluokkaluokittelu(setOf(alue.geometriat!!))
+        val liikennemaara = liikennemaaraluokittelu(setOf(alue.geometriat!!), katuluokka)
+        val kaistahaitta = alue.kaistaHaitta ?: VaikutusAutoliikenteenKaistamaariin.EI_VAIKUTA
+        val kaistapituushaitta =
+            alue.kaistaPituusHaitta
+                ?: AutoliikenteenKaistavaikutustenPituus.EI_VAIKUTA_KAISTAJARJESTELYIHIN
+        return Autoliikenneluokittelu(
+            haittaajankesto,
+            katuluokka,
+            liikennemaara,
+            kaistahaitta.value,
+            kaistapituushaitta.value
+        )
     }
 
     private fun calculateAutoliikenneindeksi(
-        alueet: List<Hankealue>,
-        geometriaIds: Set<Int>
-    ): Float {
-        val luokittelu = mutableMapOf<LuokitteluType, Int>()
-
-        luokittelu[LuokitteluType.HAITTA_AJAN_KESTO] =
-            RajaArvoLuokittelija.haittaajankestoluokka(alueet.haittaAjanKestoDays()!!)
-        luokittelu[LuokitteluType.VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN] =
-            alueet.vaikutusAutoliikenteenKaistamaariin().maxOfOrNull { it.value }!!
-        luokittelu[LuokitteluType.AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS] =
-            alueet.autoliikenteenKaistavaikutustenPituus().maxOfOrNull { it.value }!!
-
-        val katuluokkaLuokittelu = katuluokkaluokittelu(geometriaIds)
-        luokittelu[LuokitteluType.KATULUOKKA] = katuluokkaLuokittelu
-        luokittelu[LuokitteluType.AUTOLIIKENTEEN_MAARA] =
-            liikennemaaraluokittelu(geometriaIds, katuluokkaLuokittelu)
-
-        return calculateAutoliikenneindeksiFromLuokittelu(luokittelu)
+        geometria: GeoJsonObject,
+        haittaajanKestoDays: Int,
+        kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
+        kaistapituushaitta: AutoliikenteenKaistavaikutustenPituus,
+    ): Autoliikenneluokittelu {
+        val haittaajankesto = RajaArvoLuokittelija.haittaajankestoluokka(haittaajanKestoDays)
+        val katuluokka = katuluokkaluokittelu(geometria)
+        val liikennemaara = liikennemaaraluokittelu(geometria, katuluokka)
+        return Autoliikenneluokittelu(
+            haittaajankesto,
+            katuluokka,
+            liikennemaara,
+            kaistahaitta.value,
+            kaistapituushaitta.value
+        )
     }
 
-    internal fun katuluokkaluokittelu(geometriaIds: Set<Int>): Int {
-        return if (tormaysService.anyIntersectsYleinenKatuosa(geometriaIds)) {
-            // ON ylre_parts => street_classes?
-            tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds)
-                // EI street_classes => ylre_classes?
-                ?: tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriaIds)
-                // EI ylre_classes
-                ?: 0
+    internal fun katuluokkaluokittelu(geometriaIds: Set<Int>): Int =
+        katuluokkaluokittelu(
+            { tormaysService.anyIntersectsYleinenKatuosa(geometriaIds) },
+            { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds) },
+            { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriaIds) },
+        )
+
+    internal fun katuluokkaluokittelu(geometry: GeoJsonObject): Int =
+        katuluokkaluokittelu(
+            { tormaysService.anyIntersectsYleinenKatuosa(geometry) },
+            { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) },
+            { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry) },
+        )
+
+    private fun katuluokkaluokittelu(
+        ylreParts: () -> Boolean,
+        streetClasses: () -> Int?,
+        ylreClasses: () -> Int?,
+    ): Int =
+        if (ylreParts()) {
+            // Use street classes if they are available.
+            // Otherwise, default to ylre classes.
+            streetClasses() ?: ylreClasses() ?: 0
         } else {
-            // EI ylre_parts => ylre_classes?
-            val max =
-                tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriaIds)
-                    // EI ylre_classes
-                    ?: return 0
-            // ON ylre_classes => street_classes?
-            tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds)
-                // JOS EI LÖYDY => Valitse ylre_classes
-                ?: max
+            val max = ylreClasses()
+            if (max == null) {
+                // If there are no ylre parts or classes, return 0
+                0
+            } else {
+                // Use street classes if they are available.
+                // Otherwise default to ylre classes.
+                streetClasses() ?: max
+            }
         }
-    }
 
-    internal fun liikennemaaraluokittelu(geometriaIds: Set<Int>, katuluokkaluokittelu: Int): Int {
+    internal fun liikennemaaraluokittelu(geometriaIds: Set<Int>, katuluokkaluokittelu: Int): Int =
+        liikennemaaraluokittelu(katuluokkaluokittelu) { radius ->
+            tormaysService.maxLiikennemaara(geometriaIds, radius)
+        }
+
+    internal fun liikennemaaraluokittelu(geometry: GeoJsonObject, katuluokkaluokittelu: Int): Int =
+        liikennemaaraluokittelu(katuluokkaluokittelu) { radius ->
+            tormaysService.maxLiikennemaara(geometry, radius)
+        }
+
+    private fun liikennemaaraluokittelu(
+        katuluokkaluokittelu: Int,
+        maxLiikennemaara: (TormaystarkasteluLiikennemaaranEtaisyys) -> Int?
+    ): Int {
         if (katuluokkaluokittelu == 0) {
             return 0
         }
@@ -100,42 +164,37 @@ class TormaystarkasteluLaskentaService(
             } else {
                 TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
             }
-        val maxVolume = tormaysService.maxLiikennemaara(geometriaIds, radius) ?: 0
+        val maxVolume = maxLiikennemaara(radius) ?: 0
         return RajaArvoLuokittelija.liikennemaaraluokka(maxVolume)
     }
 
-    internal fun calculateAutoliikenneindeksiFromLuokittelu(
-        luokitteluByType: Map<LuokitteluType, Int>
-    ): Float =
-        autoliikenneindeksipainot
-            .map { (type, weight) -> luokitteluByType[type]?.times(weight) ?: 0f }
-            .sum()
-            .roundToOneDecimal()
+    internal fun calculatePyoraliikenneindeksi(geometriaIds: Set<Int>): Float =
+        tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriaIds)?.toFloat() ?: 0f
 
-    internal fun calculatePyoraliikenneindeksi(geometriaIds: Set<Int>): Float {
-        val pyoraliikenneluokittelu = pyoraliikenneluokittelu(geometriaIds)
-        return if (pyoraliikenneluokittelu >= 4) 3.0f else 1.0f
-    }
+    internal fun calculatePyoraliikenneindeksi(geometry: GeoJsonObject): Float =
+        tormaysService.maxIntersectingPyoraliikenneHierarkia(geometry)?.toFloat() ?: 0f
 
-    internal fun pyoraliikenneluokittelu(geometriaIds: Set<Int>): Int =
-        when {
-            tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds) ->
-                Pyoraliikenneluokittelu
-                    .PRIORISOITU_REITTI_TAI_PRIORISOIDUN_REITIN_OSANA_TOIMIVA_KATU
-            tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds) ->
-                Pyoraliikenneluokittelu.PAAREITTI_TAI_PAAREITIN_OSANA_TOIMIVA_KATU
-            else -> Pyoraliikenneluokittelu.EI_VAIKUTA_PYORALIIKENTEESEEN
-        }.value
+    internal fun calculateLinjaautoliikenneindeksi(geometriaIds: Set<Int>): Int =
+        calculateLinjaautoliikenneindeksi(
+            { tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds) },
+            { tormaysService.getIntersectingBusRoutes(geometriaIds) },
+        )
 
-    internal fun calculateLinjaautoliikenneindeksi(geometriaIds: Set<Int>): Float =
-        linjaautoliikenneluokittelu(geometriaIds).toFloat()
+    internal fun calculateLinjaautoliikenneindeksi(geometria: GeoJsonObject): Int =
+        calculateLinjaautoliikenneindeksi(
+            { tormaysService.anyIntersectsCriticalBusRoutes(geometria) },
+            { tormaysService.getIntersectingBusRoutes(geometria) },
+        )
 
-    internal fun linjaautoliikenneluokittelu(geometriaIds: Set<Int>): Int {
-        if (tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds)) {
+    private fun calculateLinjaautoliikenneindeksi(
+        intersectsWithCriticalRoutes: () -> Boolean,
+        intersectingRoutes: () -> Set<TormaystarkasteluBussireitti>
+    ): Int {
+        if (intersectsWithCriticalRoutes()) {
             return Linjaautoliikenneluokittelu.TARKEIMMAT_JOUKKOLIIKENNEKADUT.value
         }
 
-        val bussireitit = tormaysService.getIntersectingBusRoutes(geometriaIds)
+        val bussireitit = intersectingRoutes()
 
         val valueByRunkolinja =
             bussireitit.maxOfOrNull { it.runkolinja.toLinjaautoliikenneluokittelu().value }
@@ -150,26 +209,50 @@ class TormaystarkasteluLaskentaService(
     }
 
     internal fun calculateRaitioliikenneindeksi(geometriaIds: Set<Int>): Float =
-        raitioliikenneluokittelu(geometriaIds).toFloat()
+        calculateRaitioliikenneindeksi(
+            { tormaysService.anyIntersectsWithTramLines(geometriaIds) },
+            { tormaysService.anyIntersectsWithTramInfra(geometriaIds) },
+        )
 
-    internal fun raitioliikenneluokittelu(geometriaIds: Set<Int>): Int =
+    internal fun calculateRaitioliikenneindeksi(geometria: GeoJsonObject): Float =
+        calculateRaitioliikenneindeksi(
+            { tormaysService.anyIntersectsWithTramLines(geometria) },
+            { tormaysService.anyIntersectsWithTramInfra(geometria) },
+        )
+
+    private fun calculateRaitioliikenneindeksi(
+        intersectsWithLines: () -> Boolean,
+        intersectsWithInfra: () -> Boolean,
+    ): Float =
         when {
-            tormaysService.anyIntersectsWithTramLines(geometriaIds) ->
-                Raitioliikenneluokittelu.RAITIOTIEVERKON_RATAOSA_JOLLA_SAANNOLLISTA_LINJALIIKENNETTA
-            tormaysService.anyIntersectsWithTramInfra(geometriaIds) ->
-                Raitioliikenneluokittelu
-                    .RAITIOTIEVERKON_RATAOSA_JOLLA_EI_SAANNOLLISTA_LINJALIIKENNETTA
-            else -> Raitioliikenneluokittelu.EI_TUNNISTETTUJA_RAITIOTIEKISKOJA
-        }.value
+                intersectsWithLines() ->
+                    Raitioliikenneluokittelu
+                        .RAITIOTIEVERKON_RATAOSA_JOLLA_SAANNOLLISTA_LINJALIIKENNETTA
+                intersectsWithInfra() ->
+                    Raitioliikenneluokittelu
+                        .RAITIOTIEVERKON_RATAOSA_JOLLA_EI_SAANNOLLISTA_LINJALIIKENNETTA
+                else -> Raitioliikenneluokittelu.EI_TUNNISTETTUJA_RAITIOTIEKISKOJA
+            }
+            .value
+            .toFloat()
 
     companion object {
-        val autoliikenneindeksipainot =
-            mapOf(
-                Pair(LuokitteluType.HAITTA_AJAN_KESTO, 0.1f),
-                Pair(LuokitteluType.VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN, 0.25f),
-                Pair(LuokitteluType.AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS, 0.2f),
-                Pair(LuokitteluType.KATULUOKKA, 0.2f),
-                Pair(LuokitteluType.AUTOLIIKENTEEN_MAARA, 0.25f)
-            )
+        fun calculateAutoliikenneindeksi(
+            haitanKesto: Int,
+            katuluokka: Int,
+            liikennemaara: Int,
+            kaistahaitta: Int,
+            kaistapituushaitta: Int,
+        ): Float =
+            if (katuluokka == 0 && liikennemaara == 0) {
+                0.0f
+            } else {
+                (0.1f * haitanKesto +
+                        0.2f * katuluokka +
+                        0.25f * liikennemaara +
+                        0.25f * kaistahaitta +
+                        0.2f * kaistapituushaitta)
+                    .roundToOneDecimal()
+            }
     }
 }

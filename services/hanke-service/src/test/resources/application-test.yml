@@ -12,7 +12,8 @@ haitaton:
     from: no-reply@hel.fi
   features:
     hanke-editing: true
-    user-management: true
+  gdpr:
+    disabled: true
   profiili-api:
     api-tokens-url: http://localhost:14678/api-tokens/
     graph-ql-url: http://localhost:14678/graphql/
@@ -23,6 +24,9 @@ haitaton:
 sentry.dsn:
 
 spring:
+  datasource:
+    hikari:
+      connection-timeout: 500
   jpa:
     show-sql: false
   mail:

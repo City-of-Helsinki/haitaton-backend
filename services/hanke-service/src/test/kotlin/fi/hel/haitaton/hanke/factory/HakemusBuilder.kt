@@ -2,36 +2,39 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
-import fi.hel.haitaton.hanke.application.ExcavationNotificationData
+import fi.hel.haitaton.hanke.domain.SavedHankealue
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationArea
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusEntityData
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import java.security.InvalidParameterException
 import java.time.ZonedDateTime
 
 data class HakemusBuilder(
-    private var applicationEntity: ApplicationEntity,
+    private var hakemusEntity: HakemusEntity,
     private var hankeId: Int,
     private val userId: String,
     private val hakemusFactory: HakemusFactory,
     private val hakemusService: HakemusService,
     private val hankeKayttajaService: HankeKayttajaService,
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val hankeRepository: HankeRepository,
     private val hankeKayttajaFactory: HankeKayttajaFactory,
     private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
@@ -39,8 +42,8 @@ data class HakemusBuilder(
 ) {
     fun save(): Hakemus = hakemusService.getById(saveEntity().id)
 
-    fun saveEntity(): ApplicationEntity {
-        val savedApplication = applicationRepository.save(applicationEntity)
+    fun saveEntity(): HakemusEntity {
+        val savedApplication = hakemusRepository.save(hakemusEntity)
         savedApplication.yhteystiedot.forEach { (_, yhteystieto) ->
             yhteystieto.yhteyshenkilot.forEach { yhteyshenkilo ->
                 hakemusyhteyshenkiloRepository.save(yhteyshenkilo)
@@ -54,7 +57,7 @@ data class HakemusBuilder(
         alluId: Int? = 1,
         identifier: String? = "JS000$alluId",
     ): HakemusBuilder {
-        applicationEntity.apply {
+        hakemusEntity.apply {
             alluid = alluId
             alluStatus = status
             applicationIdentifier = identifier
@@ -85,10 +88,31 @@ data class HakemusBuilder(
             { copy(pendingOnClient = pendingOnClient) },
         )
 
-    fun withArea(area: ApplicationArea = ApplicationFactory.createCableReportApplicationArea()) =
+    fun withArea(area: JohtoselvitysHakemusalue): HakemusBuilder {
+        hakemusEntity.hakemusEntityData =
+            (hakemusEntity.hakemusEntityData as JohtoselvityshakemusEntityData).let {
+                it.copy(areas = (it.areas ?: listOf()).plus(area))
+            }
+        return this
+    }
+
+    fun withArea(area: KaivuilmoitusAlue): HakemusBuilder {
+        hakemusEntity.hakemusEntityData =
+            (hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData).let {
+                it.copy(areas = (it.areas ?: listOf()).plus(area))
+            }
+        return this
+    }
+
+    fun withArea(hankealueId: Int? = null) =
         updateApplicationData(
-            { copy(areas = (areas ?: listOf()).plus(area as CableReportApplicationArea)) },
-            { copy(areas = (areas ?: listOf()).plus(area as ExcavationNotificationArea)) },
+            { copy(areas = (areas ?: listOf()).plus(createCableReportApplicationArea())) },
+            {
+                copy(
+                    areas =
+                        (areas ?: listOf()).plus(
+                            createExcavationNotificationArea(hankealueId = hankealueId ?: 0)))
+            },
         )
 
     fun withStartTime(time: ZonedDateTime? = DateFactory.getStartDatetime()) =
@@ -103,39 +127,88 @@ data class HakemusBuilder(
             { copy(endTime = time) },
         )
 
+    fun withoutCableReports() =
+        updateApplicationData(
+            { throw InvalidParameterException("Not available for cable reports.") },
+            { copy(cableReportDone = false, cableReports = null) },
+        )
+
+    fun withCableReports(cableReports: List<String>) =
+        updateApplicationData(
+            { throw InvalidParameterException("Not available for cable reports.") },
+            { copy(cableReportDone = true, cableReports = cableReports) },
+        )
+
     fun withRockExcavation(rockExcavation: Boolean?) =
         updateApplicationData(
             { copy(rockExcavation = rockExcavation) },
             { copy(rockExcavation = rockExcavation) },
         )
 
+    fun withWorkInvolves(
+        constructionWork: Boolean = true,
+        maintenanceWork: Boolean = false,
+        emergencyWork: Boolean = false
+    ): HakemusBuilder =
+        updateApplicationData(
+            { throw InvalidParameterException("Not available for cable reports.") },
+            {
+                copy(
+                    constructionWork = constructionWork,
+                    maintenanceWork = maintenanceWork,
+                    emergencyWork = emergencyWork,
+                )
+            },
+        )
+
+    fun withRequiredCompetence(requiredCompetence: Boolean = true): HakemusBuilder =
+        updateApplicationData(
+            { throw InvalidParameterException("Not available for cable reports.") },
+            { copy(requiredCompetence = requiredCompetence) },
+        )
+
     private fun updateApplicationData(
-        onCableReport: CableReportApplicationData.() -> CableReportApplicationData,
-        onExcavationNotification: ExcavationNotificationData.() -> ExcavationNotificationData,
+        onCableReport: JohtoselvityshakemusEntityData.() -> JohtoselvityshakemusEntityData,
+        onExcavationNotification: KaivuilmoitusEntityData.() -> KaivuilmoitusEntityData,
     ) = apply {
-        applicationEntity.applicationData =
-            when (applicationEntity.applicationType) {
+        hakemusEntity.hakemusEntityData =
+            when (hakemusEntity.applicationType) {
                 ApplicationType.CABLE_REPORT -> {
-                    (applicationEntity.applicationData as CableReportApplicationData)
+                    (hakemusEntity.hakemusEntityData as JohtoselvityshakemusEntityData)
                         .onCableReport()
                 }
                 ApplicationType.EXCAVATION_NOTIFICATION -> {
-                    (applicationEntity.applicationData as ExcavationNotificationData)
+                    (hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData)
                         .onExcavationNotification()
                 }
             }
     }
 
     /** Set all the fields that need to be set for the application to be valid for sending. */
-    fun withMandatoryFields() =
-        withName(ApplicationFactory.DEFAULT_APPLICATION_NAME)
-            .withWorkDescription(ApplicationFactory.DEFAULT_WORK_DESCRIPTION)
-            .withStartTime()
-            .withEndTime()
-            .withArea()
-            .withRockExcavation(false)
-            .hakija()
-            .tyonSuorittaja(founder())
+    fun withMandatoryFields(hankealue: SavedHankealue? = null): HakemusBuilder =
+        when (hakemusEntity.hakemusEntityData) {
+            is JohtoselvityshakemusEntityData ->
+                withName(ApplicationFactory.DEFAULT_APPLICATION_NAME)
+                    .withWorkDescription(ApplicationFactory.DEFAULT_WORK_DESCRIPTION)
+                    .withStartTime()
+                    .withEndTime()
+                    .withArea()
+                    .withRockExcavation(false)
+                    .hakija()
+                    .tyonSuorittaja(founder())
+            is KaivuilmoitusEntityData ->
+                withName(ApplicationFactory.DEFAULT_APPLICATION_NAME)
+                    .withWorkDescription(ApplicationFactory.DEFAULT_WORK_DESCRIPTION)
+                    .withStartTime()
+                    .withEndTime()
+                    .withArea(hankealue?.id)
+                    .withCableReports(
+                        listOf(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER))
+                    .withWorkInvolves()
+                    .withRequiredCompetence()
+                    .hakija()
+                    .tyonSuorittaja(founder())
+        }
 
     private fun founder(): HankekayttajaEntity =
         hankeKayttajaService.getKayttajaByUserId(hankeId, userId)!!
@@ -250,7 +323,7 @@ data class HakemusBuilder(
         val yhteyshenkiloEntities =
             yhteyshenkilot.map { createYhteyshenkiloEntity(yhteystietoEntity, it) }
         yhteystietoEntity.yhteyshenkilot.addAll(yhteyshenkiloEntities)
-        applicationEntity.yhteystiedot[rooli] = yhteystietoEntity
+        hakemusEntity.yhteystiedot[rooli] = yhteystietoEntity
 
         return this
     }
@@ -266,7 +339,7 @@ data class HakemusBuilder(
         val yhteyshenkiloEntity = createYhteyshenkiloEntity(yhteystietoEntity, kayttaja, tilaaja)
 
         yhteystietoEntity.yhteyshenkilot.add(yhteyshenkiloEntity)
-        applicationEntity.yhteystiedot[rooli] = yhteystietoEntity
+        hakemusEntity.yhteystiedot[rooli] = yhteystietoEntity
         return this
     }
 
@@ -275,7 +348,7 @@ data class HakemusBuilder(
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
     ): HankekayttajaEntity =
         hankeKayttajaFactory.findOrSaveIdentifiedUser(
-            applicationEntity.hanke.id,
+            hakemusEntity.hanke.id,
             kayttajaInput,
             kayttooikeustaso = kayttooikeustaso,
         )
@@ -291,7 +364,7 @@ data class HakemusBuilder(
             sahkoposti = yhteystieto.sahkoposti,
             puhelinnumero = yhteystieto.puhelinnumero,
             ytunnus = yhteystieto.ytunnus,
-            application = applicationEntity,
+            application = hakemusEntity,
         )
 
     private fun createYhteyshenkiloEntity(
@@ -300,8 +373,5 @@ data class HakemusBuilder(
         tilaaja: Boolean = false
     ) =
         HakemusyhteyshenkiloEntity(
-            hankekayttaja = kayttaja,
-            hakemusyhteystieto = yhteystietoEntity,
-            tilaaja = tilaaja
-        )
+            hankekayttaja = kayttaja, hakemusyhteystieto = yhteystietoEntity, tilaaja = tilaaja)
 }

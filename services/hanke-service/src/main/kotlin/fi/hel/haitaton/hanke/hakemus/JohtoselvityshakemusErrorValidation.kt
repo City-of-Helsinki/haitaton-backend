@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.hakemus
 
-import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.validation.ValidationResult
 import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
 import fi.hel.haitaton.hanke.validation.Validators.notJustWhitespace

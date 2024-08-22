@@ -78,8 +78,8 @@ object AuditLogEntryEntityAsserts {
     fun Assert<AuditLogTarget>.hasId(id: Any) =
         prop(AuditLogTarget::id).isNotNull().isEqualTo(id.toString())
 
-    fun Assert<AuditLogEntryEntity>.hasTargetType(type: ObjectType) =
-        auditEvent().prop(AuditLogEvent::target).prop(AuditLogTarget::type).isEqualTo(type)
+    fun Assert<AuditLogTarget>.hasTargetType(type: ObjectType) =
+        prop(AuditLogTarget::type).isEqualTo(type)
 
     fun Assert<AuditLogEntryEntity>.isSuccess(
         operation: Operation,

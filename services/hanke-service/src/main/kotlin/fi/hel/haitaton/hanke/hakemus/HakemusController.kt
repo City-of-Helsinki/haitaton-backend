@@ -3,11 +3,6 @@ package fi.hel.haitaton.hanke.hakemus
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
-import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
-import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
-import fi.hel.haitaton.hanke.application.ApplicationGeometryException
-import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -24,7 +19,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -48,10 +42,6 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @Validated
 @SecurityRequirement(name = "bearerAuth")
-@ConditionalOnProperty(
-    name = ["haitaton.features.user-management"],
-    havingValue = "true",
-)
 class HakemusController(
     private val hakemusService: HakemusService,
     private val hankeService: HankeService,
@@ -73,7 +63,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
     fun getById(@PathVariable(name = "id") id: Long): HakemusResponse {
         logger.info { "Finding application $id" }
         val response = hakemusService.hakemusResponse(id)
@@ -100,7 +90,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankkeenHakemukset(@PathVariable hankeTunnus: String): HankkeenHakemuksetResponse {
         logger.info { "Finding applications for hanke $hankeTunnus" }
         val response = hakemusService.hankkeenHakemuksetResponse(hankeTunnus)
@@ -126,7 +116,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeCreate(#createHakemusRequest)")
+    @PreAuthorize("@hakemusAuthorizer.authorizeCreate(#createHakemusRequest)")
     fun create(
         @ValidCreateHakemusRequest @RequestBody createHakemusRequest: CreateHakemusRequest
     ): HakemusResponse {
@@ -218,7 +208,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun update(
         @PathVariable(name = "id") id: Long,
         @ValidHakemusUpdateRequest @RequestBody request: HakemusUpdateRequest
@@ -256,8 +246,8 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
-    fun delete(@PathVariable(name = "id") id: Long): ApplicationDeletionResultDto {
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
+    fun delete(@PathVariable(name = "id") id: Long): HakemusDeletionResultDto {
         val userId = currentUserId()
         logger.info { "Received request to delete application id=$id, userId=$userId" }
         val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(id, userId)
@@ -296,7 +286,7 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun sendHakemus(@PathVariable(name = "id") id: Long): HakemusResponse =
         hakemusService.sendHakemus(id, currentUserId()).toResponse()
 
@@ -321,10 +311,10 @@ class HakemusController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
     fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
         val userId = currentUserId()
-        val (filename, pdfBytes) = hakemusService.downloadDecision(id, userId)
+        val (filename, pdfBytes) = hakemusService.downloadDecision(id)
         val application = hakemusService.getById(id)
         disclosureLogService.saveDisclosureLogsForCableReport(application.toMetadata(), userId)
 
@@ -344,10 +334,10 @@ class HakemusController(
         return HankeErrorDetail(hankeError = HankeError.HAI2008, errorPaths = ex.errorPaths)
     }
 
-    @ExceptionHandler(ApplicationAlreadySentException::class)
+    @ExceptionHandler(HakemusAlreadySentException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
-    fun applicationAlreadySentException(ex: ApplicationAlreadySentException): HankeError {
+    fun applicationAlreadySentException(ex: HakemusAlreadySentException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2009
     }
@@ -362,19 +352,19 @@ class HakemusController(
         return HankeError.HAI2002
     }
 
-    @ExceptionHandler(ApplicationGeometryException::class)
+    @ExceptionHandler(HakemusGeometryException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
-    fun applicationGeometryException(ex: ApplicationGeometryException): HankeError {
+    fun applicationGeometryException(ex: HakemusGeometryException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2005
     }
 
-    @ExceptionHandler(ApplicationGeometryNotInsideHankeException::class)
+    @ExceptionHandler(HakemusGeometryNotInsideHankeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
     fun applicationGeometryNotInsideHankeException(
-        ex: ApplicationGeometryNotInsideHankeException
+        ex: HakemusGeometryNotInsideHankeException
     ): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2007
@@ -412,10 +402,10 @@ class HakemusController(
         return HankeError.HAI2012
     }
 
-    @ExceptionHandler(ApplicationDecisionNotFoundException::class)
+    @ExceptionHandler(HakemusDecisionNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @Hidden
-    fun applicationDecisionNotFoundException(ex: ApplicationDecisionNotFoundException): HankeError {
+    fun applicationDecisionNotFoundException(ex: HakemusDecisionNotFoundException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2006
     }

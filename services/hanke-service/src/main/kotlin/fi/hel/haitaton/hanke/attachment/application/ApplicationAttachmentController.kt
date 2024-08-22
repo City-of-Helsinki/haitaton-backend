@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -14,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -51,7 +53,7 @@ class ApplicationAttachmentController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#applicationId, 'VIEW')")
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#applicationId, 'VIEW')")
     fun getApplicationAttachments(
         @PathVariable applicationId: Long
     ): List<ApplicationAttachmentMetadataDto> {
@@ -71,9 +73,7 @@ class ApplicationAttachmentController(
                 ),
             ]
     )
-    @PreAuthorize(
-        "@applicationAuthorizer.authorizeAttachment(#applicationId, #attachmentId, 'VIEW')"
-    )
+    @PreAuthorize("@hakemusAuthorizer.authorizeAttachment(#applicationId, #attachmentId, 'VIEW')")
     fun getApplicationAttachmentContent(
         @PathVariable applicationId: Long,
         @PathVariable attachmentId: UUID,
@@ -85,7 +85,7 @@ class ApplicationAttachmentController(
             .body(content.bytes)
     }
 
-    @PostMapping
+    @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @Operation(
         summary = "Upload attachment for application",
         description =
@@ -112,9 +112,7 @@ class ApplicationAttachmentController(
                 ),
             ]
     )
-    @PreAuthorize(
-        "@applicationAuthorizer.authorizeApplicationId(#applicationId, 'EDIT_APPLICATIONS')"
-    )
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#applicationId, 'EDIT_APPLICATIONS')")
     fun postAttachment(
         @PathVariable applicationId: Long,
         @RequestParam("tyyppi") tyyppi: ApplicationAttachmentType,
@@ -146,7 +144,7 @@ class ApplicationAttachmentController(
             ]
     )
     @PreAuthorize(
-        "@applicationAuthorizer.authorizeAttachment(#applicationId, #attachmentId, 'EDIT_APPLICATIONS')"
+        "@hakemusAuthorizer.authorizeAttachment(#applicationId, #attachmentId, 'EDIT_APPLICATIONS')"
     )
     fun removeAttachment(@PathVariable applicationId: Long, @PathVariable attachmentId: UUID) {
         logger.info { "Deleting attachment $attachmentId from application $applicationId." }
@@ -159,5 +157,13 @@ class ApplicationAttachmentController(
     fun alluDataError(ex: ApplicationInAlluException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2009
+    }
+
+    @ExceptionHandler(ValtakirjaForbiddenException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @Hidden
+    fun valtakirjaForbiddenException(ex: ValtakirjaForbiddenException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI3004
     }
 }

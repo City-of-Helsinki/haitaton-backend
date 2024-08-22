@@ -3,11 +3,9 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
-import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
-import fi.hel.haitaton.hanke.TZ_UTC
-import fi.hel.haitaton.hanke.domain.SavedHankealue
-import fi.hel.haitaton.hanke.domain.geometriaIds
-import fi.hel.haitaton.hanke.factory.GeometriaFactory
+import fi.hel.haitaton.hanke.HankealueEntity
+import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30
 import io.mockk.checkUnnecessaryStub
@@ -17,7 +15,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
-import java.time.ZonedDateTime
+import io.mockk.verifySequence
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -26,6 +24,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class TormaystarkasteluLaskentaServiceTest {
@@ -42,30 +41,6 @@ internal class TormaystarkasteluLaskentaServiceTest {
     fun checkMocks() {
         checkUnnecessaryStub()
         confirmVerified(tormaysService)
-    }
-
-    @ParameterizedTest(name = "Autoliikenneindeksi with default weights should be {0}")
-    @CsvSource("1.0,1,1,1,1,1", "1.9,1,2,2,2,2", "3.0,3,3,3,3,3", "3.9,3,4,4,4,4", "5.0,5,5,5,5,5")
-    fun autoliikenneindeksiCalculatorTest(
-        indeksi: Float,
-        haittaAjanKesto: Int,
-        todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin: Int,
-        kaistajarjestelynPituus: Int,
-        katuluokka: Int,
-        liikennemaara: Int
-    ) {
-        val luokittelu =
-            mapOf(
-                LuokitteluType.HAITTA_AJAN_KESTO to haittaAjanKesto,
-                LuokitteluType.VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN to
-                    todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin,
-                LuokitteluType.AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS to kaistajarjestelynPituus,
-                LuokitteluType.KATULUOKKA to katuluokka,
-                LuokitteluType.AUTOLIIKENTEEN_MAARA to liikennemaara
-            )
-        val autoliikenneindeksi =
-            laskentaService.calculateAutoliikenneindeksiFromLuokittelu(luokittelu)
-        assertThat(autoliikenneindeksi).isEqualTo(indeksi)
     }
 
     @Nested
@@ -282,46 +257,32 @@ internal class TormaystarkasteluLaskentaServiceTest {
     }
 
     @Nested
-    inner class Pyoraliikenneluokittelu {
+    inner class CalculatePyoraliikenneindeksi {
         // The parameter is only used to call mocks
-        val geometriat = setOf<Int>()
+        val geometriat = setOf(6)
 
-        @Test
-        fun `returns 5 when intersect with priority route`() {
-            every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) } returns true
+        @ParameterizedTest
+        @ValueSource(ints = [2, 3, 5])
+        fun `returns the matching float when the geometries intersect with cycle routes`(
+            hierarkiaValue: Int
+        ) {
+            every { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) } returns
+                hierarkiaValue
 
-            val result = laskentaService.pyoraliikenneluokittelu(geometriat)
+            val result = laskentaService.calculatePyoraliikenneindeksi(geometriat)
 
-            assertThat(result).isEqualTo(5)
-            verify { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) }
+            assertThat(result).isEqualTo(hierarkiaValue.toFloat())
+            verifySequence { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) }
         }
 
         @Test
-        fun `returns 4 when intersect with main route, but not priority route`() {
-            every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) } returns false
-            every { tormaysService.anyIntersectsWithCyclewaysMain(geometriat) } returns true
+        fun `returns 0 when the geometries don't intersect with any cycle routes`() {
+            every { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) } returns null
 
-            val result = laskentaService.pyoraliikenneluokittelu(geometriat)
+            val result = laskentaService.calculatePyoraliikenneindeksi(geometriat)
 
-            assertThat(result).isEqualTo(4)
-            verifyAll {
-                tormaysService.anyIntersectsWithCyclewaysPriority(geometriat)
-                tormaysService.anyIntersectsWithCyclewaysMain(geometriat)
-            }
-        }
-
-        @Test
-        fun `returns 0 when doesn't intersect with either`() {
-            every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) } returns false
-            every { tormaysService.anyIntersectsWithCyclewaysMain(geometriat) } returns false
-
-            val result = laskentaService.pyoraliikenneluokittelu(geometriat)
-
-            assertThat(result).isEqualTo(0)
-            verifyAll {
-                tormaysService.anyIntersectsWithCyclewaysPriority(geometriat)
-                tormaysService.anyIntersectsWithCyclewaysMain(geometriat)
-            }
+            assertThat(result).isEqualTo(0f)
+            verifySequence { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriat) }
         }
     }
 
@@ -334,9 +295,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `returns 5 when intersects with a tram line`() {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns true
 
-            val result = laskentaService.raitioliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateRaitioliikenneindeksi(geometriat)
 
-            assertThat(result).isEqualTo(5)
+            assertThat(result).isEqualTo(5f)
             verify { tormaysService.anyIntersectsWithTramLines(geometriat) }
             verify(exactly = 0) { tormaysService.anyIntersectsWithTramInfra(geometriat) }
         }
@@ -346,9 +307,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
             every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns true
 
-            val result = laskentaService.raitioliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateRaitioliikenneindeksi(geometriat)
 
-            assertThat(result).isEqualTo(3)
+            assertThat(result).isEqualTo(3f)
             verifyAll {
                 tormaysService.anyIntersectsWithTramLines(geometriat)
                 tormaysService.anyIntersectsWithTramInfra(geometriat)
@@ -360,9 +321,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
             every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns false
 
-            val result = laskentaService.raitioliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateRaitioliikenneindeksi(geometriat)
 
-            assertThat(result).isEqualTo(0)
+            assertThat(result).isEqualTo(0f)
             verifyAll {
                 tormaysService.anyIntersectsWithTramLines(geometriat)
                 tormaysService.anyIntersectsWithTramInfra(geometriat)
@@ -379,7 +340,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `returns 5 when intersects with critical bus routes`() {
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns true
 
-            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateLinjaautoliikenneindeksi(geometriat)
 
             assertThat(result).isEqualTo(5)
             verify { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) }
@@ -390,7 +351,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometriat) } returns setOf()
 
-            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateLinjaautoliikenneindeksi(geometriat)
 
             assertThat(result).isEqualTo(0)
             verifyAll {
@@ -425,7 +386,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometriat) } returns busLines
 
-            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateLinjaautoliikenneindeksi(geometriat)
 
             assertThat(result).isEqualTo(expectedResult)
             verifyAll {
@@ -447,7 +408,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometriat) } returns busLines
 
-            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
+            val result = laskentaService.calculateLinjaautoliikenneindeksi(geometriat)
 
             assertThat(result).isEqualTo(expectedResult)
             verifyAll {
@@ -459,56 +420,99 @@ internal class TormaystarkasteluLaskentaServiceTest {
 
     @Test
     fun `calculateTormaystarkastelu happy case`() {
-        val alueet = setupHappyCase()
-        val geometriaIds = alueet.geometriaIds()
+        val alue = setupHappyCase()
 
-        val tulos = laskentaService.calculateTormaystarkastelu(alueet, geometriaIds)
+        val tulos = laskentaService.calculateTormaystarkastelu(alue)
 
         assertThat(tulos).isNotNull()
         assertThat(tulos!!.liikennehaittaindeksi).isNotNull()
-        assertThat(tulos.liikennehaittaindeksi.indeksi).isNotNull()
         assertThat(tulos.liikennehaittaindeksi.indeksi).isEqualTo(5.0f)
+        assertThat(tulos.liikennehaittaindeksi.tyyppi)
+            .isEqualTo(IndeksiType.LINJAAUTOLIIKENNEINDEKSI)
+        assertThat(tulos.autoliikenne.haitanKesto).isEqualTo(1)
+        assertThat(tulos.autoliikenne.katuluokka).isEqualTo(4)
+        assertThat(tulos.autoliikenne.liikennemaara).isEqualTo(2)
+        assertThat(tulos.autoliikenne.kaistahaitta).isEqualTo(2)
+        assertThat(tulos.autoliikenne.kaistapituushaitta).isEqualTo(2)
+        assertThat(tulos.autoliikenne.indeksi).isEqualTo(2.3f)
+        assertThat(tulos.linjaautoliikenneindeksi).isEqualTo(5.0f)
         assertThat(tulos.raitioliikenneindeksi).isEqualTo(3.0f)
+        assertThat(tulos.pyoraliikenneindeksi).isEqualTo(3.0f)
 
-        verifyAll {
+        val geometriaIds = setOf(alue.geometriat!!)
+        verifySequence {
             tormaysService.anyIntersectsYleinenKatuosa(geometriaIds)
             tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds)
             tormaysService.maxLiikennemaara(geometriaIds, RADIUS_30)
-            tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds)
-            tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds)
+            tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriaIds)
             tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds)
             tormaysService.anyIntersectsWithTramLines(geometriaIds)
             tormaysService.anyIntersectsWithTramInfra(geometriaIds)
         }
     }
 
-    private fun setupHappyCase(): List<SavedHankealue> {
+    private fun setupHappyCase(): HankealueEntity {
 
-        val alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
-        val alueet =
-            listOf(
-                SavedHankealue(
-                    geometriat = GeometriaFactory.create(),
-                    haittaAlkuPvm = alkuPvm,
-                    haittaLoppuPvm = alkuPvm.plusDays(7),
-                    kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.EI_VAIKUTA,
-                    kaistaPituusHaitta =
-                        AutoliikenteenKaistavaikutustenPituus.EI_VAIKUTA_KAISTAJARJESTELYIHIN,
-                    nimi = "$HANKEALUE_DEFAULT_NAME 1"
-                )
-            )
-        val geometriaIds = alueet.geometriaIds()
+        val alue = HankealueFactory.createHankeAlueEntity(hankeEntity = HankeFactory.createEntity())
+        val geometriaIds = setOf(alue.geometriat!!)
 
         every { tormaysService.anyIntersectsYleinenKatuosa(geometriaIds) } returns true
         every { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds) } returns
             TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value
         every { tormaysService.maxLiikennemaara(geometriaIds, RADIUS_30) } returns 1000
-        every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds) } returns false
-        every { tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds) } returns true
+        every { tormaysService.maxIntersectingPyoraliikenneHierarkia(geometriaIds) } returns
+            PyoraliikenteenHierarkia.MUU_PYORAREITTI.value
         every { tormaysService.anyIntersectsWithTramInfra(geometriaIds) } returns true
         every { tormaysService.anyIntersectsWithTramLines(geometriaIds) } returns false
         every { tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds) } returns true
 
-        return alueet
+        return alue
+    }
+
+    @Nested
+    inner class Autoliikenneindeksi {
+        @ParameterizedTest(name = "Autoliikenneindeksi for {0},{1},{2},{3},{4} should be {5}")
+        @CsvSource(
+            "1,0,1,1,1,0.8",
+            "1,1,0,1,1,0.8",
+            "1,1,1,1,1,1.0",
+            "1,2,2,2,2,1.9",
+            "3,3,3,3,3,3.0",
+            "3,4,4,4,4,3.9",
+            "5,5,5,5,5,5.0"
+        )
+        fun `calculate index`(
+            haittaAjanKesto: Int,
+            katuluokka: Int,
+            liikennemaara: Int,
+            kaistahaitta: Int,
+            kaistapituushaitta: Int,
+            indeksi: Float,
+        ) {
+            assertThat(
+                    TormaystarkasteluLaskentaService.calculateAutoliikenneindeksi(
+                        haittaAjanKesto,
+                        katuluokka,
+                        liikennemaara,
+                        kaistahaitta,
+                        kaistapituushaitta,
+                    )
+                )
+                .isEqualTo(indeksi)
+        }
+
+        @Test
+        fun `index should be 0 when there is no street class nor traffic`() {
+            assertThat(
+                    TormaystarkasteluLaskentaService.calculateAutoliikenneindeksi(
+                        5,
+                        0,
+                        0,
+                        5,
+                        5,
+                    )
+                )
+                .isEqualTo(0.0f)
+        }
     }
 }

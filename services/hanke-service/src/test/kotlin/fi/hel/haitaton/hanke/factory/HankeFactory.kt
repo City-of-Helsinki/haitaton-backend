@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.HankeYhteyshenkiloRepository
 import fi.hel.haitaton.hanke.HankeYhteystietoRepository
 import fi.hel.haitaton.hanke.HanketunnusService
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
+import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeStatus
@@ -19,12 +20,14 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
+import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
+import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.test.USERNAME
+import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.ZonedDateTime
 import org.springframework.stereotype.Component
 
@@ -196,7 +199,6 @@ class HankeFactory(
                                 createdByUser = defaultUser
                             )
                         )
-                    tormaystarkasteluTulokset = mutableListOf(tormaysTarkastelu(hankeEntity = this))
                 }
 
         fun createRequest(
@@ -216,6 +218,8 @@ class HankeFactory(
             nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
             haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
             haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
+            haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma? =
+                createHaittojenhallintasuunnitelma(),
         ): Hanke {
             this.tyomaaKatuosoite = "Testikatu 1"
             this.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
@@ -226,6 +230,7 @@ class HankeFactory(
                     nimi = nimi,
                     haittaAlkuPvm = haittaAlkuPvm,
                     haittaLoppuPvm = haittaLoppuPvm,
+                    haittojenhallintasuunnitelma = haittojenhallintasuunnitelma,
                 )
             this.alueet.add(alue)
 
@@ -233,14 +238,14 @@ class HankeFactory(
         }
 
         fun Hanke.withTormaystarkasteluTulos(
-            autoliikenneindeksi: Float = 1f,
+            autoliikenne: Autoliikenneluokittelu = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
             pyoraliikenneindeksi: Float = 1f,
             linjaautoliikenneindeksi: Float = 1f,
             raitioliikenneindeksi: Float = 1f,
         ): Hanke {
             this.tormaystarkasteluTulos =
                 TormaystarkasteluTulos(
-                    autoliikenneindeksi,
+                    autoliikenne,
                     pyoraliikenneindeksi,
                     linjaautoliikenneindeksi,
                     raitioliikenneindeksi,
@@ -323,18 +328,5 @@ class HankeFactory(
             muut.add(HankeYhteystietoFactory.createDifferentiated(i, id, yhteyshenkilo.toList()))
             return this
         }
-
-        private fun tormaysTarkastelu(
-            id: Int = 1,
-            hankeEntity: HankeEntity
-        ): TormaystarkasteluTulosEntity =
-            TormaystarkasteluTulosEntity(
-                id = id,
-                autoliikenne = 1.25f,
-                pyoraliikenne = 2.5f,
-                linjaautoliikenne = 3.75f,
-                raitioliikenne = 3.75f,
-                hanke = hankeEntity,
-            )
     }
 }
