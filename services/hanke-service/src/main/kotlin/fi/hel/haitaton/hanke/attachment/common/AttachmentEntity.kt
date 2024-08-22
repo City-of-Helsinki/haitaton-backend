@@ -171,4 +171,12 @@ enum class ApplicationAttachmentType {
     MUU,
     LIIKENNEJARJESTELY,
     VALTAKIRJA,
+    ;
+
+    fun toFinnish(): String =
+        when (this) {
+            MUU -> "Muu liite"
+            LIIKENNEJARJESTELY -> "Liikennejärjestelysuunnitelma"
+            VALTAKIRJA -> "Valtakirja"
+        }
 }
