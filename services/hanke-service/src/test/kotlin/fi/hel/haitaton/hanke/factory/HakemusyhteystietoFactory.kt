@@ -1,11 +1,12 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.ApplicationEntity
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
+import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
 import java.util.UUID
 import org.springframework.stereotype.Component
 
@@ -17,6 +18,7 @@ object HakemusyhteystietoFactory {
     private const val DEFAULT_SAHKOPOSTI = "hakija@testi.fi"
     private const val DEFAULT_PUHELINNUMERO = "0401234567"
     private const val DEFAULT_YTUNNUS = "1817548-2"
+    private const val DEFAULT_OVT = "003718175482"
 
     private const val DEFAULT_PERSON_NIMI = "Pertti Perushenkilö"
     private const val DEFAULT_PERSON_SAHKOPOSTI = "pertti@perus.fi"
@@ -29,7 +31,7 @@ object HakemusyhteystietoFactory {
         sahkoposti: String = DEFAULT_SAHKOPOSTI,
         puhelinnumero: String = DEFAULT_PUHELINNUMERO,
         ytunnus: String? = DEFAULT_YTUNNUS,
-        application: ApplicationEntity,
+        application: HakemusEntity,
     ): HakemusyhteystietoEntity =
         HakemusyhteystietoEntity(
             tyyppi = tyyppi,
@@ -94,4 +96,31 @@ object HakemusyhteystietoFactory {
             HakemusyhteyshenkiloFactory.create(etunimi, sukunimi, sahkoposti, puhelin, tilaaja)
         return copy(yhteyshenkilot = yhteyshenkilot + yhteyshenkilo)
     }
+
+    fun createLaskutusyhteystieto(
+        tyyppi: CustomerType = CustomerType.COMPANY,
+        nimi: String = DEFAULT_NIMI,
+        sahkoposti: String? = null,
+        puhelinnumero: String? = null,
+        ytunnus: String? = DEFAULT_YTUNNUS,
+        ovttunnus: String? = DEFAULT_OVT,
+        valittajanTunnus: String? = DEFAULT_OVT,
+        asiakkaanViite: String? = null,
+        katuosoite: String? = null,
+        postinumero: String? = null,
+        postitoimipaikka: String? = null,
+    ) =
+        Laskutusyhteystieto(
+            tyyppi = tyyppi,
+            nimi = nimi,
+            ytunnus = ytunnus,
+            ovttunnus = ovttunnus,
+            valittajanTunnus = valittajanTunnus,
+            asiakkaanViite = asiakkaanViite,
+            katuosoite = katuosoite,
+            postinumero = postinumero,
+            postitoimipaikka = postitoimipaikka,
+            sahkoposti = sahkoposti,
+            puhelinnumero = puhelinnumero,
+        )
 }

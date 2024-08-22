@@ -1,9 +1,9 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.hakemus.CreateJohtoselvityshakemusRequest
 import fi.hel.haitaton.hanke.hakemus.CreateKaivuilmoitusRequest
 import fi.hel.haitaton.hanke.hakemus.PostalAddressRequest
+import fi.hel.haitaton.hanke.hakemus.StreetAddress
 
 object CreateHakemusRequestFactory {
 

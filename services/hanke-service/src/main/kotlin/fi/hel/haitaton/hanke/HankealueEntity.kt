@@ -1,20 +1,32 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
+import jakarta.persistence.CascadeType
+import jakarta.persistence.CollectionTable
+import jakarta.persistence.Column
+import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.MapKeyColumn
+import jakarta.persistence.MapKeyEnumerated
+import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 @Entity
 @Table(name = "hankealue")
@@ -29,13 +41,37 @@ class HankealueEntity(
     var geometriat: Int? = null,
     var haittaAlkuPvm: LocalDate? = null,
     var haittaLoppuPvm: LocalDate? = null,
-    var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
+    @Enumerated(EnumType.STRING) var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
+    @Enumerated(EnumType.STRING)
     var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
-    var meluHaitta: Meluhaitta? = null,
-    var polyHaitta: Polyhaitta? = null,
-    var tarinaHaitta: Tarinahaitta? = null,
-    var nimi: String
+    @Enumerated(EnumType.STRING) var meluHaitta: Meluhaitta? = null,
+    @Enumerated(EnumType.STRING) var polyHaitta: Polyhaitta? = null,
+    @Enumerated(EnumType.STRING) var tarinaHaitta: Tarinahaitta? = null,
+    var nimi: String,
+    // Made bidirectional relation mainly to allow cascaded delete.
+    @OneToOne(
+        fetch = FetchType.LAZY,
+        mappedBy = "hankealue",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    var tormaystarkasteluTulos: TormaystarkasteluTulosEntity?,
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+        name = "hankkeen_haittojenhallintasuunnitelma",
+        joinColumns = [JoinColumn(name = "hankealue_id", referencedColumnName = "id")]
+    )
+    @MapKeyColumn(name = "tyyppi")
+    @Column(name = "sisalto")
+    @MapKeyEnumerated(EnumType.STRING)
+    var haittojenhallintasuunnitelma: MutableMap<Haittojenhallintatyyppi, String> = mutableMapOf(),
 ) : HasId<Int> {
+    fun haittaAjanKestoDays(): Int? =
+        if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
+            ChronoUnit.DAYS.between(haittaAlkuPvm, haittaLoppuPvm).toInt() + 1
+        } else {
+            null
+        }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -71,5 +107,3 @@ class HankealueEntity(
         return result
     }
 }
-
-fun List<HankealueEntity>.geometriaIds(): Set<Int> = mapNotNull { it.geometriat }.toSet()

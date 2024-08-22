@@ -9,9 +9,9 @@ import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.email.EmailSenderService.Companion.translations
 import fi.hel.haitaton.hanke.firstReceivedMessage
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import org.apache.commons.text.StringEscapeUtils
 import org.junit.jupiter.api.Nested
@@ -147,9 +147,9 @@ class EmailSenderServiceITest : IntegrationTest() {
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on lisätty hankkeelle HAI24-1 " +
-                        "/ Du har lagts till i projektet HAI24-1 " +
-                        "/ You have been added to project HAI24-1"
+                    "Haitaton: Sinut on kutsuttu hankkeelle HAI24-1 " +
+                        "/ Du har blivit inbjuden till projektet HAI24-1 " +
+                        "/ You have been invited to project HAI24-1"
                 )
         }
 
@@ -160,7 +160,9 @@ class EmailSenderServiceITest : IntegrationTest() {
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = email.bodies()
             assertThat(textBody).all {
-                contains("${notification.inviterName} (${notification.inviterEmail}) lisäsi sinut")
+                contains(
+                    "${notification.inviterName} (${notification.inviterEmail}) on kutsunut sinut"
+                )
                 contains("hankkeelle ${notification.hankeNimi} (${notification.hankeTunnus}).")
                 contains("http://localhost:3001/fi/kutsu?id=${notification.invitationToken}")
             }

@@ -1,9 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.application
 
-import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.Application
-import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
-import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
@@ -12,8 +9,12 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.attachment.common.hasInfected
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
+import fi.hel.haitaton.hanke.hakemus.HakemusMetaData
+import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
@@ -25,9 +26,9 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class ApplicationAttachmentService(
-    private val cableReportService: CableReportService,
+    private val alluClient: AlluClient,
     private val metadataService: ApplicationAttachmentMetadataService,
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) {
@@ -37,6 +38,11 @@ class ApplicationAttachmentService(
 
     fun getContent(attachmentId: UUID): AttachmentContent {
         val attachment = metadataService.findAttachment(attachmentId)
+
+        if (attachment.attachmentType == ApplicationAttachmentType.VALTAKIRJA) {
+            throw ValtakirjaForbiddenException(attachmentId)
+        }
+
         val content = attachmentContentService.find(attachment)
 
         return AttachmentContent(attachment.fileName, attachment.contentType, content)
@@ -56,34 +62,47 @@ class ApplicationAttachmentService(
                 "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}, " +
                 "content type = ${attachment.contentType}"
         }
+        AttachmentValidator.validateSize(attachment.bytes.size)
         val filename = AttachmentValidator.validFilename(attachment.originalFilename)
-        val application = findApplication(applicationId)
+        AttachmentValidator.validateExtensionForType(filename, attachmentType)
+        val hakemus = findHakemus(applicationId)
 
-        if (isInAllu(application)) {
+        if (isInAllu(hakemus)) {
             logger.warn {
-                "Application is in Allu, attachments cannot be added. applicationId = $applicationId, alluid = ${application.alluid}"
+                "Application is in Allu, attachments cannot be added. ${hakemus.logString()}"
             }
-            throw ApplicationInAlluException(application.id, application.alluid)
+            throw ApplicationInAlluException(hakemus.id, hakemus.alluid)
         }
 
         val contentType = ensureContentTypeIsValid(attachment.contentType)
         scanAttachment(filename, attachment.bytes)
         metadataService.ensureRoomForAttachment(applicationId)
 
-        logger.info { "Saving attachment content for application $applicationId" }
-        val blobPath =
-            attachmentContentService.upload(filename, contentType, attachment.bytes, applicationId)
-        logger.info { "Saving attachment metadata for application $applicationId" }
+        val newAttachment =
+            saveAttachment(hakemus, attachment.bytes, filename, contentType, attachmentType)
+
+        return newAttachment.toDto()
+    }
+
+    fun saveAttachment(
+        hakemus: HakemusMetaData,
+        content: ByteArray,
+        filename: String,
+        contentType: MediaType,
+        attachmentType: ApplicationAttachmentType
+    ): ApplicationAttachmentMetadata {
+        logger.info { "Saving attachment content for application. ${hakemus.logString()}" }
+        val blobPath = attachmentContentService.upload(filename, contentType, content, hakemus.id)
+        logger.info { "Saving attachment metadata for application. ${hakemus.logString()}" }
         val newAttachment =
             try {
                 metadataService.create(
                     filename,
                     contentType.toString(),
-                    attachment.size,
+                    content.size.toLong(),
                     blobPath,
                     attachmentType,
-                    applicationId
-                )
+                    hakemus.id)
             } catch (e: Exception) {
                 logger.error(e) {
                     "Attachment metadata save failed, deleting attachment content $blobPath"
@@ -91,30 +110,29 @@ class ApplicationAttachmentService(
                 attachmentContentService.delete(blobPath)
                 throw e
             }
-
         logger.info {
-            "Added attachment metadata ${newAttachment.id} and content $blobPath for application $applicationId"
+            "Added attachment metadata ${newAttachment.id} and content $blobPath for application. ${hakemus.logString()}"
         }
-        return newAttachment.toDto()
+        return newAttachment
     }
 
     /** Attachment can be deleted if the application has not been sent to Allu (alluId null). */
     fun deleteAttachment(attachmentId: UUID) {
         val attachment = metadataService.findAttachment(attachmentId)
-        val application = findApplication(attachment.applicationId)
+        val hakemus = findHakemus(attachment.applicationId)
 
-        if (isInAllu(application)) {
+        if (isInAllu(hakemus)) {
             logger.warn {
-                "Application is in Allu, attachments cannot be deleted. applicationId = ${application.id}, alluid = ${application.alluid}"
+                "Application is in Allu, attachments cannot be deleted. ${hakemus.logString()}"
             }
-            throw ApplicationInAlluException(application.id, application.alluid)
+            throw ApplicationInAlluException(hakemus.id, hakemus.alluid)
         }
 
         logger.info { "Deleting attachment metadata ${attachment.id}" }
         metadataService.deleteAttachmentById(attachment.id)
         logger.info { "Deleting attachment content at ${attachment.blobLocation}" }
         attachmentContentService.delete(attachment.blobLocation)
-        logger.info { "Deleted attachment $attachmentId from application ${application.id}" }
+        logger.info { "Deleted attachment $attachmentId from application ${hakemus.id}" }
     }
 
     fun deleteAllAttachments(hakemus: HakemusIdentifier) {
@@ -138,12 +156,12 @@ class ApplicationAttachmentService(
             return
         }
 
-        cableReportService.addAttachments(alluId, attachments) { attachmentContentService.find(it) }
+        alluClient.addAttachments(alluId, attachments) { attachmentContentService.find(it) }
     }
 
-    private fun findApplication(applicationId: Long): Application =
-        applicationRepository.findByIdOrNull(applicationId)?.toApplication()
-            ?: throw ApplicationNotFoundException(applicationId)
+    private fun findHakemus(applicationId: Long): HakemusMetaData =
+        hakemusRepository.findByIdOrNull(applicationId)?.toMetadata()
+            ?: throw HakemusNotFoundException(applicationId)
 
     private fun scanAttachment(filename: String, content: ByteArray) {
         val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))
@@ -156,5 +174,5 @@ class ApplicationAttachmentService(
         contentType?.let { MediaType.parseMediaType(it) }
             ?: throw AttachmentInvalidException("Content-type was not set")
 
-    private fun isInAllu(application: Application): Boolean = application.alluid != null
+    private fun isInAllu(hakemus: HakemusMetaData): Boolean = hakemus.alluid != null
 }

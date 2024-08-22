@@ -7,7 +7,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "7.8.0"
+val sentryVersion = "7.12.1"
 
 repositories { mavenCentral() }
 
@@ -42,15 +42,15 @@ spotless {
     ratchetFrom("origin/dev") // only format files which have changed since origin/dev
 
     kotlin {
-        ktfmt("0.46").kotlinlangStyle()
+        ktfmt("0.51").kotlinlangStyle()
         toggleOffOn()
     }
 }
 
 plugins {
-    val kotlinVersion = "1.9.23"
-    id("org.springframework.boot") version "3.1.6"
-    id("io.spring.dependency-management") version "1.1.4"
+    val kotlinVersion = "2.0.10"
+    id("org.springframework.boot") version "3.2.8"
+    id("io.spring.dependency-management") version "1.1.6"
     id("com.diffplug.spotless") version "6.25.0"
     kotlin("jvm") version kotlinVersion
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
@@ -59,7 +59,7 @@ plugins {
     kotlin("plugin.jpa") version kotlinVersion
     idea
     id("jacoco")
-    id("io.freefair.mjml.java") version "8.6"
+    id("io.freefair.mjml.java") version "8.7.1"
 }
 
 dependencies {
@@ -79,26 +79,27 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.7.5")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.8.2")
     implementation("commons-io:commons-io:2.16.1")
-    implementation("com.github.librepdf:openpdf:2.0.2")
+    implementation("com.github.librepdf:openpdf:2.0.3")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("com.auth0:java-jwt:4.4.0")
 
     implementation("org.postgresql:postgresql")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
     testImplementation("com.squareup.okhttp3:mockwebserver")
     testImplementation("com.icegreen:greenmail-junit5:2.0.1")
 
     // Testcontainers
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.19.7"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.1"))
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
@@ -114,7 +115,7 @@ dependencies {
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
-    implementation(platform("com.azure:azure-sdk-bom:1.2.23"))
+    implementation(platform("com.azure:azure-sdk-bom:1.2.26"))
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity")
@@ -122,7 +123,7 @@ dependencies {
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }
 
-tasks.withType<KotlinCompile> { kotlinOptions { freeCompilerArgs = listOf("-Xjsr305=strict") } }
+tasks.withType<KotlinCompile> { compilerOptions { freeCompilerArgs = listOf("-Xjsr305=strict") } }
 
 kotlin { jvmToolchain { languageVersion.set(JavaLanguageVersion.of(17)) } }
 

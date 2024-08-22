@@ -2,10 +2,10 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.factory.KayttajaTunnisteFactory.TUNNISTE_ID
 import fi.hel.haitaton.hanke.factory.PermissionFactory.PERMISSION_ID
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.permissions.HankeKayttaja
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
@@ -27,7 +27,7 @@ class HankeKayttajaFactory(
     private val hankeKayttajaRepository: HankekayttajaRepository,
     private val permissionService: PermissionService,
     private val kayttajakutsuRepository: KayttajakutsuRepository,
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
 ) {
 
     fun saveUnidentifiedUser(
@@ -141,7 +141,7 @@ class HankeKayttajaFactory(
 
     @Transactional
     fun getFounderFromHakemus(applicationId: Long): HankekayttajaEntity {
-        val application: ApplicationEntity = applicationRepository.getReferenceById(applicationId)
+        val application: HakemusEntity = hakemusRepository.getReferenceById(applicationId)
         val permission =
             permissionService.findPermission(application.hanke.id, application.userId!!)!!
         return hankeKayttajaRepository.findByPermissionId(permission.id)!!

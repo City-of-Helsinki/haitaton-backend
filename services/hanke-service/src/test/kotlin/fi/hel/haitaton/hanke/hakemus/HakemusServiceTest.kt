@@ -15,20 +15,14 @@ import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatus
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
-import fi.hel.haitaton.hanke.application.ALLU_APPLICATION_ERROR_MSG
-import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.factory.AlluFactory
@@ -45,6 +39,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -70,12 +65,13 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
 
 class HakemusServiceTest {
-    private val applicationRepository: ApplicationRepository = mockk()
+    private val hakemusRepository: HakemusRepository = mockk()
     private val hankeRepository: HankeRepository = mockk()
     private val geometriatDao: GeometriatDao = mockk()
     private val hankealueService: HankealueService = mockk()
@@ -84,13 +80,14 @@ class HakemusServiceTest {
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
     private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
     private val attachmentService: ApplicationAttachmentService = mockk()
-    private val alluClient: CableReportService = mockk()
+    private val alluClient: AlluClient = mockk()
     private val alluStatusRepository: AlluStatusRepository = mockk()
     private val emailSenderService: EmailSenderService = mockk()
+    private val paatosService: PaatosService = mockk()
 
     private val hakemusService =
         HakemusService(
-            applicationRepository,
+            hakemusRepository,
             hankeRepository,
             geometriatDao,
             hankealueService,
@@ -102,6 +99,7 @@ class HakemusServiceTest {
             alluClient,
             alluStatusRepository,
             emailSenderService,
+            paatosService,
         )
 
     @BeforeEach
@@ -113,7 +111,7 @@ class HakemusServiceTest {
     fun checkMocks() {
         checkUnnecessaryStub()
         confirmVerified(
-            applicationRepository,
+            hakemusRepository,
             hankeRepository,
             geometriatDao,
             hankealueService,
@@ -136,8 +134,8 @@ class HakemusServiceTest {
             val hakija = applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]!!
             val suorittaja =
                 applicationEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]!!
-            every { applicationRepository.findOneById(3) } returns applicationEntity
-            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluClient.create(any()) } returns alluId
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse()
@@ -150,10 +148,7 @@ class HakemusServiceTest {
             val applicationCapturingSlot = slot<AlluCableReportApplicationData>()
             justRun {
                 disclosureLogService.saveDisclosureLogsForAllu(
-                    3,
-                    capture(applicationCapturingSlot),
-                    Status.SUCCESS
-                )
+                    3, capture(applicationCapturingSlot), Status.SUCCESS)
             }
 
             hakemusService.sendHakemus(3, USERNAME)
@@ -229,24 +224,24 @@ class HakemusServiceTest {
             assertThat(sent.trafficArrangementImages).isNull()
 
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
                 geometriatDao.calculateCombinedArea(any())
-                geometriatDao.calculateArea(any())
                 attachmentService.getMetadataList(applicationEntity.id)
+                geometriatDao.calculateArea(any())
                 alluClient.create(any())
                 disclosureLogService.saveDisclosureLogsForAllu(3, any(), Status.SUCCESS)
                 alluClient.addAttachment(alluId, any())
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
-                applicationRepository.save(any())
+                hakemusRepository.save(any())
             }
         }
 
         @Test
         fun `saves disclosure logs when sending fails`() {
             val applicationEntity = applicationEntity()
-            every { applicationRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
             every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
@@ -256,25 +251,21 @@ class HakemusServiceTest {
             assertThrows<AlluException> { hakemusService.sendHakemus(3, USERNAME) }
 
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
                 geometriatDao.calculateCombinedArea(any())
-                geometriatDao.calculateArea(any())
                 attachmentService.getMetadataList(applicationEntity.id)
+                geometriatDao.calculateArea(any())
                 alluClient.create(any())
                 disclosureLogService.saveDisclosureLogsForAllu(
-                    3,
-                    any(),
-                    Status.FAILED,
-                    ALLU_APPLICATION_ERROR_MSG
-                )
+                    3, any(), Status.FAILED, ALLU_APPLICATION_ERROR_MSG)
             }
         }
 
         @Test
         fun `does not save disclosure logs when allu login fails`() {
             val applicationEntity = applicationEntity()
-            every { applicationRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.isInsideHankeAlueet(any(), any()) } returns true
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
@@ -284,11 +275,11 @@ class HakemusServiceTest {
             assertThrows<AlluLoginException> { hakemusService.sendHakemus(3, USERNAME) }
 
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(any(), any())
                 geometriatDao.calculateCombinedArea(any())
-                geometriatDao.calculateArea(any())
                 attachmentService.getMetadataList(applicationEntity.id)
+                geometriatDao.calculateArea(any())
                 alluClient.create(any())
             }
             verify { disclosureLogService wasNot called }
@@ -301,12 +292,11 @@ class HakemusServiceTest {
             expectedSuffix: String
         ) {
             val applicationEntity = applicationEntity()
-            applicationEntity.applicationData =
-                (applicationEntity.applicationData as CableReportApplicationData).copy(
-                    rockExcavation = rockExcavation
-                )
-            every { applicationRepository.findOneById(3) } returns applicationEntity
-            every { applicationRepository.save(any()) } answers { firstArg() }
+            applicationEntity.hakemusEntityData =
+                (applicationEntity.hakemusEntityData as JohtoselvityshakemusEntityData).copy(
+                    rockExcavation = rockExcavation)
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
+            every { hakemusRepository.save(any()) } answers { firstArg() }
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
@@ -325,30 +315,29 @@ class HakemusServiceTest {
             assertThat(sent.workDescription).isEqualTo(expectedDescription)
             assertThat(sent.clientApplicationKind).isEqualTo(expectedDescription)
             verifySequence {
-                applicationRepository.findOneById(3)
+                hakemusRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
                 geometriatDao.calculateCombinedArea(any())
-                geometriatDao.calculateArea(any())
                 attachmentService.getMetadataList(applicationEntity.id)
+                geometriatDao.calculateArea(any())
                 alluClient.create(any())
                 disclosureLogService.saveDisclosureLogsForAllu(3, any(), Status.SUCCESS)
                 alluClient.addAttachment(alluId, any())
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
-                applicationRepository.save(any())
+                hakemusRepository.save(any())
             }
         }
 
         @ParameterizedTest(name = "{1}")
         @MethodSource("fi.hel.haitaton.hanke.hakemus.HakemusServiceTest#invalidData")
         fun `throws exception when application has invalid data`(
-            applicationData: ApplicationData,
+            hakemusEntityData: HakemusEntityData,
             path: String,
         ) {
             val applicationEntity = applicationEntity()
-            applicationEntity.applicationData = applicationData
-            every { applicationRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+            applicationEntity.hakemusEntityData = hakemusEntityData
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
                 .all {
@@ -356,31 +345,23 @@ class HakemusServiceTest {
                     hasMessage("Application contains invalid data. Errors at paths: $path")
                 }
 
-            verifySequence {
-                applicationRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
-            }
+            verifySequence { hakemusRepository.findOneById(3) }
         }
 
         @Test
         fun `throws exception when application has invalid customer`() {
             val applicationEntity = applicationEntity()
             applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]!!.nimi = ""
-            every { applicationRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
                 .all {
                     hasClass(InvalidHakemusDataException::class)
                     hasMessage(
-                        "Application contains invalid data. Errors at paths: applicationData.customerWithContacts.nimi"
-                    )
+                        "Application contains invalid data. Errors at paths: applicationData.customerWithContacts.nimi")
                 }
 
-            verifySequence {
-                applicationRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
-            }
+            verifySequence { hakemusRepository.findOneById(3) }
         }
 
         @Test
@@ -390,22 +371,17 @@ class HakemusServiceTest {
             val hankekayttaja = yhteystieto!!.yhteyshenkilot[0].hankekayttaja
             hankekayttaja.etunimi = ""
             hankekayttaja.sukunimi = ""
-            every { applicationRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
                 .all {
                     hasClass(InvalidHakemusDataException::class)
                     hasMessage(
                         "Application contains invalid data. Errors at paths: " +
-                            "applicationData.contractorWithContacts.yhteyshenkilot[0].etunimi"
-                    )
+                            "applicationData.contractorWithContacts.yhteyshenkilot[0].etunimi")
                 }
 
-            verifySequence {
-                applicationRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
-            }
+            verifySequence { hakemusRepository.findOneById(3) }
         }
 
         @Test
@@ -413,28 +389,20 @@ class HakemusServiceTest {
             val applicationEntity = applicationEntity()
             applicationEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA] =
                 HakemusyhteystietoFactory.createEntity(
-                        application = applicationEntity,
-                        sahkoposti = "  "
-                    )
+                        application = applicationEntity, sahkoposti = "  ")
                     .withYhteyshenkilo(
-                        permission = PermissionFactory.createEntity(userId = USERNAME)
-                    )
-            every { applicationRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+                        permission = PermissionFactory.createEntity(userId = USERNAME))
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
                 .all {
                     hasClass(InvalidHakemusDataException::class)
                     hasMessage(
                         "Application contains invalid data. Errors at paths: " +
-                            "applicationData.propertyDeveloperWithContacts.sahkoposti"
-                    )
+                            "applicationData.propertyDeveloperWithContacts.sahkoposti")
                 }
 
-            verifySequence {
-                applicationRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
-            }
+            verifySequence { hakemusRepository.findOneById(3) }
         }
 
         @Test
@@ -442,48 +410,38 @@ class HakemusServiceTest {
             val applicationEntity = applicationEntity()
             applicationEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA] =
                 HakemusyhteystietoFactory.createEntity(
-                        application = applicationEntity,
-                        puhelinnumero = "  "
-                    )
+                        application = applicationEntity, puhelinnumero = "  ")
                     .withYhteyshenkilo(
-                        permission = PermissionFactory.createEntity(userId = USERNAME)
-                    )
-            every { applicationRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+                        permission = PermissionFactory.createEntity(userId = USERNAME))
+            every { hakemusRepository.findOneById(3) } returns applicationEntity
 
             assertFailure { hakemusService.sendHakemus(3, USERNAME) }
                 .all {
                     hasClass(InvalidHakemusDataException::class)
                     hasMessage(
                         "Application contains invalid data. Errors at paths: " +
-                            "applicationData.representativeWithContacts.puhelinnumero"
-                    )
+                            "applicationData.representativeWithContacts.puhelinnumero")
                 }
 
-            verifySequence {
-                applicationRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
-            }
+            verifySequence { hakemusRepository.findOneById(3) }
         }
 
-        private fun applicationEntity(): ApplicationEntity {
+        private fun applicationEntity(): HakemusEntity {
             val hankeEntity = HankeFactory.createMinimalEntity(id = 1)
             val applicationEntity =
                 ApplicationFactory.createApplicationEntity(
                     userId = USERNAME,
-                    applicationData = applicationData,
+                    hakemusEntityData = applicationData,
                     hanke = hankeEntity,
                 )
             applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA] =
                 HakemusyhteystietoFactory.createEntity(application = applicationEntity)
                     .withYhteyshenkilo(
-                        permission = PermissionFactory.createEntity(userId = USERNAME)
-                    )
+                        permission = PermissionFactory.createEntity(userId = USERNAME))
             applicationEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA] =
                 HakemusyhteystietoFactory.createEntity(application = applicationEntity)
                     .withYhteyshenkilo(
-                        permission = PermissionFactory.createEntity(userId = USERNAME)
-                    )
+                        permission = PermissionFactory.createEntity(userId = USERNAME))
             return applicationEntity
         }
     }
@@ -496,33 +454,26 @@ class HakemusServiceTest {
         private val hankeTunnus = "HAI23-1"
         private val receiver = HakemusyhteyshenkiloFactory.DEFAULT_SAHKOPOSTI
         private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
-        private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
+        private val identifier = ApplicationHistoryFactory.DEFAULT_APPLICATION_IDENTIFIER
 
         @Test
         fun `sends email to the contacts when hakemus gets a decision`() {
-            every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer()
+            every { hakemusRepository.getOneByAlluid(42) } returns applicationEntityWithCustomer()
             justRun {
                 emailSenderService.sendJohtoselvitysCompleteEmail(
-                    receiver,
-                    applicationId,
-                    identifier
-                )
+                    receiver, applicationId, identifier)
             }
-            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { alluStatusRepository.save(any()) } answers { firstArg() }
 
-            hakemusService.handleHakemusUpdates(historiesWithDecision(), updateTime)
+            hakemusService.handleHakemusUpdates(createHistories(), updateTime)
 
             verifySequence {
-                applicationRepository.getOneByAlluid(42)
+                hakemusRepository.getOneByAlluid(42)
                 emailSenderService.sendJohtoselvitysCompleteEmail(
-                    receiver,
-                    applicationId,
-                    identifier
-                )
-                applicationRepository.save(any())
+                    receiver, applicationId, identifier)
+                hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
             }
@@ -530,9 +481,8 @@ class HakemusServiceTest {
 
         @Test
         fun `doesn't send email when status is not decision`() {
-            every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer()
-            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { hakemusRepository.getOneByAlluid(42) } returns applicationEntityWithCustomer()
+            every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { alluStatusRepository.save(any()) } answers { firstArg() }
             val histories =
@@ -541,16 +491,14 @@ class HakemusServiceTest {
                         alluid,
                         ApplicationHistoryFactory.createEvent(
                             applicationIdentifier = identifier,
-                            newStatus = ApplicationStatus.HANDLING
-                        )
-                    ),
+                            newStatus = ApplicationStatus.HANDLING)),
                 )
 
             hakemusService.handleHakemusUpdates(histories, updateTime)
 
             verifySequence {
-                applicationRepository.getOneByAlluid(42)
-                applicationRepository.save(any())
+                hakemusRepository.getOneByAlluid(42)
+                hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
             }
@@ -558,25 +506,54 @@ class HakemusServiceTest {
 
         @Test
         fun `logs error when there are no receivers`(output: CapturedOutput) {
-            every { applicationRepository.getOneByAlluid(42) } returns
+            every { hakemusRepository.getOneByAlluid(42) } returns
                 applicationEntityWithoutCustomer()
-            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { alluStatusRepository.save(any()) } answers { firstArg() }
 
-            hakemusService.handleHakemusUpdates(historiesWithDecision(), updateTime)
+            hakemusService.handleHakemusUpdates(createHistories(), updateTime)
 
             assertThat(output)
                 .contains("No receivers found for decision ready email, not sending any.")
             verifySequence {
-                applicationRepository.getOneByAlluid(42)
-                applicationRepository.save(any())
+                hakemusRepository.getOneByAlluid(42)
+                hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
             }
         }
 
-        private fun applicationEntityWithoutCustomer(id: Long = applicationId): ApplicationEntity {
+        @ParameterizedTest
+        @EnumSource(ApplicationStatus::class, names = ["OPERATIONAL_CONDITION", "FINISHED"])
+        fun `logs an error when a johtoselvityshakemus gets a supervision document`(
+            status: ApplicationStatus,
+            output: CapturedOutput
+        ) {
+            every { hakemusRepository.getOneByAlluid(alluid) } returns
+                applicationEntityWithoutCustomer()
+            every { hakemusRepository.save(any()) } answers { firstArg() }
+            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { alluStatusRepository.save(any()) } answers { firstArg() }
+
+            hakemusService.handleHakemusUpdates(createHistories(status), updateTime)
+
+            assertThat(output).all {
+                contains("Got $status update for a cable report.")
+                contains("id=$applicationId")
+                contains("alluId=$alluid")
+                contains("identifier=$identifier")
+            }
+            verifySequence {
+                hakemusRepository.getOneByAlluid(42)
+                hakemusRepository.save(any())
+                alluStatusRepository.getReferenceById(1)
+                alluStatusRepository.save(any())
+            }
+            verify { alluClient wasNot called }
+        }
+
+        private fun applicationEntityWithoutCustomer(id: Long = applicationId): HakemusEntity {
             val entity =
                 HakemusFactory.createEntity(
                     id = id,
@@ -588,36 +565,29 @@ class HakemusServiceTest {
             return entity
         }
 
-        private fun applicationEntityWithCustomer(id: Long = applicationId): ApplicationEntity {
+        private fun applicationEntityWithCustomer(id: Long = applicationId): HakemusEntity {
             val entity = applicationEntityWithoutCustomer(id)
             entity.yhteystiedot[ApplicationContactType.HAKIJA] =
                 HakemusyhteystietoFactory.createEntity(application = entity, sahkoposti = receiver)
                     .withYhteyshenkilo(
-                        permission = PermissionFactory.createEntity(userId = USERNAME)
-                    )
+                        permission = PermissionFactory.createEntity(userId = USERNAME))
             return entity
         }
 
-        private fun historiesWithDecision() =
+        private fun createHistories(status: ApplicationStatus = ApplicationStatus.DECISION) =
             listOf(
                 ApplicationHistoryFactory.create(
                     alluid,
                     ApplicationHistoryFactory.createEvent(
                         applicationIdentifier = identifier,
-                        newStatus = ApplicationStatus.DECISION
-                    )
-                ),
+                        newStatus = status,
+                    )),
             )
     }
 
     companion object {
-        private val applicationData: CableReportApplicationData =
-            ApplicationFactory.createCableReportApplicationData(
-                customerWithContacts = null,
-                contractorWithContacts = null,
-                propertyDeveloperWithContacts = null,
-                representativeWithContacts = null,
-            )
+        private val applicationData: JohtoselvityshakemusEntityData =
+            ApplicationFactory.createCableReportApplicationData()
 
         @JvmStatic
         private fun invalidData(): Stream<Arguments> =

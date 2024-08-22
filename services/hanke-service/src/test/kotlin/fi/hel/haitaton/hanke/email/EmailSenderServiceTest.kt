@@ -6,9 +6,7 @@ import assertk.assertions.containsMatch
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.startsWith
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.configuration.Feature
-import fi.hel.haitaton.hanke.configuration.FeatureFlags
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -40,9 +38,8 @@ class EmailSenderServiceTest {
             baseUrl = "https://haitaton.hel.fi",
             filter = EmailFilterProperties(false, listOf())
         )
-    private val featureFlags = FeatureFlags(mapOf(Feature.USER_MANAGEMENT to true))
     private val mailSender: JavaMailSender = spyk()
-    private val emailSenderService = EmailSenderService(mailSender, emailConfig, featureFlags)
+    private val emailSenderService = EmailSenderService(mailSender, emailConfig)
 
     private val encodedInviter = StringEscapeUtils.escapeHtml4(INVITER_NAME)
 
@@ -80,9 +77,9 @@ class EmailSenderServiceTest {
 
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on lisätty hankkeelle HAI24-1 " +
-                        "/ Du har lagts till i projektet HAI24-1 " +
-                        "/ You have been added to project HAI24-1"
+                    "Haitaton: Sinut on kutsuttu hankkeelle HAI24-1 " +
+                        "/ Du har blivit inbjuden till projektet HAI24-1 " +
+                        "/ You have been invited to project HAI24-1"
                 )
         }
 
@@ -91,9 +88,9 @@ class EmailSenderServiceTest {
             val (textBody, htmlBody) = sendAndCapture().bodies()
 
             val expectedHeader =
-                "Sinut on lisätty hankkeelle HAI24-1 " +
-                    "/ Du har lagts till i projektet HAI24-1 " +
-                    "/ You have been added to project HAI24-1"
+                "Sinut on kutsuttu hankkeelle HAI24-1 " +
+                    "/ Du har blivit inbjuden till projektet HAI24-1 " +
+                    "/ You have been invited to project HAI24-1"
             assertThat(textBody).contains(expectedHeader)
             assertThat(htmlBody).contains(expectedHeader)
         }
@@ -112,7 +109,7 @@ class EmailSenderServiceTest {
                 )
 
             open fun inviterInformation(name: String, email: String) =
-                "$name ($email) lisäsi sinut hankkeelle"
+                "$name ($email) on kutsunut sinut hankkeelle"
 
             open val hankeInformation = "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>."
 
@@ -167,9 +164,9 @@ class EmailSenderServiceTest {
                 )
 
             override fun inviterInformation(name: String, email: String) =
-                "$name ($email) lade till dig i projektet"
+                "$name ($email) har bjudit in dig till projektet"
 
-            override val hankeInformation = "i projektet <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>."
+            override val hankeInformation = "projektet <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>."
         }
 
         @Nested
@@ -186,7 +183,7 @@ class EmailSenderServiceTest {
                 )
 
             override fun inviterInformation(name: String, email: String) =
-                "$name ($email) has added you to the project"
+                "$name ($email) has invited you to the project"
 
             override val hankeInformation = "to the project <b>‘$HANKE_NIMI’ ($HANKE_TUNNUS)</b>."
         }

@@ -19,11 +19,10 @@ import assertk.assertions.single
 import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
-import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
+import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
@@ -37,12 +36,14 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadResponse
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.Asserts.isSameInstantAs
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -65,7 +66,7 @@ import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 private const val ALLU_ID = 42
 
 class ApplicationAttachmentServiceITest(
-    @Autowired private val cableReportService: CableReportService,
+    @Autowired private val alluClient: AlluClient,
     @Autowired private val attachmentService: ApplicationAttachmentService,
     @Autowired private val attachmentRepository: ApplicationAttachmentRepository,
     @Autowired private val applicationFactory: ApplicationFactory,
@@ -86,7 +87,7 @@ class ApplicationAttachmentServiceITest(
     fun tearDown() {
         mockClamAv.shutdown()
         checkUnnecessaryStub()
-        confirmVerified(cableReportService)
+        confirmVerified(alluClient)
     }
 
     @Nested
@@ -146,31 +147,28 @@ class ApplicationAttachmentServiceITest(
             }
         }
 
-        @Nested
-        inner class FromDb {
-            @Test
-            fun `Returns the attachment content, filename and type`() {
-                val attachment = attachmentFactory.save().withContent().value
+        @Test
+        fun `Returns the attachment content, filename and type`() {
+            val attachment = attachmentFactory.save().withContent().value
 
-                val result = attachmentService.getContent(attachmentId = attachment.id!!)
+            val result = attachmentService.getContent(attachmentId = attachment.id!!)
 
-                assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
-                assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
-            }
+            assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+            assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+            assertThat(result.bytes).isEqualTo(PDF_BYTES)
         }
 
-        @Nested
-        inner class FromCloud {
-            @Test
-            fun `Returns the attachment content, filename and type`() {
-                val attachment = attachmentFactory.save().withContent().value
+        @Test
+        fun `Throws exception when trying to get valtakirja content`() {
+            val attachment = attachmentFactory.save(attachmentType = VALTAKIRJA).withContent().value
 
-                val result = attachmentService.getContent(attachmentId = attachment.id!!)
+            val failure = assertFailure {
+                attachmentService.getContent(attachmentId = attachment.id!!)
+            }
 
-                assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
-                assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
+            failure.all {
+                hasClass(ValtakirjaForbiddenException::class)
+                messageContains("id=${attachment.id}")
             }
         }
     }
@@ -217,14 +215,13 @@ class ApplicationAttachmentServiceITest(
             }
 
             val content = fileClient.download(HAKEMUS_LIITTEET, attachments.first().blobLocation)
-
             assertThat(content)
                 .isNotNull()
                 .prop(DownloadResponse::content)
                 .transform { it.toBytes() }
-                .isEqualTo(DEFAULT_DATA)
+                .isEqualTo(PDF_BYTES)
 
-            verify { cableReportService wasNot Called }
+            verify { alluClient wasNot Called }
         }
 
         @Test
@@ -267,6 +264,24 @@ class ApplicationAttachmentServiceITest(
                 hasMessage(
                     "Attachment amount limit reached, limit=$ALLOWED_ATTACHMENT_COUNT, applicationId=${application.id}"
                 )
+            }
+        }
+
+        @Test
+        fun `Throws exception without content`() {
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
+
+            val failure = assertFailure {
+                attachmentService.addAttachment(
+                    applicationId = application.id,
+                    attachmentType = VALTAKIRJA,
+                    attachment = testFile(data = byteArrayOf())
+                )
+            }
+
+            failure.all {
+                hasClass(AttachmentInvalidException::class)
+                messageContains("Attachment has no content")
             }
         }
 
@@ -320,7 +335,7 @@ class ApplicationAttachmentServiceITest(
                 )
             }
 
-            failure.hasClass(ApplicationNotFoundException::class)
+            failure.hasClass(HakemusNotFoundException::class)
             assertThat(attachmentRepository.findAll()).isEmpty()
         }
 
@@ -340,6 +355,28 @@ class ApplicationAttachmentServiceITest(
             failure.all {
                 hasClass(AttachmentInvalidException::class)
                 hasMessage("Attachment upload exception: File 'hello.html' not supported")
+            }
+            assertThat(attachmentRepository.findAll()).isEmpty()
+        }
+
+        @Test
+        fun `Throws exception when file type is not supported for attachment type`() {
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
+            val invalidFilename = "hello.jpeg"
+
+            val failure = assertFailure {
+                attachmentService.addAttachment(
+                    applicationId = application.id,
+                    attachmentType = VALTAKIRJA,
+                    attachment = testFile(fileName = invalidFilename)
+                )
+            }
+
+            failure.all {
+                hasClass(AttachmentInvalidException::class)
+                messageContains("File extension is not valid for attachment type")
+                messageContains("filename=$invalidFilename")
+                messageContains("attachmentType=$VALTAKIRJA")
             }
             assertThat(attachmentRepository.findAll()).isEmpty()
         }
@@ -402,7 +439,7 @@ class ApplicationAttachmentServiceITest(
                     )
                 }
                 assertThat(attachmentRepository.findById(attachment.id!!)).isPresent()
-                verify { cableReportService wasNot Called }
+                verify { alluClient wasNot Called }
             }
 
             @Test

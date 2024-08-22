@@ -1,20 +1,16 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.Application
-import fi.hel.haitaton.hanke.application.ApplicationService
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeRequest
 import fi.hel.haitaton.hanke.domain.HankeStatus
-import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.Yhteystieto
 import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusMetaData
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
@@ -36,7 +32,6 @@ class HankeService(
     private val hanketunnusService: HanketunnusService,
     private val hankealueService: HankealueService,
     private val hankeLoggingService: HankeLoggingService,
-    private val applicationService: ApplicationService,
     private val hakemusService: HakemusService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val hankeAttachmentService: HankeAttachmentService,
@@ -47,12 +42,9 @@ class HankeService(
         hankeRepository.findOneByHankeTunnus(hankeTunnus)
 
     @Transactional(readOnly = true)
-    fun findIdentifier(hankeId: Int): HankeIdentifier? = hankeRepository.findOneById(hankeId)
-
-    @Transactional(readOnly = true)
-    fun getHankeApplications(hankeTunnus: String): List<Application> =
+    fun getHankeApplications(hankeTunnus: String): List<HakemusMetaData> =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let { entity ->
-            entity.hakemukset.map { hakemus -> hakemus.toApplication() }
+            entity.hakemukset.map { hakemus -> hakemus.toMetadata() }
         } ?: throw HankeNotFoundException(hankeTunnus)
 
     @Transactional(readOnly = true)
@@ -83,22 +75,6 @@ class HankeService(
         val entity = createNewEntity(request.nimi, false, securityContext.userId())
 
         return saveCreatedHanke(entity, request.perustaja, securityContext)
-    }
-
-    /**
-     * Create application when no existing hanke. Autogenerates hanke and applies application to it.
-     */
-    @Transactional
-    fun generateHankeWithApplication(
-        cableReport: CableReportWithoutHanke,
-        securityContext: SecurityContext,
-    ): Application {
-        logger.info { "Generating Hanke from CableReport." }
-        val hanke = generateHankeFrom(cableReport, securityContext)
-        return applicationService.create(
-            cableReport.toNewApplication(hanke.hankeTunnus),
-            securityContext.userId()
-        )
     }
 
     /**
@@ -144,7 +120,7 @@ class HankeService(
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
         entity.generated = false
 
-        calculateTormaystarkastelu(hanke.alueet, entity.alueet.geometriaIds(), entity)
+        updateTormaystarkastelut(entity.alueet)
         entity.status = decideNewHankeStatus(entity)
 
         logger.debug { "Saving Hanke ${entity.logString()}." }
@@ -177,21 +153,16 @@ class HankeService(
         hankeLoggingService.logDelete(hanke, userId)
     }
 
-    private fun anyNonCancelledHakemusProcessingInAllu(hakemukset: List<Application>): Boolean =
+    private fun anyNonCancelledHakemusProcessingInAllu(hakemukset: List<HakemusMetaData>): Boolean =
         hakemukset.any {
             logger.info { "Hakemus ${it.id} has alluStatus ${it.alluStatus}" }
             !hakemusService.isStillPending(it.alluid, it.alluStatus) &&
                 !hakemusService.isCancelled(it.alluStatus)
         }
 
-    private fun calculateTormaystarkastelu(
-        alueet: List<Hankealue>,
-        geometriaIds: Set<Int>,
-        target: HankeEntity
-    ) {
-        hankealueService.calculateTormaystarkastelu(alueet, geometriaIds, target)?.let {
-            target.tormaystarkasteluTulokset.clear()
-            target.tormaystarkasteluTulokset.add(it)
+    private fun updateTormaystarkastelut(alueet: List<HankealueEntity>) {
+        for (alue in alueet) {
+            hankealueService.updateTormaystarkastelu(alue)
         }
     }
 
@@ -207,7 +178,9 @@ class HankeService(
                     HankeStatus.PUBLIC
                 } else {
                     logger.debug {
-                        "A hanke draft wasn't ready to go public. hankeTunnus=${entity.hankeTunnus} failedFields=${validationResult.errorPaths().joinToString()}"
+                        "A hanke draft wasn't ready to go public. hankeTunnus=${entity.hankeTunnus} failedFields=${
+                            validationResult.errorPaths().joinToString()
+                        }"
                     }
                     HankeStatus.DRAFT
                 }
@@ -216,7 +189,9 @@ class HankeService(
                     HankeStatus.PUBLIC
                 } else {
                     logger.warn {
-                        "A public hanke wasn't updated with missing or invalid fields. hankeTunnus=${entity.hankeTunnus} failedFields=${validationResult.errorPaths().joinToString()}"
+                        "A public hanke wasn't updated with missing or invalid fields. hankeTunnus=${entity.hankeTunnus} failedFields=${
+                            validationResult.errorPaths().joinToString()
+                        }"
                     }
                     throw HankeArgumentException(
                         "A public hanke didn't have all mandatory fields filled."
@@ -480,7 +455,8 @@ class HankeService(
         hankeYht.yhteyshenkilot.forEach { kayttajaId ->
             addYhteyshenkilo(kayttajaId, hankeEntity.id, hankeYhtEntity)
         }
-        hankeEntity.addYhteystieto(hankeYhtEntity)
+        hankeEntity.yhteystiedot.add(hankeYhtEntity)
+        hankeYhtEntity.hanke = hankeEntity
         // Logging of creating new yhteystietos is done after the hanke gets saved.
     }
 
@@ -650,35 +626,6 @@ class HankeService(
             createdAt = getCurrentTimeUTCAsLocalTime(),
         )
 
-    /**
-     * Autogenerated hanke based on application data.
-     * - Generated flag true.
-     * - Hanke name is same as application name (limited to first 100 characters).
-     * - HankeFounder generated from application data orderer.
-     * - Hankealueet are created from the application areas.
-     */
-    private fun generateHankeFrom(
-        cableReportWithoutHanke: CableReportWithoutHanke,
-        securityContext: SecurityContext,
-    ): Hanke =
-        with(cableReportWithoutHanke) {
-            val alueet = HankealueService.createHankealueetFromCableReport(applicationData)
-            val nimi = limitHankeName(applicationData.name)
-            val perustaja = applicationData.ordererAsFounder()
-
-            val entity = createNewEntity(nimi, true, securityContext.userId())
-
-            entity.alueet.addAll(hankealueService.createAlueetFromCreateRequest(alueet, entity))
-
-            calculateTormaystarkastelu(
-                alueet,
-                entity.alueet.mapNotNull { alue -> alue.geometriat }.toSet(),
-                entity
-            )
-
-            return saveCreatedHanke(entity, perustaja, securityContext)
-        }
-
     private fun limitHankeName(name: String): String =
         if (name.length > MAXIMUM_HANKE_NIMI_LENGTH) {
             logger.info {
@@ -688,7 +635,4 @@ class HankeService(
         } else {
             name
         }
-
-    private fun CableReportApplicationData.ordererAsFounder(): HankePerustaja =
-        findOrderer()?.toHankePerustaja() ?: throw HankeArgumentException("Orderer not found.")
 }

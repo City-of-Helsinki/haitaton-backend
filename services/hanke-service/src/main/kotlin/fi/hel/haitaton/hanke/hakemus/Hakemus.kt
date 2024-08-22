@@ -1,14 +1,13 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.application.ApplicationMetaData
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
-import fi.hel.haitaton.hanke.application.ExcavationNotificationArea
-import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.domain.HasId
 import java.time.ZonedDateTime
+
+enum class ApplicationType {
+    CABLE_REPORT,
+    EXCAVATION_NOTIFICATION,
+}
 
 data class Hakemus(
     override val id: Long,
@@ -31,8 +30,8 @@ data class Hakemus(
             hankeTunnus = hankeTunnus,
         )
 
-    fun toMetadata(): ApplicationMetaData =
-        ApplicationMetaData(
+    fun toMetadata(): HakemusMetaData =
+        HakemusMetaData(
             id = id,
             alluid = alluid,
             alluStatus = alluStatus,
@@ -48,7 +47,7 @@ sealed interface HakemusData {
     val pendingOnClient: Boolean
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
-    val areas: List<ApplicationArea>?
+    val areas: List<Hakemusalue>?
     val customerWithContacts: Hakemusyhteystieto?
 
     fun toResponse(): HakemusDataResponse
@@ -69,7 +68,7 @@ data class JohtoselvityshakemusData(
     override val startTime: ZonedDateTime? = null,
     override val endTime: ZonedDateTime? = null,
     override val pendingOnClient: Boolean,
-    override val areas: List<CableReportApplicationArea>? = null,
+    override val areas: List<JohtoselvitysHakemusalue>? = null,
     override val customerWithContacts: Hakemusyhteystieto? = null,
     val contractorWithContacts: Hakemusyhteystieto? = null,
     val propertyDeveloperWithContacts: Hakemusyhteystieto? = null,
@@ -109,31 +108,31 @@ data class KaivuilmoitusData(
     override val applicationType: ApplicationType = ApplicationType.EXCAVATION_NOTIFICATION,
     override val pendingOnClient: Boolean,
     override val name: String,
-    val workDescription: String? = null,
-    val constructionWork: Boolean = false,
-    val maintenanceWork: Boolean = false,
-    val emergencyWork: Boolean = false,
-    val cableReportDone: Boolean = true,
-    val rockExcavation: Boolean? = null,
-    val cableReports: List<String>? = null,
-    val placementContracts: List<String>? = null,
-    val requiredCompetence: Boolean = false,
-    override val startTime: ZonedDateTime? = null,
-    override val endTime: ZonedDateTime? = null,
-    override val areas: List<ExcavationNotificationArea>? = null,
-    override val customerWithContacts: Hakemusyhteystieto? = null,
-    val contractorWithContacts: Hakemusyhteystieto? = null,
-    val propertyDeveloperWithContacts: Hakemusyhteystieto? = null,
-    val representativeWithContacts: Hakemusyhteystieto? = null,
-    val invoicingCustomer: Laskutusyhteystieto? = null,
-    val additionalInfo: String? = null,
+    val workDescription: String,
+    val constructionWork: Boolean,
+    val maintenanceWork: Boolean,
+    val emergencyWork: Boolean,
+    val cableReportDone: Boolean,
+    val rockExcavation: Boolean?,
+    val cableReports: List<String>?,
+    val placementContracts: List<String>?,
+    val requiredCompetence: Boolean,
+    override val startTime: ZonedDateTime?,
+    override val endTime: ZonedDateTime?,
+    override val areas: List<KaivuilmoitusAlue>?,
+    override val customerWithContacts: Hakemusyhteystieto?,
+    val contractorWithContacts: Hakemusyhteystieto?,
+    val propertyDeveloperWithContacts: Hakemusyhteystieto?,
+    val representativeWithContacts: Hakemusyhteystieto?,
+    val invoicingCustomer: Laskutusyhteystieto?,
+    val additionalInfo: String?,
 ) : HakemusData {
     override fun toResponse(): KaivuilmoitusDataResponse =
         KaivuilmoitusDataResponse(
             applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
             pendingOnClient = pendingOnClient,
             name = name,
-            workDescription = workDescription ?: "",
+            workDescription = workDescription,
             constructionWork = constructionWork,
             maintenanceWork = maintenanceWork,
             emergencyWork = emergencyWork,
@@ -169,3 +168,13 @@ interface HakemusIdentifier : HasId<Long> {
 
     fun logString() = "Hakemus: (id=$id, alluId=$alluid, identifier=$applicationIdentifier)"
 }
+
+/** Without application data, just the identifiers and metadata. */
+data class HakemusMetaData(
+    override val id: Long,
+    override val alluid: Int?,
+    val alluStatus: ApplicationStatus?,
+    override val applicationIdentifier: String?,
+    val applicationType: ApplicationType,
+    val hankeTunnus: String,
+) : HakemusIdentifier

@@ -1,21 +1,22 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
-import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.configuration.LockService
 import java.time.OffsetDateTime
 import mu.KotlinLogging
+import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
 private val logger = KotlinLogging.logger {}
 
 @Service
+@Profile("!test")
 class AlluUpdateService(
-    private val applicationRepository: ApplicationRepository,
+    private val hakemusRepository: HakemusRepository,
     private val alluStatusRepository: AlluStatusRepository,
-    private val cableReportService: CableReportService,
+    private val alluClient: AlluClient,
     private val hakemusService: HakemusService,
     private val lockService: LockService,
 ) {
@@ -32,7 +33,7 @@ class AlluUpdateService(
     }
 
     private fun getApplicationStatuses() {
-        val ids = applicationRepository.getAllAlluIds()
+        val ids = hakemusRepository.getAllAlluIds()
         if (ids.isEmpty()) {
             // Exit if there are no alluids. Allu handles an empty list as "all", which we don't
             // want.
@@ -45,7 +46,7 @@ class AlluUpdateService(
             "Updating application histories with date $lastUpdate and ${ids.size} Allu IDs"
         }
         val applicationHistories =
-            cableReportService.getApplicationStatusHistories(ids, lastUpdate.toZonedDateTime())
+            alluClient.getApplicationStatusHistories(ids, lastUpdate.toZonedDateTime())
 
         hakemusService.handleHakemusUpdates(applicationHistories, currentUpdate)
     }

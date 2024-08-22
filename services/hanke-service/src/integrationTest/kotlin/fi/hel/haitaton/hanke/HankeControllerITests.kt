@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import assertk.assertThat
 import assertk.assertions.isTrue
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
@@ -14,6 +15,8 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withToteuttaja
 import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
+import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -128,14 +131,14 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
         @Test
         fun `Returns tormaystarkastelutulos with the hanke if it has been calculated`() {
-            val autoliikenneindeksi = 4.3f
+            val autoliikenne = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
             val pyoraliikenneindeksi = 2.1f
             val linjaautoliikenneindeksi = 1.4f
             val raitioliikenneindeksi = 3f
             val hanke =
                 HankeFactory.create(hankeTunnus = HANKE_TUNNUS)
                     .withTormaystarkasteluTulos(
-                        autoliikenneindeksi = autoliikenneindeksi,
+                        autoliikenne = autoliikenne,
                         pyoraliikenneindeksi = pyoraliikenneindeksi,
                         linjaautoliikenneindeksi = linjaautoliikenneindeksi,
                         raitioliikenneindeksi = raitioliikenneindeksi
@@ -148,8 +151,28 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             get(url)
                 .andExpect(status().isOk)
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.autoliikenneindeksi")
-                        .value(autoliikenneindeksi)
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.haitanKesto")
+                        .value(autoliikenne.haitanKesto)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.katuluokka")
+                        .value(autoliikenne.katuluokka)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.liikennemaara")
+                        .value(autoliikenne.liikennemaara)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.kaistahaitta")
+                        .value(autoliikenne.kaistahaitta)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.kaistapituushaitta")
+                        .value(autoliikenne.kaistapituushaitta)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.autoliikenne.indeksi")
+                        .value(autoliikenne.indeksi)
                 )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.pyoraliikenneindeksi")
@@ -163,14 +186,14 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     jsonPath("tormaystarkasteluTulos.raitioliikenneindeksi")
                         .value(raitioliikenneindeksi)
                 )
-                // In this case, autoliikenneindeksi has the highest value
+                // In this case, raitioliikenneindeksi has the highest value
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.liikennehaittaindeksi.indeksi")
-                        .value(autoliikenneindeksi)
+                        .value(raitioliikenneindeksi)
                 )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.liikennehaittaindeksi.tyyppi")
-                        .value(IndeksiType.AUTOLIIKENNEINDEKSI.name)
+                        .value(IndeksiType.RAITIOLIIKENNEINDEKSI.name)
                 )
 
             verifySequence {
@@ -287,13 +310,15 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 SavedHankealue(
                     hankeId = hankeIds[0],
                     geometriat = Geometriat(1, FeatureCollection(), version = 1),
-                    nimi = "$HANKEALUE_DEFAULT_NAME 1"
+                    nimi = "$HANKEALUE_DEFAULT_NAME 1",
+                    tormaystarkasteluTulos = null,
                 )
             val alue2 =
                 SavedHankealue(
                     hankeId = hankeIds[1],
                     geometriat = Geometriat(2, FeatureCollection(), version = 1),
-                    nimi = "$HANKEALUE_DEFAULT_NAME 2"
+                    nimi = "$HANKEALUE_DEFAULT_NAME 2",
+                    tormaystarkasteluTulos = null,
                 )
             val hanke1 = HankeFactory.create(id = hankeIds[0], hankeTunnus = HANKE_TUNNUS)
             val hanke2 = HankeFactory.create(id = hankeIds[1], hankeTunnus = "hanketunnus2")
@@ -502,15 +527,21 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             hankeToBeUpdated.tyomaaKatuosoite = "Testikatu 1"
             hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
             hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.KAASUJOHTO)
-            val alue = SavedHankealue(nimi = "$HANKEALUE_DEFAULT_NAME 1")
-            alue.haittaAlkuPvm = DateFactory.getStartDatetime()
-            alue.haittaLoppuPvm = DateFactory.getEndDatetime()
-            alue.kaistaHaitta =
-                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-            alue.kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA
-            alue.meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA
-            alue.polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA
-            alue.tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA
+            val alue =
+                SavedHankealue(
+                    nimi = "$HANKEALUE_DEFAULT_NAME 1",
+                    haittaAlkuPvm = DateFactory.getStartDatetime(),
+                    haittaLoppuPvm = DateFactory.getEndDatetime(),
+                    kaistaHaitta =
+                        VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+                    kaistaPituusHaitta =
+                        AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA,
+                    meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
+                    polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
+                    tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
+                    tormaystarkasteluTulos = null,
+                    haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma(),
+                )
             hankeToBeUpdated.alueet.add(alue)
             // Prepare the expected result/return
             // Note, "pvm" values should have become truncated to begin of the day
@@ -546,6 +577,13 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                                 .name
                         )
                 ) // Note, here as string, not the enum.
+                .andExpect(
+                    jsonPath("$.alueet[0].haittojenhallintasuunnitelma.YLEINEN")
+                        .value(
+                            hankeToBeUpdated.alueet[0].haittojenhallintasuunnitelma!![
+                                Haittojenhallintatyyppi.YLEINEN]
+                        )
+                )
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)

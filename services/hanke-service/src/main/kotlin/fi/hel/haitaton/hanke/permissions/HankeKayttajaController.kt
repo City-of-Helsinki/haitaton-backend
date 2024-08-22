@@ -172,10 +172,7 @@ class HankeKayttajaController(
         responseCode = "409",
         content = [Content(schema = Schema(implementation = HankeError::class))],
     )
-    @PreAuthorize(
-        "@featureService.isEnabled('USER_MANAGEMENT') && " +
-            "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'CREATE_USER')"
-    )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'CREATE_USER')")
     fun createNewUser(
         @RequestBody request: NewUserRequest,
         @PathVariable hankeTunnus: String
@@ -235,8 +232,7 @@ have those same permissions.
     )
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize(
-        "@featureService.isEnabled('USER_MANAGEMENT') && " +
-            "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_EDIT_PERMISSIONS')"
+        "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_EDIT_PERMISSIONS')"
     )
     fun updatePermissions(
         @RequestBody permissions: PermissionUpdate,
@@ -349,10 +345,7 @@ Returns the updated hankekayttaja.
                 ),
             ]
     )
-    @PreAuthorize(
-        "@featureService.isEnabled('USER_MANAGEMENT') && " +
-            "@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'RESEND_INVITATION')"
-    )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'RESEND_INVITATION')")
     fun resendInvitations(@PathVariable kayttajaId: UUID): HankeKayttajaDto =
         hankeKayttajaService.resendInvitation(kayttajaId, currentUserId()).toDto()
 
@@ -469,10 +462,7 @@ user.
                 ),
             ]
     )
-    @PreAuthorize(
-        "@featureService.isEnabled('USER_MANAGEMENT') && " +
-            "@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'DELETE_USER')"
-    )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'DELETE_USER')")
     fun checkForDelete(@PathVariable kayttajaId: UUID): HankekayttajaDeleteService.DeleteInfo =
         hankekayttajaDeleteService.checkForDelete(kayttajaId)
 
@@ -512,10 +502,7 @@ contact in the applicant customer role. If either is true, refuse to delete the 
     )
     @DeleteMapping("/kayttajat/{kayttajaId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize(
-        "@featureService.isEnabled('USER_MANAGEMENT') && " +
-            "@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'DELETE_USER')"
-    )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'DELETE_USER')")
     fun delete(@PathVariable kayttajaId: UUID) {
         logger.info { "Deleting kayttaja $kayttajaId" }
         hankekayttajaDeleteService.delete(kayttajaId, currentUserId())

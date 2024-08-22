@@ -1,13 +1,12 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.CableReportApplicationArea
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.ModifyHankealueRequest
 import fi.hel.haitaton.hanke.domain.NewGeometriat
 import fi.hel.haitaton.hanke.domain.NewHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatService
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.ZonedDateTime
@@ -39,7 +38,7 @@ class HankealueService(
         source: Hankealue,
         target: HankealueEntity?
     ): HankealueEntity {
-        val result = target ?: HankealueEntity(nimi = source.nimi)
+        val result = target ?: HankealueEntity(nimi = source.nimi, tormaystarkasteluTulos = null)
 
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
         // be simply dropped here.
@@ -58,6 +57,10 @@ class HankealueService(
             result.geometriat = saved?.id
         }
         result.nimi = source.nimi
+        source.haittojenhallintasuunnitelma?.let {
+            result.haittojenhallintasuunnitelma.clear()
+            result.haittojenhallintasuunnitelma.putAll(it)
+        }
 
         return result
     }
@@ -72,7 +75,7 @@ class HankealueService(
         hanketunnus: String,
         source: NewHankealue,
     ): HankealueEntity {
-        val result = HankealueEntity(nimi = source.nimi)
+        val result = HankealueEntity(nimi = source.nimi, tormaystarkasteluTulos = null)
 
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
         // be simply dropped here.
@@ -94,33 +97,28 @@ class HankealueService(
         return result
     }
 
-    fun calculateTormaystarkastelu(
-        alueet: List<Hankealue>,
-        geometriaIds: Set<Int>,
-        hanke: HankeEntity,
-    ): TormaystarkasteluTulosEntity? =
-        tormaystarkasteluService.calculateTormaystarkastelu(alueet, geometriaIds)?.let {
-            TormaystarkasteluTulosEntity(
-                autoliikenne = it.autoliikenneindeksi,
-                pyoraliikenne = it.pyoraliikenneindeksi,
-                linjaautoliikenne = it.linjaautoliikenneindeksi,
-                raitioliikenne = it.raitioliikenneindeksi,
-                hanke = hanke
-            )
-        }
+    fun updateTormaystarkastelu(alue: HankealueEntity) {
+        alue.tormaystarkasteluTulos =
+            tormaystarkasteluService.calculateTormaystarkastelu(alue)?.let {
+                TormaystarkasteluTulosEntity(
+                    autoliikenne = it.autoliikenne.indeksi,
+                    haitanKesto = it.autoliikenne.haitanKesto,
+                    katuluokka = it.autoliikenne.katuluokka,
+                    autoliikennemaara = it.autoliikenne.liikennemaara,
+                    kaistahaitta = it.autoliikenne.kaistahaitta,
+                    kaistapituushaitta = it.autoliikenne.kaistapituushaitta,
+                    pyoraliikenne = it.pyoraliikenneindeksi,
+                    linjaautoliikenne = it.linjaautoliikenneindeksi,
+                    raitioliikenne = it.raitioliikenneindeksi,
+                    hankealue = alue,
+                )
+            }
+    }
 
     companion object {
-        fun createHankealueetFromCableReport(
-            cableReportData: CableReportApplicationData
-        ): List<NewHankealue> =
-            createHankealueetFromApplicationAreas(
-                cableReportData.areas,
-                cableReportData.startTime,
-                cableReportData.endTime
-            )
 
         fun createHankealueetFromApplicationAreas(
-            areas: List<CableReportApplicationArea>?,
+            areas: List<JohtoselvitysHakemusalue>?,
             startTime: ZonedDateTime?,
             endTime: ZonedDateTime?,
         ): List<NewHankealue> =

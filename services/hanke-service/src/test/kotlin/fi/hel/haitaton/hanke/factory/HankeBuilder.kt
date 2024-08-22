@@ -8,11 +8,8 @@ import fi.hel.haitaton.hanke.HankeYhteyshenkiloEntity
 import fi.hel.haitaton.hanke.HankeYhteyshenkiloRepository
 import fi.hel.haitaton.hanke.HankeYhteystietoEntity
 import fi.hel.haitaton.hanke.HankeYhteystietoRepository
-import fi.hel.haitaton.hanke.application.Application
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
+import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
@@ -75,24 +72,6 @@ data class HankeBuilder(
     fun saveEntity(): HankeEntity = hankeRepository.getReferenceById(save().id)
 
     /**
-     * Save a standalone cable report application from this hanke with the given application data.
-     * This is the best way to create a hanke with generated = true, since [save] overwrites the
-     * generated tag during the update.
-     */
-    fun saveAsGenerated(
-        applicationData: CableReportApplicationData =
-            ApplicationFactory.createCableReportApplicationData()
-    ): Pair<Application, Hanke> {
-        val application =
-            hankeService.generateHankeWithApplication(
-                CableReportWithoutHanke(ApplicationType.CABLE_REPORT, applicationData),
-                setUpProfiiliMocks()
-            )
-        val hanke = hankeService.loadHanke(application.hankeTunnus)!!
-        return Pair(application, hanke)
-    }
-
-    /**
      * Save a hanke that has the generated field set. The hanke is created like it would be created
      * for a stand-alone johtoselvityshakemus.
      *
@@ -138,10 +117,15 @@ data class HankeBuilder(
         rakennuttajat = mutableListOf(HankeYhteystietoFactory.createDifferentiated(i, id = null))
     }
 
-    fun withHankealue(alue: SavedHankealue = HankealueFactory.create()) = applyToHanke {
+    fun withHankealue(
+        alue: SavedHankealue = HankealueFactory.create(),
+        haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma? =
+            alue.haittojenhallintasuunnitelma,
+    ) = applyToHanke {
         alueet.add(alue)
         tyomaaKatuosoite = "Testikatu 1"
         tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
+        alue.haittojenhallintasuunnitelma = haittojenhallintasuunnitelma
     }
 
     fun withPerustaja(perustaja: HankekayttajaInput): HankeBuilder =
@@ -215,7 +199,8 @@ data class HankeBuilder(
                 kaistaPituusHaitta = kaistaPituusHaitta,
                 meluHaitta = meluHaitta,
                 polyHaitta = polyHaitta,
-                tarinaHaitta = tarinaHaitta
+                tarinaHaitta = tarinaHaitta,
+                haittojenhallintasuunnitelma = haittojenhallintasuunnitelma
             )
     }
 }

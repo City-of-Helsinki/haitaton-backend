@@ -1,8 +1,6 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
@@ -31,25 +29,15 @@ class HakemusyhteystietoEntity(
     @Column(name = "y_tunnus") var ytunnus: String?,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id")
-    var application: ApplicationEntity,
+    var application: HakemusEntity,
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hakemusyhteystieto",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
-    )
+        orphanRemoval = true)
     @BatchSize(size = 100)
     val yhteyshenkilot: MutableList<HakemusyhteyshenkiloEntity> = mutableListOf(),
 ) {
-    fun toCustomerResponse(): CustomerResponse =
-        CustomerResponse(
-            id,
-            tyyppi,
-            nimi,
-            sahkoposti,
-            puhelinnumero,
-            ytunnus,
-        )
 
     fun toDomain() =
         Hakemusyhteystieto(
@@ -71,8 +59,21 @@ class HakemusyhteystietoEntity(
                         puhelin = yhteyshenkilo.hankekayttaja.puhelin,
                         tilaaja = yhteyshenkilo.tilaaja,
                     )
-                }
-        )
+                })
+
+    fun copyWithHakemus(hakemus: HakemusEntity) =
+        HakemusyhteystietoEntity(
+                tyyppi = tyyppi,
+                rooli = rooli,
+                nimi = nimi,
+                sahkoposti = sahkoposti,
+                puhelinnumero = puhelinnumero,
+                ytunnus = ytunnus,
+                application = hakemus)
+            .also { newEntity ->
+                newEntity.yhteyshenkilot.addAll(
+                    yhteyshenkilot.map { it.copyWithYhteystieto(newEntity) })
+            }
 }
 
 @Entity
@@ -87,15 +88,9 @@ class HakemusyhteyshenkiloEntity(
     var hankekayttaja: HankekayttajaEntity,
     var tilaaja: Boolean
 ) {
-    fun toContactResponse(): ContactResponse =
-        ContactResponse(
-            hankekayttaja.id,
-            hankekayttaja.etunimi,
-            hankekayttaja.sukunimi,
-            hankekayttaja.sahkoposti,
-            hankekayttaja.puhelin,
-            tilaaja
-        )
+    fun copyWithYhteystieto(yhteystieto: HakemusyhteystietoEntity) =
+        HakemusyhteyshenkiloEntity(
+            hakemusyhteystieto = yhteystieto, hankekayttaja = hankekayttaja, tilaaja = tilaaja)
 }
 
 interface HakemusyhteystietoRepository : JpaRepository<HakemusyhteystietoEntity, UUID>

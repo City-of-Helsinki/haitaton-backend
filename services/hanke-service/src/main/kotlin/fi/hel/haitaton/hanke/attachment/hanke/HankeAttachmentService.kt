@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.attachment.hanke
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
@@ -35,6 +36,7 @@ class HankeAttachmentService(
     ): HankeAttachmentMetadataDto {
         val hanke = metadataService.hankeWithRoomForAttachment(hankeTunnus)
 
+        AttachmentValidator.validateSize(attachment.bytes.size)
         val (filename, mediatype) = attachment.validNameAndType()
 
         scanAttachment(filename, attachment.bytes)

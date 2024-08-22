@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17 as build
+FROM public.ecr.aws/docker/library/eclipse-temurin:17 as build
 WORKDIR /workspace/app
 
 COPY gradlew settings.gradle.kts ./
@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon :services:hank
 RUN mkdir -p services/hanke-service/build/dependency && \
     (cd services/hanke-service/build/dependency; jar -xf ../libs/*SNAPSHOT.jar)
 
-FROM eclipse-temurin:17
+FROM public.ecr.aws/docker/library/eclipse-temurin:17
 VOLUME /tmp
 
 ARG DEPENDENCY=/workspace/app/services/hanke-service/build/dependency
