@@ -223,7 +223,9 @@ Haitaton supports uploading of attachment files. Files are validated with ClamAV
 
 ## Authentication
 
-Authentication is done by calling Helsinki Profiili's userinfo-url with the Bearer-token.
+Authentication is handled by Spring Boot's default configuration. It defaults to the Authentication
+code with PKCE flow Profiili Keycloak uses as well. The access token's signature, issuer and
+audience are checked and the subject is read from the token.
 
 ## GDPR API
 
