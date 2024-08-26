@@ -31,6 +31,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 
+private const val DELETE_SCOPE = "gdprdelete"
+private const val QUERY_SCOPE = "gdprquery"
+
 @WebMvcTest(controllers = [GdprController::class], properties = ["haitaton.gdpr.disabled=false"])
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("test")
@@ -57,7 +60,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
 
         @Test
         fun `When subject does not match user id, return 401`() {
-            get { it.subject("Other user") }
+            get { subject("Other user") }
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized)
                 .andExpect(content().string(""))
 
@@ -67,12 +70,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
 
         @Test
         fun `When scope is incorrect, return 401`() {
-            get {
-                    it.claim(
-                        "http://localhost:8080",
-                        listOf("allu.gdprquery", "haitaton.gdprdelete")
-                    )
-                }
+            get { scopes("allu.gdprquery", DELETE_SCOPE) }
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized)
                 .andExpect(content().string(""))
 
@@ -81,12 +79,11 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         }
 
         @Test
-        fun `When scope field is incorrect, return 401`() {
+        fun `When scope structure is incorrect, return 401`() {
             get {
-                    it.claims { claims ->
-                        claims.clear()
-                        claims["Wrong field"] = "haitaton.gdprquery"
-                    }
+                    claims { it.clear() }
+                    subject(USERNAME)
+                    claim("authorization", listOf(mapOf("scopes" to listOf(QUERY_SCOPE))))
                 }
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized)
                 .andExpect(content().string(""))
@@ -203,7 +200,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         @ParameterizedTest(name = "{displayName} dryRun={0}")
         @ValueSource(booleans = [true, false])
         fun `When subject does not match user id, return 401`(dryRun: Boolean) {
-            delete(dryRun) { it.subject("Other user") }
+            delete(dryRun) { subject("Other user") }
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized)
                 .andExpect(content().string(""))
 
@@ -214,12 +211,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         @ParameterizedTest(name = "{displayName} dryRun={0}")
         @ValueSource(booleans = [true, false])
         fun `When scope is incorrect, return 401`(dryRun: Boolean) {
-            delete(dryRun) {
-                    it.claim(
-                        "http://localhost:8080",
-                        listOf("haitaton.gdprquery", "allu.gdprdelete")
-                    )
-                }
+            delete(dryRun) { scopes(QUERY_SCOPE, "allu.gdprdelete") }
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized)
                 .andExpect(content().string(""))
 
@@ -229,12 +221,13 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
 
         @ParameterizedTest(name = "{displayName} dryRun={0}")
         @ValueSource(booleans = [true, false])
-        fun `When scope field is incorrect, return 401`(dryRun: Boolean) {
+        fun `When scope structure is incorrect, return 401`(dryRun: Boolean) {
             delete(dryRun) {
-                    it.claims { claims ->
+                    claims { claims ->
                         claims.clear()
-                        claims["Wrong field"] = "haitaton.gdprdelete"
+                        claims["Wrong field"] = DELETE_SCOPE
                     }
+                    subject(USERNAME)
                 }
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized)
                 .andExpect(content().string(""))
@@ -308,30 +301,31 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         }
     }
 
-    private fun get(jwtModifier: (Jwt.Builder) -> Unit = {}): ResultActions {
-        val jwtBuilder = jwtBuilder.claim("http://localhost:8080", listOf("haitaton.gdprquery"))
-        jwtModifier(jwtBuilder)
+    private fun get(jwtModifier: Jwt.Builder.() -> Unit = {}): ResultActions {
+        val jwtBuilder = jwtBuilder.scopes(QUERY_SCOPE)
+        jwtBuilder.jwtModifier()
         return mockMvc.perform(
             MockMvcRequestBuilders.get("/gdpr-api/$USERNAME")
                 .accept(MediaType.APPLICATION_JSON)
-                .with(jwt().jwt(jwtBuilder.build()))
-        )
+                .with(jwt().jwt(jwtBuilder.build())))
     }
 
     private fun delete(
         dryRun: Boolean = false,
-        jwtModifier: (Jwt.Builder) -> Unit = {},
+        jwtModifier: Jwt.Builder.() -> Unit = {},
     ): ResultActions {
         val url = if (dryRun) "/gdpr-api/$USERNAME?dry_run=true" else "/gdpr-api/$USERNAME"
-        val jwtBuilder = jwtBuilder.claim("http://localhost:8080", listOf("haitaton.gdprdelete"))
-        jwtModifier(jwtBuilder)
+        val jwtBuilder = jwtBuilder.scopes(DELETE_SCOPE)
+        jwtBuilder.jwtModifier()
         return mockMvc.perform(
             MockMvcRequestBuilders.delete(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .with(jwt().jwt(jwtBuilder.build()))
-        )
+                .with(jwt().jwt(jwtBuilder.build())))
     }
 
+    private fun Jwt.Builder.scopes(vararg scopes: String): Jwt.Builder =
+        claim("authorization", mapOf("permissions" to listOf(mapOf("scopes" to scopes.toList()))))
+
     private val jwtBuilder: Jwt.Builder =
-        Jwt.withTokenValue("token").header("alg", "none").claim("sub", USERNAME)
+        Jwt.withTokenValue("token").header("alg", "none").subject(USERNAME)
 }
