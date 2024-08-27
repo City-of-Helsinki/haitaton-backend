@@ -12,6 +12,7 @@ import org.springframework.boot.convert.Delimiter
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Service
+import org.springframework.transaction.event.TransactionalEventListener
 
 private val logger = KotlinLogging.logger {}
 
@@ -76,6 +77,12 @@ enum class EmailTemplate(val value: String) {
     REMOVAL_FROM_HANKE_NOTIFICATION("kayttaja-poistettu-hanke"),
 }
 
+data class JohtoselvitysCompleteEmail(
+    val to: String,
+    val applicationId: Long?,
+    val applicationIdentifier: String,
+)
+
 @Service
 class EmailSenderService(
     private val mailSender: JavaMailSender,
@@ -83,21 +90,18 @@ class EmailSenderService(
 ) {
     val templatePath = "/email/template"
 
-    fun sendJohtoselvitysCompleteEmail(
-        to: String,
-        applicationId: Long?,
-        applicationIdentifier: String,
-    ) {
-        logger.info { "Sending email for completed johtoselvitys $applicationIdentifier" }
+    @TransactionalEventListener
+    fun sendJohtoselvitysCompleteEmail(event: JohtoselvitysCompleteEmail) {
+        logger.info { "Sending email for completed johtoselvitys ${event.applicationIdentifier}" }
 
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "applicationId" to applicationId.toString(),
-                "applicationIdentifier" to applicationIdentifier,
+                "applicationId" to event.applicationId.toString(),
+                "applicationIdentifier" to event.applicationIdentifier,
             )
 
-        sendHybridEmail(to, EmailTemplate.CABLE_REPORT_DONE, templateData)
+        sendHybridEmail(event.to, EmailTemplate.CABLE_REPORT_DONE, templateData)
     }
 
     fun sendHankeInvitationEmail(data: HankeInvitationData) {
@@ -152,7 +156,7 @@ class EmailSenderService(
         sendHybridEmail(
             data.recipientEmail,
             EmailTemplate.ACCESS_RIGHTS_UPDATE_NOTIFICATION,
-            templateData
+            templateData,
         )
     }
 
@@ -173,7 +177,7 @@ class EmailSenderService(
         sendHybridEmail(
             data.recipientEmail,
             EmailTemplate.REMOVAL_FROM_HANKE_NOTIFICATION,
-            templateData
+            templateData,
         )
     }
 
@@ -260,6 +264,7 @@ class EmailSenderService(
                         en = "Viewing right",
                     )
             }
+
         /**
          * Expand the asterisks in the given pattern to `.*` and surround the literal parts with
          * regex literal flags `\Q` and `\E`.
