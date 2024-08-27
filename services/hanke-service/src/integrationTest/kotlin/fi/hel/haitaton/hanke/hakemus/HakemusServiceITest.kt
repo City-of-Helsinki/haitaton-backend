@@ -2609,6 +2609,7 @@ class HakemusServiceITest(
 
             hakemusService.handleHakemusUpdates(histories, updateTime)
 
+            assertThat(greenMail.waitForIncomingEmail(1000L, 1)).isTrue()
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
             assertThat(email.allRecipients[0].toString()).isEqualTo(hakija.sahkoposti)

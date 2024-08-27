@@ -26,6 +26,7 @@ import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.email.EmailSenderService
+import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
@@ -74,6 +75,7 @@ import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
+import org.springframework.context.ApplicationEventPublisher
 
 class HakemusServiceTest {
     private val hakemusRepository: HakemusRepository = mockk()
@@ -89,6 +91,7 @@ class HakemusServiceTest {
     private val alluStatusRepository: AlluStatusRepository = mockk()
     private val emailSenderService: EmailSenderService = mockk()
     private val paatosService: PaatosService = mockk()
+    private val publisher: ApplicationEventPublisher = mockk()
 
     private val hakemusService =
         HakemusService(
@@ -105,6 +108,7 @@ class HakemusServiceTest {
             alluStatusRepository,
             emailSenderService,
             paatosService,
+            publisher,
         )
 
     @BeforeEach
@@ -620,8 +624,8 @@ class HakemusServiceTest {
         fun `sends email to the contacts when hakemus gets a decision`() {
             every { hakemusRepository.getOneByAlluid(42) } returns applicationEntityWithCustomer()
             justRun {
-                emailSenderService.sendJohtoselvitysCompleteEmail(
-                    receiver, applicationId, identifier)
+                publisher.publishEvent(
+                    JohtoselvitysCompleteEmail(receiver, applicationId, identifier))
             }
             every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
@@ -631,8 +635,8 @@ class HakemusServiceTest {
 
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
-                emailSenderService.sendJohtoselvitysCompleteEmail(
-                    receiver, applicationId, identifier)
+                publisher.publishEvent(
+                    JohtoselvitysCompleteEmail(receiver, applicationId, identifier))
                 hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())

@@ -19,6 +19,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
+import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -39,6 +40,7 @@ import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.geojson.Polygon
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -65,6 +67,7 @@ class HakemusService(
     private val alluStatusRepository: AlluStatusRepository,
     private val emailSenderService: EmailSenderService,
     private val paatosService: PaatosService,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
 
     @Transactional(readOnly = true)
@@ -545,17 +548,9 @@ class HakemusService(
         logger.info { "Sending hakemus ready emails to ${receivers.size} receivers" }
 
         receivers.forEach {
-            sendDecisionReadyEmail(it.sahkoposti, applicationIdentifier, application.id)
+            applicationEventPublisher.publishEvent(
+                JohtoselvitysCompleteEmail(it.sahkoposti, application.id, applicationIdentifier))
         }
-    }
-
-    private fun sendDecisionReadyEmail(
-        email: String,
-        applicationIdentifier: String,
-        applicationId: Long?,
-    ) {
-        emailSenderService.sendJohtoselvitysCompleteEmail(
-            email, applicationId, applicationIdentifier)
     }
 
     /** Find the application entity or throw an exception. */
