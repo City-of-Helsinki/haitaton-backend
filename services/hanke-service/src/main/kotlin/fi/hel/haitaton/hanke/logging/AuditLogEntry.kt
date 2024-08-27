@@ -45,7 +45,6 @@ enum class Status {
 enum class ObjectType {
     ALLU_CONTACT,
     ALLU_CUSTOMER,
-    APPLICATION,
     APPLICATION_CONTACT,
     APPLICATION_CUSTOMER,
     CABLE_REPORT,
@@ -54,6 +53,7 @@ enum class ObjectType {
     HANKE,
     HANKE_KAYTTAJA,
     KAYTTAJA_TUNNISTE,
+    PAATOS,
     PERMISSION,
     PROFIILI_NIMI,
     YHTEYSTIETO,
@@ -87,7 +87,5 @@ data class AuditLogEntry(
                         failureDescription = failureDescription,
                         actor = AuditLogActor(userId, userRole, ipAddress),
                         target = AuditLogTarget(objectId, objectType, objectBefore, objectAfter),
-                    )
-                )
-        )
+                    )))
 }

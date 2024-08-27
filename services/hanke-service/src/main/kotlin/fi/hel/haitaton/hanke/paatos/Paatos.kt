@@ -18,4 +18,6 @@ data class Paatos(
     fun toResponse(): PaatosResponse =
         PaatosResponse(
             id, hakemusId, hakemustunnus, tyyppi, tila, nimi, alkupaiva, loppupaiva, size)
+
+    fun toMetadata(): PaatosMetadata = PaatosMetadata(id, hakemusId, hakemustunnus, tyyppi, tila)
 }
