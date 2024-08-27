@@ -41,8 +41,8 @@ class PaatosFactory(private val paatosRepository: PaatosRepository) {
                 tyyppi = tyyppi,
                 tila = tila,
                 nimi = hakemus.applicationData.name,
-                alkupaiva = hakemus.applicationData.startTime?.toLocalDate()!!,
-                loppupaiva = hakemus.applicationData.endTime?.toLocalDate()!!,
+                alkupaiva = hakemus.applicationData.startTime!!.toLocalDate(),
+                loppupaiva = hakemus.applicationData.endTime!!.toLocalDate(),
                 blobLocation = "${hakemus.id}/${UUID.randomUUID()}",
                 size = 53,
             )
@@ -59,8 +59,8 @@ class PaatosFactory(private val paatosRepository: PaatosRepository) {
                 tyyppi = tyyppi,
                 tila = tila,
                 nimi = hakemus.applicationData.name,
-                alkupaiva = hakemus.applicationData.startTime?.toLocalDate()!!,
-                loppupaiva = hakemus.applicationData.endTime?.toLocalDate()!!,
+                alkupaiva = hakemus.applicationData.startTime!!.toLocalDate(),
+                loppupaiva = hakemus.applicationData.endTime!!.toLocalDate(),
                 blobLocation = "${hakemus.id}/${UUID.randomUUID()}",
                 size = 53,
             )

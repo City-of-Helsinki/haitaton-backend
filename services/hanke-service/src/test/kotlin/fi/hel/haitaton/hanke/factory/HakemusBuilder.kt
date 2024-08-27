@@ -55,7 +55,7 @@ data class HakemusBuilder(
     fun withStatus(
         status: ApplicationStatus? = ApplicationStatus.PENDING,
         alluId: Int? = 1,
-        identifier: String? = "JS000$alluId",
+        identifier: String? = defaultIdentifier(alluId),
     ): HakemusBuilder {
         hakemusEntity.apply {
             alluid = alluId
@@ -209,6 +209,17 @@ data class HakemusBuilder(
                     .hakija()
                     .tyonSuorittaja(founder())
         }
+
+    /**
+     * Make the hakemus appear like it has been just sent. I.e. it has mandatory fields and allu
+     * status fields filled.
+     */
+    fun asSent(
+        status: ApplicationStatus? = ApplicationStatus.PENDING,
+        alluId: Int? = 1,
+        identifier: String? = defaultIdentifier(alluId),
+        hankealue: SavedHankealue? = null
+    ) = this.withMandatoryFields(hankealue).withStatus(status, alluId, identifier)
 
     private fun founder(): HankekayttajaEntity =
         hankeKayttajaService.getKayttajaByUserId(hankeId, userId)!!
@@ -374,4 +385,10 @@ data class HakemusBuilder(
     ) =
         HakemusyhteyshenkiloEntity(
             hankekayttaja = kayttaja, hakemusyhteystieto = yhteystietoEntity, tilaaja = tilaaja)
+
+    private fun defaultIdentifier(alluId: Int?) =
+        when (hakemusEntity.applicationType) {
+            ApplicationType.EXCAVATION_NOTIFICATION -> "KP23%05d".format(alluId)
+            ApplicationType.CABLE_REPORT -> "JS23%05d".format(alluId)
+        }
 }
