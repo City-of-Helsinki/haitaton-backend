@@ -34,10 +34,6 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import okio.Buffer
-import org.geojson.Crs
-import org.geojson.GeometryCollection
-import org.geojson.LngLatAlt
-import org.geojson.Polygon
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -226,7 +222,7 @@ class AlluClientITests {
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                     .setBody(stubbedApplicationId.toString())
             mockWebServer.enqueue(applicationIdResponse)
-            val application = getTestApplication()
+            val application = AlluFactory.createCableReportApplicationData()
 
             val actualApplicationId = service.create(application)
 
@@ -268,7 +264,7 @@ class AlluClientITests {
             mockWebServer.enqueue(applicationIdResponse)
 
             assertThrows<WebClientResponseException.BadRequest> {
-                service.create(getTestApplication())
+                service.create(AlluFactory.createCableReportApplicationData())
             }
 
             val createRequest = mockWebServer.takeRequest()
@@ -706,40 +702,4 @@ class AlluClientITests {
         JWT.create()
             .withExpiresAt(Instant.now().plusSeconds(secondsToAdd))
             .sign(Algorithm.HMAC256("secret"))
-
-    private fun getTestApplication(): AlluCableReportApplicationData {
-        val customerWContacts =
-            CustomerWithContacts(
-                customer = AlluFactory.customer, contacts = listOf(AlluFactory.hannu))
-        val contractorWContacts =
-            CustomerWithContacts(
-                customer = AlluFactory.customer, contacts = listOf(AlluFactory.kerttu))
-
-        val geometry = GeometryCollection()
-        geometry.add(
-            Polygon(
-                LngLatAlt(25495815.0, 6673160.0),
-                LngLatAlt(25495855.0, 6673160.0),
-                LngLatAlt(25495855.0, 6673190.0),
-                LngLatAlt(25495815.0, 6673160.0),
-            ))
-        geometry.crs = Crs()
-        geometry.crs.properties["name"] = "EPSG:3879"
-
-        val now = ZonedDateTime.now()
-
-        return AlluCableReportApplicationData(
-            name = "Haitaton hankkeen nimi",
-            customerWithContacts = customerWContacts,
-            geometry = geometry,
-            startTime = now.plusDays(1L),
-            endTime = now.plusDays(22L),
-            pendingOnClient = false,
-            identificationNumber = "HAI-123",
-            clientApplicationKind = "Telekaapelin laittoa",
-            workDescription = "Kaivuhommiahan nää tietty",
-            contractorWithContacts = contractorWContacts,
-            constructionWork = true,
-        )
-    }
 }

@@ -177,6 +177,7 @@ class HakemusFactory(
             representativeWithContacts: Hakemusyhteystieto? = null,
             propertyDeveloperWithContacts: Hakemusyhteystieto? = null,
             invoicingCustomer: Laskutusyhteystieto? = null,
+            additionalInfo: String? = null,
         ): KaivuilmoitusData =
             KaivuilmoitusData(
                 pendingOnClient = pendingOnClient,
@@ -198,7 +199,7 @@ class HakemusFactory(
                 representativeWithContacts = representativeWithContacts,
                 propertyDeveloperWithContacts = propertyDeveloperWithContacts,
                 invoicingCustomer = invoicingCustomer,
-                additionalInfo = null,
+                additionalInfo = additionalInfo,
             )
 
         fun createEntity(
