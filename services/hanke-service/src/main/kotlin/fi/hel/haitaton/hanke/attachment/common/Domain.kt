@@ -57,9 +57,9 @@ data class ApplicationAttachmentMetadata(
                     id = null,
                     mimeType = contentType,
                     name = fileName,
-                    description = null,
+                    description = attachmentType.toFinnish(),
                 ),
-            file = content
+            file = content,
         )
     }
 }
