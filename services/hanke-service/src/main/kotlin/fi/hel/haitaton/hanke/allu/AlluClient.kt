@@ -442,16 +442,7 @@ data class LoginInfo(val username: String, val password: String)
 data class Attachment(
     val metadata: AttachmentMetadata,
     @Suppress("ArrayInDataClass") val file: ByteArray
-) {
-    constructor(
-        contentType: String,
-        fileName: String,
-        content: ByteArray
-    ) : this(
-        AttachmentMetadata(id = null, mimeType = contentType, name = fileName, description = null),
-        content,
-    )
-}
+)
 
 class AlluLoginException(cause: Throwable) : RuntimeException(cause)
 
