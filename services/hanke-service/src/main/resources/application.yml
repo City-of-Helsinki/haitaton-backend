@@ -34,16 +34,17 @@ haitaton:
     # Disable endpoints that are e.g. in development and should not be in production.
   features:
     hanke-editing: ${HAITATON_FEATURE_HANKE_EDITING:false}
+  gdpr:
     # GDPR API is disabled by default for tests and local running.
     # Spring Security will otherwise try to call the issuer's openid-configuration URL,
     # which will fail, unless the developer has also started profile-gdpr-api-tester.
-  gdpr:
-    audience: ${HAITATON_GDPR_AUDIENCE:http://localhost:8080/haitaton}
-    authorization-field: ${HAITATON_GDPR_AUTHORIZATION_FIELD:http://localhost:8080}
-    delete-scope: ${HAITATON_GDPR_DELETE_SCOPE:haitaton.gdprdelete}
     disabled: ${HAITATON_GDPR_DISABLED:false}
-    issuer: ${HAITATON_GDPR_ISSUER:http://gdpr-api-tester:8888/}
-    query-scope: ${HAITATON_GDPR_QUERY_SCOPE:haitaton.gdprquery}
+    # Audience and issuer are the same for GDPR API and other APIs in cloud environments.
+    # They are only different in local development, where GDPR queries come from the tester.
+    audience: ${HAITATON_OAUTH2_AUDIENCE:haitaton-api-dev}
+    issuer: ${HAITATON_OAUTH2_ISSUER:http://gdpr-api-tester:8888/}
+    delete-scope: gdprdelete
+    query-scope: gdprquery
   profiili-api:
     graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
     audience: ${PROFIILI_AUDIENCE:profile-api-test}

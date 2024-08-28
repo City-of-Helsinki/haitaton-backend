@@ -5,7 +5,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
-import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator
@@ -48,7 +47,7 @@ class OAuth2ResourceServerSecurityConfiguration(private val gdprProperties: Gdpr
         http
             .securityMatcher("/gdpr-api/**")
             .authorizeHttpRequests { it.anyRequest().authenticated() }
-            .oauth2ResourceServer { it.jwt(Customizer.withDefaults()) }
+            .oauth2ResourceServer { it.jwt { jwt -> jwt.decoder(gdprJwtDecoder()) } }
         return http.build()
     }
 
@@ -74,13 +73,7 @@ class OAuth2ResourceServerSecurityConfiguration(private val gdprProperties: Gdpr
         }
 
     /** Custom decoder needed to check the audience. */
-    @Bean
-    @ConditionalOnProperty(
-        value = ["haitaton.gdpr.disabled"],
-        havingValue = "false",
-        matchIfMissing = true,
-    )
-    fun jwtDecoder(): JwtDecoder {
+    fun gdprJwtDecoder(): JwtDecoder {
         val jwtDecoder: NimbusJwtDecoder =
             JwtDecoders.fromIssuerLocation(gdprProperties.issuer) as NimbusJwtDecoder
 

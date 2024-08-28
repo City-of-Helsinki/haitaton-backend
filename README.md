@@ -244,10 +244,11 @@ Set the API Tester configuration as follows (in profile-gdpr-api-tester/.env):
 
 ```
   ISSUER = http://gdpr-api-tester:8888/
-  GDPR_API_AUDIENCE = http://localhost:8080/haitaton
+  ISSUER_TYPE = keycloak
+  GDPR_API_AUDIENCE = haitaton-api-dev
   GDPR_API_AUTHORIZATION_FIELD = http://localhost:8080
-  GDPR_API_QUERY_SCOPE = haitaton.gdprquery
-  GDPR_API_DELETE_SCOPE = haitaton.gdprdelete
+  GDPR_API_QUERY_SCOPE = gdprquery
+  GDPR_API_DELETE_SCOPE = gdprdelete
   GDPR_API_URL = http://haitaton-hanke:8080/gdpr-api/$user_uuid
   PROFILE_ID = 65d4015d-1736-4848-9466-25d43a1fe8c7
   USER_UUID = <Your user id>
@@ -263,6 +264,11 @@ from hanke;
 -- Or
 select userid
 from applications;
+```
+
+Build the tester tool with:
+```shell
+docker build -t gdpr-api-tester .
 ```
 
 To make the API tester work with Haitaton running in Docker Compose, start it like this:
