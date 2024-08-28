@@ -79,6 +79,11 @@ class ProfiiliClient(
                     .with("permission", TOKEN_API_PERMISSION))
             .retrieve()
             .bodyToMono(JsonNode::class.java)
+            .doOnError(WebClientResponseException::class.java) { ex ->
+                logger.error {
+                    "Error from Profiili API call. Response status=${ex.statusCode}, body=${ex.responseBodyAsString}"
+                }
+            }
             .block()!!
     }
 
