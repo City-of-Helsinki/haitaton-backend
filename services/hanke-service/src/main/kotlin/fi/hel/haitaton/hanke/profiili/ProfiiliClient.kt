@@ -1,15 +1,19 @@
 package fi.hel.haitaton.hanke.profiili
 
-import fi.hel.haitaton.hanke.accessToken
+import com.fasterxml.jackson.databind.JsonNode
 import fi.hel.haitaton.hanke.getResourceAsText
 import fi.hel.haitaton.hanke.toJsonString
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.MediaType
 import org.springframework.security.core.context.SecurityContext
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.body
 import reactor.core.publisher.Mono
 
@@ -20,10 +24,13 @@ private val logger = KotlinLogging.logger {}
 class ProfiiliClient(
     private val properties: ProfiiliProperties,
     webClientBuilder: WebClient.Builder,
+    @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}") private val issuer: String,
 ) {
     private val webClient: WebClient = webClientBuilder.build()
     private val myProfileGraphQl = MY_PROFILE_QUERY_FILE.getResourceAsText()
     private val myProfileQuery = GraphQlQuery(myProfileGraphQl, MY_PROFILE_OPERATION).toJsonString()
+
+    private var tokenUri: String? = null
 
     fun getVerifiedName(securityContext: SecurityContext): Names {
         logger.info { "Getting user's verified name from Profiili." }
@@ -49,28 +56,66 @@ class ProfiiliClient(
 
     private fun authenticate(securityContext: SecurityContext): String {
         val accessToken =
-            securityContext.accessToken() ?: throw VerifiedNameNotFound("User not authenticated.")
+            securityContext.authentication?.let { (it.credentials as Jwt).tokenValue }
+                ?: throw VerifiedNameNotFound("User not authenticated.")
 
         val apiTokens = getApiTokens(accessToken)
-
-        return apiTokens[properties.audience]
-            ?: throw VerifiedNameNotFound("Profiili audience not found from API tokens.")
+        return apiTokens["access_token"]?.asText()
+            ?: throw VerifiedNameNotFound("Token response did not contain an access token.")
     }
 
-    private fun getApiTokens(accessToken: String): Map<String, String> {
+    private fun getApiTokens(accessToken: String): JsonNode {
+        val uri = tokenUri ?: getTokenApiUrl()
+
         return webClient
-            .get()
-            .uri(properties.apiTokensUrl)
-            .accept(MediaType.APPLICATION_JSON)
+            .post()
+            .uri(uri)
             .headers { it.setBearerAuth(accessToken) }
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(
+                BodyInserters.fromFormData("audience", properties.audience)
+                    .with("grant_type", TOKEN_API_GRANT_TYPE)
+                    .with("permission", TOKEN_API_PERMISSION))
             .retrieve()
-            .bodyToMono(object : ParameterizedTypeReference<Map<String, String>>() {})
+            .bodyToMono(JsonNode::class.java)
             .block()!!
+    }
+
+    private fun getTokenApiUrl(): String {
+        logger.info { "Loading Profiili token URI from OpenID configuration.." }
+        val configurationUri = "$issuer/.well-known/openid-configuration"
+
+        val conf =
+            webClient
+                .get()
+                .uri(configurationUri)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(JsonNode::class.java)
+                .onErrorMap(WebClientResponseException::class.java) { ex ->
+                    ProfiiliConfigurationError(
+                        "Unable to load OpenID configuration. " +
+                            "Response status=${ex.statusCode}, " +
+                            "body=${ex.responseBodyAsString}",
+                        ex)
+                }
+                .block()!!
+
+        val uri =
+            conf["token_endpoint"]?.asText()
+                ?: throw ProfiiliConfigurationError(
+                    "OpenID configuration didn't contain a token endpoint.")
+        tokenUri = uri
+        logger.info { "Got Profiili token URI: $uri" }
+        return uri
     }
 
     companion object {
         const val MY_PROFILE_QUERY_FILE = "/graphql/MyProfileQuery.graphql"
         const val MY_PROFILE_OPERATION = "MyProfileQuery"
+        const val TOKEN_API_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:uma-ticket"
+        const val TOKEN_API_PERMISSION = "#access"
     }
 
     data class GraphQlQuery(
@@ -82,3 +127,6 @@ class ProfiiliClient(
 
 class VerifiedNameNotFound(reason: String) :
     RuntimeException("Verified name of user could not be obtained. $reason")
+
+class ProfiiliConfigurationError(reason: String, cause: Exception? = null) :
+    RuntimeException("Error in Profiili API connection: $reason", cause)

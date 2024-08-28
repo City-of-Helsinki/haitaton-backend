@@ -98,8 +98,6 @@ services:
       HAITATON_PORT: 5432
       HAITATON_USER: haitaton_user
       HAITATON_PASSWORD: haitaton
-      HAITATON_OAUTH2_CLIENT_ID: https://api.hel.fi/auth/haitatonapidev
-      HAITATON_OAUTH2_USER_INFO_URI: https://tunnistamo.test.hel.ninja/openid/userinfo
       HAITATON_BLOB_CONNECTION_STRING: BlobEndpoint=http://azurite:10000/devstoreaccount1;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;
       #      HAITATON_CORS_ALLOWED_ORIGINS: http://localhost:8000
       HAITATON_GDPR_DISABLED: ${HAITATON_GDPR_DISABLED:-true}
@@ -137,7 +135,7 @@ services:
       # - haitaton-ui-dev for Suomi.fi authentication
       # - haitaton-admin-ui-dev for Helsinki AD authentication
       REACT_APP_OIDC_CLIENT_ID: haitaton-ui-dev
-      LOGIN_SERVER: https://tunnistamo.test.hel.ninja
+      LOGIN_SERVER: https://tunnistus.test.hel.ninja
       REACT_APP_FEATURE_HANKE: 1
       REACT_APP_FEATURE_ACCESS_RIGHTS: 1
     ports:
