@@ -70,18 +70,29 @@ data class RemovalFromHankeNotificationData(
 data class Translations(val fi: String, val sv: String, val en: String)
 
 enum class EmailTemplate(val value: String) {
-    CABLE_REPORT_DONE("johtoselvitys-valmis"),
-    INVITATION_HANKE("kayttaja-lisatty-hanke"),
-    APPLICATION_NOTIFICATION("kayttaja-lisatty-hakemus"),
     ACCESS_RIGHTS_UPDATE_NOTIFICATION("kayttooikeustason-muutos"),
+    APPLICATION_NOTIFICATION("kayttaja-lisatty-hakemus"),
+    CABLE_REPORT_DONE("johtoselvitys-valmis"),
+    EXCAVATION_NOTIFICATION_DECISION("kaivuilmoitus-paatos"),
+    INVITATION_HANKE("kayttaja-lisatty-hanke"),
     REMOVAL_FROM_HANKE_NOTIFICATION("kayttaja-poistettu-hanke"),
 }
 
+sealed interface EmailEvent {
+    val to: String
+}
+
 data class JohtoselvitysCompleteEmail(
-    val to: String,
+    override val to: String,
     val applicationId: Long?,
     val applicationIdentifier: String,
-)
+) : EmailEvent
+
+data class KaivuilmoitusDecisionEmail(
+    override val to: String,
+    val applicationId: Long?,
+    val applicationIdentifier: String,
+) : EmailEvent
 
 @Service
 class EmailSenderService(
@@ -102,6 +113,20 @@ class EmailSenderService(
             )
 
         sendHybridEmail(event.to, EmailTemplate.CABLE_REPORT_DONE, templateData)
+    }
+
+    @TransactionalEventListener
+    fun sendKaivuilmoitusDecisionEmail(event: KaivuilmoitusDecisionEmail) {
+        logger.info { "Sending email for decision in kaivuilmoitus ${event.applicationIdentifier}" }
+
+        val templateData =
+            mapOf(
+                "baseUrl" to emailConfig.baseUrl,
+                "applicationId" to event.applicationId.toString(),
+                "applicationIdentifier" to event.applicationIdentifier,
+            )
+
+        sendHybridEmail(event.to, EmailTemplate.EXCAVATION_NOTIFICATION_DECISION, templateData)
     }
 
     fun sendHankeInvitationEmail(data: HankeInvitationData) {
