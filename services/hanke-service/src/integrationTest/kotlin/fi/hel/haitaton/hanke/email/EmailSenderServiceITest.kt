@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired
 private const val TEST_EMAIL = "test@test.test"
 private const val HAITATON_NO_REPLY = "no-reply@hel.fi"
 private const val APPLICATION_IDENTIFIER = "JS2300001"
+private const val KAIVUILMOITUS_TUNNUS = "KP2300001"
 private const val INVITER_NAME = "Matti Meikäläinen"
 private const val INVITER_EMAIL = "matti.meikalainen@test.fi"
 private const val HANKE_TUNNUS = "HAI24-1"
@@ -90,6 +91,64 @@ class EmailSenderServiceITest : IntegrationTest() {
             val squashedHtmlBody = htmlBody.replace("\\s+".toRegex(), " ")
             assertThat(squashedHtmlBody).all {
                 contains(APPLICATION_IDENTIFIER)
+                contains("""<a href="http://localhost:3001/fi/hakemus/13">""")
+                contains("""<a href="http://localhost:3001/sv/ansokan/13">""")
+                contains("""<a href="http://localhost:3001/en/application/13">""")
+            }
+        }
+    }
+
+    @Nested
+    inner class SendKaivuilmoitusDecisionEmail {
+        @Test
+        fun `sends email with correct recipient`() {
+            emailSenderService.sendKaivuilmoitusDecisionEmail(
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.allRecipients).hasSize(1)
+            assertThat(email.allRecipients[0].toString()).isEqualTo(TEST_EMAIL)
+        }
+
+        @Test
+        fun `sends email with sender from properties`() {
+            emailSenderService.sendKaivuilmoitusDecisionEmail(
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.from).hasSize(1)
+            assertThat(email.from[0].toString()).isEqualTo(HAITATON_NO_REPLY)
+        }
+
+        @Test
+        fun `sends email with correct subject`() {
+            emailSenderService.sendKaivuilmoitusDecisionEmail(
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa")
+        }
+
+        @Test
+        fun `sends email with parametrized hybrid body`() {
+            emailSenderService.sendKaivuilmoitusDecisionEmail(
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+
+            val email = greenMail.firstReceivedMessage()
+            val (textBody, htmlBody) = email.bodies()
+            assertThat(textBody).all {
+                contains(KAIVUILMOITUS_TUNNUS)
+                contains("http://localhost:3001/fi/hakemus/13")
+                contains("http://localhost:3001/sv/ansokan/13")
+                contains("http://localhost:3001/en/application/13")
+            }
+            // Compress all whitespace into single spaces so that they don't interfere with
+            // matching.
+            val squashedHtmlBody = htmlBody.replace("\\s+".toRegex(), " ")
+            assertThat(squashedHtmlBody).all {
+                contains(KAIVUILMOITUS_TUNNUS)
                 contains("""<a href="http://localhost:3001/fi/hakemus/13">""")
                 contains("""<a href="http://localhost:3001/sv/ansokan/13">""")
                 contains("""<a href="http://localhost:3001/en/application/13">""")

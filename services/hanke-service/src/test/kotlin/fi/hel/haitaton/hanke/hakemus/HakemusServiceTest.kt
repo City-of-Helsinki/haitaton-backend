@@ -27,6 +27,7 @@ import fi.hel.haitaton.hanke.allu.CustomerWithContacts
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
+import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
@@ -125,10 +126,15 @@ class HakemusServiceTest {
             geometriatDao,
             hankealueService,
             loggingService,
+            hankeLoggingService,
             disclosureLogService,
             hankeKayttajaService,
             attachmentService,
             alluClient,
+            alluStatusRepository,
+            emailSenderService,
+            paatosService,
+            publisher,
         )
     }
 
@@ -644,6 +650,32 @@ class HakemusServiceTest {
         }
 
         @Test
+        fun `sends email to the contacts when a kaivuilmoitus gets a decision`() {
+            every { hakemusRepository.getOneByAlluid(42) } returns
+                applicationEntityWithCustomer(type = ApplicationType.EXCAVATION_NOTIFICATION)
+            justRun {
+                publisher.publishEvent(
+                    KaivuilmoitusDecisionEmail(receiver, applicationId, identifier))
+            }
+            every { hakemusRepository.save(any()) } answers { firstArg() }
+            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { alluStatusRepository.save(any()) } answers { firstArg() }
+            justRun { paatosService.saveKaivuilmoituksenPaatos(any(), any()) }
+
+            hakemusService.handleHakemusUpdates(createHistories(), updateTime)
+
+            verifySequence {
+                hakemusRepository.getOneByAlluid(42)
+                publisher.publishEvent(
+                    KaivuilmoitusDecisionEmail(receiver, applicationId, identifier))
+                paatosService.saveKaivuilmoituksenPaatos(any(), any())
+                hakemusRepository.save(any())
+                alluStatusRepository.getReferenceById(1)
+                alluStatusRepository.save(any())
+            }
+        }
+
+        @Test
         fun `doesn't send email when status is not decision`() {
             every { hakemusRepository.getOneByAlluid(42) } returns applicationEntityWithCustomer()
             every { hakemusRepository.save(any()) } answers { firstArg() }
@@ -717,7 +749,10 @@ class HakemusServiceTest {
             verify { alluClient wasNot called }
         }
 
-        private fun applicationEntityWithoutCustomer(id: Long = applicationId): HakemusEntity {
+        private fun applicationEntityWithoutCustomer(
+            id: Long = applicationId,
+            type: ApplicationType = ApplicationType.CABLE_REPORT
+        ): HakemusEntity {
             val entity =
                 HakemusFactory.createEntity(
                     id = id,
@@ -725,12 +760,16 @@ class HakemusServiceTest {
                     applicationIdentifier = identifier,
                     userId = USERNAME,
                     hanke = HankeFactory.createMinimalEntity(id = 1, hankeTunnus = hankeTunnus),
+                    applicationType = type,
                 )
             return entity
         }
 
-        private fun applicationEntityWithCustomer(id: Long = applicationId): HakemusEntity {
-            val entity = applicationEntityWithoutCustomer(id)
+        private fun applicationEntityWithCustomer(
+            id: Long = applicationId,
+            type: ApplicationType = ApplicationType.CABLE_REPORT
+        ): HakemusEntity {
+            val entity = applicationEntityWithoutCustomer(id, type)
             entity.yhteystiedot[ApplicationContactType.HAKIJA] =
                 HakemusyhteystietoFactory.createEntity(application = entity, sahkoposti = receiver)
                     .withYhteyshenkilo(
