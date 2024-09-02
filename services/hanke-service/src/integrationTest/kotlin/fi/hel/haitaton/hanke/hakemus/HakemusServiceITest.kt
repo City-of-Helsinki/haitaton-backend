@@ -2618,6 +2618,43 @@ class HakemusServiceITest(
                     "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier")
         }
 
+        @Test
+        fun `sends email to the contacts when a kaivuilmoitus gets a decision`() {
+            val identifier = "KP2300001"
+            val hanke = hankeFactory.saveMinimal()
+            val hakija = hankeKayttajaFactory.saveUser(hankeId = hanke.id)
+            hakemusFactory
+                .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
+                .hakija(hakija)
+                .saveEntity()
+            val histories =
+                listOf(
+                    ApplicationHistoryFactory.create(
+                        alluId,
+                        ApplicationHistoryFactory.createEvent(
+                            applicationIdentifier = identifier,
+                            newStatus = ApplicationStatus.DECISION)),
+                )
+            every { alluClient.getDecisionPdf(alluId) } returns PDF_BYTES
+            every { alluClient.getApplicationInformation(alluId) } returns
+                AlluFactory.createAlluApplicationResponse(id = alluId, applicationId = identifier)
+
+            hakemusService.handleHakemusUpdates(histories, updateTime)
+
+            assertThat(greenMail.waitForIncomingEmail(1000L, 1)).isTrue()
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.allRecipients).hasSize(1)
+            assertThat(email.allRecipients[0].toString()).isEqualTo(hakija.sahkoposti)
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa")
+            verifySequence {
+                alluClient.getDecisionPdf(alluId)
+                alluClient.getApplicationInformation(alluId)
+            }
+        }
+
         private fun mockAlluDownload(status: ApplicationStatus) =
             when (status) {
                 ApplicationStatus.DECISION ->

@@ -20,6 +20,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
+import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -495,11 +496,9 @@ class HakemusService(
         when (event.newStatus) {
             ApplicationStatus.DECISION -> {
                 updateStatus()
-                when (application.applicationType) {
-                    ApplicationType.CABLE_REPORT ->
-                        sendDecisionReadyEmails(application, event.applicationIdentifier)
-                    ApplicationType.EXCAVATION_NOTIFICATION ->
-                        paatosService.saveKaivuilmoituksenPaatos(application, event)
+                sendDecisionReadyEmails(application, event.applicationIdentifier)
+                if (application.applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
+                    paatosService.saveKaivuilmoituksenPaatos(application, event)
                 }
             }
             ApplicationStatus.OPERATIONAL_CONDITION -> {
@@ -548,8 +547,16 @@ class HakemusService(
         logger.info { "Sending hakemus ready emails to ${receivers.size} receivers" }
 
         receivers.forEach {
-            applicationEventPublisher.publishEvent(
-                JohtoselvitysCompleteEmail(it.sahkoposti, application.id, applicationIdentifier))
+            val event =
+                when (application.applicationType) {
+                    ApplicationType.CABLE_REPORT ->
+                        JohtoselvitysCompleteEmail(
+                            it.sahkoposti, application.id, applicationIdentifier)
+                    ApplicationType.EXCAVATION_NOTIFICATION ->
+                        KaivuilmoitusDecisionEmail(
+                            it.sahkoposti, application.id, applicationIdentifier)
+                }
+            applicationEventPublisher.publishEvent(event)
         }
     }
 
