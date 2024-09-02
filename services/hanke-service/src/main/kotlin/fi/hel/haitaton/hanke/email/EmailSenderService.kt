@@ -207,6 +207,7 @@ class EmailSenderService(
     }
 
     private fun sendHybridEmail(to: String, template: EmailTemplate, data: Map<String, Any>) {
+        logger.info { "Parsing email with template ${template.value}" }
         if (emailConfig.filter.use && emailNotAllowed(to)) {
             logger.info { "Email recipient not allowed, ignoring email." }
             return
@@ -223,7 +224,9 @@ class EmailSenderService(
         helper.setTo(to)
         helper.setSubject(subject)
         helper.setFrom(emailConfig.from)
+        logger.info { "Sending email message..." }
         mailSender.send(mimeMessage)
+        logger.info { "Sent email with template ${template.value}" }
     }
 
     private fun signatures() =
