@@ -22,26 +22,6 @@ internal class TormaystarkasteluTormaysServiceITest : IntegrationTest() {
 
     @Autowired private lateinit var tormaysService: TormaystarkasteluTormaysService
 
-    /**
-     * Test manually whether Hanke geometries are located on general street area ("yleinen katuosa",
-     * ylre_parts)
-     */
-    @ParameterizedTest
-    @CsvSource("Kaivokatu,true", "Mustikkamaa,false")
-    fun `general street area`(location: String, result: Boolean) {
-        val geometriaIds = createHankeGeometriat(location)
-        assertThat(tormaysService.anyIntersectsYleinenKatuosa(geometriaIds)).isEqualTo(result)
-    }
-
-    /** Test manually what general street classes (ylre_classes) Hanke geometries are located on */
-    @ParameterizedTest
-    @CsvSource("Kaivokatu,4", "Mustikkamaa,")
-    fun `general street classes`(location: String, result: Int?) {
-        val geometriaIds = createHankeGeometriat(location)
-        assertThat(tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriaIds))
-            .isEqualTo(result)
-    }
-
     /** Test manually what street classes (street_classes) Hanke geometries are located on */
     @ParameterizedTest
     @CsvSource("Kaivokatu,4", "Mustikkamaa,")
@@ -71,10 +51,7 @@ internal class TormaystarkasteluTormaysServiceITest : IntegrationTest() {
         val geometriaIds = createHankeGeometriat(location)
         assertThat(
                 tormaysService.maxLiikennemaara(
-                    geometriaIds,
-                    TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
-                )
-            )
+                    geometriaIds, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15))
             .isEqualTo(result)
     }
 
@@ -87,10 +64,7 @@ internal class TormaystarkasteluTormaysServiceITest : IntegrationTest() {
         val geometriaIds = createHankeGeometriat(location)
         assertThat(
                 tormaysService.maxLiikennemaara(
-                    geometriaIds,
-                    TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30
-                )
-            )
+                    geometriaIds, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30))
             .isEqualTo(result)
     }
 
@@ -154,23 +128,6 @@ internal class TormaystarkasteluTormaysServiceITest : IntegrationTest() {
     inner class WithGeometry {
 
         @ParameterizedTest
-        @CsvSource("Kaivokatu,true", "Mustikkamaa,false")
-        fun `general street area`(location: String, result: Boolean) {
-            val geometry = createGeometryCollection(location)
-
-            assertThat(tormaysService.anyIntersectsYleinenKatuosa(geometry)).isEqualTo(result)
-        }
-
-        @ParameterizedTest
-        @CsvSource("Kaivokatu,4", "Mustikkamaa,")
-        fun `general street classes`(location: String, result: Int?) {
-            val geometry = createGeometryCollection(location)
-
-            assertThat(tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry))
-                .isEqualTo(result)
-        }
-
-        @ParameterizedTest
         @CsvSource("Kaivokatu,4", "Mustikkamaa,")
         fun `street classes`(location: String, result: Int?) {
             val geometry = createGeometryCollection(location)
@@ -186,10 +143,7 @@ internal class TormaystarkasteluTormaysServiceITest : IntegrationTest() {
 
             assertThat(
                     tormaysService.maxLiikennemaara(
-                        geometry,
-                        TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
-                    )
-                )
+                        geometry, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15))
                 .isEqualTo(result)
         }
 
@@ -200,10 +154,7 @@ internal class TormaystarkasteluTormaysServiceITest : IntegrationTest() {
 
             assertThat(
                     tormaysService.maxLiikennemaara(
-                        geometry,
-                        TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30
-                    )
-                )
+                        geometry, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30))
                 .isEqualTo(result)
         }
 
