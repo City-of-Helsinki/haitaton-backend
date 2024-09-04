@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
+import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluExcavationNotificationData
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
@@ -47,6 +48,45 @@ object AlluFactory {
             description = description,
         )
 
+    fun createCableReportApplicationData(
+        identificationNumber: String = "HAI-123",
+        pendingOnClient: Boolean = false,
+        name: String = "Haitaton hankkeen nimi",
+        constructionWork: Boolean = true,
+        workDescription: String = "Kaivuhommiahan nää tietty",
+        clientApplicationKind: String = "Telekaapelin laittoa",
+        startTime: ZonedDateTime = ZonedDateTime.now().plusDays(1L),
+        endTime: ZonedDateTime = ZonedDateTime.now().plusDays(22L),
+        geometry: GeometryCollection = GeometriaFactory.collection(),
+        customerWithContacts: CustomerWithContacts =
+            CustomerWithContacts(customer = customer, contacts = listOf(hannu)),
+        contractorWithContacts: CustomerWithContacts =
+            CustomerWithContacts(customer = customer, contacts = listOf(kerttu)),
+    ) =
+        AlluCableReportApplicationData(
+            identificationNumber = identificationNumber,
+            pendingOnClient = pendingOnClient,
+            name = name,
+            postalAddress = null,
+            constructionWork = constructionWork,
+            maintenanceWork = false,
+            propertyConnectivity = false,
+            emergencyWork = false,
+            workDescription = workDescription,
+            clientApplicationKind = clientApplicationKind,
+            startTime = startTime,
+            endTime = endTime,
+            geometry = geometry,
+            area = null,
+            customerWithContacts = customerWithContacts,
+            contractorWithContacts = contractorWithContacts,
+            propertyDeveloperWithContacts = null,
+            representativeWithContacts = null,
+            invoicingCustomer = null,
+            customerReference = null,
+            trafficArrangementImages = null,
+        )
+
     fun createExcavationNotificationData(
         workPurpose: String = "I am a dwarf and I'm diggin' a hole. A diggy, diggy hole."
     ) =
@@ -56,13 +96,31 @@ object AlluFactory {
             name = "Diggy diggy hole",
             workPurpose = workPurpose,
             clientApplicationKind = workPurpose,
+            constructionWork = null,
+            maintenanceWork = null,
+            emergencyWork = null,
+            cableReports = null,
+            placementContracts = null,
             startTime = DateFactory.getStartDatetime(),
             endTime = DateFactory.getEndDatetime(),
+            geometry = GeometryCollection(),
+            area = null,
+            postalAddress = null,
             customerWithContacts =
                 CustomerWithContacts(customer = customer, contacts = listOf(hannu)),
             contractorWithContacts =
                 CustomerWithContacts(customer = customer, contacts = listOf(kerttu)),
-            geometry = GeometryCollection(),
+            propertyDeveloperWithContacts = null,
+            representativeWithContacts = null,
+            invoicingCustomer = null,
+            customerReference = null,
+            additionalInfo = null,
+            pksCard = null,
+            selfSupervision = null,
+            propertyConnectivity = null,
+            trafficArrangementImages = null,
+            trafficArrangements = null,
+            trafficArrangementImpediment = null,
         )
 
     val customer =
