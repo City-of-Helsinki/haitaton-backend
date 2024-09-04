@@ -6,10 +6,12 @@ import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.extracting
+import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
 import assertk.assertions.startsWith
@@ -18,6 +20,7 @@ import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.common.DownloadNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.TestFile
 import fi.hel.haitaton.hanke.factory.AlluFactory
@@ -38,6 +41,7 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.verifySequence
 import java.time.ZonedDateTime
+import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -69,6 +73,31 @@ class PaatosServiceITest(
     fun checkMocks() {
         checkUnnecessaryStub()
         confirmVerified(alluClient)
+    }
+
+    @Nested
+    inner class FindById {
+        @Test
+        fun `throws exception when paatos is not found`() {
+            val paatosId = UUID.fromString("b2b74d74-1107-4348-8f82-2d92c8e62f27")
+
+            val failure = assertFailure { paatosService.findById(paatosId) }
+
+            failure.all {
+                hasClass(PaatosNotFoundException::class)
+                messageContains(paatosId.toString())
+            }
+        }
+
+        @Test
+        fun `returns paatos`() {
+            val hakemus = hakemusFactory.builder().asSent().save()
+            val paatos = paatosFactory.save(hakemus)
+
+            val response = paatosService.findById(paatos.id)
+
+            assertThat(response).isEqualTo(paatos)
+        }
     }
 
     @Nested
@@ -252,8 +281,7 @@ class PaatosServiceITest(
     inner class SaveKaivuilmoituksenToiminnallinenKunto {
         private val event =
             ApplicationHistoryFactory.createEvent(
-                newStatus = ApplicationStatus.OPERATIONAL_CONDITION
-            )
+                newStatus = ApplicationStatus.OPERATIONAL_CONDITION)
 
         private fun setupAlluMocks() {
             every { alluClient.getOperationalConditionPdf(alluId) } returns PDF_BYTES
@@ -285,8 +313,7 @@ class PaatosServiceITest(
                 prop(TestFile::contentLength).isEqualTo(PDF_BYTES.size)
                 prop(TestFile::contentDisposition)
                     .isEqualTo(
-                        "attachment; filename*=UTF-8''$hakemustunnus-toiminnallinen-kunto.pdf"
-                    )
+                        "attachment; filename*=UTF-8''$hakemustunnus-toiminnallinen-kunto.pdf")
                 prop(TestFile::content).transform { it.toBytes() }.isEqualTo(PDF_BYTES)
             }
             verifyAlluMocks()
@@ -499,6 +526,41 @@ class PaatosServiceITest(
         }
     }
 
+    @Nested
+    inner class DownloadDecision {
+        @Test
+        fun `throws exception when paatos data not found from blob storage`() {
+            val hakemus = hakemusFactory.builder().asSent().save()
+            val paatos = paatosFactory.save(hakemus)
+
+            val failure = assertFailure { paatosService.downloadDecision(paatos) }
+
+            failure.all {
+                hasClass(DownloadNotFoundException::class)
+                messageContains(paatos.blobLocation)
+            }
+        }
+
+        @Test
+        fun `returns the content bytes with the filename`() {
+            val hakemustunnus = "KP2400001-3"
+            val hakemus = hakemusFactory.builder().asSent(identifier = hakemustunnus).save()
+            val paatos = paatosFactory.save(hakemus, hakemustunnus = hakemustunnus)
+            fileClient.upload(
+                Container.PAATOKSET,
+                paatos.blobLocation,
+                "orig.pdf",
+                MediaType.APPLICATION_PDF,
+                PDF_BYTES,
+            )
+
+            val response = paatosService.downloadDecision(paatos)
+
+            assertThat(response.first).isEqualTo("KP2400001-3-paatos.pdf")
+            assertThat(response.second).isEqualTo(PDF_BYTES)
+        }
+    }
+
     private fun saveExcavationNotification(status: ApplicationStatus): HakemusEntity =
         hakemusFactory
             .builder(ApplicationType.EXCAVATION_NOTIFICATION)
@@ -506,7 +568,7 @@ class PaatosServiceITest(
             .withStatus(
                 status,
                 ApplicationHistoryFactory.DEFAULT_APPLICATION_ID,
-                ApplicationHistoryFactory.DEFAULT_APPLICATION_IDENTIFIER
+                ApplicationHistoryFactory.DEFAULT_APPLICATION_IDENTIFIER,
             )
             .withName("Old name")
             .withStartTime(ZonedDateTime.parse("2023-07-24T15:23:12Z"))

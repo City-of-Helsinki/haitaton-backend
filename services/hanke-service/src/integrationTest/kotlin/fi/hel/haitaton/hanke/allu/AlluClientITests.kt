@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.allu
 
 import assertk.Assert
+import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
@@ -8,20 +9,25 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isGreaterThan
+import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import assertk.assertions.isZero
+import assertk.assertions.messageContains
 import assertk.assertions.prop
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import fi.hel.haitaton.hanke.attachment.PDF_BYTES
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
+import fi.hel.haitaton.hanke.parseJson
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZonedDateTime
 import okhttp3.MultipartReader
 import okhttp3.mockwebserver.MockResponse
@@ -38,7 +44,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import org.springframework.http.HttpHeaders.CONTENT_DISPOSITION
 import org.springframework.http.HttpHeaders.CONTENT_TYPE
+import org.springframework.http.MediaType
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
@@ -153,18 +161,57 @@ class AlluClientITests {
     @Test
     fun `addAttachments should upload attachments successfully`() {
         val alluId = 123
-        val file = "test file content".toByteArray()
         val attachment = ApplicationAttachmentFactory.create(applicationId = 123456)
-        val mockResponse = MockResponse().setResponseCode(200)
-        (1..3).forEach { _ -> mockWebServer.enqueue(mockResponse) }
         val attachments = listOf(attachment, attachment, attachment)
+        val mockResponse = MockResponse().setResponseCode(200)
+        repeat(attachments.size) { mockWebServer.enqueue(mockResponse) }
 
-        service.addAttachments(alluId, attachments) { _ -> file }
+        service.addAttachments(alluId, attachments) { _ -> PDF_BYTES }
 
-        attachments.forEach { _ ->
+        repeat(attachments.size) {
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
             assertThat(request.path).isEqualTo("/v2/applications/$alluId/attachments")
+        }
+    }
+
+    @Test
+    fun `addAttachments uploads correct metadata`() {
+        val alluId = 123
+        val attachments =
+            listOf(
+                ApplicationAttachmentFactory.create(
+                    attachmentType = ApplicationAttachmentType.LIIKENNEJARJESTELY,
+                    contentType = APPLICATION_PDF_VALUE,
+                    fileName = "Katusuunnitelma.pdf",
+                ),
+                ApplicationAttachmentFactory.create(
+                    attachmentType = ApplicationAttachmentType.VALTAKIRJA,
+                    contentType = MediaType.IMAGE_PNG_VALUE,
+                    fileName = "valtakirja.png",
+                ),
+                ApplicationAttachmentFactory.create(
+                    attachmentType = ApplicationAttachmentType.MUU,
+                    contentType = MediaType.TEXT_PLAIN_VALUE,
+                    fileName = "Muu liite.txt",
+                ),
+            )
+        val mockResponse = MockResponse().setResponseCode(200)
+        repeat(attachments.size) { mockWebServer.enqueue(mockResponse) }
+
+        service.addAttachments(alluId, attachments) { _ -> PDF_BYTES }
+
+        repeat(attachments.size) {
+            val request = mockWebServer.takeRequest()
+            assertThat(request.getMetadataPart()).isNotNull().all {
+                given { actual ->
+                    val metadata = attachments.find { it.fileName == actual.name }!!
+                    prop(AttachmentMetadata::name).isEqualTo(metadata.fileName)
+                    prop(AttachmentMetadata::mimeType).isEqualTo(metadata.contentType)
+                    prop(AttachmentMetadata::description)
+                        .isEqualTo(metadata.attachmentType.toFinnish())
+                }
+            }
         }
     }
 
@@ -191,7 +238,7 @@ class AlluClientITests {
         }
 
         @Test
-        fun `calls Allu with correct path when the application is a excavation notification`() {
+        fun `calls Allu with correct path when the application is an excavation notification`() {
             val stubbedApplicationId = 1337
             val applicationIdResponse =
                 MockResponse()
@@ -217,8 +264,7 @@ class AlluClientITests {
                     .setResponseCode(400)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                     .setBody(
-                        """[{"errorMessage":"Cable report should have one orderer contact","additionalInfo":"customerWithContacts"}]"""
-                    )
+                        """[{"errorMessage":"Cable report should have one orderer contact","additionalInfo":"customerWithContacts"}]""")
             mockWebServer.enqueue(applicationIdResponse)
 
             assertThrows<WebClientResponseException.BadRequest> {
@@ -233,6 +279,38 @@ class AlluClientITests {
     }
 
     @Nested
+    inner class ReportOperationalCondition {
+        private val applicationId = 241
+        private val date = LocalDate.of(2024, 8, 12)
+
+        @Test
+        fun `calls Allu with the correct path and time`() {
+            mockWebServer.enqueue(MockResponse().setResponseCode(200))
+
+            service.reportOperationalCondition(applicationId, date)
+
+            val createRequest = mockWebServer.takeRequest()
+            assertThat(createRequest.method).isEqualTo("PUT")
+            assertThat(createRequest.path)
+                .isEqualTo("/v2/excavationannouncements/$applicationId/operationalcondition")
+            assertThat(createRequest.body.readUtf8()).isEqualTo("\"2024-08-12T00:00:00Z\"")
+        }
+
+        @Test
+        fun `throws an exception if there's a problem with the call`() {
+            mockWebServer.enqueue(MockResponse().setResponseCode(409))
+
+            val failure = assertFailure { service.reportOperationalCondition(applicationId, date) }
+
+            failure.all {
+                hasClass(WebClientResponseException.Conflict::class)
+                messageContains("/v2/excavationannouncements/$applicationId/operationalcondition")
+                messageContains("409 Conflict from PUT")
+            }
+        }
+    }
+
+    @Nested
     inner class GetDecisionPdf {
         @Test
         fun `returns PDF file as bytes`() {
@@ -240,8 +318,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(pdfContent())
-            )
+                    .setBody(pdfContent()))
 
             val response = service.getDecisionPdf(12)
 
@@ -260,8 +337,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(content)
-            )
+                    .setBody(content))
 
             val response = service.getDecisionPdf(12)
 
@@ -274,8 +350,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Not found")
-            )
+                    .setBody("Not found"))
 
             val exception =
                 assertThrows<HakemusDecisionNotFoundException> { service.getDecisionPdf(12) }
@@ -289,8 +364,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(500)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Other error")
-            )
+                    .setBody("Other error"))
 
             assertThrows<WebClientResponseException> { service.getDecisionPdf(12) }
         }
@@ -301,8 +375,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, IMAGE_PNG)
-                    .setBody(pdfContent())
-            )
+                    .setBody(pdfContent()))
 
             assertThrows<AlluApiException> { service.getDecisionPdf(12) }
         }
@@ -313,8 +386,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF)
-                    .setBody("")
-            )
+                    .setBody(""))
 
             assertThrows<AlluApiException> { service.getDecisionPdf(12) }
         }
@@ -328,8 +400,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(pdfContent())
-            )
+                    .setBody(pdfContent()))
 
             val response = service.getOperationalConditionPdf(12)
 
@@ -349,8 +420,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(content)
-            )
+                    .setBody(content))
 
             val response = service.getOperationalConditionPdf(12)
 
@@ -363,8 +433,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Not found")
-            )
+                    .setBody("Not found"))
 
             val exception =
                 assertThrows<HakemusDecisionNotFoundException> {
@@ -380,8 +449,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(500)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Other error")
-            )
+                    .setBody("Other error"))
 
             assertThrows<WebClientResponseException> { service.getOperationalConditionPdf(12) }
         }
@@ -392,8 +460,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, IMAGE_PNG)
-                    .setBody(pdfContent())
-            )
+                    .setBody(pdfContent()))
 
             assertThrows<AlluApiException> { service.getOperationalConditionPdf(12) }
         }
@@ -404,8 +471,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF)
-                    .setBody("")
-            )
+                    .setBody(""))
 
             assertThrows<AlluApiException> { service.getOperationalConditionPdf(12) }
         }
@@ -420,8 +486,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(pdfContent())
-            )
+                    .setBody(pdfContent()))
 
             val response = service.getWorkFinishedPdf(12)
 
@@ -441,8 +506,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(content)
-            )
+                    .setBody(content))
 
             val response = service.getOperationalConditionPdf(12)
 
@@ -455,8 +519,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Not found")
-            )
+                    .setBody("Not found"))
 
             val exception =
                 assertThrows<HakemusDecisionNotFoundException> { service.getWorkFinishedPdf(12) }
@@ -470,8 +533,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(500)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Other error")
-            )
+                    .setBody("Other error"))
 
             assertThrows<WebClientResponseException> { service.getWorkFinishedPdf(12) }
         }
@@ -482,8 +544,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, IMAGE_PNG)
-                    .setBody(pdfContent())
-            )
+                    .setBody(pdfContent()))
 
             assertThrows<AlluApiException> { service.getWorkFinishedPdf(12) }
         }
@@ -494,8 +555,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF)
-                    .setBody("")
-            )
+                    .setBody(""))
 
             assertThrows<AlluApiException> { service.getWorkFinishedPdf(12) }
         }
@@ -512,8 +572,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody(histories.toJsonString())
-            )
+                    .setBody(histories.toJsonString()))
 
             val response = service.getApplicationStatusHistories(alluids, eventsAfter)
 
@@ -532,8 +591,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("[]")
-            )
+                    .setBody("[]"))
 
             val response = service.getApplicationStatusHistories(alluids, eventsAfter)
 
@@ -548,8 +606,7 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Error message")
-            )
+                    .setBody("Error message"))
 
             assertFailure { service.getApplicationStatusHistories(alluids, eventsAfter) }
                 .hasClass(WebClientResponseException.NotFound::class)
@@ -612,10 +669,20 @@ class AlluClientITests {
     }
 
     private fun RecordedRequest.multiPartContentTypes(): List<String> {
-        val boundary: String = headers[CONTENT_TYPE]?.split(";boundary=")?.last()!!
-        val reader = MultipartReader(body, boundary)
+        val reader = MultipartReader(body, boundary())
         return generateSequence { reader.nextPart()?.headers?.get(CONTENT_TYPE) }.toList()
     }
+
+    private fun RecordedRequest.getMetadataPart(): AttachmentMetadata? {
+        val reader = MultipartReader(body, boundary())
+        val metadataPart =
+            generateSequence { reader.nextPart() }
+                .find { it.headers[CONTENT_DISPOSITION]?.contains("name=\"metadata\"") ?: false }
+        return metadataPart?.body?.readUtf8()?.parseJson()
+    }
+
+    private fun RecordedRequest.boundary(): String =
+        headers[CONTENT_TYPE]?.split(";boundary=")?.last()!!
 
     private fun addStubbedLoginResponse(): String {
         val stubbedBearer = createMockToken()
@@ -643,14 +710,10 @@ class AlluClientITests {
     private fun getTestApplication(): AlluCableReportApplicationData {
         val customerWContacts =
             CustomerWithContacts(
-                customer = AlluFactory.customer,
-                contacts = listOf(AlluFactory.hannu)
-            )
+                customer = AlluFactory.customer, contacts = listOf(AlluFactory.hannu))
         val contractorWContacts =
             CustomerWithContacts(
-                customer = AlluFactory.customer,
-                contacts = listOf(AlluFactory.kerttu)
-            )
+                customer = AlluFactory.customer, contacts = listOf(AlluFactory.kerttu))
 
         val geometry = GeometryCollection()
         geometry.add(
@@ -658,9 +721,8 @@ class AlluClientITests {
                 LngLatAlt(25495815.0, 6673160.0),
                 LngLatAlt(25495855.0, 6673160.0),
                 LngLatAlt(25495855.0, 6673190.0),
-                LngLatAlt(25495815.0, 6673160.0)
-            )
-        )
+                LngLatAlt(25495815.0, 6673160.0),
+            ))
         geometry.crs = Crs()
         geometry.crs.properties["name"] = "EPSG:3879"
 

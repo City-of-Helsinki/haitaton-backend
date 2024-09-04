@@ -73,6 +73,8 @@ import fi.hel.haitaton.hanke.test.Asserts.isRecentUTC
 import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasMockedIp
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectAfter
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
@@ -340,7 +342,7 @@ class HankeServiceITests(
                 withTarget {
                     hasId(hanke.id)
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.HANKE)
-                    prop(AuditLogTarget::objectBefore).isNull()
+                    hasNoObjectBefore()
                     prop(AuditLogTarget::objectAfter).given {
                         val expectedObject = expectedNewHankeLogObject(hanke)
                         JSONAssert.assertEquals(expectedObject, it, JSONCompareMode.STRICT_ORDER)
@@ -409,7 +411,7 @@ class HankeServiceITests(
             hasUserActor(USERNAME)
             withTarget {
                 prop(AuditLogTarget::type).isEqualTo(ObjectType.YHTEYSTIETO)
-                prop(AuditLogTarget::objectBefore).isNull()
+                hasNoObjectBefore()
                 prop(AuditLogTarget::objectAfter).isNotNull().contains(NAME_1)
             }
         }
@@ -417,7 +419,7 @@ class HankeServiceITests(
             hasUserActor(USERNAME)
             withTarget {
                 prop(AuditLogTarget::type).isEqualTo(ObjectType.YHTEYSTIETO)
-                prop(AuditLogTarget::objectBefore).isNull()
+                hasNoObjectBefore()
                 prop(AuditLogTarget::objectAfter).isNotNull().contains(NAME_2)
             }
         }
@@ -473,7 +475,7 @@ class HankeServiceITests(
                 hasId(yhteystietoId2)
                 prop(AuditLogTarget::type).isEqualTo(ObjectType.YHTEYSTIETO)
                 prop(AuditLogTarget::objectBefore).isNotNull().contains(NAME_SOMETHING)
-                prop(AuditLogTarget::objectAfter).isNull()
+                hasNoObjectAfter()
             }
         }
     }
@@ -703,8 +705,7 @@ class HankeServiceITests(
                 hankeFactory
                     .builder(USERNAME)
                     .withHankealue(
-                        haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma()
-                    )
+                        haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma())
                     .save()
             auditLogRepository.deleteAll()
             assertEquals(0, auditLogRepository.count())
@@ -739,7 +740,7 @@ class HankeServiceITests(
             JSONAssert.assertEquals(
                 expectedObject,
                 event.target.objectBefore,
-                JSONCompareMode.NON_EXTENSIBLE
+                JSONCompareMode.NON_EXTENSIBLE,
             )
         }
 
@@ -774,28 +775,28 @@ class HankeServiceITests(
             JSONAssert.assertEquals(
                 expectedYhteystietoDeleteLogObject(omistajaId, 1),
                 omistajaEvent.target.objectBefore,
-                JSONCompareMode.NON_EXTENSIBLE
+                JSONCompareMode.NON_EXTENSIBLE,
             )
             val rakennuttajaId = hanke.rakennuttajat[0].id!!
             val rakennuttajaEvent = deleteLogs.findByTargetId(rakennuttajaId).message.auditEvent
             JSONAssert.assertEquals(
                 expectedYhteystietoDeleteLogObject(rakennuttajaId, 2),
                 rakennuttajaEvent.target.objectBefore,
-                JSONCompareMode.NON_EXTENSIBLE
+                JSONCompareMode.NON_EXTENSIBLE,
             )
             val toteuttajaId = hanke.toteuttajat[0].id!!
             val toteuttajaEvent = deleteLogs.findByTargetId(toteuttajaId).message.auditEvent
             JSONAssert.assertEquals(
                 expectedYhteystietoDeleteLogObject(toteuttajaId, 3),
                 toteuttajaEvent.target.objectBefore,
-                JSONCompareMode.NON_EXTENSIBLE
+                JSONCompareMode.NON_EXTENSIBLE,
             )
             val muuId = hanke.muut[0].id!!
             val muuEvent = deleteLogs.findByTargetId(muuId).message.auditEvent
             JSONAssert.assertEquals(
                 expectedYhteystietoDeleteLogObject(muuId, 4),
                 muuEvent.target.objectBefore,
-                JSONCompareMode.NON_EXTENSIBLE
+                JSONCompareMode.NON_EXTENSIBLE,
             )
         }
 
@@ -908,8 +909,7 @@ class HankeServiceITests(
         val templateData =
             mapOf("hankeId" to hanke.id.toString(), "hankeTunnus" to hanke.hankeTunnus)
         return Template.parse(
-                "/fi/hel/haitaton/hanke/logging/expectedNewHanke.json.mustache".getResourceAsText()
-            )
+                "/fi/hel/haitaton/hanke/logging/expectedNewHanke.json.mustache".getResourceAsText())
             .processToString(templateData)
     }
 
@@ -977,8 +977,7 @@ object ExpectedHankeLogObject {
     private val expectedHankeWithPolygon =
         Template.parse(
             "/fi/hel/haitaton/hanke/logging/expectedHankeWithPolygon.json.mustache"
-                .getResourceAsText()
-        )
+                .getResourceAsText())
 
     fun expectedHankeLogObject(
         hanke: Hanke,
