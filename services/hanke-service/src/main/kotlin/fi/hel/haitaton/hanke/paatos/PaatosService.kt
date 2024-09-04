@@ -6,7 +6,9 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContent
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.FileClient
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
+import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,12 +22,23 @@ class PaatosService(
     private val fileClient: FileClient,
 ) {
     @Transactional(readOnly = true)
+    fun findById(id: UUID): Paatos =
+        paatosRepository.findByIdOrNull(id)?.toDomain() ?: throw PaatosNotFoundException(id)
+
+    @Transactional(readOnly = true)
     fun findByHakemusId(hakemusId: Long): List<Paatos> =
         paatosRepository.findByHakemusId(hakemusId).map { it.toDomain() }
 
     @Transactional
     fun markReplaced(hakemustunnus: String) {
         paatosRepository.markReplacedByHakemustunnus(hakemustunnus)
+    }
+
+    fun downloadDecision(paatos: Paatos): Pair<String, ByteArray> {
+        val bytes = fileClient.download(Container.PAATOKSET, paatos.blobLocation).content.toBytes()
+        val filenameSuffix = paatos.tyyppi.name.lowercase().replace('_', '-')
+        val filename = "${paatos.hakemustunnus}-$filenameSuffix.pdf"
+        return Pair(filename, bytes)
     }
 
     @Transactional
@@ -102,8 +115,7 @@ class PaatosService(
                 loppupaiva = applicationResponse.endTime.toLocalDate(),
                 blobLocation = path,
                 size = pdfData.size,
-            )
-        )
+            ))
     }
 
     private fun uploadPaatos(pdfData: ByteArray, filename: String, hakemusId: Long): String {

@@ -41,6 +41,9 @@ import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCustomer
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluExcavationNotificationData
 import fi.hel.haitaton.hanke.hakemus.toLaskutusyhteystieto
 import fi.hel.haitaton.hanke.hasSameElementsAs
+import fi.hel.haitaton.hanke.paatos.PaatosMetadata
+import fi.hel.haitaton.hanke.paatos.PaatosTila
+import fi.hel.haitaton.hanke.paatos.PaatosTyyppi
 import fi.hel.haitaton.hanke.reformatJson
 import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.hasAlluActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.isSuccess
@@ -92,8 +95,7 @@ internal class DisclosureLogServiceTest {
                     StringNode("sukunimi", TESTIHENKILO),
                     StringNode("sahkoposti", TEPPO_EMAIL),
                     StringNode("puhelin", TEPPO_PHONE),
-                )
-            )
+                ))
 
         disclosureLogService.saveDisclosureLogsForProfiili(userId, info)
 
@@ -115,7 +117,7 @@ internal class DisclosureLogServiceTest {
                 userRole = UserRole.SERVICE,
                 objectType = ObjectType.GDPR_RESPONSE,
                 objectId = userId,
-                objectBefore = expectedObject
+                objectBefore = expectedObject,
             )
         verify { auditLogService.create(expectedEntry) }
     }
@@ -178,7 +180,7 @@ internal class DisclosureLogServiceTest {
         val hankkeet =
             listOf(
                 HankeFactory.create().withYhteystiedot(),
-                HankeFactory.create().withOmistaja(5).withRakennuttaja(6).withToteuttaja(7)
+                HankeFactory.create().withOmistaja(5).withRakennuttaja(6).withToteuttaja(7),
             )
         val expectedLogs = hankkeet.flatMap { AuditLogEntryFactory.createReadEntriesForHanke(it) }
 
@@ -192,7 +194,7 @@ internal class DisclosureLogServiceTest {
         val hankkeet =
             listOf(
                 HankeFactory.create().withYhteystiedot(),
-                HankeFactory.create().withYhteystiedot()
+                HankeFactory.create().withYhteystiedot(),
             )
         val expectedLogs = AuditLogEntryFactory.createReadEntriesForHanke(hankkeet[0])
 
@@ -234,7 +236,7 @@ internal class DisclosureLogServiceTest {
                     applicationData =
                         HakemusResponseFactory.createJohtoselvitysHakemusDataResponse(
                             customerWithContacts = customerWithoutContacts,
-                            contractorWithContacts = contractorWithoutContacts
+                            contractorWithContacts = contractorWithoutContacts,
                         ),
                     hankeTunnus = hankeTunnus,
                 )
@@ -256,7 +258,7 @@ internal class DisclosureLogServiceTest {
                     applicationData =
                         HakemusResponseFactory.createJohtoselvitysHakemusDataResponse(
                             customerWithContacts = customerWithoutContacts,
-                            contractorWithContacts = contractorWithoutContacts
+                            contractorWithContacts = contractorWithoutContacts,
                         ),
                     hankeTunnus = hankeTunnus,
                 )
@@ -277,7 +279,7 @@ internal class DisclosureLogServiceTest {
                     applicationData =
                         HakemusResponseFactory.createJohtoselvitysHakemusDataResponse(
                             customerWithContacts = customerWithoutContacts,
-                            contractorWithContacts = contractorWithoutContacts
+                            contractorWithContacts = contractorWithoutContacts,
                         ),
                     hankeTunnus = hankeTunnus,
                 )
@@ -310,7 +312,7 @@ internal class DisclosureLogServiceTest {
                     AuditLogEntryFactory.createReadEntryForCustomerResponse(
                         hakemusResponse.id,
                         customerWithoutContacts.customer,
-                        it
+                        it,
                     )
                 }
             assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
@@ -328,7 +330,7 @@ internal class DisclosureLogServiceTest {
                 HakemusResponseFactory.create(
                     applicationId = applicationId,
                     applicationData = hakemusDataResponse,
-                    hankeTunnus = hankeTunnus
+                    hankeTunnus = hankeTunnus,
                 )
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
@@ -338,15 +340,9 @@ internal class DisclosureLogServiceTest {
             assertThat(capturedLogs.captured)
                 .containsAtLeast(
                     AuditLogEntryFactory.createReadEntryForContactResponse(
-                        applicationId,
-                        firstContact,
-                        HAKIJA
-                    ),
+                        applicationId, firstContact, HAKIJA),
                     AuditLogEntryFactory.createReadEntryForContactResponse(
-                        applicationId,
-                        secondContact,
-                        TYON_SUORITTAJA
-                    ),
+                        applicationId, secondContact, TYON_SUORITTAJA),
                 )
             verify(exactly = 1) { auditLogService.createAll(any()) }
         }
@@ -368,14 +364,10 @@ internal class DisclosureLogServiceTest {
             val expectedLogs =
                 listOf(
                         HAKIJA to hakija.yhteyshenkilot[0],
-                        TYON_SUORITTAJA to rakennuttaja.yhteyshenkilot[0]
-                    )
+                        TYON_SUORITTAJA to rakennuttaja.yhteyshenkilot[0])
                     .map { (role, contact) ->
                         AuditLogEntryFactory.createReadEntryForContact(
-                                applicationId,
-                                contact.toAlluContact(),
-                                role
-                            )
+                                applicationId, contact.toAlluContact(), role)
                             .copy(
                                 status = expectedStatus,
                                 userId = ALLU_AUDIT_LOG_USERID,
@@ -388,7 +380,7 @@ internal class DisclosureLogServiceTest {
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
                 hakemusData.toAlluCableReportData(hankeTunnus),
-                expectedStatus
+                expectedStatus,
             )
 
             assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
@@ -403,7 +395,7 @@ internal class DisclosureLogServiceTest {
             val hakemusData =
                 HakemusFactory.createJohtoselvityshakemusData(
                     customerWithContacts = personCustomer,
-                    contractorWithContacts = companyCustomer
+                    contractorWithContacts = companyCustomer,
                 )
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
@@ -411,7 +403,7 @@ internal class DisclosureLogServiceTest {
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
                 hakemusData.toAlluCableReportData(hankeTunnus),
-                Status.SUCCESS
+                Status.SUCCESS,
             )
 
             assertThat(capturedLogs.captured).single().all {
@@ -421,8 +413,7 @@ internal class DisclosureLogServiceTest {
                 prop(AuditLogEntry::objectBefore)
                     .isEqualTo(
                         AlluCustomerWithRole(HAKIJA, personCustomer.toAlluCustomer().customer)
-                            .toJsonString()
-                    )
+                            .toJsonString())
             }
             verify(exactly = 1) { auditLogService.createAll(any()) }
         }
@@ -432,22 +423,18 @@ internal class DisclosureLogServiceTest {
             val applicationId = 41L
             val personCustomer =
                 HakemusyhteystietoFactory.createPerson(
-                    nimi = "",
-                    puhelinnumero = "",
-                    sahkoposti = "",
-                    ytunnus = ""
-                )
+                    nimi = "", puhelinnumero = "", sahkoposti = "", ytunnus = "")
             val companyCustomer = HakemusyhteystietoFactory.create()
             val hakemusData =
                 HakemusFactory.createJohtoselvityshakemusData(
                     customerWithContacts = personCustomer,
-                    contractorWithContacts = companyCustomer
+                    contractorWithContacts = companyCustomer,
                 )
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
                 hakemusData.toAlluCableReportData(hankeTunnus),
-                Status.SUCCESS
+                Status.SUCCESS,
             )
 
             verify { auditLogService wasNot Called }
@@ -469,9 +456,7 @@ internal class DisclosureLogServiceTest {
                     objectType = ObjectType.ALLU_CUSTOMER,
                     objectBefore =
                         AlluMetaCustomerWithRole(
-                                MetaCustomerType.INVOICING,
-                                invoicingCustomer.toAlluData("")
-                            )
+                                MetaCustomerType.INVOICING, invoicingCustomer.toAlluData(""))
                             .toJsonString(),
                     userId = ALLU_AUDIT_LOG_USERID,
                     userRole = UserRole.SERVICE,
@@ -482,7 +467,7 @@ internal class DisclosureLogServiceTest {
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
                 hakemusData.toAlluExcavationNotificationData(hankeTunnus),
-                Status.SUCCESS
+                Status.SUCCESS,
             )
 
             val customerLogs =
@@ -507,7 +492,7 @@ internal class DisclosureLogServiceTest {
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
                 hakemusData.toAlluExcavationNotificationData(hankeTunnus),
-                Status.SUCCESS
+                Status.SUCCESS,
             )
 
             val customerLogs =
@@ -518,9 +503,9 @@ internal class DisclosureLogServiceTest {
     }
 
     @Nested
-    inner class SaveDisclosureLogsForDecision {
+    inner class SaveDisclosureLogsForCableReport {
         @Test
-        fun `saves log with application details but decision type`() {
+        fun `saves log with application details but cable report type`() {
             val applicationId = 42L
             val alluId = 2
             val alluStatus = ApplicationStatus.DECISION
@@ -531,7 +516,7 @@ internal class DisclosureLogServiceTest {
                     alluid = alluId,
                     alluStatus = alluStatus,
                     applicationIdentifier = applicationIdentifier,
-                    hankeTunnus = hankeTunnus
+                    hankeTunnus = hankeTunnus,
                 )
             val expectedObject =
                 """{
@@ -548,12 +533,44 @@ internal class DisclosureLogServiceTest {
                     userId,
                     objectType = ObjectType.CABLE_REPORT,
                     objectId = hakemus.id,
-                    objectBefore = expectedObject
+                    objectBefore = expectedObject,
                 )
 
             disclosureLogService.saveDisclosureLogsForCableReport(hakemus.toMetadata(), userId)
 
             verify { auditLogService.create(expectedLog) }
+        }
+    }
+
+    @Nested
+    inner class SaveDisclosureLogsForPaatos {
+        @Test
+        fun `saves log with paatos type`() {
+            val paatosId = UUID.fromString("fa0f538a-09ef-48bf-ba6a-681e0c979b14")
+            val hakemusId = 42L
+            val hakemustunnus = "JS2300050-2"
+            val tyyppi = PaatosTyyppi.TOIMINNALLINEN_KUNTO
+            val tila = PaatosTila.KORVATTU
+            val expectedObject =
+                """{
+                  "id": "$paatosId",
+                  "hakemusId": $hakemusId,
+                  "hakemustunnus": "$hakemustunnus",
+                  "tyyppi": "$tyyppi",
+                  "tila": "$tila"
+                }"""
+                    .reformatJson()
+            val expectedLog =
+                AuditLogEntryFactory.createReadEntry(
+                    userId,
+                    objectType = ObjectType.PAATOS,
+                    objectId = paatosId,
+                    objectBefore = expectedObject)
+            val metadata = PaatosMetadata(paatosId, hakemusId, hakemustunnus, tyyppi, tila)
+
+            disclosureLogService.saveDisclosureLogsForPaatos(metadata, userId)
+
+            verifySequence { auditLogService.create(expectedLog) }
         }
     }
 

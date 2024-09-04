@@ -1,7 +1,10 @@
 package fi.hel.haitaton.hanke.gdpr
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.toJsonString
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
@@ -115,7 +118,7 @@ class GdprController(
                             "contains personal data for the identified profile. This response is " +
                             "also given in the case that the service does not contain any data " +
                             "for the profile or is completely unaware of the identified profile.",
-                    responseCode = "204"
+                    responseCode = "204",
                 ),
                 ApiResponse(
                     description = "Request’s parameters fail validation",
@@ -159,15 +162,29 @@ class GdprController(
 
     private fun authenticate(userId: String, token: Jwt, requiredScope: String) {
         val sub = token.subject
-        val scopes: List<String>? = token.getClaimAsStringList(gdprProperties.authorizationField)
-
         if (sub != userId) {
             throw AuthenticationException("JWT sub was $sub, but user id in URL was $userId")
         }
-        if (scopes == null || !scopes.contains(requiredScope)) {
-            throw AuthenticationException(
-                "JWT scopes were $scopes, which didn't include $requiredScope"
-            )
+
+        try {
+            val scopes: List<String> =
+                token
+                    .getClaimAsMap("authorization")!!
+                    .let { OBJECT_MAPPER.valueToTree<ObjectNode>(it) }["permissions"]
+                    .flatMap { permission ->
+                        permission["scopes"]?.map { scope -> scope.textValue() } ?: listOf()
+                    }
+
+            if (!scopes.contains(requiredScope)) {
+                throw AuthenticationException(
+                    "JWT scopes were $scopes, which didn't include $requiredScope")
+            }
+        } catch (ex: Exception) {
+            val authorizationClaim = token.claims["authorization"]?.toJsonString()
+            logger.error(ex) {
+                "JWT scope structure was wrong. Authorization claim: $authorizationClaim"
+            }
+            throw AuthenticationException("JWT scope structure was wrong.")
         }
     }
 
@@ -201,12 +218,8 @@ class GdprController(
                 GdprError(
                     "HAI0002",
                     LocalizedMessage(
-                        "Tapahtui virhe",
-                        "Det inträffade ett fel",
-                        "An error occurred"
-                    )
-                )
-            ),
+                        "Tapahtui virhe", "Det inträffade ett fel", "An error occurred"),
+                )),
         )
     }
 
@@ -223,9 +236,8 @@ data class GdprError(val code: String, val message: LocalizedMessage) {
                 LocalizedMessage(
                     "Keskeneräinen hakemus tunnuksella $applicationIdentifier. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
                     "Pågående ansökan med koden $applicationIdentifier. Kontakta alueidenkaytto@hel.fi för att ta bort ansökan.",
-                    "An unfinished application with the ID $applicationIdentifier. Please contact alueidenkaytto@hel.fi to remove the application."
-                )
-            )
+                    "An unfinished application with the ID $applicationIdentifier. Please contact alueidenkaytto@hel.fi to remove the application.",
+                ))
     }
 }
 

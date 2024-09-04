@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.InvoicingCustomerResponse
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusDataResponse
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusDataResponse
+import fi.hel.haitaton.hanke.paatos.PaatosMetadata
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.toJsonString
@@ -66,11 +67,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             auditLogEntriesForContacts(applicationId, applicationData, status, failureDescription)
         val invoicingEntry =
             auditLogEntryForInvoicingCustomer(
-                applicationId,
-                applicationData,
-                status,
-                failureDescription
-            )
+                applicationId, applicationData, status, failureDescription)
         val entries = (customerEntries + contactEntries + invoicingEntry).filterNotNull()
 
         saveDisclosureLogs(ALLU_AUDIT_LOG_USERID, UserRole.SERVICE, entries)
@@ -85,6 +82,18 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
      */
     fun saveDisclosureLogsForCableReport(metaData: HakemusMetaData, userId: String) {
         val entry = disclosureLogEntry(ObjectType.CABLE_REPORT, metaData.id, metaData)
+        saveDisclosureLog(userId, UserRole.USER, entry)
+    }
+
+    /**
+     * Save disclosure logs for when a user downloads a decision or supervision document. We don't
+     * know what information is inside the PDF, but we can log the meta information about the
+     * decision.
+     *
+     * Decisions contain private information, so their reads need to be logged.
+     */
+    fun saveDisclosureLogsForPaatos(metaData: PaatosMetadata, userId: String) {
+        val entry = disclosureLogEntry(ObjectType.PAATOS, metaData.id, metaData)
         saveDisclosureLog(userId, UserRole.USER, entry)
     }
 
@@ -118,7 +127,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         saveDisclosureLogs(
             userId,
             UserRole.USER,
-            auditLogEntriesForYhteystiedot(hanke.extractYhteystiedot())
+            auditLogEntriesForYhteystiedot(hanke.extractYhteystiedot()),
         )
     }
 
@@ -130,7 +139,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         saveDisclosureLogs(
             userId,
             UserRole.USER,
-            auditLogEntriesForYhteystiedot(hankkeet.flatMap { it.extractYhteystiedot() })
+            auditLogEntriesForYhteystiedot(hankkeet.flatMap { it.extractYhteystiedot() }),
         )
     }
 
@@ -158,12 +167,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     ): List<AuditLogEntry> =
         extractCustomers(applicationData).toSet().map { customer ->
             disclosureLogEntry(
-                ObjectType.ALLU_CUSTOMER,
-                applicationId,
-                customer,
-                status,
-                failureDescription
-            )
+                ObjectType.ALLU_CUSTOMER, applicationId, customer, status, failureDescription)
         }
 
     private fun auditLogEntryForInvoicingCustomer(
@@ -178,12 +182,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         val customer = AlluMetaCustomerWithRole(MetaCustomerType.INVOICING, invoicingCustomer)
 
         return disclosureLogEntry(
-            ObjectType.ALLU_CUSTOMER,
-            applicationId,
-            customer,
-            status,
-            failureDescription
-        )
+            ObjectType.ALLU_CUSTOMER, applicationId, customer, status, failureDescription)
     }
 
     private fun auditLogEntriesForHakemusDataResponseCustomers(
@@ -198,8 +197,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         } +
             (extractHakemusDataResponseInvoivingCustomer(hakemusDataResponse)?.let {
                 listOf(
-                    disclosureLogEntry(objectType, applicationId, it, status, failureDescription)
-                )
+                    disclosureLogEntry(objectType, applicationId, it, status, failureDescription))
             } ?: emptyList())
 
     private fun auditLogEntriesForHakemusResponseCustomers(
@@ -209,10 +207,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         hakemusResponses
             .flatMap {
                 auditLogEntriesForHakemusDataResponseCustomers(
-                    it.id,
-                    it.applicationData,
-                    objectType
-                )
+                    it.id, it.applicationData, objectType)
             }
             .toSet()
 
@@ -224,12 +219,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     ): List<AuditLogEntry> =
         extractContacts(applicationData).toSet().map { contact ->
             disclosureLogEntry(
-                ObjectType.ALLU_CONTACT,
-                applicationId,
-                contact,
-                status,
-                failureDescription
-            )
+                ObjectType.ALLU_CONTACT, applicationId, contact, status, failureDescription)
         }
 
     private fun auditLogEntriesForHakemusDataResponseContacts(
@@ -315,7 +305,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             failureDescription = failureDescription,
             objectType = objectType,
             objectId = objectId.toString(),
-            objectBefore = objectBefore.toJsonString()
+            objectBefore = objectBefore.toJsonString(),
         )
 
     private fun saveDisclosureLog(userId: String, userRole: UserRole, entry: AuditLogEntry) =

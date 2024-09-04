@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.servlet.resource.NoResourceFoundException
 
 private val logger = KotlinLogging.logger {}
@@ -201,12 +202,21 @@ class ControllerExceptionHandler {
         return HankeError.HAI0004
     }
 
+    @ExceptionHandler(WebClientResponseException::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @Hidden
+    fun webClientResponseException(ex: WebClientResponseException): HankeError {
+        logger.error { ex.message }
+        logger.error { "Response status: ${ex.statusCode}" }
+        logger.error { "Error response: ${ex.responseBodyAsString}" }
+        Sentry.captureException(ex)
+        return HankeError.HAI0002
+    }
+
     @ExceptionHandler(Throwable::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ApiResponse(
-        description = "There has been an unexpected error during the call",
-        responseCode = "500"
-    )
+        description = "There has been an unexpected error during the call", responseCode = "500")
     fun throwable(ex: Throwable): HankeError {
         logger.error(ex) { ex.message }
         Sentry.captureException(ex)

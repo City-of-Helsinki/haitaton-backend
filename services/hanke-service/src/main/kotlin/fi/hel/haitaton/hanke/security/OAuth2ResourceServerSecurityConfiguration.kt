@@ -1,19 +1,14 @@
 package fi.hel.haitaton.hanke.security
 
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.ParameterizedTypeReference
 import org.springframework.core.annotation.Order
-import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator
-import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
 import org.springframework.security.oauth2.core.OAuth2TokenValidator
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.jwt.JwtClaimNames
 import org.springframework.security.oauth2.jwt.JwtClaimValidator
@@ -21,27 +16,16 @@ import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.JwtDecoders
 import org.springframework.security.oauth2.jwt.JwtValidators
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
-import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.web.reactive.function.client.WebClient
 
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
-class OAuth2ResourceServerSecurityConfiguration(
-    @Value("\${security.oauth2.resource.user-info-uri}") private val userinfoUri: String,
-    private val gdprProperties: GdprProperties,
-) {
-    @Bean
-    fun introspector(): OpaqueTokenIntrospector {
-        return UserInfoOpaqueTokenIntrospector(userinfoUri)
-    }
+class OAuth2ResourceServerSecurityConfiguration(private val gdprProperties: GdprProperties) {
 
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         AccessRules.configureHttpAccessRules(http)
-        http.oauth2ResourceServer { resourceServer ->
-            resourceServer.opaqueToken { opaqueToken -> opaqueToken.introspector(introspector()) }
-        }
+        http.oauth2ResourceServer { it.jwt {} }
         return http.build()
     }
 
@@ -63,7 +47,7 @@ class OAuth2ResourceServerSecurityConfiguration(
         http
             .securityMatcher("/gdpr-api/**")
             .authorizeHttpRequests { it.anyRequest().authenticated() }
-            .oauth2ResourceServer { it.jwt(Customizer.withDefaults()) }
+            .oauth2ResourceServer { it.jwt { jwt -> jwt.decoder(gdprJwtDecoder()) } }
         return http.build()
     }
 
@@ -89,13 +73,7 @@ class OAuth2ResourceServerSecurityConfiguration(
         }
 
     /** Custom decoder needed to check the audience. */
-    @Bean
-    @ConditionalOnProperty(
-        value = ["haitaton.gdpr.disabled"],
-        havingValue = "false",
-        matchIfMissing = true,
-    )
-    fun jwtDecoder(): JwtDecoder {
+    fun gdprJwtDecoder(): JwtDecoder {
         val jwtDecoder: NimbusJwtDecoder =
             JwtDecoders.fromIssuerLocation(gdprProperties.issuer) as NimbusJwtDecoder
 
@@ -108,22 +86,5 @@ class OAuth2ResourceServerSecurityConfiguration(
         jwtDecoder.setJwtValidator(withAudience)
 
         return jwtDecoder
-    }
-}
-
-class UserInfoOpaqueTokenIntrospector(private val userinfoUri: String) : OpaqueTokenIntrospector {
-    private val rest: WebClient = WebClient.create()
-
-    override fun introspect(token: String): OAuth2AuthenticatedPrincipal {
-        val attributes =
-            rest
-                .get()
-                .uri(userinfoUri)
-                .headers { it.setBearerAuth(token) }
-                .retrieve()
-                .bodyToMono(object : ParameterizedTypeReference<Map<String, Any>>() {})
-                .block()
-
-        return DefaultOAuth2User(listOf(), attributes, "sub")
     }
 }

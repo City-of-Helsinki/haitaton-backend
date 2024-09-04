@@ -19,6 +19,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
+import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -32,12 +33,14 @@ import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.geojson.Polygon
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -64,10 +67,18 @@ class HakemusService(
     private val alluStatusRepository: AlluStatusRepository,
     private val emailSenderService: EmailSenderService,
     private val paatosService: PaatosService,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
 
     @Transactional(readOnly = true)
     fun getById(applicationId: Long): Hakemus = getEntityById(applicationId).toHakemus()
+
+    @Transactional(readOnly = true)
+    fun getWithPaatokset(applicationId: Long): HakemusWithPaatokset {
+        val hakemus = getById(applicationId)
+        val paatokset = paatosService.findByHakemusId(applicationId)
+        return HakemusWithPaatokset(hakemus, paatokset)
+    }
 
     @Transactional(readOnly = true)
     fun hakemusResponse(applicationId: Long): HakemusResponse = getById(applicationId).toResponse()
@@ -205,7 +216,8 @@ class HakemusService(
 
         // For excavation announcements, a cable report can be applied for at the same time.
         // If so, it should be sent before the excavation announcement.
-        val accompanyingJohtoselvityshakemus = createAccompanyingJohtoselvityshakemus(hakemus)
+        val accompanyingJohtoselvityshakemus =
+            createAccompanyingJohtoselvityshakemus(hakemus, currentUserId)
         if (accompanyingJohtoselvityshakemus != null) {
             val sentJohtoselvityshakemus =
                 sendHakemus(accompanyingJohtoselvityshakemus.id, currentUserId)
@@ -239,39 +251,44 @@ class HakemusService(
      *
      * @return the new cable report application entity or null if no new application was applied for
      */
-    private fun createAccompanyingJohtoselvityshakemus(hakemus: HakemusEntity): HakemusEntity? =
+    private fun createAccompanyingJohtoselvityshakemus(
+        hakemus: HakemusEntity,
+        currentUserId: String,
+    ): HakemusEntity? =
         when (val hakemusData = hakemus.hakemusEntityData) {
             is KaivuilmoitusEntityData ->
                 if (!hakemusData.cableReportDone)
-                    createAccompanyingJohtoselvityshakemus(hakemus, hakemusData)
+                    createAccompanyingJohtoselvityshakemus(hakemus, hakemusData, currentUserId)
                 else null
             else -> null
         }
 
     private fun createAccompanyingJohtoselvityshakemus(
         hakemus: HakemusEntity,
-        hakemusData: KaivuilmoitusEntityData
+        hakemusData: KaivuilmoitusEntityData,
+        currentUserId: String,
     ): HakemusEntity {
         logger.info(
             "Creating a new johtoselvityshakemus for a kaivuilmoitus. ${hakemus.logString()}")
         val johtoselvityshakemusData = hakemusData.createAccompanyingJohtoselvityshakemusData()
         val johtoselvityshakemus =
-            hakemus
-                .copy(
-                    id = 0,
-                    applicationType = ApplicationType.CABLE_REPORT,
-                    hakemusEntityData = johtoselvityshakemusData,
-                )
-                .apply {
-                    yhteystiedot =
-                        hakemus.yhteystiedot
-                            .mapValues { it.value.copyWithHakemus(this) }
-                            .toMutableMap()
-                }
+            HakemusEntity(
+                id = 0,
+                alluid = null,
+                alluStatus = null,
+                applicationIdentifier = null,
+                userId = currentUserId,
+                applicationType = ApplicationType.CABLE_REPORT,
+                hakemusEntityData = johtoselvityshakemusData,
+                hanke = hakemus.hanke,
+            )
+        johtoselvityshakemus.yhteystiedot.putAll(
+            hakemus.yhteystiedot.mapValues { it.value.copyWithHakemus(johtoselvityshakemus) })
         val savedJohtoselvityshakemus = hakemusRepository.save(johtoselvityshakemus)
         copyOtherAttachments(hakemus, savedJohtoselvityshakemus)
         logger.info(
             "Created a new johtoselvityshakemus (${savedJohtoselvityshakemus.logString()}) for a kaivuilmoitus. ${hakemus.logString()}")
+        hakemusLoggingService.logCreate(savedJohtoselvityshakemus.toHakemus(), currentUserId)
         return savedJohtoselvityshakemus
     }
 
@@ -336,6 +353,48 @@ class HakemusService(
         }
 
         return HakemusDeletionResultDto(hankeDeleted = false)
+    }
+
+    @Transactional
+    fun reportOperationalCondition(hakemusId: Long, date: LocalDate) {
+        val hakemus = getById(hakemusId)
+        val alluid = hakemus.alluid ?: throw HakemusNotYetInAlluException(hakemus)
+
+        val hakemusData =
+            when (hakemus.applicationData) {
+                is JohtoselvityshakemusData ->
+                    throw WrongHakemusTypeException(
+                        hakemus,
+                        hakemus.applicationType,
+                        listOf(ApplicationType.EXCAVATION_NOTIFICATION))
+                is KaivuilmoitusData -> hakemus.applicationData
+            }
+
+        if (hakemusData.startTime == null || date.isBefore(hakemusData.startTime.toLocalDate())) {
+            throw OperationalConditionDateException(
+                "Date is before the hakemus start date: ${hakemusData.startTime}", date, hakemus)
+        }
+        if (date.isAfter(LocalDate.now())) {
+            throw OperationalConditionDateException("Date is in the future.", date, hakemus)
+        }
+
+        val allowedStatuses =
+            listOf(
+                ApplicationStatus.PENDING,
+                ApplicationStatus.HANDLING,
+                ApplicationStatus.INFORMATION_RECEIVED,
+                ApplicationStatus.RETURNED_TO_PREPARATION,
+                ApplicationStatus.DECISIONMAKING,
+                ApplicationStatus.DECISION,
+            )
+        if (hakemus.alluStatus !in allowedStatuses) {
+            throw HakemusInWrongStatusException(hakemus, hakemus.alluStatus, allowedStatuses)
+        }
+
+        logger.info {
+            "Reporting operational condition for hakemus with the date $date. ${hakemus.logString()}"
+        }
+        alluClient.reportOperationalCondition(alluid, date)
     }
 
     @Transactional(readOnly = true)
@@ -489,17 +548,9 @@ class HakemusService(
         logger.info { "Sending hakemus ready emails to ${receivers.size} receivers" }
 
         receivers.forEach {
-            sendDecisionReadyEmail(it.sahkoposti, applicationIdentifier, application.id)
+            applicationEventPublisher.publishEvent(
+                JohtoselvitysCompleteEmail(it.sahkoposti, application.id, applicationIdentifier))
         }
-    }
-
-    private fun sendDecisionReadyEmail(
-        email: String,
-        applicationIdentifier: String,
-        applicationId: Long?,
-    ) {
-        emailSenderService.sendJohtoselvitysCompleteEmail(
-            email, applicationId, applicationIdentifier)
     }
 
     /** Find the application entity or throw an exception. */
@@ -1043,3 +1094,32 @@ class HakemusGeometryException(message: String) : RuntimeException(message)
 class HakemusGeometryNotInsideHankeException(message: String) : RuntimeException(message)
 
 class HakemusDecisionNotFoundException(message: String) : RuntimeException(message)
+
+class HakemusNotYetInAlluException(hakemus: HakemusIdentifier) :
+    RuntimeException("Hakemus is not yet in Allu. ${hakemus.logString()}")
+
+class WrongHakemusTypeException(
+    hakemus: HakemusIdentifier,
+    type: ApplicationType,
+    allowed: List<ApplicationType>
+) :
+    RuntimeException(
+        "Wrong application type for this action. type=$type, " +
+            "allowed types=${allowed.joinToString(", ")}, ${hakemus.logString()}")
+
+class HakemusInWrongStatusException(
+    hakemus: HakemusIdentifier,
+    status: ApplicationStatus?,
+    allowed: List<ApplicationStatus>
+) :
+    RuntimeException(
+        "Hakemus is in the wrong status for this operation. status=$status, " +
+            "allowed statuses=${allowed.joinToString(", ")}, ${hakemus.logString()}, ")
+
+class OperationalConditionDateException(
+    error: String,
+    date: LocalDate,
+    hakemus: HakemusIdentifier,
+) :
+    RuntimeException(
+        "Invalid date in operational condition report. $error date=$date, ${hakemus.logString()}")

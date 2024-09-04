@@ -18,8 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest
         [
             "haitaton.email.filter.use=true",
             "haitaton.email.filter.allow-list=test@test.test;something@mail.com;*@wildcard.com",
-        ]
-)
+        ])
 class FilteredEmailSenderServiceITest : IntegrationTest() {
 
     companion object {
@@ -34,7 +33,8 @@ class FilteredEmailSenderServiceITest : IntegrationTest() {
 
     @Test
     fun `sendJohtoselvitysCompleteEmail sends email with allowed recipient`() {
-        emailSenderService.sendJohtoselvitysCompleteEmail("test@test.test", 15L, "JS2300001")
+        emailSenderService.sendJohtoselvitysCompleteEmail(
+            JohtoselvitysCompleteEmail("test@test.test", 15L, "JS2300001"))
 
         val email = greenMail.firstReceivedMessage()
         assertThat(email.allRecipients).hasSize(1)
@@ -43,28 +43,32 @@ class FilteredEmailSenderServiceITest : IntegrationTest() {
 
     @Test
     fun `sendJohtoselvitysCompleteEmail blocks send when recipient is not in allow list`() {
-        emailSenderService.sendJohtoselvitysCompleteEmail("foo@bar.test", 13L, "JS2300001")
+        emailSenderService.sendJohtoselvitysCompleteEmail(
+            JohtoselvitysCompleteEmail("foo@bar.test", 13L, "JS2300001"))
 
         assertThat(greenMail.receivedMessages.size).isEqualTo(0)
     }
 
     @Test
     fun `sendJohtoselvitysCompleteEmail blocks send when recipient is close to an allowed email`() {
-        emailSenderService.sendJohtoselvitysCompleteEmail("atest@test.test", 13L, "JS2300001")
+        emailSenderService.sendJohtoselvitysCompleteEmail(
+            JohtoselvitysCompleteEmail("atest@test.test", 13L, "JS2300001"))
 
         assertThat(greenMail.receivedMessages.size).isEqualTo(0)
     }
 
     @Test
     fun `sendJohtoselvitysCompleteEmail blocks send when dot is replaced`() {
-        emailSenderService.sendJohtoselvitysCompleteEmail("test@test-test", 13L, "JS2300001")
+        emailSenderService.sendJohtoselvitysCompleteEmail(
+            JohtoselvitysCompleteEmail("test@test-test", 13L, "JS2300001"))
 
         assertThat(greenMail.receivedMessages.size).isEqualTo(0)
     }
 
     @Test
     fun `sendJohtoselvitysCompleteEmail sends email when email matches wildcard`() {
-        emailSenderService.sendJohtoselvitysCompleteEmail("test@wildcard.com", 15L, "JS2300001")
+        emailSenderService.sendJohtoselvitysCompleteEmail(
+            JohtoselvitysCompleteEmail("test@wildcard.com", 15L, "JS2300001"))
 
         val email = greenMail.firstReceivedMessage()
         assertThat(email.allRecipients).hasSize(1)
@@ -74,10 +78,7 @@ class FilteredEmailSenderServiceITest : IntegrationTest() {
     @Test
     fun `sendJohtoselvitysCompleteEmail sends email when email with suffix matches wildcard`() {
         emailSenderService.sendJohtoselvitysCompleteEmail(
-            "test+suffix@wildcard.com",
-            15L,
-            "JS2300001"
-        )
+            JohtoselvitysCompleteEmail("test+suffix@wildcard.com", 15L, "JS2300001"))
 
         val email = greenMail.firstReceivedMessage()
         assertThat(email.allRecipients).hasSize(1)
