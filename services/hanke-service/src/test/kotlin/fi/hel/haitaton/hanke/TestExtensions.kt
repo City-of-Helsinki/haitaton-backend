@@ -1,7 +1,10 @@
 package fi.hel.haitaton.hanke
 
 import assertk.Assert
+import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.isEqualTo
+import assertk.assertions.isTrue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -11,7 +14,6 @@ import java.nio.charset.StandardCharsets
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
-import org.junit.jupiter.api.Assertions
 import org.springframework.test.web.servlet.ResultActions
 
 fun <T> String.asJsonResource(type: Class<T>): T =
@@ -50,7 +52,8 @@ fun AuditLogRepository.findByType(type: ObjectType) =
 fun OffsetDateTime.asUtc(): OffsetDateTime = this.withOffsetSameInstant(ZoneOffset.UTC)
 
 fun GreenMailExtension.firstReceivedMessage(): MimeMessage {
-    Assertions.assertEquals(1, receivedMessages.size)
+    assertThat(waitForIncomingEmail(1000L, 1)).isTrue()
+    assertThat(receivedMessages.size).isEqualTo(1)
     return receivedMessages[0]
 }
 
