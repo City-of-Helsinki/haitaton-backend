@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.io.IOException
 
 /**
@@ -46,6 +48,7 @@ class HakemusDeserializer : JsonDeserializer<Hakemus>() {
         val applicationType: ApplicationType,
         val hankeTunnus: String,
         val hankeId: Int,
+        val valmistumisilmoitukset: Map<ValmistumisilmoitusType, List<Valmistumisilmoitus>>,
     ) {
         fun toHakemus(hakemusData: HakemusData) =
             Hakemus(
@@ -57,6 +60,7 @@ class HakemusDeserializer : JsonDeserializer<Hakemus>() {
                 hakemusData,
                 hankeTunnus,
                 hankeId,
+                valmistumisilmoitukset,
             )
     }
 }

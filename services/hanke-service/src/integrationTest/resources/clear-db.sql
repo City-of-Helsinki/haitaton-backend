@@ -19,5 +19,6 @@ TRUNCATE TABLE
     paatos,
     permissions,
     tormaystarkastelutulos,
-    ui_notification_banner;
+    ui_notification_banner,
+    valmistumisilmoitus;
 UPDATE allu_status SET history_last_updated = '2017-01-01T00:00:00Z';
