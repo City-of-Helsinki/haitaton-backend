@@ -4,13 +4,13 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.email.EmailSenderService
-import fi.hel.haitaton.hanke.email.RemovalFromHankeNotificationData
+import fi.hel.haitaton.hanke.email.RemovalFromHankeNotificationEmail
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
 import fi.hel.haitaton.hanke.logging.PermissionLoggingService
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -23,10 +23,10 @@ class HankekayttajaDeleteService(
     private val hankekayttajaRepository: HankekayttajaRepository,
     private val hankeService: HankeService,
     private val hankeKayttajaService: HankeKayttajaService,
-    private val emailSenderService: EmailSenderService,
     private val permissionRepository: PermissionRepository,
     private val hankeKayttajaLoggingService: HankeKayttajaLoggingService,
     private val permissionLoggingService: PermissionLoggingService,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional(readOnly = true)
     fun checkForDelete(kayttajaId: UUID): DeleteInfo {
@@ -85,15 +85,14 @@ class HankekayttajaDeleteService(
         hankekayttajaRepository.delete(kayttaja)
         hankeKayttajaLoggingService.logDelete(kayttaja.toDomain(), userId)
 
-        emailSenderService.sendRemovalFromHankeNotificationEmail(
-            RemovalFromHankeNotificationData(
+        applicationEventPublisher.publishEvent(
+            RemovalFromHankeNotificationEmail(
                 kayttaja.sahkoposti,
                 hanke.hankeTunnus,
                 hanke.nimi,
                 currentUser.fullName(),
-                currentUser.sahkoposti
-            )
-        )
+                currentUser.sahkoposti,
+            ))
     }
 
     private fun isTheOnlyKaikkiOikeudetKayttaja(kayttaja: HankekayttajaEntity): Boolean {
@@ -153,11 +152,9 @@ class HankekayttajaDeleteService(
 class OnlyOmistajaContactException(kayttajaId: UUID, yhteystietoId: List<Int>) :
     RuntimeException(
         "Hankekayttaja is the only contact for an omistaja. Cannot delete. " +
-            "hankekayttajaId=$kayttajaId, yhteystietoIds=${yhteystietoId.joinToString(", ")}"
-    )
+            "hankekayttajaId=$kayttajaId, yhteystietoIds=${yhteystietoId.joinToString(", ")}")
 
 class HasActiveApplicationsException(kayttajaId: UUID, hakemusIds: List<Long>) :
     RuntimeException(
         "Hankekayttaja is a contact in active applications. Cannot delete. " +
-            "hankekayttajaId=$kayttajaId, applicationIds=${hakemusIds.joinToString(", ")}"
-    )
+            "hankekayttajaId=$kayttajaId, applicationIds=${hakemusIds.joinToString(", ")}")

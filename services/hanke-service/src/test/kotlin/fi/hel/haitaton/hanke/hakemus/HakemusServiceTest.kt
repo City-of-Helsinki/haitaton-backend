@@ -25,7 +25,6 @@ import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
-import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
 import fi.hel.haitaton.hanke.factory.AlluFactory
@@ -90,7 +89,6 @@ class HakemusServiceTest {
     private val attachmentService: ApplicationAttachmentService = mockk()
     private val alluClient: AlluClient = mockk()
     private val alluStatusRepository: AlluStatusRepository = mockk()
-    private val emailSenderService: EmailSenderService = mockk()
     private val paatosService: PaatosService = mockk()
     private val publisher: ApplicationEventPublisher = mockk()
 
@@ -107,7 +105,6 @@ class HakemusServiceTest {
             attachmentService,
             alluClient,
             alluStatusRepository,
-            emailSenderService,
             paatosService,
             publisher,
         )
@@ -132,7 +129,6 @@ class HakemusServiceTest {
             attachmentService,
             alluClient,
             alluStatusRepository,
-            emailSenderService,
             paatosService,
             publisher,
         )

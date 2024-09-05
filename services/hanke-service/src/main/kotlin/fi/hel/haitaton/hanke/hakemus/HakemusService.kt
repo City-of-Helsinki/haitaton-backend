@@ -17,8 +17,7 @@ import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
-import fi.hel.haitaton.hanke.email.ApplicationNotificationData
-import fi.hel.haitaton.hanke.email.EmailSenderService
+import fi.hel.haitaton.hanke.email.ApplicationNotificationEmail
 import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -66,7 +65,6 @@ class HakemusService(
     private val attachmentService: ApplicationAttachmentService,
     private val alluClient: AlluClient,
     private val alluStatusRepository: AlluStatusRepository,
-    private val emailSenderService: EmailSenderService,
     private val paatosService: PaatosService,
     private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
@@ -989,7 +987,7 @@ class HakemusService(
 
         for (newContact in newContacts.filter { it.sahkoposti != inviter.sahkoposti }) {
             val data =
-                ApplicationNotificationData(
+                ApplicationNotificationEmail(
                     inviter.fullName(),
                     inviter.sahkoposti,
                     newContact.sahkoposti,
@@ -997,7 +995,7 @@ class HakemusService(
                     hakemusEntity.hanke.hankeTunnus,
                     hakemusEntity.hanke.nimi,
                 )
-            emailSenderService.sendApplicationNotificationEmail(data)
+            applicationEventPublisher.publishEvent(data)
         }
     }
 

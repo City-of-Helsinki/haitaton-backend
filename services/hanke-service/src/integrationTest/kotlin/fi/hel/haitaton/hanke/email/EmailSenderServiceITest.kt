@@ -159,10 +159,10 @@ class EmailSenderServiceITest : IntegrationTest() {
     @Nested
     inner class HankeInvitation {
         private val notification =
-            HankeInvitationData(
+            HankeInvitationEmail(
                 inviterName = INVITER_NAME,
                 inviterEmail = INVITER_EMAIL,
-                recipientEmail = TEST_EMAIL,
+                to = TEST_EMAIL,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
                 invitationToken = "MgtzRbcPsvoKQamnaSxCnmW7",
@@ -224,10 +224,10 @@ class EmailSenderServiceITest : IntegrationTest() {
     @Nested
     inner class ApplicationNotification {
         private val notification =
-            ApplicationNotificationData(
+            ApplicationNotificationEmail(
                 senderName = INVITER_NAME,
                 senderEmail = INVITER_EMAIL,
-                recipientEmail = TEST_EMAIL,
+                to = TEST_EMAIL,
                 applicationType = ApplicationType.CABLE_REPORT,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
@@ -288,8 +288,8 @@ class EmailSenderServiceITest : IntegrationTest() {
     @Nested
     inner class AccessRightsUpdateNotification {
         private val notification =
-            AccessRightsUpdateNotificationData(
-                recipientEmail = TEST_EMAIL,
+            AccessRightsUpdateNotificationEmail(
+                to = TEST_EMAIL,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
                 updatedByName = INVITER_NAME,
@@ -356,8 +356,8 @@ class EmailSenderServiceITest : IntegrationTest() {
     @Nested
     inner class RemovalFromHankeNotification {
         private val notification =
-            RemovalFromHankeNotificationData(
-                recipientEmail = TEST_EMAIL,
+            RemovalFromHankeNotificationEmail(
+                to = TEST_EMAIL,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
                 deletedByName = INVITER_NAME,
