@@ -36,6 +36,7 @@ tasks.getByName<BootRun>("bootRun") {
     environment("HAITATON_SWAGGER_PATH_PREFIX", "/v3")
     environment("HAITATON_EMAIL_ENABLED", "true")
     environment("HAITATON_BLOB_CONNECTION_STRING", "UseDevelopmentStorage=true;")
+    environment("HAITATON_GDPR_DISABLED", "true")
 }
 
 spotless {
@@ -72,8 +73,13 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
-    implementation("ch.qos.logback:logback-access")
-    implementation("net.logstash.logback:logstash-logback-encoder:7.4")
+    implementation("ch.qos.logback.access:tomcat:2.0.3") {
+        // logback-access has dependencies incompatible with Spring Boot 3.3
+        // https://github.com/qos-ch/logback-access/issues/17
+        exclude("org.apache.tomcat")
+        exclude("jakarta.servlet")
+    }
+    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
