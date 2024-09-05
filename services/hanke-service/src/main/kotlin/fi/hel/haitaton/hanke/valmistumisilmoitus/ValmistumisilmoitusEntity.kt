@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.ilmoitus
+package fi.hel.haitaton.hanke.valmistumisilmoitus
 
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import jakarta.persistence.CascadeType
@@ -14,13 +14,13 @@ import jakarta.persistence.Table
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
-import org.springframework.data.jpa.domain.AbstractPersistable_.id
 
+/** Operational condition and work finished reports sent by the user. */
 @Entity
-@Table(name = "ilmoitus")
-class IlmoitusEntity(
+@Table(name = "valmistumisilmoitus")
+class ValmistumisilmoitusEntity(
     @Id val id: UUID = UUID.randomUUID(),
-    @Enumerated(EnumType.STRING) val type: IlmoitusType,
+    @Enumerated(EnumType.STRING) val type: ValmistumisilmoitusType,
     val hakemustunnus: String,
     @Column(name = "date_reported") val dateReported: LocalDate,
     @Column(name = "created_at") val createdAt: OffsetDateTime = OffsetDateTime.now(),
@@ -28,5 +28,5 @@ class IlmoitusEntity(
     @JoinColumn(name = "application_id")
     var hakemus: HakemusEntity,
 ) {
-    fun toDomain() = Ilmoitus(id, type, hakemustunnus, dateReported, createdAt)
+    fun toDomain() = Valmistumisilmoitus(id, type, hakemustunnus, dateReported, createdAt)
 }

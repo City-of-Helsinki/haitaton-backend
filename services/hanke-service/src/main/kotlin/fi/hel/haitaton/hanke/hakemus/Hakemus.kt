@@ -2,8 +2,8 @@ package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.domain.HasId
-import fi.hel.haitaton.hanke.ilmoitus.Ilmoitus
-import fi.hel.haitaton.hanke.ilmoitus.IlmoitusType
+import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.ZonedDateTime
 
 enum class ApplicationType {
@@ -20,7 +20,7 @@ data class Hakemus(
     val applicationData: HakemusData,
     val hankeTunnus: String,
     val hankeId: Int,
-    val ilmoitukset: Map<IlmoitusType, List<Ilmoitus>>,
+    val valmistumisilmoitukset: Map<ValmistumisilmoitusType, List<Valmistumisilmoitus>>,
 ) : HakemusIdentifier {
     fun toResponse(): HakemusResponse =
         HakemusResponse(
@@ -31,9 +31,11 @@ data class Hakemus(
             applicationType = applicationType,
             applicationData = applicationData.toResponse(),
             hankeTunnus = hankeTunnus,
-            ilmoitukset =
+            valmistumisilmoitukset =
                 if (applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
-                    ilmoitukset.mapValues { (_, values) -> values.map { it.toResponse() } }
+                    valmistumisilmoitukset.mapValues { (_, values) ->
+                        values.map { it.toResponse() }
+                    }
                 } else {
                     null
                 })

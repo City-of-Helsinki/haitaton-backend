@@ -15,7 +15,7 @@ import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusDataResponse
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.hakemus.StreetAddress
-import fi.hel.haitaton.hanke.ilmoitus.IlmoitusResponse
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusResponse
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -31,7 +31,7 @@ object HakemusResponseFactory {
         applicationIdentifier: String? = null,
         applicationData: HakemusDataResponse = createHakemusDataResponse(applicationType),
         hankeTunnus: String = "HAI-1234",
-        ilmoitukset: List<IlmoitusResponse> = listOf(),
+        valmistumisilmoitukset: List<ValmistumisilmoitusResponse> = listOf(),
     ): HakemusResponse =
         HakemusResponse(
             applicationId,
@@ -41,7 +41,7 @@ object HakemusResponseFactory {
             applicationData.applicationType,
             applicationData,
             hankeTunnus,
-            ilmoitukset.groupBy { it.type },
+            valmistumisilmoitukset.groupBy { it.type },
         )
 
     private fun createHakemusDataResponse(applicationType: ApplicationType): HakemusDataResponse =

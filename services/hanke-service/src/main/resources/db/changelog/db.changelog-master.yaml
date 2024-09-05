@@ -190,4 +190,4 @@ databaseChangeLog:
   - include:
       file: db/changelog/changesets/080-create-ui-banners-table.sql
   - include:
-      file: db/changelog/changesets/081-create-ilmoitukset.sql
+      file: db/changelog/changesets/081-create-valmistumisilmoitukset.sql

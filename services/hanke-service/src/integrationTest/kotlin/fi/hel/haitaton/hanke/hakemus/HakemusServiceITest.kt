@@ -86,8 +86,6 @@ import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluCableReportData
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluExcavationNotificationData
 import fi.hel.haitaton.hanke.hasSameElementsAs
-import fi.hel.haitaton.hanke.ilmoitus.Ilmoitus
-import fi.hel.haitaton.hanke.ilmoitus.IlmoitusType
 import fi.hel.haitaton.hanke.logging.AlluContactWithRole
 import fi.hel.haitaton.hanke.logging.AlluCustomerWithRole
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -113,6 +111,8 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -2238,14 +2238,16 @@ class HakemusServiceITest(
             hakemusService.reportOperationalCondition(hakemus.id, date)
 
             val savedHakemus: Hakemus = hakemusService.getById(hakemus.id)
-            assertThat(savedHakemus.ilmoitukset)
-                .key(IlmoitusType.TOIMINNALLINEN_KUNTO)
+            assertThat(savedHakemus.valmistumisilmoitukset)
+                .key(ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO)
                 .single()
                 .all {
-                    prop(Ilmoitus::type).isEqualTo(IlmoitusType.TOIMINNALLINEN_KUNTO)
-                    prop(Ilmoitus::dateReported).isEqualTo(date)
-                    prop(Ilmoitus::createdAt).isRecent()
-                    prop(Ilmoitus::hakemustunnus).isEqualTo(hakemus.applicationIdentifier)
+                    prop(Valmistumisilmoitus::type)
+                        .isEqualTo(ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO)
+                    prop(Valmistumisilmoitus::dateReported).isEqualTo(date)
+                    prop(Valmistumisilmoitus::createdAt).isRecent()
+                    prop(Valmistumisilmoitus::hakemustunnus)
+                        .isEqualTo(hakemus.applicationIdentifier)
                 }
             verifySequence { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
         }

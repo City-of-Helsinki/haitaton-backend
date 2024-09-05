@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.ilmoitus.IlmoitusResponse
-import fi.hel.haitaton.hanke.ilmoitus.IlmoitusType
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusResponse
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 
 class HakemusResponseDeserializer : JsonDeserializer<HakemusResponse>() {
     override fun deserialize(
@@ -37,7 +37,8 @@ class HakemusResponseDeserializer : JsonDeserializer<HakemusResponse>() {
         val applicationIdentifier: String?,
         val applicationType: ApplicationType,
         val hankeTunnus: String,
-        val ilmoitukset: Map<IlmoitusType, List<IlmoitusResponse>>?,
+        val valmistumisilmoitukset:
+            Map<ValmistumisilmoitusType, List<ValmistumisilmoitusResponse>>?,
     ) {
         fun toHakemusResponse(hakemusData: HakemusDataResponse) =
             HakemusResponse(
@@ -48,7 +49,7 @@ class HakemusResponseDeserializer : JsonDeserializer<HakemusResponse>() {
                 applicationType,
                 hakemusData,
                 hankeTunnus,
-                ilmoitukset,
+                valmistumisilmoitukset,
             )
     }
 }

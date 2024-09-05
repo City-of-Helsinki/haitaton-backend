@@ -1,10 +1,10 @@
-package fi.hel.haitaton.hanke.ilmoitus
+package fi.hel.haitaton.hanke.valmistumisilmoitus
 
 import java.time.LocalDate
 import java.time.OffsetDateTime
 
-data class IlmoitusResponse(
-    val type: IlmoitusType,
+data class ValmistumisilmoitusResponse(
+    val type: ValmistumisilmoitusType,
     val dateReported: LocalDate,
     val reportedAt: OffsetDateTime,
 )

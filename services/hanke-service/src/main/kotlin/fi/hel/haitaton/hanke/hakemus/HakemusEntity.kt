@@ -2,8 +2,8 @@ package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.ilmoitus.IlmoitusEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
@@ -51,7 +51,7 @@ data class HakemusEntity(
         orphanRemoval = true,
     )
     @BatchSize(size = 100)
-    val ilmoitukset: MutableList<IlmoitusEntity> = mutableListOf(),
+    val valmistumisilmoitukset: MutableList<ValmistumisilmoitusEntity> = mutableListOf(),
 ) : HakemusIdentifier {
     fun toMetadata(): HakemusMetaData =
         HakemusMetaData(
@@ -82,7 +82,8 @@ data class HakemusEntity(
             applicationData = applicationData,
             hankeTunnus = hanke.hankeTunnus,
             hankeId = hanke.id,
-            ilmoitukset = ilmoitukset.map { it.toDomain() }.groupBy { it.type },
+            valmistumisilmoitukset =
+                valmistumisilmoitukset.map { it.toDomain() }.groupBy { it.type },
         )
     }
 

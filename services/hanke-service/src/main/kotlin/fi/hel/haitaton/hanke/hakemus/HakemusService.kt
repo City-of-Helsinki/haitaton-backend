@@ -22,8 +22,6 @@ import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
-import fi.hel.haitaton.hanke.ilmoitus.IlmoitusEntity
-import fi.hel.haitaton.hanke.ilmoitus.IlmoitusType
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
@@ -35,6 +33,8 @@ import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -397,9 +397,9 @@ class HakemusService(
             "Reporting operational condition for hakemus with the date $date. ${hakemus.logString()}"
         }
         alluClient.reportOperationalCondition(alluid, date)
-        entity.ilmoitukset.add(
-            IlmoitusEntity(
-                type = IlmoitusType.TOIMINNALLINEN_KUNTO,
+        entity.valmistumisilmoitukset.add(
+            ValmistumisilmoitusEntity(
+                type = ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO,
                 hakemustunnus = entity.applicationIdentifier!!,
                 dateReported = date,
                 hakemus = entity,
