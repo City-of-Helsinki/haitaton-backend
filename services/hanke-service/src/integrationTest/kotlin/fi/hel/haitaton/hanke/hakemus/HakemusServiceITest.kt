@@ -19,6 +19,7 @@ import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
+import assertk.assertions.key
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
@@ -96,6 +97,7 @@ import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasStreetName
+import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectBefore
@@ -109,6 +111,8 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -2216,6 +2220,35 @@ class HakemusServiceITest(
 
             hakemusService.reportOperationalCondition(hakemus.id, date)
 
+            verifySequence { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
+        }
+
+        @Test
+        fun `saves the report event to database`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.PENDING)
+                    .withStartTime(startDate)
+                    .withEndTime(endDate)
+                    .save()
+            justRun { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
+
+            hakemusService.reportOperationalCondition(hakemus.id, date)
+
+            val savedHakemus: Hakemus = hakemusService.getById(hakemus.id)
+            assertThat(savedHakemus.valmistumisilmoitukset)
+                .key(ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO)
+                .single()
+                .all {
+                    prop(Valmistumisilmoitus::type)
+                        .isEqualTo(ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO)
+                    prop(Valmistumisilmoitus::dateReported).isEqualTo(date)
+                    prop(Valmistumisilmoitus::createdAt).isRecent()
+                    prop(Valmistumisilmoitus::hakemustunnus)
+                        .isEqualTo(hakemus.applicationIdentifier)
+                }
             verifySequence { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
         }
     }

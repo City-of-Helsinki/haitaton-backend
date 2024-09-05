@@ -25,6 +25,7 @@ import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.paatos.Paatos
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.USERNAME
+import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
 import java.time.ZonedDateTime
 import org.springframework.stereotype.Component
 
@@ -100,6 +101,7 @@ class HakemusFactory(
             applicationData: HakemusData = createHakemusData(applicationType),
             hankeTunnus: String = "HAI-1234",
             hankeId: Int = 1,
+            valmistumisilmoitukset: List<Valmistumisilmoitus> = listOf(),
         ): Hakemus =
             Hakemus(
                 id = id,
@@ -110,6 +112,7 @@ class HakemusFactory(
                 applicationData = applicationData,
                 hankeTunnus = hankeTunnus,
                 hankeId = hankeId,
+                valmistumisilmoitukset = valmistumisilmoitukset.groupBy { it.type },
             )
 
         private fun createHakemusData(type: ApplicationType): HakemusData =

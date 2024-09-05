@@ -5,7 +5,11 @@ import assertk.assertThat
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotEmpty
+import assertk.assertions.isNotNull
+import assertk.assertions.isNull
+import assertk.assertions.key
 import assertk.assertions.prop
+import assertk.assertions.single
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
@@ -38,6 +42,9 @@ import fi.hel.haitaton.hanke.paatos.PaatosTyyppi.TYO_VALMIS
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusFactory
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusResponse
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -188,6 +195,90 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(jsonPath("$.paatokset.KP2400001-2[2].tyyppi").value(TYO_VALMIS.name))
                 .andExpect(jsonPath("$.paatokset.KP2400001-2[2].tila").value(NYKYINEN.name))
                 .andExpect(jsonPath("$.paatokset.KP2400001-2[3]").doesNotExist())
+
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
+                hakemusService.getWithPaatokset(id)
+            }
+        }
+
+        @Test
+        fun `returns valmistumisilmoitukset with a kaivuilmoitus`() {
+            val hakemus =
+                HakemusFactory.create(
+                    applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
+                    valmistumisilmoitukset =
+                        listOf(
+                            ValmistumisilmoitusFactory.create(
+                                type = ValmistumisilmoitusType.TYO_VALMIS),
+                            ValmistumisilmoitusFactory.create(
+                                dateReported = LocalDate.parse("2024-12-24")),
+                        ))
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
+            every { hakemusService.getWithPaatokset(id) } returns
+                HakemusWithPaatokset(hakemus, listOf())
+
+            val response: HakemusResponse = get(url).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response.valmistumisilmoitukset).isNotNull().all {
+                key(ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO).single().all {
+                    prop(ValmistumisilmoitusResponse::dateReported)
+                        .isEqualTo(LocalDate.parse("2024-12-24"))
+                    prop(ValmistumisilmoitusResponse::reportedAt)
+                        .isEqualTo(ValmistumisilmoitusFactory.DEFAULT_REPORT_TIME)
+                }
+                key(ValmistumisilmoitusType.TYO_VALMIS).single().all {
+                    prop(ValmistumisilmoitusResponse::dateReported)
+                        .isEqualTo(ValmistumisilmoitusFactory.DEFAULT_DATE)
+                    prop(ValmistumisilmoitusResponse::reportedAt)
+                        .isEqualTo(ValmistumisilmoitusFactory.DEFAULT_REPORT_TIME)
+                }
+            }
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
+                hakemusService.getWithPaatokset(id)
+            }
+        }
+
+        @Test
+        fun `returns empty map in valmistumisilmoitukset when kaivuilmoitus has none`() {
+            val hakemus =
+                HakemusFactory.create(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
+            every { hakemusService.getWithPaatokset(id) } returns
+                HakemusWithPaatokset(hakemus, listOf())
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.valmistumisilmoitukset").isMap())
+                .andExpect(jsonPath("$.valmistumisilmoitukset").isEmpty())
+
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
+                hakemusService.getWithPaatokset(id)
+            }
+        }
+
+        @Test
+        fun `doesn't include valmistumisilmoitukset with a johtoselvityshakemus`() {
+            val hakemus =
+                HakemusFactory.create(
+                    applicationType = ApplicationType.CABLE_REPORT,
+                    valmistumisilmoitukset =
+                        listOf(
+                            ValmistumisilmoitusFactory.create(),
+                            ValmistumisilmoitusFactory.create(
+                                type = ValmistumisilmoitusType.TYO_VALMIS),
+                            ValmistumisilmoitusFactory.create(
+                                dateReported = LocalDate.parse("2024-12-24")),
+                        ))
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
+            every { hakemusService.getWithPaatokset(id) } returns
+                HakemusWithPaatokset(hakemus, listOf())
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.valmistumisilmoitukset").doesNotHaveJsonPath())
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
@@ -362,6 +453,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             assertThat(response).all {
                 prop(HakemusResponse::id).isEqualTo(hakemus.id)
                 prop(HakemusResponse::hankeTunnus).isEqualTo(hankeTunnus)
+                prop(HakemusResponse::valmistumisilmoitukset).isNull()
             }
             verifySequence {
                 authorizer.authorizeCreate(request)
@@ -373,7 +465,11 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         fun `returns 200 and the created hakemus when the hakemus is a kaivuilmoitus`() {
             val request = CreateHakemusRequestFactory.kaivuilmoitusRequest()
             every { authorizer.authorizeCreate(request) } returns true
-            val hakemus = HakemusFactory.create(hankeTunnus = hankeTunnus)
+            val hakemus =
+                HakemusFactory.create(
+                    applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
+                    hankeTunnus = hankeTunnus,
+                )
             every { hakemusService.create(request, USERNAME) } returns hakemus
 
             val response: HakemusResponse =
@@ -382,6 +478,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             assertThat(response).all {
                 prop(HakemusResponse::id).isEqualTo(hakemus.id)
                 prop(HakemusResponse::hankeTunnus).isEqualTo(hankeTunnus)
+                prop(HakemusResponse::valmistumisilmoitukset).isNotNull().isEmpty()
             }
             verifySequence {
                 authorizer.authorizeCreate(request)
@@ -1063,7 +1160,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(
                     MockMvcResultMatchers.header()
                         .string("Content-Disposition", "inline; filename=JS230001.pdf"))
-                .andExpect(MockMvcResultMatchers.content().bytes(pdfBytes))
+                .andExpect(content().bytes(pdfBytes))
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)

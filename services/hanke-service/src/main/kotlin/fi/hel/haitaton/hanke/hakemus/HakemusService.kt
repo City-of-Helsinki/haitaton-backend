@@ -33,6 +33,8 @@ import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -356,7 +358,8 @@ class HakemusService(
 
     @Transactional
     fun reportOperationalCondition(hakemusId: Long, date: LocalDate) {
-        val hakemus = getById(hakemusId)
+        val entity = getEntityById(hakemusId)
+        val hakemus = entity.toHakemus()
         val alluid = hakemus.alluid ?: throw HakemusNotYetInAlluException(hakemus)
 
         val hakemusData =
@@ -394,6 +397,13 @@ class HakemusService(
             "Reporting operational condition for hakemus with the date $date. ${hakemus.logString()}"
         }
         alluClient.reportOperationalCondition(alluid, date)
+        entity.valmistumisilmoitukset.add(
+            ValmistumisilmoitusEntity(
+                type = ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO,
+                hakemustunnus = entity.applicationIdentifier!!,
+                dateReported = date,
+                hakemus = entity,
+            ))
     }
 
     @Transactional(readOnly = true)
