@@ -48,6 +48,7 @@ import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.TestFile
+import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
@@ -466,15 +467,51 @@ class HakemusServiceITest(
 
                 val result = hakemusService.create(request, USERNAME)
 
-                assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.CREATE) {
-                    hasUserActor(USERNAME)
-                    withTarget {
-                        hasId(result.id)
-                        prop(AuditLogTarget::type).isEqualTo(ObjectType.HAKEMUS)
-                        hasNoObjectBefore()
-                        hasObjectAfter(result)
+                assertThat(auditLogRepository.findByType(ObjectType.HAKEMUS)).single().isSuccess(
+                    Operation.CREATE) {
+                        hasUserActor(USERNAME)
+                        withTarget {
+                            hasId(result.id)
+                            prop(AuditLogTarget::type).isEqualTo(ObjectType.HAKEMUS)
+                            hasNoObjectBefore()
+                            hasObjectAfter(result)
+                        }
                     }
-                }
+            }
+
+            @Test
+            fun `updates the hanke phase to RAKENTAMINEN`() {
+                val hanke = hankeFactory.saveMinimal()
+                val request = request.withHanketunnus(hanke.hankeTunnus)
+
+                hakemusService.create(request, USERNAME)
+
+                val updatedHanke = hankeRepository.findByHankeTunnus(hanke.hankeTunnus)!!
+                assertThat(updatedHanke.vaihe).isEqualTo(Hankevaihe.RAKENTAMINEN)
+            }
+
+            @Test
+            fun `writes the updated hanke to the audit log`() {
+                val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+                val request = request.withHanketunnus(hanke.hankeTunnus)
+                auditLogRepository.deleteAll()
+
+                hakemusService.create(request, USERNAME)
+
+                assertThat(auditLogRepository.findByType(ObjectType.HANKE)).single().isSuccess(
+                    Operation.UPDATE) {
+                        hasUserActor(USERNAME)
+                        withTarget {
+                            hasId(hanke.id)
+                            prop(AuditLogTarget::type).isEqualTo(ObjectType.HANKE)
+                            prop(AuditLogTarget::objectBefore)
+                                .isNotNull()
+                                .contains("\"vaihe\":\"OHJELMOINTI\"")
+                            prop(AuditLogTarget::objectAfter)
+                                .isNotNull()
+                                .contains("\"vaihe\":\"RAKENTAMINEN\"")
+                        }
+                    }
             }
         }
 

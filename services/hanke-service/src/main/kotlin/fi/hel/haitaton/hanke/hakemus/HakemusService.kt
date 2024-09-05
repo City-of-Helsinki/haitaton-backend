@@ -18,9 +18,11 @@ import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.email.ApplicationNotificationEmail
+import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
+import fi.hel.haitaton.hanke.getCurrentTimeUTCAsLocalTime
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
@@ -111,7 +113,26 @@ class HakemusService(
                     hanke = hanke))
         val hakemus = entity.toHakemus()
         hakemusLoggingService.logCreate(hakemus, userId)
+        // A hanke with a hakemus should be in RAKENTAMINEN phase
+        updateHankevaiheToRakentaminen(hanke, userId)
         return hakemus
+    }
+
+    /** Update the hankevaihe of a Hanke to RAKENTAMINEN if it's not already there. */
+    private fun updateHankevaiheToRakentaminen(hanke: HankeEntity, userId: String) {
+        if (hanke.vaihe != Hankevaihe.RAKENTAMINEN) {
+            val geometriatMap = hankealueService.geometryMapFrom(hanke.alueet)
+            val hankeBeforeUpdate = HankeMapper.domainFrom(hanke, geometriatMap)
+            hanke.vaihe = Hankevaihe.RAKENTAMINEN
+            hanke.version = hanke.version?.inc() ?: 1
+            hanke.modifiedByUserId = userId
+            hanke.modifiedAt = getCurrentTimeUTCAsLocalTime()
+            hanke.generated = false
+
+            hankeRepository.save(hanke)
+            val hankeAfterUpdate = HankeMapper.domainFrom(hanke, geometriatMap)
+            hankeLoggingService.logUpdate(hankeBeforeUpdate, hankeAfterUpdate, userId)
+        }
     }
 
     /** Create a johtoselvitys from a hanke that was just created. */
