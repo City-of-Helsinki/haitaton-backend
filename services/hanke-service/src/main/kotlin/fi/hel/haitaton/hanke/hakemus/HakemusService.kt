@@ -127,10 +127,9 @@ class HakemusService(
             hanke.version = hanke.version?.inc() ?: 1
             hanke.modifiedByUserId = userId
             hanke.modifiedAt = getCurrentTimeUTCAsLocalTime()
-            hanke.generated = false
 
-            hankeRepository.save(hanke)
-            val hankeAfterUpdate = HankeMapper.domainFrom(hanke, geometriatMap)
+            val savedHanke = hankeRepository.save(hanke)
+            val hankeAfterUpdate = HankeMapper.domainFrom(savedHanke, geometriatMap)
             hankeLoggingService.logUpdate(hankeBeforeUpdate, hankeAfterUpdate, userId)
         }
     }

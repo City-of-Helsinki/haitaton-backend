@@ -135,7 +135,9 @@ data class HankeBuilder(
                 Names(
                     firstName = perustaja.etunimi,
                     lastName = perustaja.sukunimi,
-                    givenName = perustaja.etunimi))
+                    givenName = perustaja.etunimi,
+                ),
+        )
 
     fun withTyomaaKatuosoite(tyomaaKatuosoite: String?): HankeBuilder = applyToHanke {
         this.tyomaaKatuosoite = tyomaaKatuosoite
@@ -183,7 +185,8 @@ data class HankeBuilder(
                 rooli = rooli,
                 tyyppi = tyyppi,
                 ytunnus = ytunnus,
-                yhteyshenkilot = yhteyshenkilot.map { it.id })
+                yhteyshenkilot = yhteyshenkilot.map { it.id },
+            )
 
         fun SavedHankealue.toModifyRequest(id: Int? = this.id) =
             ModifyHankealueRequest(
@@ -198,7 +201,8 @@ data class HankeBuilder(
                 meluHaitta = meluHaitta,
                 polyHaitta = polyHaitta,
                 tarinaHaitta = tarinaHaitta,
-                haittojenhallintasuunnitelma = haittojenhallintasuunnitelma)
+                haittojenhallintasuunnitelma = haittojenhallintasuunnitelma,
+            )
     }
 }
 
@@ -297,7 +301,9 @@ data class HankeYhteystietoBuilder(
     ) {
         hankeYhteyshenkiloRepository.save(
             HankeYhteyshenkiloEntity(
-                hankeKayttaja = kayttaja, hankeYhteystieto = yhteystietoEntity))
+                hankeKayttaja = kayttaja,
+                hankeYhteystieto = yhteystietoEntity,
+            ))
     }
 
     private fun saveYhteystieto(
