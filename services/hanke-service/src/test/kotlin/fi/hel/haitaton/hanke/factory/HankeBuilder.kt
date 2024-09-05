@@ -13,6 +13,7 @@ import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.ModifyGeometriaRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
@@ -63,9 +64,7 @@ data class HankeBuilder(
     fun save(): Hanke {
         val createdHanke = create()
         return hankeService.updateHanke(
-            createdHanke.hankeTunnus,
-            hanke.toModifyRequest(idMapper = { null })
-        )
+            createdHanke.hankeTunnus, hanke.toModifyRequest(idMapper = { null }))
     }
 
     /** Save the entity with [save], and - for convenience - get the saved entity from DB. */
@@ -136,9 +135,7 @@ data class HankeBuilder(
                 Names(
                     firstName = perustaja.etunimi,
                     lastName = perustaja.sukunimi,
-                    givenName = perustaja.etunimi
-                )
-        )
+                    givenName = perustaja.etunimi))
 
     fun withTyomaaKatuosoite(tyomaaKatuosoite: String?): HankeBuilder = applyToHanke {
         this.tyomaaKatuosoite = tyomaaKatuosoite
@@ -147,6 +144,8 @@ data class HankeBuilder(
     fun withTyomaaTyypit(vararg tyypit: TyomaaTyyppi): HankeBuilder = applyToHanke {
         tyomaaTyyppi.addAll(tyypit)
     }
+
+    fun withVaihe(vaihe: Hankevaihe): HankeBuilder = applyToHanke { this.vaihe = vaihe }
 
     private fun applyToHanke(f: Hanke.() -> Unit) = apply { hanke.apply { f() } }
 
@@ -184,8 +183,7 @@ data class HankeBuilder(
                 rooli = rooli,
                 tyyppi = tyyppi,
                 ytunnus = ytunnus,
-                yhteyshenkilot = yhteyshenkilot.map { it.id }
-            )
+                yhteyshenkilot = yhteyshenkilot.map { it.id })
 
         fun SavedHankealue.toModifyRequest(id: Int? = this.id) =
             ModifyHankealueRequest(
@@ -200,8 +198,7 @@ data class HankeBuilder(
                 meluHaitta = meluHaitta,
                 polyHaitta = polyHaitta,
                 tarinaHaitta = tarinaHaitta,
-                haittojenhallintasuunnitelma = haittojenhallintasuunnitelma
-            )
+                haittojenhallintasuunnitelma = haittojenhallintasuunnitelma)
     }
 }
 
@@ -299,8 +296,8 @@ data class HankeYhteystietoBuilder(
         kayttaja: HankekayttajaEntity
     ) {
         hankeYhteyshenkiloRepository.save(
-            HankeYhteyshenkiloEntity(hankeKayttaja = kayttaja, hankeYhteystieto = yhteystietoEntity)
-        )
+            HankeYhteyshenkiloEntity(
+                hankeKayttaja = kayttaja, hankeYhteystieto = yhteystietoEntity))
     }
 
     private fun saveYhteystieto(

@@ -491,7 +491,7 @@ class HakemusServiceITest(
             }
 
             @Test
-            fun `writes the updated hanke to the audit log`() {
+            fun `writes the updated hanke to the audit log if the phase has changed`() {
                 val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
                 val request = request.withHanketunnus(hanke.hankeTunnus)
                 auditLogRepository.deleteAll()
@@ -512,6 +512,22 @@ class HakemusServiceITest(
                                 .contains("\"vaihe\":\"RAKENTAMINEN\"")
                         }
                     }
+            }
+
+            @Test
+            fun `does not write hanke to the audit log if the phase has not changed`() {
+                val hanke =
+                    hankeFactory
+                        .builder(USERNAME)
+                        .withHankealue()
+                        .withVaihe(Hankevaihe.RAKENTAMINEN)
+                        .save()
+                val request = request.withHanketunnus(hanke.hankeTunnus)
+                auditLogRepository.deleteAll()
+
+                hakemusService.create(request, USERNAME)
+
+                assertThat(auditLogRepository.findByType(ObjectType.HANKE)).isEmpty()
             }
         }
 
