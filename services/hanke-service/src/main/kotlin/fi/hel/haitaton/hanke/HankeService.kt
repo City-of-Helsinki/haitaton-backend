@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeRequest
 import fi.hel.haitaton.hanke.domain.HankeStatus
+import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.Yhteystieto
@@ -87,6 +88,8 @@ class HankeService(
     ): Hakemus {
         logger.info { "Creating a Hanke for a stand-alone cable report." }
         val hanke = createNewEntity(limitHankeName(request.nimi), true, securityContext.userId())
+        // a hanke with a johtoselvityshakemus is in the RAKENTAMINEN phase at the beginning
+        hanke.vaihe = Hankevaihe.RAKENTAMINEN
         saveCreatedHanke(hanke, request.perustaja, securityContext)
         logger.info { "Creating the stand-alone johtoselvityshakemus." }
         return hakemusService.createJohtoselvitys(hanke, securityContext.userId())
@@ -141,8 +144,7 @@ class HankeService(
 
         if (anyNonCancelledHakemusProcessingInAllu(hakemukset)) {
             throw HankeAlluConflictException(
-                "Hanke ${hanke.hankeTunnus} has hakemus in Allu processing. Cannot delete."
-            )
+                "Hanke ${hanke.hankeTunnus} has hakemus in Allu processing. Cannot delete.")
         }
 
         hakemukset.forEach { hakemus -> hakemusService.delete(hakemus.id, userId) }
@@ -169,8 +171,7 @@ class HankeService(
     private fun decideNewHankeStatus(entity: HankeEntity): HankeStatus {
         val validationResult =
             HankePublicValidator.validateHankeHasMandatoryFields(
-                createHankeDomainObjectFromEntity(entity)
-            )
+                createHankeDomainObjectFromEntity(entity))
 
         return when (val status = entity.status) {
             HankeStatus.DRAFT ->
@@ -194,13 +195,11 @@ class HankeService(
                         }"
                     }
                     throw HankeArgumentException(
-                        "A public hanke didn't have all mandatory fields filled."
-                    )
+                        "A public hanke didn't have all mandatory fields filled.")
                 }
             else ->
                 throw HankeArgumentException(
-                    "A hanke cannot be updated when in status $status. hankeTunnus=${entity.hankeTunnus}"
-                )
+                    "A hanke cannot be updated when in status $status. hankeTunnus=${entity.hankeTunnus}")
         }
     }
 
@@ -258,14 +257,12 @@ class HankeService(
             incomingHanke.extractYhteystiedot(),
             tempLockedExistingYts,
             loggingEntryHolderForRestrictedActions,
-            userid
-        )
+            userid)
 
         // If no entries were blocked, and there is nothing left in the tempLockedExistingYts, all
         // clear to proceed:
-        if (
-            !loggingEntryHolderForRestrictedActions.hasEntries() && tempLockedExistingYts.isEmpty()
-        ) {
+        if (!loggingEntryHolderForRestrictedActions.hasEntries() &&
+            tempLockedExistingYts.isEmpty()) {
             logger.debug {
                 "No actual changes to the restricted Yhteystietos. Hanke update can continue."
             }
@@ -366,8 +363,7 @@ class HankeService(
     ): MutableMap<Int, HankeYhteystietoEntity> {
         if (hankeEntity.yhteystiedot.any { it.id == null }) {
             throw DatabaseStateException(
-                "A persisted HankeYhteystietoEntity somehow missing id, Hanke id ${hankeEntity.id}"
-            )
+                "A persisted HankeYhteystietoEntity somehow missing id, Hanke id ${hankeEntity.id}")
         }
         return hankeEntity.yhteystiedot.associateBy { it.id!! }.toMutableMap()
     }
@@ -391,13 +387,7 @@ class HankeService(
 
         hanke.yhteystiedotByType().forEach { (type, yhteystiedot) ->
             processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-                yhteystiedot,
-                entity,
-                type,
-                userid,
-                existingYTs,
-                loggingEntryHolder
-            )
+                yhteystiedot, entity, type, userid, existingYTs, loggingEntryHolder)
         }
 
         // If there is anything left in the existingYTs map, they have been removed in the incoming
@@ -434,12 +424,7 @@ class HankeService(
             } else {
                 // Should be an existing Yhteystieto
                 processUpdateYhteystieto(
-                    hankeYht,
-                    existingYTs,
-                    userid,
-                    hankeEntity,
-                    loggingEntryHolder
-                )
+                    hankeYht, existingYTs, userid, hankeEntity, loggingEntryHolder)
             }
         }
     }
@@ -572,8 +557,7 @@ class HankeService(
         loggingEntryHolderForRestrictedActions.saveLogEntries(hankeLoggingService)
         val idList = loggingEntryHolderForRestrictedActions.objectIds()
         throw HankeYhteystietoProcessingRestrictedException(
-            "Can not modify/delete yhteystieto which has data processing restricted (id: $idList)"
-        )
+            "Can not modify/delete yhteystieto which has data processing restricted (id: $idList)")
     }
 
     /**
