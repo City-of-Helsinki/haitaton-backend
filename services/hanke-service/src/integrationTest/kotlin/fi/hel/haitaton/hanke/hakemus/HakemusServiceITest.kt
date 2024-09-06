@@ -2703,8 +2703,11 @@ class HakemusServiceITest(
                     "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier")
         }
 
-        @Test
-        fun `sends email to the contacts when a kaivuilmoitus gets a decision`() {
+        @ParameterizedTest
+        @EnumSource(ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION"])
+        fun `sends email to the contacts when a kaivuilmoitus gets a decision`(
+            applicationStatus: ApplicationStatus
+        ) {
             val identifier = "KP2300001"
             val hanke = hankeFactory.saveMinimal()
             val hakija = hankeKayttajaFactory.saveUser(hankeId = hanke.id)
@@ -2719,9 +2722,18 @@ class HakemusServiceITest(
                         alluId,
                         ApplicationHistoryFactory.createEvent(
                             applicationIdentifier = identifier,
-                            newStatus = ApplicationStatus.DECISION)),
+                            newStatus = applicationStatus,
+                        ),
+                    ),
                 )
-            every { alluClient.getDecisionPdf(alluId) } returns PDF_BYTES
+            every {
+                when (applicationStatus) {
+                    ApplicationStatus.DECISION -> alluClient.getDecisionPdf(alluId)
+                    ApplicationStatus.OPERATIONAL_CONDITION ->
+                        alluClient.getOperationalConditionPdf(alluId)
+                    else -> throw IllegalArgumentException("Invalid application status")
+                }
+            } returns PDF_BYTES
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(id = alluId, applicationId = identifier)
 
@@ -2734,7 +2746,12 @@ class HakemusServiceITest(
                 .isEqualTo(
                     "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa")
             verifySequence {
-                alluClient.getDecisionPdf(alluId)
+                when (applicationStatus) {
+                    ApplicationStatus.DECISION -> alluClient.getDecisionPdf(alluId)
+                    ApplicationStatus.OPERATIONAL_CONDITION ->
+                        alluClient.getOperationalConditionPdf(alluId)
+                    else -> throw IllegalArgumentException("Invalid application status")
+                }
                 alluClient.getApplicationInformation(alluId)
             }
         }

@@ -536,8 +536,10 @@ class HakemusService(
                         logger.error {
                             "Got ${event.newStatus} update for a cable report. ${application.logString()}"
                         }
-                    ApplicationType.EXCAVATION_NOTIFICATION ->
+                    ApplicationType.EXCAVATION_NOTIFICATION -> {
+                        sendDecisionReadyEmails(application, event.applicationIdentifier)
                         paatosService.saveKaivuilmoituksenToiminnallinenKunto(application, event)
+                    }
                 }
             }
             ApplicationStatus.FINISHED -> {
@@ -568,11 +570,11 @@ class HakemusService(
 
         if (receivers.isEmpty()) {
             logger.error {
-                "No receivers found for decision ready email, not sending any. ${application.logString()}"
+                "No receivers found for hakemus decision ready email, not sending any. ${application.logString()}"
             }
             return
         }
-        logger.info { "Sending hakemus ready emails to ${receivers.size} receivers" }
+        logger.info { "Sending hakemus decision ready emails to ${receivers.size} receivers" }
 
         receivers.forEach {
             val event =
