@@ -570,11 +570,13 @@ class HakemusService(
 
         if (receivers.isEmpty()) {
             logger.error {
-                "No receivers found for hakemus decision ready email, not sending any. ${application.logString()}"
+                "No receivers found for hakemus ${application.alluStatus} ready email, not sending any. ${application.logString()}"
             }
             return
         }
-        logger.info { "Sending hakemus decision ready emails to ${receivers.size} receivers" }
+        logger.info {
+            "Sending hakemus ${application.alluStatus} ready emails to ${receivers.size} receivers"
+        }
 
         receivers.forEach {
             val event =

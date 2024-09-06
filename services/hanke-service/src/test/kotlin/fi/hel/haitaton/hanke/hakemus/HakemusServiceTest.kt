@@ -728,7 +728,7 @@ class HakemusServiceTest {
             hakemusService.handleHakemusUpdates(createHistories(), updateTime)
 
             assertThat(output)
-                .contains("No receivers found for hakemus decision ready email, not sending any.")
+                .contains("No receivers found for hakemus DECISION ready email, not sending any.")
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
                 hakemusRepository.save(any())
