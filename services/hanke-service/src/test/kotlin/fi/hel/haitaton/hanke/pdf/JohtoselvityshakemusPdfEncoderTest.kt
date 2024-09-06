@@ -210,7 +210,7 @@ class JohtoselvityshakemusPdfEncoderTest {
             val hakija =
                 HakemusyhteystietoFactory.create(
                         nimi = "Company Ltd",
-                        ytunnus = "1054713-0",
+                        registryKey = "1054713-0",
                         sahkoposti = "info@company.test",
                         puhelinnumero = "050123456789",
                     )
@@ -229,7 +229,7 @@ class JohtoselvityshakemusPdfEncoderTest {
             val tyonSuorittaja =
                 HakemusyhteystietoFactory.create(
                         nimi = "Contractor Inc.",
-                        ytunnus = "0156555-6",
+                        registryKey = "0156555-6",
                         sahkoposti = "info@contractor.test",
                         puhelinnumero = "0509999999",
                     )
@@ -242,14 +242,14 @@ class JohtoselvityshakemusPdfEncoderTest {
             val asianhoitaja =
                 HakemusyhteystietoFactory.create(
                     nimi = "Reynold Representative",
-                    ytunnus = "281192-937W",
+                    registryKey = "281192-937W",
                     sahkoposti = "reynold@company.test",
                     puhelinnumero = "0509990000",
                 )
             val rakennuttaja =
                 HakemusyhteystietoFactory.create(
                         nimi = "Developer Inc.",
-                        ytunnus = "8545758-6",
+                        registryKey = "8545758-6",
                         sahkoposti = "info@developer.test",
                         puhelinnumero = "0508888888",
                     )

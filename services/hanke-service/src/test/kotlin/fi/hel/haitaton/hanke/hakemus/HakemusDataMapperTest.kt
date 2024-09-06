@@ -293,7 +293,7 @@ class HakemusDataMapperTest {
                             HakemusyhteystietoFactory.createLaskutusyhteystieto(
                                 sahkoposti = null,
                                 puhelinnumero = null,
-                                ytunnus = null,
+                                registryKey = null,
                                 ovttunnus = null,
                                 valittajanTunnus = null,
                                 asiakkaanViite = null,

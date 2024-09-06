@@ -423,7 +423,7 @@ internal class DisclosureLogServiceTest {
             val applicationId = 41L
             val personCustomer =
                 HakemusyhteystietoFactory.createPerson(
-                    nimi = "", puhelinnumero = "", sahkoposti = "", ytunnus = "")
+                    nimi = "", puhelinnumero = "", sahkoposti = "", registryKey = "")
             val companyCustomer = HakemusyhteystietoFactory.create()
             val hakemusData =
                 HakemusFactory.createJohtoselvityshakemusData(

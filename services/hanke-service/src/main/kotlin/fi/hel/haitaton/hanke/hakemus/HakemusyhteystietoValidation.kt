@@ -8,7 +8,9 @@ internal fun Hakemusyhteystieto.validateForErrors(path: String): ValidationResul
     Validators.validate { Validators.notJustWhitespace(nimi, "$path.nimi") }
         .and { Validators.notJustWhitespace(sahkoposti, "$path.sahkoposti") }
         .and { Validators.notJustWhitespace(puhelinnumero, "$path.puhelinnumero") }
-        .whenNotNull(ytunnus) { Validators.validateTrue(it.isValidBusinessId(), "$path.ytunnus") }
+        .whenNotNull(registryKey) {
+            Validators.validateTrue(it.isValidBusinessId(), "$path.registryKey")
+        }
         .andAllIn(yhteyshenkilot, "$path.yhteyshenkilot", ::validateContactForErrors)
 
 internal fun validateContactForErrors(yhteyshenkilo: Hakemusyhteyshenkilo, path: String) =
@@ -21,9 +23,7 @@ internal fun validateContactForErrors(yhteyshenkilo: Hakemusyhteyshenkilo, path:
 
 internal fun atMostOneOrderer(yhteystiedot: List<Hakemusyhteystieto>): ValidationResult =
     Validators.validateFalse(
-        yhteystiedot.tilaajaCount() > 1,
-        "customersWithContacts[].contacts[].orderer"
-    )
+        yhteystiedot.tilaajaCount() > 1, "customersWithContacts[].contacts[].orderer")
 
 internal fun List<Hakemusyhteystieto>.tilaajaCount() =
     flatMap { it.yhteyshenkilot }.count { it.tilaaja }
