@@ -29,6 +29,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
@@ -678,6 +679,17 @@ class HankeServiceITests(
 
             val hanke = hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)!!
             assertThat(hanke.nimi).isEqualTo(expectedName)
+        }
+
+        @Test
+        fun `sets the hanke phase to RAKENTAMINEN`() {
+            val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+
+            val hakemus =
+                hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+
+            val hanke = hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)!!
+            assertThat(hanke.vaihe).isEqualTo(Hankevaihe.RAKENTAMINEN)
         }
 
         @Test
