@@ -646,7 +646,8 @@ class HakemusServiceTest {
         }
 
         @ParameterizedTest
-        @EnumSource(ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION"])
+        @EnumSource(
+            ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"])
         fun `sends email to the contacts when a kaivuilmoitus gets a decision`(
             applicationStatus: ApplicationStatus
         ) {
@@ -664,7 +665,9 @@ class HakemusServiceTest {
                     ApplicationStatus.DECISION -> {
                         paatosService::saveKaivuilmoituksenPaatos
                     }
-                    else -> paatosService::saveKaivuilmoituksenToiminnallinenKunto
+                    ApplicationStatus.OPERATIONAL_CONDITION ->
+                        paatosService::saveKaivuilmoituksenToiminnallinenKunto
+                    else -> paatosService::saveKaivuilmoituksenTyoValmis
                 }
             justRun { saveMethod(any(), any()) }
 
