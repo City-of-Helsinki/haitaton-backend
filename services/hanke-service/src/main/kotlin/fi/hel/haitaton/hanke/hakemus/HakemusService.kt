@@ -549,8 +549,10 @@ class HakemusService(
                         logger.error {
                             "Got ${event.newStatus} update for a cable report. ${application.logString()}"
                         }
-                    ApplicationType.EXCAVATION_NOTIFICATION ->
+                    ApplicationType.EXCAVATION_NOTIFICATION -> {
+                        sendDecisionReadyEmails(application, event.applicationIdentifier)
                         paatosService.saveKaivuilmoituksenTyoValmis(application, event)
+                    }
                 }
             }
             ApplicationStatus.REPLACED -> {
