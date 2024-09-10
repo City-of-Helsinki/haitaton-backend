@@ -2726,14 +2726,7 @@ class HakemusServiceITest(
                         ),
                     ),
                 )
-            every {
-                when (applicationStatus) {
-                    ApplicationStatus.DECISION -> alluClient.getDecisionPdf(alluId)
-                    ApplicationStatus.OPERATIONAL_CONDITION ->
-                        alluClient.getOperationalConditionPdf(alluId)
-                    else -> throw IllegalArgumentException("Invalid application status")
-                }
-            } returns PDF_BYTES
+            mockAlluDownload(applicationStatus)
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(id = alluId, applicationId = identifier)
 
@@ -2745,36 +2738,9 @@ class HakemusServiceITest(
             assertThat(email.subject)
                 .isEqualTo(
                     "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa")
-            verifySequence {
-                when (applicationStatus) {
-                    ApplicationStatus.DECISION -> alluClient.getDecisionPdf(alluId)
-                    ApplicationStatus.OPERATIONAL_CONDITION ->
-                        alluClient.getOperationalConditionPdf(alluId)
-                    else -> throw IllegalArgumentException("Invalid application status")
-                }
-                alluClient.getApplicationInformation(alluId)
-            }
+            verifyAlluDownload(applicationStatus)
+            verify { alluClient.getApplicationInformation(alluId) }
         }
-
-        private fun mockAlluDownload(status: ApplicationStatus) =
-            when (status) {
-                ApplicationStatus.DECISION ->
-                    every { alluClient.getDecisionPdf(alluId) } returns PDF_BYTES
-                ApplicationStatus.OPERATIONAL_CONDITION ->
-                    every { alluClient.getOperationalConditionPdf(alluId) } returns PDF_BYTES
-                ApplicationStatus.FINISHED ->
-                    every { alluClient.getWorkFinishedPdf(alluId) } returns PDF_BYTES
-                else -> throw IllegalArgumentException()
-            }
-
-        private fun verifyAlluDownload(status: ApplicationStatus) =
-            when (status) {
-                ApplicationStatus.DECISION -> verify { alluClient.getDecisionPdf(alluId) }
-                ApplicationStatus.OPERATIONAL_CONDITION ->
-                    verify { alluClient.getOperationalConditionPdf(alluId) }
-                ApplicationStatus.FINISHED -> verify { alluClient.getWorkFinishedPdf(alluId) }
-                else -> throw IllegalArgumentException()
-            }
 
         @ParameterizedTest
         @EnumSource(
@@ -2809,6 +2775,21 @@ class HakemusServiceITest(
             verifyAlluDownload(status)
             verify { alluClient.getApplicationInformation(alluId) }
         }
+
+        private fun mockAlluDownload(status: ApplicationStatus) =
+            every { getPdfMethod(status)(alluId) } returns PDF_BYTES
+
+        private fun verifyAlluDownload(status: ApplicationStatus) = verify {
+            getPdfMethod(status)(alluId)
+        }
+
+        private fun getPdfMethod(applicationStatus: ApplicationStatus) =
+            when (applicationStatus) {
+                ApplicationStatus.DECISION -> alluClient::getDecisionPdf
+                ApplicationStatus.OPERATIONAL_CONDITION -> alluClient::getOperationalConditionPdf
+                ApplicationStatus.FINISHED -> alluClient::getWorkFinishedPdf
+                else -> throw IllegalArgumentException()
+            }
     }
 }
 

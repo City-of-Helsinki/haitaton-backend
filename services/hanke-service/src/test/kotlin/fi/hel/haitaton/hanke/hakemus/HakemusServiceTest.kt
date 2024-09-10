@@ -659,17 +659,14 @@ class HakemusServiceTest {
             every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { alluStatusRepository.save(any()) } answers { firstArg() }
-            justRun {
+            val saveMethod =
                 when (applicationStatus) {
                     ApplicationStatus.DECISION -> {
-                        paatosService.saveKaivuilmoituksenPaatos(any(), any())
+                        paatosService::saveKaivuilmoituksenPaatos
                     }
-                    ApplicationStatus.OPERATIONAL_CONDITION -> {
-                        paatosService.saveKaivuilmoituksenToiminnallinenKunto(any(), any())
-                    }
-                    else -> throw IllegalArgumentException("Invalid status")
+                    else -> paatosService::saveKaivuilmoituksenToiminnallinenKunto
                 }
-            }
+            justRun { saveMethod(any(), any()) }
 
             hakemusService.handleHakemusUpdates(createHistories(applicationStatus), updateTime)
 
