@@ -645,8 +645,11 @@ class HakemusServiceTest {
             }
         }
 
-        @Test
-        fun `sends email to the contacts when a kaivuilmoitus gets a decision`() {
+        @ParameterizedTest
+        @EnumSource(ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION"])
+        fun `sends email to the contacts when a kaivuilmoitus gets a decision`(
+            applicationStatus: ApplicationStatus
+        ) {
             every { hakemusRepository.getOneByAlluid(42) } returns
                 applicationEntityWithCustomer(type = ApplicationType.EXCAVATION_NOTIFICATION)
             justRun {
@@ -656,15 +659,22 @@ class HakemusServiceTest {
             every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { alluStatusRepository.save(any()) } answers { firstArg() }
-            justRun { paatosService.saveKaivuilmoituksenPaatos(any(), any()) }
+            val saveMethod =
+                when (applicationStatus) {
+                    ApplicationStatus.DECISION -> {
+                        paatosService::saveKaivuilmoituksenPaatos
+                    }
+                    else -> paatosService::saveKaivuilmoituksenToiminnallinenKunto
+                }
+            justRun { saveMethod(any(), any()) }
 
-            hakemusService.handleHakemusUpdates(createHistories(), updateTime)
+            hakemusService.handleHakemusUpdates(createHistories(applicationStatus), updateTime)
 
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
                 publisher.publishEvent(
                     KaivuilmoitusDecisionEmail(receiver, applicationId, identifier))
-                paatosService.saveKaivuilmoituksenPaatos(any(), any())
+                saveMethod(any(), any())
                 hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
@@ -707,7 +717,7 @@ class HakemusServiceTest {
             hakemusService.handleHakemusUpdates(createHistories(), updateTime)
 
             assertThat(output)
-                .contains("No receivers found for decision ready email, not sending any.")
+                .contains("No receivers found for hakemus DECISION ready email, not sending any.")
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
                 hakemusRepository.save(any())
