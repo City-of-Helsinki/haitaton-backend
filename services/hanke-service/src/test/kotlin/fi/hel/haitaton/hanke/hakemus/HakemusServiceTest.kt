@@ -674,15 +674,7 @@ class HakemusServiceTest {
                 hakemusRepository.getOneByAlluid(42)
                 publisher.publishEvent(
                     KaivuilmoitusDecisionEmail(receiver, applicationId, identifier))
-                when (applicationStatus) {
-                    ApplicationStatus.DECISION -> {
-                        paatosService.saveKaivuilmoituksenPaatos(any(), any())
-                    }
-                    ApplicationStatus.OPERATIONAL_CONDITION -> {
-                        paatosService.saveKaivuilmoituksenToiminnallinenKunto(any(), any())
-                    }
-                    else -> throw IllegalArgumentException("Invalid status")
-                }
+                saveMethod(any(), any())
                 hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
