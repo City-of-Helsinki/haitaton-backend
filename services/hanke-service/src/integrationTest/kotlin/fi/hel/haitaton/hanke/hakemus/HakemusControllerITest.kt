@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.andReturnContent
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
@@ -26,6 +27,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRegistryKey
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withTimes
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
+import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
@@ -71,6 +73,8 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.ResultActions
+import org.springframework.test.web.servlet.ResultMatcher
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -276,6 +280,28 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             get(url)
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.valmistumisilmoitukset").doesNotHaveJsonPath())
+
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
+                hakemusService.getWithPaatokset(id)
+            }
+        }
+
+        @ParameterizedTest
+        @EnumSource(CustomerType::class, names = ["PERSON", "OTHER"])
+        fun `hides the registry key of person customers when it's not null`(tyyppi: CustomerType) {
+            val hakemusdata = hakemusDataForRegistryKeyTest(tyyppi)
+            val hakemus =
+                HakemusFactory.createWithPaatokset(
+                    id = id,
+                    hankeTunnus = HANKE_TUNNUS,
+                    applicationData = hakemusdata,
+                    paatokset = listOf(),
+                )
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
+            every { hakemusService.getWithPaatokset(id) } returns hakemus
+
+            get(url).andExpect(status().isOk).andVerifyRegistryKeys()
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
@@ -772,6 +798,31 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 hakemusService.updateHakemus(id, request, USERNAME)
             }
         }
+
+        @ParameterizedTest
+        @EnumSource(CustomerType::class, names = ["PERSON", "OTHER"])
+        fun `hides the registry key of person customers when it's not null`(tyyppi: CustomerType) {
+            val hakemusdata = hakemusDataForRegistryKeyTest(tyyppi)
+            val hakemus =
+                HakemusFactory.create(
+                    id = id,
+                    hankeTunnus = HANKE_TUNNUS,
+                    applicationData = hakemusdata,
+                )
+            val request =
+                HakemusUpdateRequestFactory.createFilledUpdateRequest(hakemus.applicationType)
+            every {
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { hakemusService.updateHakemus(id, request, USERNAME) } returns hakemus
+
+            put(url, request).andExpect(status().isOk).andVerifyRegistryKeys()
+
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                hakemusService.updateHakemus(id, request, USERNAME)
+            }
+        }
     }
 
     @Nested
@@ -897,7 +948,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
     }
 
     @Nested
-    inner class SendApplication {
+    inner class SendHakemus {
         private val url = "/hakemukset/$id/laheta"
 
         @Test
@@ -1024,6 +1075,29 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 response,
                 JSONCompareMode.NON_EXTENSIBLE,
             )
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                hakemusService.sendHakemus(id, USERNAME)
+            }
+        }
+
+        @ParameterizedTest
+        @EnumSource(CustomerType::class, names = ["PERSON", "OTHER"])
+        fun `hides the registry key of person customers when it's not null`(tyyppi: CustomerType) {
+            val hakemusdata = hakemusDataForRegistryKeyTest(tyyppi)
+            val hakemus =
+                HakemusFactory.create(
+                    id = id,
+                    hankeTunnus = HANKE_TUNNUS,
+                    applicationData = hakemusdata,
+                )
+            every {
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { hakemusService.sendHakemus(id, USERNAME) } returns hakemus
+
+            post(url).andExpect(status().isOk).andVerifyRegistryKeys()
+
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.sendHakemus(id, USERNAME)
@@ -1178,5 +1252,33 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 )
             }
         }
+    }
+
+    private fun registryKeys(role: String, key: String?, hidden: Boolean) = ResultMatcher {
+        val prefix = "$.applicationData.$role.customer"
+        jsonPath("$prefix.registryKey").value(key).match(it)
+        jsonPath("$prefix.registryKeyHidden").value(hidden).match(it)
+    }
+
+    private fun ResultActions.andVerifyRegistryKeys() =
+        andExpect(registryKeys("customerWithContacts", null, true))
+            .andExpect(registryKeys("contractorWithContacts", null, false))
+            .andExpect(registryKeys("propertyDeveloperWithContacts", "5425233-4", false))
+            .andExpect(registryKeys("representativeWithContacts", null, false))
+
+    private fun hakemusDataForRegistryKeyTest(tyyppi: CustomerType): JohtoselvityshakemusData {
+        val hakija =
+            HakemusyhteystietoFactory.createPerson(tyyppi = tyyppi, registryKey = "280341-912F")
+        val suorittaja = HakemusyhteystietoFactory.createPerson(tyyppi = tyyppi, registryKey = null)
+        val rakennuttaja = HakemusyhteystietoFactory.create(registryKey = "5425233-4")
+        val asianhoitaja = HakemusyhteystietoFactory.create(registryKey = null)
+        val hakemusdata =
+            HakemusFactory.createJohtoselvityshakemusData(
+                customerWithContacts = hakija,
+                contractorWithContacts = suorittaja,
+                propertyDeveloperWithContacts = rakennuttaja,
+                representativeWithContacts = asianhoitaja,
+            )
+        return hakemusdata
     }
 }

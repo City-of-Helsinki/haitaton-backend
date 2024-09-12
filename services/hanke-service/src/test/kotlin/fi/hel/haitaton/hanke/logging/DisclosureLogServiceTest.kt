@@ -271,7 +271,7 @@ internal class DisclosureLogServiceTest {
         @Test
         fun `doesn't save entries for blank customers`() {
             val blankCustomer =
-                CustomerResponse(UUID.randomUUID(), CustomerType.PERSON, "", "", "", "")
+                CustomerResponse(UUID.randomUUID(), CustomerType.PERSON, "", "", "", null, true)
             val customerWithoutContacts = CustomerWithContactsResponse(blankCustomer, listOf())
             val contractorWithoutContacts = CustomerWithContactsResponse(blankCustomer, listOf())
             val hakemusResponse =
