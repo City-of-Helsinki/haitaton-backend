@@ -115,6 +115,9 @@ class HakemusFactory(
                 valmistumisilmoitukset = valmistumisilmoitukset.groupBy { it.type },
             )
 
+        fun createSeveral(n: Long, applicationType: ApplicationType) =
+            (1..n).map { i -> create(id = i, applicationType = applicationType) }
+
         private fun createHakemusData(type: ApplicationType): HakemusData =
             when (type) {
                 ApplicationType.CABLE_REPORT -> createJohtoselvityshakemusData()

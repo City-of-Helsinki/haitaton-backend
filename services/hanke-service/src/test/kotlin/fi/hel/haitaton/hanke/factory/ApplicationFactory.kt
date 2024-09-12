@@ -229,15 +229,6 @@ class ApplicationFactory(
                 hakemusEntityData,
                 hanke = hanke,
             )
-
-        fun createApplicationEntities(
-            n: Long,
-            hanke: HankeEntity = HankeFactory.createMinimalEntity(),
-            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-        ) =
-            (1..n).map { i ->
-                createApplicationEntity(id = i, hanke = hanke, applicationType = applicationType)
-            }
     }
 
     /** Save an application to database. it. */

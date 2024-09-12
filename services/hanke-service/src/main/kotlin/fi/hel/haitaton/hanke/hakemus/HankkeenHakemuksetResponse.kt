@@ -14,22 +14,16 @@ data class HankkeenHakemusResponse(
     val applicationData: HankkeenHakemusDataResponse,
 ) {
     constructor(
-        application: HakemusEntity
+        hakemus: Hakemus
     ) : this(
-        application.id,
-        application.alluid,
-        application.alluStatus,
-        application.applicationIdentifier,
-        application.applicationType,
-        when (application.hakemusEntityData) {
-            is JohtoselvityshakemusEntityData ->
-                HankkeenHakemusDataResponse(
-                    application.hakemusEntityData as JohtoselvityshakemusEntityData
-                )
-            is KaivuilmoitusEntityData ->
-                HankkeenHakemusDataResponse(
-                    application.hakemusEntityData as KaivuilmoitusEntityData
-                )
+        hakemus.id,
+        hakemus.alluid,
+        hakemus.alluStatus,
+        hakemus.applicationIdentifier,
+        hakemus.applicationType,
+        when (hakemus.applicationData) {
+            is JohtoselvityshakemusData -> HankkeenHakemusDataResponse(hakemus.applicationData)
+            is KaivuilmoitusData -> HankkeenHakemusDataResponse(hakemus.applicationData)
         },
     )
 }
@@ -41,7 +35,7 @@ data class HankkeenHakemusDataResponse(
     val pendingOnClient: Boolean,
 ) {
     constructor(
-        cableReportApplicationData: JohtoselvityshakemusEntityData
+        cableReportApplicationData: JohtoselvityshakemusData
     ) : this(
         cableReportApplicationData.name,
         cableReportApplicationData.startTime,
@@ -50,11 +44,11 @@ data class HankkeenHakemusDataResponse(
     )
 
     constructor(
-        kaivuilmoitusEntityData: KaivuilmoitusEntityData
+        kaivuilmoitusEntityData: KaivuilmoitusData
     ) : this(
         kaivuilmoitusEntityData.name,
         kaivuilmoitusEntityData.startTime,
         kaivuilmoitusEntityData.endTime,
-        kaivuilmoitusEntityData.pendingOnClient
+        kaivuilmoitusEntityData.pendingOnClient,
     )
 }
