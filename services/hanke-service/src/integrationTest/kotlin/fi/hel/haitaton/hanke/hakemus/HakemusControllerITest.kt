@@ -20,12 +20,9 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.andReturnContent
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
-import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.CreateHakemusRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
-import fi.hel.haitaton.hanke.factory.HakemusResponseFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
-import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.toUpdateRequest
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRegistryKey
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withTimes
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
@@ -305,14 +302,14 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
             } returns true
-            every { hakemusService.hankkeenHakemuksetResponse(HANKE_TUNNUS) } throws
+            every { hakemusService.hankkeenHakemukset(HANKE_TUNNUS) } throws
                 HankeNotFoundException(HANKE_TUNNUS)
 
             get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-                hakemusService.hankkeenHakemuksetResponse(HANKE_TUNNUS)
+                hakemusService.hankkeenHakemukset(HANKE_TUNNUS)
             }
         }
 
@@ -330,8 +327,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
         @Test
         fun `With no applications return empty list`() {
-            every { hakemusService.hankkeenHakemuksetResponse(HANKE_TUNNUS) } returns
-                HankkeenHakemuksetResponse(emptyList())
+            every { hakemusService.hankkeenHakemukset(HANKE_TUNNUS) } returns emptyList()
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
             } returns true
@@ -342,27 +338,19 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             assertThat(response.applications).isEmpty()
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-                hakemusService.hankkeenHakemuksetResponse(HANKE_TUNNUS)
+                hakemusService.hankkeenHakemukset(HANKE_TUNNUS)
             }
         }
 
         @Test
         fun `With known hanketunnus return applications`() {
             val cableReportApplicationResponses =
-                ApplicationFactory.createApplicationEntities(
-                        2,
-                        applicationType = ApplicationType.CABLE_REPORT,
-                    )
-                    .map { HankkeenHakemusResponse(it) }
+                HakemusFactory.createSeveral(2, applicationType = ApplicationType.CABLE_REPORT)
             val excavationNotificationResponses =
-                ApplicationFactory.createApplicationEntities(
-                        2,
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                    )
-                    .map { HankkeenHakemusResponse(it) }
-            every { hakemusService.hankkeenHakemuksetResponse(HANKE_TUNNUS) } returns
-                HankkeenHakemuksetResponse(
-                    cableReportApplicationResponses + excavationNotificationResponses)
+                HakemusFactory.createSeveral(
+                    2, applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
+            val hakemukset = cableReportApplicationResponses + excavationNotificationResponses
+            every { hakemusService.hankkeenHakemukset(HANKE_TUNNUS) } returns hakemukset
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
             } returns true
@@ -371,13 +359,12 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 get(url).andExpect(status().isOk).andReturnBody()
 
             assertThat(response.applications).isNotEmpty()
-            assertThat(response)
-                .isEqualTo(
-                    HankkeenHakemuksetResponse(
-                        cableReportApplicationResponses + excavationNotificationResponses))
+            val expected =
+                HankkeenHakemuksetResponse(hakemukset.map { HankkeenHakemusResponse(it) })
+            assertThat(response).isEqualTo(expected)
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-                hakemusService.hankkeenHakemuksetResponse(HANKE_TUNNUS)
+                hakemusService.hankkeenHakemukset(HANKE_TUNNUS)
             }
         }
     }
@@ -765,16 +752,16 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @ParameterizedTest
         @EnumSource(ApplicationType::class)
         fun `returns application when it exists`(applicationType: ApplicationType) {
-            val expectedResponse = HakemusResponseFactory.create(applicationType = applicationType)
-            val request = expectedResponse.toUpdateRequest()
-
+            val hakemus = HakemusFactory.create(applicationType = applicationType)
+            val request = HakemusUpdateRequestFactory.createFilledUpdateRequest(applicationType)
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { hakemusService.updateHakemus(id, request, USERNAME) } returns expectedResponse
+            every { hakemusService.updateHakemus(id, request, USERNAME) } returns hakemus
 
             val response = put(url, request).andExpect(status().isOk).andReturnContent()
 
+            val expectedResponse = hakemus.toResponse()
             JSONAssert.assertEquals(
                 expectedResponse.toJsonString(),
                 response,

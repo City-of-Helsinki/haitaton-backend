@@ -84,15 +84,11 @@ class HakemusService(
     }
 
     @Transactional(readOnly = true)
-    fun hakemusResponse(applicationId: Long): HakemusResponse = getById(applicationId).toResponse()
-
-    @Transactional(readOnly = true)
-    fun hankkeenHakemuksetResponse(hankeTunnus: String): HankkeenHakemuksetResponse {
+    fun hankkeenHakemukset(hankeTunnus: String): List<Hakemus> {
         val hanke =
             hankeRepository.findByHankeTunnus(hankeTunnus)
                 ?: throw HankeNotFoundException(hankeTunnus)
-        return HankkeenHakemuksetResponse(
-            hanke.hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus) })
+        return hanke.hakemukset.map { it.toHakemus() }
     }
 
     @Transactional
@@ -169,8 +165,8 @@ class HakemusService(
     fun updateHakemus(
         applicationId: Long,
         request: HakemusUpdateRequest,
-        userId: String
-    ): HakemusResponse {
+        userId: String,
+    ): Hakemus {
         logger.info("Updating hakemus id=$applicationId")
 
         val applicationEntity = getEntityById(applicationId)
@@ -181,7 +177,7 @@ class HakemusService(
 
         if (!request.hasChanges(applicationEntity)) {
             logger.info("Not updating unchanged hakemus data. ${applicationEntity.logString()}")
-            return hakemus.toResponse()
+            return hakemus
         }
 
         assertGeometryValidity(request.areas) { validationError ->
@@ -208,7 +204,7 @@ class HakemusService(
         logger.info("Updated hakemus. ${updatedHakemus.logString()}")
         hakemusLoggingService.logUpdate(hakemus, updatedHakemus, userId)
 
-        return updatedHakemus.toResponse()
+        return updatedHakemus
     }
 
     @Transactional
