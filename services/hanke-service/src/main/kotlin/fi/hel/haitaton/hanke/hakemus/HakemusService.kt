@@ -962,7 +962,7 @@ class HakemusService(
                 nimi = customer.name,
                 sahkoposti = customer.email,
                 puhelinnumero = customer.phone,
-                ytunnus = customer.registryKey,
+                registryKey = customer.registryKey,
                 application = hakemusEntity,
             )
             .apply {
@@ -986,7 +986,7 @@ class HakemusService(
         hakemusyhteystietoEntity.nimi = customer.name
         hakemusyhteystietoEntity.sahkoposti = customer.email
         hakemusyhteystietoEntity.puhelinnumero = customer.phone
-        hakemusyhteystietoEntity.ytunnus = customer.registryKey
+        hakemusyhteystietoEntity.registryKey = customer.registryKey
         hakemusyhteystietoEntity.yhteyshenkilot.update(hakemusyhteystietoEntity, this.contacts)
         return hakemusyhteystietoEntity
     }

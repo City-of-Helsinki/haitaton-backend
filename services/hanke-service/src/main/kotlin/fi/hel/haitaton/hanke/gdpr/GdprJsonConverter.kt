@@ -77,8 +77,7 @@ object GdprJsonConverter {
                 getStringNode("nimi", organisation.name),
                 getStringNode("tunnus", organisation.registryKey),
                 getStringNode("osasto", organisation.department),
-            )
-        )
+            ))
 
     private fun combineNodes(nodes: List<Node>, pluralKey: String): Node? {
         return when (nodes.size) {
@@ -98,19 +97,19 @@ object GdprJsonConverter {
             firstName = kayttaja.etunimi,
             lastName = kayttaja.sukunimi,
             phone = kayttaja.puhelinnumero,
-            email = kayttaja.sahkoposti
+            email = kayttaja.sahkoposti,
         )
 
     private fun getOrganisationFromHankeyhteystieto(yhteystieto: HankeYhteystieto) =
         GdprOrganisation(
             name = yhteystieto.nimi,
             registryKey = yhteystieto.ytunnus,
-            department = yhteystieto.osasto
+            department = yhteystieto.osasto,
         )
 
     private fun getOrganisationFromHakemusyhteystieto(yhteystieto: Hakemusyhteystieto) =
         GdprOrganisation(
             name = yhteystieto.nimi,
-            registryKey = yhteystieto.ytunnus,
+            registryKey = yhteystieto.registryKey,
         )
 }

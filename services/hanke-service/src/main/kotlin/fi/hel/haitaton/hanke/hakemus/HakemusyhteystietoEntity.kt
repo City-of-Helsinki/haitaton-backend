@@ -26,7 +26,7 @@ class HakemusyhteystietoEntity(
     var nimi: String,
     var sahkoposti: String,
     var puhelinnumero: String,
-    @Column(name = "y_tunnus") var ytunnus: String?,
+    @Column(name = "registry_key") var registryKey: String?,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id")
     var application: HakemusEntity,
@@ -47,7 +47,7 @@ class HakemusyhteystietoEntity(
             nimi = nimi,
             sahkoposti = sahkoposti,
             puhelinnumero = puhelinnumero,
-            ytunnus = ytunnus,
+            registryKey = registryKey,
             yhteyshenkilot =
                 yhteyshenkilot.map { yhteyshenkilo ->
                     Hakemusyhteyshenkilo(
@@ -68,7 +68,7 @@ class HakemusyhteystietoEntity(
                 nimi = nimi,
                 sahkoposti = sahkoposti,
                 puhelinnumero = puhelinnumero,
-                ytunnus = ytunnus,
+                registryKey = registryKey,
                 application = hakemus)
             .also { newEntity ->
                 newEntity.yhteyshenkilot.addAll(

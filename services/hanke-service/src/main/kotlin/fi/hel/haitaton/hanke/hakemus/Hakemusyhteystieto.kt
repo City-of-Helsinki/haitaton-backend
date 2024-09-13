@@ -10,7 +10,7 @@ data class Hakemusyhteystieto(
     val nimi: String,
     val sahkoposti: String,
     val puhelinnumero: String,
-    val ytunnus: String?,
+    val registryKey: String?,
     val yhteyshenkilot: List<Hakemusyhteyshenkilo>,
 ) {
     fun toResponse(): CustomerWithContactsResponse =
@@ -22,9 +22,9 @@ data class Hakemusyhteystieto(
                     name = nimi,
                     email = sahkoposti,
                     phone = puhelinnumero,
-                    registryKey = ytunnus,
+                    registryKey = registryKey,
                 ),
-            contacts = yhteyshenkilot.map { it.toResponse() }
+            contacts = yhteyshenkilot.map { it.toResponse() },
         )
 }
 
@@ -46,7 +46,7 @@ data class Hakemusyhteyshenkilo(
 data class Laskutusyhteystieto(
     val tyyppi: CustomerType,
     val nimi: String,
-    val ytunnus: String?,
+    val registryKey: String?,
     val ovttunnus: String?,
     val valittajanTunnus: String?,
     val asiakkaanViite: String?,
@@ -60,12 +60,12 @@ data class Laskutusyhteystieto(
         InvoicingCustomerResponse(
             tyyppi,
             nimi,
-            ytunnus,
+            registryKey,
             ovttunnus,
             valittajanTunnus,
             asiakkaanViite,
             PostalAddress(StreetAddress(katuosoite), postinumero ?: "", postitoimipaikka ?: ""),
             sahkoposti,
-            puhelinnumero
+            puhelinnumero,
         )
 }

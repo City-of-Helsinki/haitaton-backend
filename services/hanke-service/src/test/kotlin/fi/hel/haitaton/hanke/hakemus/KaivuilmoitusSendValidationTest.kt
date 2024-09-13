@@ -178,17 +178,19 @@ class KaivuilmoitusSendValidationTest {
     @EnumSource(value = CustomerType::class, names = ["COMPANY", "ASSOCIATION"])
     fun `fails when the company customer has no registry key`(tyyppi: CustomerType) {
         val customer =
-            HakemusyhteystietoFactory.create(tyyppi = tyyppi, ytunnus = null).withYhteyshenkilo()
+            HakemusyhteystietoFactory.create(tyyppi = tyyppi, registryKey = null)
+                .withYhteyshenkilo()
         val hakemus = hakemus.copy(customerWithContacts = customer)
 
-        assertThat(hakemus.validateForSend()).failsWith("customerWithContacts.ytunnus")
+        assertThat(hakemus.validateForSend()).failsWith("customerWithContacts.registryKey")
     }
 
     @ParameterizedTest
     @EnumSource(value = CustomerType::class, names = ["PERSON", "OTHER"])
     fun `succeeds when the person or other customer has no registry key`(tyyppi: CustomerType) {
         val customer =
-            HakemusyhteystietoFactory.create(tyyppi = tyyppi, ytunnus = null).withYhteyshenkilo()
+            HakemusyhteystietoFactory.create(tyyppi = tyyppi, registryKey = null)
+                .withYhteyshenkilo()
         val hakemus = hakemus.copy(customerWithContacts = customer)
 
         assertThat(hakemus.validateForSend()).succeeds()
@@ -198,7 +200,8 @@ class KaivuilmoitusSendValidationTest {
     @EnumSource(value = CustomerType::class, names = ["COMPANY", "ASSOCIATION"])
     fun `succeeds when the company contractor has no registry key`(tyyppi: CustomerType) {
         val customer =
-            HakemusyhteystietoFactory.create(tyyppi = tyyppi, ytunnus = null).withYhteyshenkilo()
+            HakemusyhteystietoFactory.create(tyyppi = tyyppi, registryKey = null)
+                .withYhteyshenkilo()
         val hakemus = hakemus.copy(contractorWithContacts = customer)
 
         assertThat(hakemus.validateForSend()).succeeds()
@@ -208,10 +211,11 @@ class KaivuilmoitusSendValidationTest {
     @EnumSource(value = CustomerType::class)
     fun `fails when the customer has a bad registry key`(tyyppi: CustomerType) {
         val customer =
-            HakemusyhteystietoFactory.create(tyyppi = tyyppi, ytunnus = "bad").withYhteyshenkilo()
+            HakemusyhteystietoFactory.create(tyyppi = tyyppi, registryKey = "bad")
+                .withYhteyshenkilo()
         val hakemus = hakemus.copy(customerWithContacts = customer)
 
-        assertThat(hakemus.validateForSend()).failsWith("customerWithContacts.ytunnus")
+        assertThat(hakemus.validateForSend()).failsWith("customerWithContacts.registryKey")
     }
 
     @Test
@@ -377,14 +381,14 @@ class KaivuilmoitusSendValidationTest {
         @ParameterizedTest
         @ValueSource(strings = ["", BLANK, "bad"])
         fun `fails when ytunnus is invalid`(ytunnus: String) {
-            val yhteystieto = HakemusyhteystietoFactory.create(ytunnus = ytunnus)
+            val yhteystieto = HakemusyhteystietoFactory.create(registryKey = ytunnus)
 
-            assertThat(yhteystieto.validate("customer")).failsWith("customer.ytunnus")
+            assertThat(yhteystieto.validate("customer")).failsWith("customer.registryKey")
         }
 
         @Test
         fun `succeeds when ytunnus is null`() {
-            val yhteystieto = HakemusyhteystietoFactory.create(ytunnus = null)
+            val yhteystieto = HakemusyhteystietoFactory.create(registryKey = null)
 
             assertThat(yhteystieto.validate("customer")).succeeds()
         }
@@ -485,18 +489,18 @@ class KaivuilmoitusSendValidationTest {
         @ValueSource(strings = ["", BLANK, "bad"])
         fun `fails when invoicing customer has a bad ytunnus`(ytunnus: String) {
             val invoicingCustomer =
-                HakemusyhteystietoFactory.createLaskutusyhteystieto(ytunnus = ytunnus)
+                HakemusyhteystietoFactory.createLaskutusyhteystieto(registryKey = ytunnus)
 
             assertThat(invoicingCustomer.validate("invoicingCustomer"))
-                .failsWith("invoicingCustomer.ytunnus")
+                .failsWith("invoicingCustomer.registryKey")
         }
 
         @Test
-        fun `succeeds when person invoicing customer has no ytunnus`() {
+        fun `succeeds when person invoicing customer has no registry key`() {
             val invoicingCustomer =
                 HakemusyhteystietoFactory.createLaskutusyhteystieto(
                     tyyppi = CustomerType.PERSON,
-                    ytunnus = null
+                    registryKey = null,
                 )
 
             assertThat(invoicingCustomer.validate("invoicingCustomer")).succeeds()
@@ -506,12 +510,10 @@ class KaivuilmoitusSendValidationTest {
         fun `fails when company invoicing customer has no ytunnus`() {
             val invoicingCustomer =
                 HakemusyhteystietoFactory.createLaskutusyhteystieto(
-                    tyyppi = CustomerType.COMPANY,
-                    ytunnus = null
-                )
+                    tyyppi = CustomerType.COMPANY, registryKey = null)
 
             assertThat(invoicingCustomer.validate("invoicingCustomer"))
-                .failsWith("invoicingCustomer.ytunnus")
+                .failsWith("invoicingCustomer.registryKey")
         }
 
         @ParameterizedTest
@@ -604,7 +606,7 @@ class KaivuilmoitusSendValidationTest {
                 rockExcavation = false,
                 customerWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
                 contractorWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
-                invoicingCustomer = HakemusyhteystietoFactory.createLaskutusyhteystieto()
+                invoicingCustomer = HakemusyhteystietoFactory.createLaskutusyhteystieto(),
             )
     }
 }

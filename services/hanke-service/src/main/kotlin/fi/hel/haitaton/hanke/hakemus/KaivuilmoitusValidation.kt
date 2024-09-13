@@ -42,7 +42,7 @@ fun KaivuilmoitusData.validateForSend(): ValidationResult =
         .andWithNotNull(areas, "areas", ::validateAreas)
         .andWithNotNull(customerWithContacts, "customerWithContacts") {
             validate(it)
-                .and { validateTrue(isRegistryKeyValid(tyyppi, ytunnus), "$it.ytunnus") }
+                .and { validateTrue(isRegistryKeyValid(tyyppi, registryKey), "$it.registryKey") }
                 .and { notEmpty(yhteyshenkilot, "$it.yhteyshenkilot") }
         }
         .andWithNotNull(contractorWithContacts, "contractorWithContacts") {
@@ -73,7 +73,9 @@ internal fun Hakemusyhteystieto.validate(path: String) =
     validate { notBlank(nimi, "$path.nimi") }
         .and { notBlank(sahkoposti, "$path.sahkoposti") }
         .and { notBlank(puhelinnumero, "$path.puhelinnumero") }
-        .whenNotNull(ytunnus) { validateTrue(ytunnus.isValidBusinessId(), "$path.ytunnus") }
+        .whenNotNull(registryKey) {
+            validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
+        }
         .andAllIn(yhteyshenkilot, "$path.yhteyshenkilot", ::validateFullInfo)
 
 private fun isRegistryKeyValid(tyyppi: CustomerType, ytunnus: String?): Boolean =
@@ -94,8 +96,10 @@ internal fun Laskutusyhteystieto.validate(path: String): ValidationResult =
     validate { notBlank(nimi, "$path.nimi") }
         .and { notJustWhitespace(sahkoposti, "$path.sahkoposti") }
         .and { notJustWhitespace(puhelinnumero, "$path.puhelinnumero") }
-        .whenNotNull(ytunnus) { validateTrue(ytunnus.isValidBusinessId(), "$path.ytunnus") }
-        .and { validateTrue(isRegistryKeyValid(tyyppi, ytunnus), "$path.ytunnus") }
+        .whenNotNull(registryKey) {
+            validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
+        }
+        .and { validateTrue(isRegistryKeyValid(tyyppi, registryKey), "$path.registryKey") }
         .whenNotNull(ovttunnus) { validateTrue(ovttunnus.isValidOVT(), "$path.ovttunnus") }
         .and {
             validate {
