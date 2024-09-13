@@ -32,11 +32,11 @@ import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.findByType
-import fi.hel.haitaton.hanke.hakemus.ContactResponse
-import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
-import fi.hel.haitaton.hanke.hakemus.HakemusDataResponse
-import fi.hel.haitaton.hanke.hakemus.HakemusResponse
+import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusService
+import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
+import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -353,14 +353,14 @@ class HankekayttajaDeleteServiceITest(
                 .single()
                 .prop(Yhteyshenkilo::id)
                 .isNotEqualTo(founder.id)
-            assertThat(hakemusService.hakemusResponse(draftHakemus.id))
+            assertThat(hakemusService.getById(draftHakemus.id))
                 .isNotNull()
-                .prop(HakemusResponse::applicationData)
-                .prop(HakemusDataResponse::customerWithContacts)
+                .prop(Hakemus::applicationData)
+                .prop(HakemusData::customerWithContacts)
                 .isNotNull()
-                .prop(CustomerWithContactsResponse::contacts)
+                .prop(Hakemusyhteystieto::yhteyshenkilot)
                 .single()
-                .prop(ContactResponse::hankekayttajaId)
+                .prop(Hakemusyhteyshenkilo::hankekayttajaId)
                 .isNotEqualTo(founder.id)
             assertThat(permissionRepository.findOneByHankeIdAndUserId(hanke.id, USERNAME)).isNull()
         }

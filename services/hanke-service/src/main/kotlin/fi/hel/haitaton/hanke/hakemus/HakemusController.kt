@@ -93,9 +93,10 @@ class HakemusController(
     @PreAuthorize("@hakemusAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankkeenHakemukset(@PathVariable hankeTunnus: String): HankkeenHakemuksetResponse {
         logger.info { "Finding applications for hanke $hankeTunnus" }
-        val response = hakemusService.hankkeenHakemuksetResponse(hankeTunnus)
-        logger.info { "Found ${response.applications.size} applications for hanke $hankeTunnus" }
-        return response
+        val hakemukset = hakemusService.hankkeenHakemukset(hankeTunnus)
+        logger.info { "Found ${hakemukset.size} applications for hanke $hankeTunnus" }
+        return HankkeenHakemuksetResponse(
+            hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus) })
     }
 
     @PostMapping("/hakemukset")
@@ -210,7 +211,7 @@ class HakemusController(
         @ValidHakemusUpdateRequest @RequestBody request: HakemusUpdateRequest
     ): HakemusResponse {
         val userId = currentUserId()
-        val response = hakemusService.updateHakemus(id, request, userId)
+        val response = hakemusService.updateHakemus(id, request, userId).toResponse()
         disclosureLogService.saveDisclosureLogsForHakemusResponse(response, userId)
         return response
     }
