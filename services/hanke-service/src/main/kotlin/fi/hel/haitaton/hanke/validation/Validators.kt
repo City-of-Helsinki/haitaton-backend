@@ -34,6 +34,9 @@ object Validators {
     fun validateFalse(condition: Boolean?, path: String): ValidationResult =
         if (condition == false) ValidationResult.success() else ValidationResult.failure(path)
 
+    fun validateNull(value: Any?, path: String): ValidationResult =
+        validateTrue(value == null, path)
+
     fun notNull(value: Any?, path: String): ValidationResult = validateFalse(value == null, path)
 
     fun notBlank(value: String, path: String): ValidationResult =
@@ -145,8 +148,9 @@ sealed class ValidationResult {
         f: (T, String) -> ValidationResult,
     ): ValidationResult {
         return this.addAll(
-            values.flatMapIndexed { index: Int, value: T -> f(value, "$path[$index]").errorPaths() }
-        )
+            values.flatMapIndexed { index: Int, value: T ->
+                f(value, "$path[$index]").errorPaths()
+            })
     }
 
     companion object {
