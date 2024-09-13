@@ -118,7 +118,7 @@ class ApplicationFactory(
         fun createTyoalue(
             geometry: Polygon = GeometriaFactory.secondPolygon(),
             area: Double = 100.0,
-            tormaystarkasteluTulos: TormaystarkasteluTulos =
+            tormaystarkasteluTulos: TormaystarkasteluTulos? =
                 TormaystarkasteluTulos(
                     TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU, 3.0f, 5.0f, 5.0f),
         ) = Tyoalue(geometry, area, tormaystarkasteluTulos)

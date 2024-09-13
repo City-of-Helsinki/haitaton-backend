@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.domain.HasId
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
+import java.time.temporal.Temporal
 import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
@@ -135,3 +136,11 @@ fun String?.isValidOVT(): Boolean {
 
     return this.length >= 12
 }
+
+/** Helper function to calculate the duration between two dates, inclusive. */
+fun daysBetween(haittaAlkuPvm: Temporal?, haittaLoppuPvm: Temporal?): Int? =
+    if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
+        ChronoUnit.DAYS.between(haittaAlkuPvm, haittaLoppuPvm).toInt() + 1
+    } else {
+        null
+    }

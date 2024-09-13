@@ -267,6 +267,13 @@ object HakemusUpdateRequestFactory {
             is KaivuilmoitusUpdateRequest -> this.copy(requiredCompetence = requiredCompetence)
         }
 
+    fun HakemusUpdateRequest.withDates(startTime: ZonedDateTime?, endTime: ZonedDateTime?) =
+        when (this) {
+            is JohtoselvityshakemusUpdateRequest ->
+                this.copy(startTime = startTime, endTime = endTime)
+            is KaivuilmoitusUpdateRequest -> this.copy(startTime = startTime, endTime = endTime)
+        }
+
     fun HakemusUpdateRequest.withArea(area: Hakemusalue?) = withAreas(area?.let { listOf(it) })
 
     fun HakemusUpdateRequest.withAreas(areas: List<Hakemusalue>?) =

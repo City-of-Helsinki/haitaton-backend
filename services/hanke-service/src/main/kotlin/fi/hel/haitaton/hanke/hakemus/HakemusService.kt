@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.daysBetween
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.email.ApplicationNotificationEmail
 import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
@@ -35,6 +36,7 @@ import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.LocalDate
@@ -43,6 +45,8 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
+import org.geojson.Feature
+import org.geojson.FeatureCollection
 import org.geojson.Polygon
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.MediaType
@@ -71,6 +75,7 @@ class HakemusService(
     private val alluStatusRepository: AlluStatusRepository,
     private val paatosService: PaatosService,
     private val applicationEventPublisher: ApplicationEventPublisher,
+    private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
 ) {
 
     @Transactional(readOnly = true)
@@ -911,8 +916,30 @@ class HakemusService(
         if (updatedApplicationEntity.hanke.generated) {
             updatedApplicationEntity.hanke.nimi = request.name
         }
+        updateTormaystarkastelut(updatedApplicationEntity.hakemusEntityData)
         sendApplicationNotifications(updatedApplicationEntity, originalContactUserIds, userId)
         return hakemusRepository.save(updatedApplicationEntity)
+    }
+
+    /** Calculate the traffic nuisance indexes for each work area of an application. */
+    private fun updateTormaystarkastelut(hakemusEntityData: HakemusEntityData) {
+        if (hakemusEntityData is KaivuilmoitusEntityData &&
+            hakemusEntityData.startTime != null &&
+            hakemusEntityData.endTime != null) {
+            hakemusEntityData.areas?.forEach { area ->
+                area.tyoalueet.forEach { tyoalue ->
+                    tyoalue.tormaystarkasteluTulos =
+                        tormaystarkasteluLaskentaService.calculateTormaystarkastelu(
+                            FeatureCollection().apply {
+                                add(Feature().apply { this.geometry = tyoalue.geometry })
+                            },
+                            daysBetween(hakemusEntityData.startTime, hakemusEntityData.endTime)!!,
+                            area.kaistahaitta,
+                            area.kaistahaittojenPituus,
+                        )
+                }
+            }
+        }
     }
 
     private fun updateYhteystiedot(

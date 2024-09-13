@@ -68,6 +68,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withAreas
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withContractor
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomer
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomerWithContactsRequest
+import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withDates
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withName
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRequiredCompetence
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
@@ -112,6 +113,10 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
+import fi.hel.haitaton.hanke.tormaystarkastelu.IndeksiType
+import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaindeksiType
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import io.mockk.Called
@@ -1164,6 +1169,7 @@ class HakemusServiceITest(
                             CustomerType.COMPANY, yhteystieto.id, kayttaja.id, newKayttaja.id)
                         .withWorkDescription("New work description")
                         .withRequiredCompetence(true)
+                        .withDates(ZonedDateTime.now(), ZonedDateTime.now().plusDays(1))
                         .withArea(area)
 
                 val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
@@ -1332,6 +1338,53 @@ class HakemusServiceITest(
                 assertThat(hankeRepository.findAll().single()).all {
                     prop(HankeEntity::nimi).isEqualTo("New name")
                 }
+            }
+
+            @Test
+            fun `calculates tormaystarkastelu for work areas`() {
+                val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+                val hankeEntity = hankeRepository.findAll().single()
+                val entity =
+                    hakemusFactory
+                        .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                        .saveEntity()
+                val hakemus = hakemusService.getById(entity.id)
+                val area =
+                    createExcavationNotificationArea(
+                        hankealueId = hanke.alueet.single().id!!,
+                        tyoalueet = listOf(createTyoalue(tormaystarkasteluTulos = null)))
+                val request =
+                    hakemus
+                        .toUpdateRequest()
+                        .withDates(ZonedDateTime.now(), ZonedDateTime.now().plusDays(1))
+                        .withArea(area)
+
+                val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                assertThat(updatedHakemus.applicationData)
+                    .isInstanceOf(KaivuilmoitusData::class)
+                    .prop(KaivuilmoitusData::areas)
+                    .isNotNull()
+                    .single()
+                    .prop(KaivuilmoitusAlue::tyoalueet)
+                    .isNotNull()
+                    .single()
+                    .prop(Tyoalue::tormaystarkasteluTulos)
+                    .isNotNull()
+                    .isCorrectTormaystarkasteluTulos()
+
+                val persistedHakemus = hakemusService.getById(updatedHakemus.id)
+                assertThat(persistedHakemus.applicationData)
+                    .isInstanceOf(KaivuilmoitusData::class)
+                    .prop(KaivuilmoitusData::areas)
+                    .isNotNull()
+                    .single()
+                    .prop(KaivuilmoitusAlue::tyoalueet)
+                    .isNotNull()
+                    .single()
+                    .prop(Tyoalue::tormaystarkasteluTulos)
+                    .isNotNull()
+                    .isCorrectTormaystarkasteluTulos()
             }
         }
     }
@@ -2689,6 +2742,28 @@ class HakemusServiceITest(
                 else -> throw IllegalArgumentException()
             }
     }
+}
+
+private fun Assert<TormaystarkasteluTulos>.isCorrectTormaystarkasteluTulos():
+    Assert<TormaystarkasteluTulos> {
+    this.all {
+        prop(TormaystarkasteluTulos::liikennehaittaindeksi).all {
+            prop(LiikennehaittaindeksiType::indeksi).isEqualTo(5.0f)
+            prop(LiikennehaittaindeksiType::tyyppi).isEqualTo(IndeksiType.RAITIOLIIKENNEINDEKSI)
+        }
+        prop(TormaystarkasteluTulos::pyoraliikenneindeksi).isEqualTo(3.0f)
+        prop(TormaystarkasteluTulos::autoliikenne).all {
+            prop(Autoliikenneluokittelu::indeksi).isEqualTo(3.1f)
+            prop(Autoliikenneluokittelu::haitanKesto).isEqualTo(1)
+            prop(Autoliikenneluokittelu::katuluokka).isEqualTo(4)
+            prop(Autoliikenneluokittelu::liikennemaara).isEqualTo(5)
+            prop(Autoliikenneluokittelu::kaistahaitta).isEqualTo(2)
+            prop(Autoliikenneluokittelu::kaistapituushaitta).isEqualTo(2)
+        }
+        prop(TormaystarkasteluTulos::linjaautoliikenneindeksi).isEqualTo(3.0f)
+        prop(TormaystarkasteluTulos::raitioliikenneindeksi).isEqualTo(5.0f)
+    }
+    return this
 }
 
 private fun JohtoselvityshakemusData.setOrdererForCustomer(
