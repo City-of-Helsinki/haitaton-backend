@@ -273,7 +273,7 @@ data class CustomerRequest(
             name != hakemusyhteystietoEntity.nimi ||
             email != hakemusyhteystietoEntity.sahkoposti ||
             phone != hakemusyhteystietoEntity.puhelinnumero ||
-            registryKey != hakemusyhteystietoEntity.ytunnus
+            registryKey != hakemusyhteystietoEntity.registryKey
 }
 
 /** For referencing [fi.hel.haitaton.hanke.permissions.HankeKayttaja] by its id. */

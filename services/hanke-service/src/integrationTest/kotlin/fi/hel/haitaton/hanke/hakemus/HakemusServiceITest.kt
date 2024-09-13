@@ -1768,7 +1768,7 @@ class HakemusServiceITest(
                     nimi = "Ylevi Yhteyshenkilö",
                     sahkoposti = "ylevi@hakemus.info",
                     puhelinnumero = "111222333",
-                    ytunnus = null,
+                    registryKey = null,
                 )
             val asianhoitajaYhteystieto =
                 hakijaYhteystieto.copy(

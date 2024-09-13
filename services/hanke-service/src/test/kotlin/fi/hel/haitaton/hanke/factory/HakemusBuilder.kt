@@ -374,7 +374,7 @@ data class HakemusBuilder(
             nimi = yhteystieto.nimi,
             sahkoposti = yhteystieto.sahkoposti,
             puhelinnumero = yhteystieto.puhelinnumero,
-            ytunnus = yhteystieto.ytunnus,
+            registryKey = yhteystieto.registryKey,
             application = hakemusEntity,
         )
 

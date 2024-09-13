@@ -78,7 +78,7 @@ object KaivuilmoitusPdfEncoder {
         document.section("Laskutustiedot") {
             data.invoicingCustomer?.let {
                 row("Nimi", it.nimi)
-                rowIfNotBlank("Y-tunnus", it.ytunnus)
+                rowIfNotBlank("Yksilöivä tunnus", it.registryKey)
 
                 if (!it.katuosoite.isNullOrBlank()) {
                     row(

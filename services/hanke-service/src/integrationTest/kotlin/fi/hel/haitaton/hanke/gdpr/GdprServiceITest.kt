@@ -76,11 +76,9 @@ class GdprServiceITest(
             val hanke1 = hankeFactory.saveMinimal()
             val hanke2 = hankeFactory.saveMinimal()
             permissionRepository.save(
-                PermissionFactory.createEntity(userId = USERNAME, hankeId = hanke1.id)
-            )
+                PermissionFactory.createEntity(userId = USERNAME, hankeId = hanke1.id))
             permissionRepository.save(
-                PermissionFactory.createEntity(userId = USERNAME, hankeId = hanke2.id)
-            )
+                PermissionFactory.createEntity(userId = USERNAME, hankeId = hanke2.id))
 
             val result = gdprService.findGdprInfo(USERNAME)
 
@@ -98,7 +96,7 @@ class GdprServiceITest(
                 sukunimi = "Tohelo",
                 sahkoposti = "toinen@tohelo.test",
                 puhelin = "0009999999",
-                userId = USERNAME
+                userId = USERNAME,
             )
 
             val result = gdprService.findGdprInfo(USERNAME)
@@ -110,22 +108,22 @@ class GdprServiceITest(
                 hasCollectionWithChildren(
                     "etunimet",
                     StringNode("etunimi", HankeKayttajaFactory.KAKE),
-                    StringNode("etunimi", "Toinen")
+                    StringNode("etunimi", "Toinen"),
                 )
                 hasCollectionWithChildren(
                     "sukunimet",
                     StringNode("sukunimi", HankeKayttajaFactory.KATSELIJA),
-                    StringNode("sukunimi", "Tohelo")
+                    StringNode("sukunimi", "Tohelo"),
                 )
                 hasCollectionWithChildren(
                     "puhelinnumerot",
                     StringNode("puhelinnumero", HankeKayttajaFactory.KAKE_PUHELIN),
-                    StringNode("puhelinnumero", "0009999999")
+                    StringNode("puhelinnumero", "0009999999"),
                 )
                 hasCollectionWithChildren(
                     "sahkopostit",
                     StringNode("sahkoposti", HankeKayttajaFactory.KAKE_EMAIL),
-                    StringNode("sahkoposti", "toinen@tohelo.test")
+                    StringNode("sahkoposti", "toinen@tohelo.test"),
                 )
             }
         }
@@ -137,14 +135,14 @@ class GdprServiceITest(
                     id = null,
                     nimi = "Yritys Oy",
                     ytunnus = "4134328-8",
-                    osasto = "Osasto"
+                    osasto = "Osasto",
                 )
             val omistajaYhteystieto =
                 HankeYhteystietoFactory.create(
                     id = null,
                     nimi = "Omistaja Oy",
                     ytunnus = "3213212-0",
-                    osasto = null
+                    osasto = null,
                 )
             hankeFactory.builder("other").saveWithYhteystiedot {
                 val kayttaja = kayttaja(userId = USERNAME)
@@ -177,12 +175,12 @@ class GdprServiceITest(
             val toteuttajaYhteystieto =
                 HakemusyhteystietoFactory.create(
                     nimi = "Yritys Oy",
-                    ytunnus = "4134328-8",
+                    registryKey = "4134328-8",
                 )
             val omistajaYhteystieto =
                 HakemusyhteystietoFactory.create(
                     nimi = "Omistaja Oy",
-                    ytunnus = "3213212-0",
+                    registryKey = "3213212-0",
                 )
             val hanke = hankeFactory.saveMinimal(generated = true)
             val kayttaja = hankekayttajaFactory.saveIdentifiedUser(hanke.id, userId = USERNAME)
@@ -272,7 +270,7 @@ class GdprServiceITest(
                 hankekayttajaFactory.saveIdentifiedUser(
                     hanke.id,
                     userId = USERNAME,
-                    kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS
+                    kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS,
                 )
             hakemusFactory.builder(adminUserId, hanke).asianhoitaja(targetKayttaja).save()
             hakemusFactory

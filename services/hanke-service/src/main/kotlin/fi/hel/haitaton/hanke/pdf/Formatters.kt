@@ -18,7 +18,7 @@ fun Hakemusyhteyshenkilo.format(): String =
     listOfNotNull(kokoNimi(), sahkoposti, puhelin).filter { it.isNotBlank() }.joinToString("\n")
 
 fun Hakemusyhteystieto.format(): String =
-    listOfNotNull("$nimi\n", ytunnus, sahkoposti, puhelinnumero, "\nYhteyshenkilöt\n")
+    listOfNotNull("$nimi\n", registryKey, sahkoposti, puhelinnumero, "\nYhteyshenkilöt\n")
         .filter { it.isNotBlank() }
         .joinToString("\n") + this.yhteyshenkilot.joinToString("\n") { "\n" + it.format() }
 
