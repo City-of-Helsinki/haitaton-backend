@@ -43,7 +43,8 @@ class KaivuilmoitusPdfEncoderTest {
                     "Perustiedot",
                     "Alueet",
                     "Yhteystiedot",
-                    "Liitteet ja lisätiedot")
+                    "Liitteet ja lisätiedot",
+                )
         }
 
         @Test
@@ -282,7 +283,8 @@ class KaivuilmoitusPdfEncoderTest {
                         etunimi = "Denise",
                         sukunimi = "Developer",
                         sahkoposti = "denise@developer.test",
-                        puhelin = "0502222222")
+                        puhelin = "0502222222",
+                    )
 
             val hakemusData =
                 HakemusFactory.createKaivuilmoitusData(

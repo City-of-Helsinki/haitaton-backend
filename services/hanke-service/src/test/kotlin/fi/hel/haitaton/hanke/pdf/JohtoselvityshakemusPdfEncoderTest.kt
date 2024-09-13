@@ -257,7 +257,8 @@ class JohtoselvityshakemusPdfEncoderTest {
                         etunimi = "Denise",
                         sukunimi = "Developer",
                         sahkoposti = "denise@developer.test",
-                        puhelin = "0502222222")
+                        puhelin = "0502222222",
+                    )
 
             val hakemusData =
                 HakemusFactory.createJohtoselvityshakemusData(
