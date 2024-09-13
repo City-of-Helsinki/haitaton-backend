@@ -22,10 +22,14 @@ data class Hakemusyhteystieto(
                     name = nimi,
                     email = sahkoposti,
                     phone = puhelinnumero,
-                    registryKey = registryKey,
+                    registryKey = if (hideRegistryKey()) null else registryKey,
+                    registryKeyHidden = hideRegistryKey(),
                 ),
             contacts = yhteyshenkilot.map { it.toResponse() },
         )
+
+    private fun hideRegistryKey(): Boolean =
+        registryKey != null && (tyyppi == CustomerType.PERSON || tyyppi == CustomerType.OTHER)
 }
 
 data class Hakemusyhteyshenkilo(

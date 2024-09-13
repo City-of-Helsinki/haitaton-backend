@@ -243,7 +243,8 @@ object HakemusUpdateRequestFactory {
                                 name = name,
                                 email = email,
                                 phone = phone,
-                                registryKey = registryKey),
+                                registryKey = registryKey,
+                            ),
                             hankekayttajaIds.map { ContactRequest(it) },
                         ))
         }
@@ -348,7 +349,8 @@ object HakemusUpdateRequestFactory {
                                 name = name,
                                 email = email,
                                 phone = phone,
-                                registryKey = registryKey),
+                                registryKey = registryKey,
+                            ),
                             hankekayttajaIds.map { ContactRequest(it) },
                         ))
             is KaivuilmoitusUpdateRequest ->
@@ -361,7 +363,8 @@ object HakemusUpdateRequestFactory {
                                 name = name,
                                 email = email,
                                 phone = phone,
-                                registryKey = registryKey),
+                                registryKey = registryKey,
+                            ),
                             hankekayttajaIds.map { ContactRequest(it) },
                         ))
         }

@@ -157,6 +157,7 @@ data class CustomerResponse(
     val email: String,
     val phone: String,
     val registryKey: String?,
+    val registryKeyHidden: Boolean,
 ) {
     /** Check if this customer contains any actual personal information. */
     fun hasPersonalInformation() =
