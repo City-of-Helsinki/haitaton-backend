@@ -256,6 +256,7 @@ data class CustomerWithContactsRequest(
  * For updating an existing [Hakemusyhteystieto] (with [yhteystietoId]) or creating a new one
  * (without [yhteystietoId]).
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerRequest(
     /** Hakemusyhteystieto id */
     val yhteystietoId: UUID? = null,

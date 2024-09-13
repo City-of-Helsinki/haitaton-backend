@@ -62,12 +62,12 @@ object HakemusResponseFactory {
             listOf(ApplicationFactory.createCableReportApplicationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
-                createCompanyCustomerResponse(),
+                companyCustomer(),
                 listOf(createContactResponse()),
             ),
         contractorWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
-                createPersonCustomerResponse(),
+                personCustomer(),
                 listOf(createContactResponse()),
             ),
         representativeWithContacts: CustomerWithContactsResponse? = null,
@@ -107,12 +107,12 @@ object HakemusResponseFactory {
             listOf(ApplicationFactory.createExcavationNotificationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
-                createCompanyCustomerResponse(),
+                companyCustomer(),
                 listOf(createContactResponse()),
             ),
         contractorWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
-                createPersonCustomerResponse(),
+                personCustomer(),
                 listOf(createContactResponse()),
             ),
         representativeWithContacts: CustomerWithContactsResponse? = null,
@@ -144,6 +144,7 @@ object HakemusResponseFactory {
         )
 
     fun companyCustomer(
+        yhteystietoId: UUID = UUID.randomUUID(),
         type: CustomerType = CustomerType.COMPANY,
         name: String = "DNA",
         email: String = "info@dna.test",
@@ -151,68 +152,35 @@ object HakemusResponseFactory {
         registryKey: String? = "3766028-0",
     ): CustomerResponse =
         CustomerResponse(
-            UUID.randomUUID(),
-            type,
-            name,
-            email,
-            phone,
-            registryKey,
+            yhteystietoId = yhteystietoId,
+            type = type,
+            name = name,
+            email = email,
+            phone = phone,
+            registryKey = registryKey,
+            registryKeyHidden = false,
         )
 
     fun personCustomer(
+        yhteystietoId: UUID = UUID.randomUUID(),
         type: CustomerType = CustomerType.PERSON,
         name: String = TEPPO_TESTI,
         email: String = ApplicationFactory.TEPPO_EMAIL,
         phone: String = ApplicationFactory.TEPPO_PHONE,
-        registryKey: String? = "281192-937W",
     ) =
         CustomerResponse(
-            UUID.randomUUID(),
-            type,
-            name,
-            email,
-            phone,
-            registryKey,
+            yhteystietoId = yhteystietoId,
+            type = type,
+            name = name,
+            email = email,
+            phone = phone,
+            registryKey = null,
+            registryKeyHidden = true,
         )
 
     fun CustomerResponse.withContacts(
         vararg contacts: ContactResponse
     ): CustomerWithContactsResponse = CustomerWithContactsResponse(this, contacts.asList())
-
-    private fun createPersonCustomerResponse(
-        yhteystietoId: UUID = UUID.randomUUID(),
-        type: CustomerType = CustomerType.PERSON,
-        name: String = TEPPO_TESTI,
-        email: String = ApplicationFactory.TEPPO_EMAIL,
-        phone: String = "04012345678",
-        registryKey: String? = "281192-937W",
-    ) =
-        CustomerResponse(
-            yhteystietoId,
-            type,
-            name,
-            email,
-            phone,
-            registryKey,
-        )
-
-    private fun createCompanyCustomerResponse(
-        yhteystietoId: UUID = UUID.randomUUID(),
-        type: CustomerType = CustomerType.COMPANY,
-        name: String = "DNA",
-        email: String = "info@dna.test",
-        phone: String = "+3581012345678",
-        registryKey: String? = "3766028-0",
-    ): CustomerResponse {
-        return CustomerResponse(
-            yhteystietoId,
-            type,
-            name,
-            email,
-            phone,
-            registryKey,
-        )
-    }
 
     private fun createContactResponse(
         hankekayttajaId: UUID = UUID.randomUUID(),
