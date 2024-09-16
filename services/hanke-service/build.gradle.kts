@@ -89,7 +89,7 @@ dependencies {
     implementation("commons-io:commons-io:2.16.1")
     implementation("com.github.librepdf:openpdf:2.0.3")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("com.auth0:java-jwt:4.4.0")
 
     implementation("org.postgresql:postgresql")
