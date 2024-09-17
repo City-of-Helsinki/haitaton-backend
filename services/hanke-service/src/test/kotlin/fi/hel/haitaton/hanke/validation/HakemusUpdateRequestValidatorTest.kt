@@ -564,7 +564,7 @@ class HakemusUpdateRequestValidatorTest {
                     "companySuccessParams",
                     "associationSuccessParams",
                 ])
-        fun `succeeds when parameters are correct`(
+        fun `succeeds when customer parameters are correct`(
             type: CustomerType,
             registryKeyHidden: Boolean,
             registryKey: String?,
@@ -587,7 +587,7 @@ class HakemusUpdateRequestValidatorTest {
                     "companyFailureParams",
                     "associationFailureParams",
                 ])
-        fun `fails when parameters are incorrect`(
+        fun `fails when customer parameters are incorrect`(
             type: CustomerType,
             registryKeyHidden: Boolean,
             registryKey: String?,
@@ -602,6 +602,56 @@ class HakemusUpdateRequestValidatorTest {
             assertThat(result).prop(ValidationResult::errorPaths).each {
                 it.isIn("path.registryKey", "path.registryKeyHidden")
             }
+        }
+
+        @ParameterizedTest
+        @MethodSource(
+            value =
+                [
+                    "personSuccessParams",
+                    "otherSuccessParams",
+                    "companySuccessParams",
+                    "associationSuccessParams",
+                ])
+        fun `succeeds when invoicing customer parameters are correct`(
+            type: CustomerType,
+            registryKeyHidden: Boolean,
+            registryKey: String?,
+        ) {
+            val request =
+                HakemusUpdateRequestFactory.createInvoicingCustomerRequest(
+                    customerType = type,
+                    registryKey = registryKey,
+                    registryKeyHidden = registryKeyHidden)
+
+            val result = request.validateRegistryKey("path")
+
+            assertThat(result).isSuccess()
+        }
+
+        @ParameterizedTest
+        @MethodSource(
+            value =
+                [
+                    "personFailureParams",
+                    "otherFailureParams",
+                    "companyFailureParams",
+                    "associationFailureParams",
+                ])
+        fun `fails when invoicing customer parameters are incorrect`(
+            type: CustomerType,
+            registryKeyHidden: Boolean,
+            registryKey: String?,
+        ) {
+            val request =
+                HakemusUpdateRequestFactory.createInvoicingCustomerRequest(
+                    customerType = type,
+                    registryKey = registryKey,
+                    registryKeyHidden = registryKeyHidden)
+
+            val result = request.validateRegistryKey("path")
+
+            assertThat(result).prop(ValidationResult::isOk).isFalse()
         }
     }
 

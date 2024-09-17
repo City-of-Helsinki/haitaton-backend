@@ -35,11 +35,10 @@ sealed interface HakemusUpdateRequest {
     fun hasChanges(hakemusEntity: HakemusEntity): Boolean
 
     /**
-     * Converts this update request to an [HakemusEntityData] object using the given [baseData] as a
-     * basis. This means that we take the values in [baseData] and replace only the ones that are
-     * defined in this request.
+     * Converts this update request to an [HakemusEntityData] object using the given [hakemusEntity]
+     * as a basis.
      */
-    fun toEntityData(baseData: HakemusEntityData): HakemusEntityData
+    fun toEntityData(hakemusEntity: HakemusEntity): HakemusEntityData
 
     fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsRequest?>
 }
@@ -110,8 +109,8 @@ data class JohtoselvityshakemusUpdateRequest(
                 hakemusEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA])
     }
 
-    override fun toEntityData(baseData: HakemusEntityData) =
-        (baseData as JohtoselvityshakemusEntityData).copy(
+    override fun toEntityData(hakemusEntity: HakemusEntity) =
+        (hakemusEntity.hakemusEntityData as JohtoselvityshakemusEntityData).copy(
             name = this.name,
             postalAddress =
                 PostalAddress(StreetAddress(this.postalAddress?.streetAddress?.streetName), "", ""),
@@ -217,8 +216,8 @@ data class KaivuilmoitusUpdateRequest(
             additionalInfo != applicationData.additionalInfo
     }
 
-    override fun toEntityData(baseData: HakemusEntityData) =
-        (baseData as KaivuilmoitusEntityData).copy(
+    override fun toEntityData(hakemusEntity: HakemusEntity) =
+        (hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData).copy(
             name = this.name,
             workDescription = this.workDescription,
             constructionWork = this.constructionWork,
@@ -232,7 +231,7 @@ data class KaivuilmoitusUpdateRequest(
             startTime = this.startTime,
             endTime = this.endTime,
             areas = this.areas,
-            invoicingCustomer = this.invoicingCustomer.toCustomer(),
+            invoicingCustomer = this.invoicingCustomer.toCustomer(hakemusEntity),
             customerReference = this.invoicingCustomer?.customerReference,
             additionalInfo = this.additionalInfo,
         )
@@ -287,10 +286,13 @@ data class ContactRequest(
     val hankekayttajaId: UUID,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class InvoicingCustomerRequest(
-    val type: CustomerType?,
+    val type: CustomerType,
     val name: String?,
     val registryKey: String?,
+    /** Value is false when read from JSON with null or empty value. */
+    val registryKeyHidden: Boolean = false,
     val ovt: String?,
     val invoicingOperator: String?,
     val customerReference: String?,
@@ -362,19 +364,31 @@ fun InvoicingPostalAddressRequest?.hasChanges(postalAddress: PostalAddress?): Bo
         city != postalAddress.city
 }
 
-fun InvoicingCustomerRequest?.toCustomer(): InvoicingCustomer? =
-    this?.let {
+fun InvoicingCustomerRequest?.toCustomer(hakemus: HakemusEntity): InvoicingCustomer? {
+    return this?.let {
+        val baseData = (hakemus.hakemusEntityData as KaivuilmoitusEntityData).invoicingCustomer
+        if (baseData != null && type != baseData.type && registryKeyHidden) {
+            // If new invoicing customer type doesn't match the old one, the type of registry key
+            // will be wrong, but it will be retained if the key is hidden.
+            // Validation only checks the new type.
+            throw InvalidHiddenRegistryKey(
+                hakemus, "New invoicing customer type doesn't match the old.")
+        }
+
         InvoicingCustomer(
             type = it.type,
             name = it.name ?: "",
             postalAddress = it.postalAddress?.combinedAddress(),
             email = it.email,
             phone = it.phone,
-            registryKey = it.registryKey,
+            registryKey =
+                if (baseData != null && it.registryKeyHidden) baseData.registryKey
+                else it.registryKey,
             ovt = it.ovt,
             invoicingOperator = it.invoicingOperator,
         )
     }
+}
 
 fun InvoicingPostalAddressRequest?.combinedAddress(): PostalAddress? =
     this?.let {

@@ -39,6 +39,7 @@ class ApplicationFactory(
         const val DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER: String = "JS2300014"
         const val DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER: String = "KP2300015"
         const val DEFAULT_WORK_DESCRIPTION: String = "Työn kuvaus."
+        const val DEFAULT_HENKILOTUNNUS: String = "110166-8080"
         const val TEPPO = "Teppo"
         const val TESTIHENKILO = "Testihenkilö"
         const val TEPPO_EMAIL = "teppo@example.test"
@@ -68,6 +69,7 @@ class ApplicationFactory(
 
         fun createPersonInvoicingCustomer(
             name: String = "Liisa Laskutettava",
+            registryKey: String = DEFAULT_HENKILOTUNNUS,
         ): InvoicingCustomer =
             InvoicingCustomer(
                 type = CustomerType.PERSON,
@@ -75,7 +77,7 @@ class ApplicationFactory(
                 postalAddress = createPostalAddress(),
                 email = "liisa@laskutus.info",
                 phone = "963852741",
-                registryKey = null,
+                registryKey = registryKey,
                 ovt = null,
                 invoicingOperator = null,
             )

@@ -63,15 +63,24 @@ fun CustomerRequest.validateForErrors(path: String): ValidationResult =
         .and { validateRegistryKey(path) }
 
 fun CustomerRequest.validateRegistryKey(path: String): ValidationResult =
-    when (type) {
+    validateRegistryKey(type, registryKey, registryKeyHidden, path)
+
+fun InvoicingCustomerRequest.validateRegistryKey(path: String): ValidationResult =
+    validateRegistryKey(type, registryKey, registryKeyHidden, path)
+
+private fun validateRegistryKey(
+    customerType: CustomerType,
+    registryKey: String?,
+    registryKeyHidden: Boolean,
+    path: String,
+) =
+    when (customerType) {
         CustomerType.COMPANY ->
-            validateRegistryKeyForCompanies(this.registryKey, this.registryKeyHidden, path)
+            validateRegistryKeyForCompanies(registryKey, registryKeyHidden, path)
         CustomerType.ASSOCIATION ->
-            validateRegistryKeyForCompanies(this.registryKey, this.registryKeyHidden, path)
-        CustomerType.PERSON ->
-            validateRegistryKeyForPerson(this.registryKey, this.registryKeyHidden, path)
-        CustomerType.OTHER ->
-            validateRegistryKeyForOther(this.registryKey, this.registryKeyHidden, path)
+            validateRegistryKeyForCompanies(registryKey, registryKeyHidden, path)
+        CustomerType.PERSON -> validateRegistryKeyForPerson(registryKey, registryKeyHidden, path)
+        CustomerType.OTHER -> validateRegistryKeyForOther(registryKey, registryKeyHidden, path)
     }
 
 private fun validateRegistryKeyForCompanies(
@@ -167,11 +176,7 @@ private fun CustomerRequest.validateNoHenkilotunnus(path: String) =
 
 fun InvoicingCustomerRequest.validateForErrors(path: String): ValidationResult =
     validate { notJustWhitespace(name, "$path.name") }
-        .andWhen(
-            registryKey != null &&
-                (type == CustomerType.COMPANY || type == CustomerType.ASSOCIATION)) {
-                validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
-            }
+        .and { validateRegistryKey(path) }
         .andWhen(!ovt.isNullOrBlank()) { validateTrue(ovt.isValidOVT(), "$path.ovt") }
         .and { notJustWhitespace(ovt, "$path.ovt") }
         .and { notJustWhitespace(invoicingOperator, "$path.invoicingOperator") }
