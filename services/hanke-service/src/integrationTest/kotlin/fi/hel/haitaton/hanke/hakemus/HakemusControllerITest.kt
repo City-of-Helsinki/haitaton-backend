@@ -756,6 +756,25 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         }
 
         @Test
+        fun `returns 400 when request contain invalid use of hidden registry key`() {
+            val request = HakemusUpdateRequestFactory.createFilledKaivuilmoitusUpdateRequest()
+            every {
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { hakemusService.updateHakemus(id, request, USERNAME) } throws
+                InvalidHiddenRegistryKey(HakemusFactory.create(id = id), "Reason for error")
+
+            put(url, request)
+                .andExpect(status().isBadRequest)
+                .andExpect(hankeError(HankeError.HAI2010))
+
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                hakemusService.updateHakemus(id, request, USERNAME)
+            }
+        }
+
+        @Test
         fun `returns 400 when request contain invalid contact`() {
             val request =
                 HakemusUpdateRequestFactory.createFilledJohtoselvityshakemusUpdateRequest()
