@@ -102,6 +102,9 @@ data class KaivuilmoitusEntityData(
     override fun copy(pendingOnClient: Boolean): KaivuilmoitusEntityData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
 
+    fun copy(areas: List<KaivuilmoitusAlue>?): KaivuilmoitusEntityData =
+        copy(applicationType = applicationType, areas = areas)
+
     fun toHakemusData(yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>): HakemusData =
         KaivuilmoitusData(
             pendingOnClient = pendingOnClient,

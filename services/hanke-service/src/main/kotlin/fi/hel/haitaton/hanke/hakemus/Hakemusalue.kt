@@ -39,7 +39,7 @@ data class KaivuilmoitusAlue(
 data class Tyoalue(
     val geometry: Polygon,
     val area: Double,
-    var tormaystarkasteluTulos: TormaystarkasteluTulos?,
+    val tormaystarkasteluTulos: TormaystarkasteluTulos?,
 )
 
 fun List<KaivuilmoitusAlue>?.combinedAddress(): PostalAddress? =

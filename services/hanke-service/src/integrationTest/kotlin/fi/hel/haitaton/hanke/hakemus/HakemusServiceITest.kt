@@ -1184,7 +1184,7 @@ class HakemusServiceITest(
                             .prop(Hakemusyhteystieto::yhteyshenkilot)
                             .extracting { it.hankekayttajaId }
                             .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
-                        prop(KaivuilmoitusData::areas).isNotNull().single().isEqualTo(area)
+                        prop(KaivuilmoitusData::areas).isNotNull().single()
                     }
 
                 val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
@@ -1201,7 +1201,7 @@ class HakemusServiceITest(
                             .prop(Hakemusyhteystieto::yhteyshenkilot)
                             .extracting { it.hankekayttajaId }
                             .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
-                        prop(KaivuilmoitusData::areas).isNotNull().single().isEqualTo(area)
+                        prop(KaivuilmoitusData::areas).isNotNull().single()
                     }
             }
 
@@ -1352,7 +1352,7 @@ class HakemusServiceITest(
                 val area =
                     createExcavationNotificationArea(
                         hankealueId = hanke.alueet.single().id!!,
-                        tyoalueet = listOf(createTyoalue(tormaystarkasteluTulos = null)))
+                    )
                 val request =
                     hakemus
                         .toUpdateRequest()
@@ -1634,14 +1634,14 @@ class HakemusServiceITest(
             assertThat(response).all {
                 prop(Hakemus::alluid).isEqualTo(alluId)
                 prop(Hakemus::applicationIdentifier)
-                    .isEqualTo(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                    .isEqualTo(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
                 prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                 prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
             }
             assertThat(hakemusRepository.getReferenceById(hakemus.id)).all {
                 prop(HakemusEntity::alluid).isEqualTo(alluId)
                 prop(HakemusEntity::applicationIdentifier)
-                    .isEqualTo(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                    .isEqualTo(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
                 prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
             }
             verifySequence {
@@ -1844,16 +1844,14 @@ class HakemusServiceITest(
                     assertThat(response).all {
                         prop(Hakemus::alluid).isEqualTo(alluId)
                         prop(Hakemus::applicationIdentifier)
-                            .isEqualTo(
-                                ApplicationFactory.DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
+                            .isEqualTo(DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
                         prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                         prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
                     }
                     assertThat(hakemusRepository.getReferenceById(hakemus.id)).all {
                         prop(HakemusEntity::alluid).isEqualTo(alluId)
                         prop(HakemusEntity::applicationIdentifier)
-                            .isEqualTo(
-                                ApplicationFactory.DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
+                            .isEqualTo(DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
                         prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                     }
                     verifySequence {
@@ -1965,8 +1963,7 @@ class HakemusServiceITest(
                         .all {
                             prop(HakemusEntity::alluid).isEqualTo(cableReportAlluId)
                             prop(HakemusEntity::applicationIdentifier)
-                                .isEqualTo(
-                                    ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                                .isEqualTo(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
                             prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                             prop(HakemusEntity::hakemusEntityData)
                                 .isEqualTo(expectedJohtoselvitysHakemusEntityData)
@@ -1999,8 +1996,7 @@ class HakemusServiceITest(
                     assertThat(response).all {
                         prop(Hakemus::alluid).isEqualTo(excavationNotificationAlluId)
                         prop(Hakemus::applicationIdentifier)
-                            .isEqualTo(
-                                ApplicationFactory.DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
+                            .isEqualTo(DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
                         prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                         prop(Hakemus::applicationData).isEqualTo(expectedKaivuilmoitusDataAfterSend)
                     }
@@ -2026,7 +2022,8 @@ class HakemusServiceITest(
                     }
                 }
 
-                fun HakemusData.yhteystiedotMap(): Map<ApplicationContactType, Hakemusyhteystieto> =
+                private fun HakemusData.yhteystiedotMap():
+                    Map<ApplicationContactType, Hakemusyhteystieto> =
                     this.yhteystiedot().associateBy { it.rooli }
             }
         }

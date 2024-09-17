@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
-import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
@@ -118,9 +117,7 @@ class ApplicationFactory(
         fun createTyoalue(
             geometry: Polygon = GeometriaFactory.secondPolygon(),
             area: Double = 100.0,
-            tormaystarkasteluTulos: TormaystarkasteluTulos? =
-                TormaystarkasteluTulos(
-                    TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU, 3.0f, 5.0f, 5.0f),
+            tormaystarkasteluTulos: TormaystarkasteluTulos? = null,
         ) = Tyoalue(geometry, area, tormaystarkasteluTulos)
 
         fun createBlankApplicationData(applicationType: ApplicationType): HakemusEntityData =
@@ -204,10 +201,16 @@ class ApplicationFactory(
             createExcavationNotificationData(
                 name = "",
                 workDescription = "",
+                rockExcavation = null,
+                cableReports = null,
+                placementContracts = null,
                 areas = null,
                 startTime = null,
                 endTime = null,
-                additionalInfo = null)
+                invoicingCustomer = null,
+                customerReference = null,
+                additionalInfo = null,
+            )
 
         fun createApplicationEntity(
             id: Long = 3,

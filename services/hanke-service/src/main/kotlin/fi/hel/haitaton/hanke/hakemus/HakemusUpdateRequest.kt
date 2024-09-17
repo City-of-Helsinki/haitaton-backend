@@ -201,7 +201,7 @@ data class KaivuilmoitusUpdateRequest(
             requiredCompetence != applicationData.requiredCompetence ||
             startTime != applicationData.startTime ||
             endTime != applicationData.endTime ||
-            areas != applicationData.areas ||
+            areas.hasChanges(applicationData.areas) ||
             customerWithContacts.hasChanges(
                 hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]) ||
             contractorWithContacts.hasChanges(
@@ -300,6 +300,54 @@ data class InvoicingPostalAddressRequest(
     val postalCode: String?,
     val city: String?,
 )
+
+@JvmName("hasChangesInKaivuilmoitusAlueList")
+fun List<KaivuilmoitusAlue>?.hasChanges(areas: List<KaivuilmoitusAlue>?): Boolean {
+    if (this == null) {
+        return areas != null
+    }
+    if (areas == null) {
+        return true
+    }
+    if (this.size != areas.size) {
+        return true
+    }
+    return this.any { it.hasChanges(areas.find { area -> area.hankealueId == it.hankealueId }) }
+}
+
+fun KaivuilmoitusAlue.hasChanges(area: KaivuilmoitusAlue?): Boolean {
+    if (area == null) {
+        return true
+    }
+    return this.hankealueId != area.hankealueId ||
+        this.tyoalueet.hasChanges(area.tyoalueet) ||
+        this.katuosoite != area.katuosoite ||
+        this.tyonTarkoitukset != area.tyonTarkoitukset ||
+        this.meluhaitta != area.meluhaitta ||
+        this.polyhaitta != area.polyhaitta ||
+        this.tarinahaitta != area.tarinahaitta ||
+        this.kaistahaitta != area.kaistahaitta ||
+        this.kaistahaittojenPituus != area.kaistahaittojenPituus ||
+        this.lisatiedot != area.lisatiedot ||
+        this.name != area.name
+}
+
+@JvmName("hasChangesInTyoalueList")
+fun List<Tyoalue>.hasChanges(workAreas: List<Tyoalue>): Boolean {
+    if (this.size != workAreas.size) {
+        return true
+    }
+    for (i in this.indices) {
+        if (this[i].hasChanges(workAreas[i])) {
+            return true
+        }
+    }
+    return false
+}
+
+fun Tyoalue.hasChanges(workArea: Tyoalue): Boolean {
+    return this.area != workArea.area || this.geometry != workArea.geometry
+}
 
 fun CustomerWithContactsRequest?.hasChanges(
     hakemusyhteystietoEntity: HakemusyhteystietoEntity?

@@ -36,7 +36,9 @@ import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.LocalDate
@@ -916,31 +918,66 @@ class HakemusService(
         if (updatedApplicationEntity.hanke.generated) {
             updatedApplicationEntity.hanke.nimi = request.name
         }
-        updateTormaystarkastelut(updatedApplicationEntity.hakemusEntityData)
+        updateTormaystarkastelut(updatedApplicationEntity)
         sendApplicationNotifications(updatedApplicationEntity, originalContactUserIds, userId)
         return hakemusRepository.save(updatedApplicationEntity)
     }
 
     /** Calculate the traffic nuisance indexes for each work area of an application. */
-    private fun updateTormaystarkastelut(hakemusEntityData: HakemusEntityData) {
-        if (hakemusEntityData is KaivuilmoitusEntityData &&
-            hakemusEntityData.startTime != null &&
-            hakemusEntityData.endTime != null) {
-            hakemusEntityData.areas?.forEach { area ->
-                area.tyoalueet.forEach { tyoalue ->
-                    tyoalue.tormaystarkasteluTulos =
-                        tormaystarkasteluLaskentaService.calculateTormaystarkastelu(
-                            FeatureCollection().apply {
-                                add(Feature().apply { this.geometry = tyoalue.geometry })
+    private fun updateTormaystarkastelut(hakemusEntity: HakemusEntity) {
+        if (hakemusEntity.hakemusEntityData is KaivuilmoitusEntityData) {
+            val hakemusEntityData = hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData
+            if (hakemusEntityData.startTime != null && hakemusEntityData.endTime != null) {
+                hakemusEntity.hakemusEntityData =
+                    hakemusEntityData.copy(
+                        areas =
+                            hakemusEntityData.areas?.map { area ->
+                                updateTormaystarkastelutForArea(
+                                    area,
+                                    hakemusEntityData.startTime.toLocalDate(),
+                                    hakemusEntityData.endTime.toLocalDate(),
+                                )
                             },
-                            daysBetween(hakemusEntityData.startTime, hakemusEntityData.endTime)!!,
-                            area.kaistahaitta,
-                            area.kaistahaittojenPituus,
-                        )
-                }
+                    )
             }
         }
     }
+
+    private fun updateTormaystarkastelutForArea(
+        area: KaivuilmoitusAlue,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ) =
+        area.copy(
+            tyoalueet =
+                area.tyoalueet.map { tyoalue ->
+                    updateTormaystarkasteluForTyoalue(
+                        tyoalue,
+                        startDate,
+                        endDate,
+                        area.kaistahaitta,
+                        area.kaistahaittojenPituus,
+                    )
+                },
+        )
+
+    private fun updateTormaystarkasteluForTyoalue(
+        tyoalue: Tyoalue,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
+        kaistapituushaitta: AutoliikenteenKaistavaikutustenPituus,
+    ) =
+        tyoalue.copy(
+            tormaystarkasteluTulos =
+                tormaystarkasteluLaskentaService.calculateTormaystarkastelu(
+                    FeatureCollection().apply {
+                        add(Feature().apply { this.geometry = tyoalue.geometry })
+                    },
+                    daysBetween(startDate, endDate)!!,
+                    kaistahaitta,
+                    kaistapituushaitta),
+        )
 
     private fun updateYhteystiedot(
         hakemusEntity: HakemusEntity,
