@@ -69,7 +69,9 @@ object HakemusUpdateRequestFactory {
             maintenanceWork = false,
             emergencyWork = false,
             cableReportDone = false,
-            rockExcavation = false,
+            rockExcavation = null,
+            cableReports = null,
+            placementContracts = null,
             startTime = null,
             endTime = null,
             areas = null,
@@ -294,6 +296,13 @@ object HakemusUpdateRequestFactory {
         when (this) {
             is JohtoselvityshakemusUpdateRequest -> this
             is KaivuilmoitusUpdateRequest -> this.copy(requiredCompetence = requiredCompetence)
+        }
+
+    fun HakemusUpdateRequest.withDates(startTime: ZonedDateTime?, endTime: ZonedDateTime?) =
+        when (this) {
+            is JohtoselvityshakemusUpdateRequest ->
+                this.copy(startTime = startTime, endTime = endTime)
+            is KaivuilmoitusUpdateRequest -> this.copy(startTime = startTime, endTime = endTime)
         }
 
     fun HakemusUpdateRequest.withArea(area: Hakemusalue?) = withAreas(area?.let { listOf(it) })

@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.daysBetween
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.email.ApplicationNotificationEmail
 import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
@@ -35,6 +36,7 @@ import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.LocalDate
@@ -71,6 +73,7 @@ class HakemusService(
     private val alluStatusRepository: AlluStatusRepository,
     private val paatosService: PaatosService,
     private val applicationEventPublisher: ApplicationEventPublisher,
+    private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
 ) {
 
     @Transactional(readOnly = true)
@@ -911,8 +914,54 @@ class HakemusService(
         if (updatedApplicationEntity.hanke.generated) {
             updatedApplicationEntity.hanke.nimi = request.name
         }
+        updateTormaystarkastelut(updatedApplicationEntity)
         sendApplicationNotifications(updatedApplicationEntity, originalContactUserIds, userId)
         return hakemusRepository.save(updatedApplicationEntity)
+    }
+
+    /** Calculate the traffic nuisance indexes for each work area of an application. */
+    private fun updateTormaystarkastelut(hakemusEntity: HakemusEntity) {
+        val hakemusEntityData =
+            when (val data = hakemusEntity.hakemusEntityData) {
+                is JohtoselvityshakemusEntityData -> return
+                is KaivuilmoitusEntityData -> data
+            }
+        if (hakemusEntityData.startTime == null || hakemusEntityData.endTime == null) {
+            return
+        }
+        val areas =
+            hakemusEntityData.areas?.map { area ->
+                updateTormaystarkastelutForArea(
+                    area,
+                    hakemusEntityData.startTime.toLocalDate(),
+                    hakemusEntityData.endTime.toLocalDate(),
+                )
+            }
+        hakemusEntity.hakemusEntityData =
+            hakemusEntityData.copy(
+                areas = areas,
+            )
+    }
+
+    private fun updateTormaystarkastelutForArea(
+        area: KaivuilmoitusAlue,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): KaivuilmoitusAlue {
+        val tyoalueet =
+            area.tyoalueet.map { tyoalue ->
+                val tormaystarkasteluTulos =
+                    tormaystarkasteluLaskentaService.calculateTormaystarkastelu(
+                        tyoalue.geometry,
+                        daysBetween(startDate, endDate),
+                        area.kaistahaitta,
+                        area.kaistahaittojenPituus,
+                    )
+                tyoalue.copy(tormaystarkasteluTulos = tormaystarkasteluTulos)
+            }
+        return area.copy(
+            tyoalueet = tyoalueet,
+        )
     }
 
     private fun updateYhteystiedot(

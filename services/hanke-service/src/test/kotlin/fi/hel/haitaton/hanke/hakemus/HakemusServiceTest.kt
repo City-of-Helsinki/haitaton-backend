@@ -45,6 +45,7 @@ import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.USERNAME
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import io.mockk.called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -91,6 +92,7 @@ class HakemusServiceTest {
     private val alluStatusRepository: AlluStatusRepository = mockk()
     private val paatosService: PaatosService = mockk()
     private val publisher: ApplicationEventPublisher = mockk()
+    private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService = mockk()
 
     private val hakemusService =
         HakemusService(
@@ -107,6 +109,7 @@ class HakemusServiceTest {
             alluStatusRepository,
             paatosService,
             publisher,
+            tormaystarkasteluLaskentaService,
         )
 
     @BeforeEach

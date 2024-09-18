@@ -68,6 +68,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withAreas
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withContractor
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomer
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomerWithContactsRequest
+import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withDates
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withName
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRequiredCompetence
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
@@ -112,6 +113,8 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import io.mockk.Called
@@ -1164,6 +1167,7 @@ class HakemusServiceITest(
                             CustomerType.COMPANY, yhteystieto.id, kayttaja.id, newKayttaja.id)
                         .withWorkDescription("New work description")
                         .withRequiredCompetence(true)
+                        .withDates(ZonedDateTime.now(), ZonedDateTime.now().plusDays(1))
                         .withArea(area)
 
                 val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
@@ -1178,7 +1182,11 @@ class HakemusServiceITest(
                             .prop(Hakemusyhteystieto::yhteyshenkilot)
                             .extracting { it.hankekayttajaId }
                             .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
-                        prop(KaivuilmoitusData::areas).isNotNull().single().isEqualTo(area)
+                        prop(KaivuilmoitusData::areas)
+                            .isNotNull()
+                            .single()
+                            .transform { it.withoutTormaystarkastelut() }
+                            .isEqualTo(area.withoutTormaystarkastelut())
                     }
 
                 val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
@@ -1195,7 +1203,11 @@ class HakemusServiceITest(
                             .prop(Hakemusyhteystieto::yhteyshenkilot)
                             .extracting { it.hankekayttajaId }
                             .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
-                        prop(KaivuilmoitusData::areas).isNotNull().single().isEqualTo(area)
+                        prop(KaivuilmoitusData::areas)
+                            .isNotNull()
+                            .single()
+                            .transform { it.withoutTormaystarkastelut() }
+                            .isEqualTo(area.withoutTormaystarkastelut())
                     }
             }
 
@@ -1332,6 +1344,68 @@ class HakemusServiceITest(
                 assertThat(hankeRepository.findAll().single()).all {
                     prop(HankeEntity::nimi).isEqualTo("New name")
                 }
+            }
+
+            @Test
+            fun `calculates tormaystarkastelu for work areas`() {
+                val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+                val hankeEntity = hankeRepository.findAll().single()
+                val entity =
+                    hakemusFactory
+                        .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                        .saveEntity()
+                val hakemus = hakemusService.getById(entity.id)
+                val area =
+                    createExcavationNotificationArea(
+                        hankealueId = hanke.alueet.single().id!!,
+                    )
+                val request =
+                    hakemus
+                        .toUpdateRequest()
+                        .withDates(ZonedDateTime.now(), ZonedDateTime.now().plusDays(1))
+                        .withArea(area)
+                val exepectedTormaysTarkasteluTulos =
+                    TormaystarkasteluTulos(
+                        autoliikenne =
+                            Autoliikenneluokittelu(
+                                indeksi = 3.1f,
+                                haitanKesto = 1,
+                                katuluokka = 4,
+                                liikennemaara = 5,
+                                kaistahaitta = 2,
+                                kaistapituushaitta = 2,
+                            ),
+                        pyoraliikenneindeksi = 3.0f,
+                        linjaautoliikenneindeksi = 3.0f,
+                        raitioliikenneindeksi = 5.0f,
+                    )
+
+                val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                assertThat(updatedHakemus.applicationData)
+                    .isInstanceOf(KaivuilmoitusData::class)
+                    .prop(KaivuilmoitusData::areas)
+                    .isNotNull()
+                    .single()
+                    .prop(KaivuilmoitusAlue::tyoalueet)
+                    .isNotNull()
+                    .single()
+                    .prop(Tyoalue::tormaystarkasteluTulos)
+                    .isNotNull()
+                    .isEqualTo(exepectedTormaysTarkasteluTulos)
+
+                val persistedHakemus = hakemusService.getById(updatedHakemus.id)
+                assertThat(persistedHakemus.applicationData)
+                    .isInstanceOf(KaivuilmoitusData::class)
+                    .prop(KaivuilmoitusData::areas)
+                    .isNotNull()
+                    .single()
+                    .prop(KaivuilmoitusAlue::tyoalueet)
+                    .isNotNull()
+                    .single()
+                    .prop(Tyoalue::tormaystarkasteluTulos)
+                    .isNotNull()
+                    .isEqualTo(exepectedTormaysTarkasteluTulos)
             }
         }
     }
@@ -1581,14 +1655,14 @@ class HakemusServiceITest(
             assertThat(response).all {
                 prop(Hakemus::alluid).isEqualTo(alluId)
                 prop(Hakemus::applicationIdentifier)
-                    .isEqualTo(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                    .isEqualTo(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
                 prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                 prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
             }
             assertThat(hakemusRepository.getReferenceById(hakemus.id)).all {
                 prop(HakemusEntity::alluid).isEqualTo(alluId)
                 prop(HakemusEntity::applicationIdentifier)
-                    .isEqualTo(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                    .isEqualTo(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
                 prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
             }
             verifySequence {
@@ -1791,16 +1865,14 @@ class HakemusServiceITest(
                     assertThat(response).all {
                         prop(Hakemus::alluid).isEqualTo(alluId)
                         prop(Hakemus::applicationIdentifier)
-                            .isEqualTo(
-                                ApplicationFactory.DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
+                            .isEqualTo(DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
                         prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                         prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
                     }
                     assertThat(hakemusRepository.getReferenceById(hakemus.id)).all {
                         prop(HakemusEntity::alluid).isEqualTo(alluId)
                         prop(HakemusEntity::applicationIdentifier)
-                            .isEqualTo(
-                                ApplicationFactory.DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
+                            .isEqualTo(DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
                         prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                     }
                     verifySequence {
@@ -1912,8 +1984,7 @@ class HakemusServiceITest(
                         .all {
                             prop(HakemusEntity::alluid).isEqualTo(cableReportAlluId)
                             prop(HakemusEntity::applicationIdentifier)
-                                .isEqualTo(
-                                    ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                                .isEqualTo(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
                             prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                             prop(HakemusEntity::hakemusEntityData)
                                 .isEqualTo(expectedJohtoselvitysHakemusEntityData)
@@ -1946,8 +2017,7 @@ class HakemusServiceITest(
                     assertThat(response).all {
                         prop(Hakemus::alluid).isEqualTo(excavationNotificationAlluId)
                         prop(Hakemus::applicationIdentifier)
-                            .isEqualTo(
-                                ApplicationFactory.DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
+                            .isEqualTo(DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
                         prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
                         prop(Hakemus::applicationData).isEqualTo(expectedKaivuilmoitusDataAfterSend)
                     }
@@ -1973,7 +2043,8 @@ class HakemusServiceITest(
                     }
                 }
 
-                fun HakemusData.yhteystiedotMap(): Map<ApplicationContactType, Hakemusyhteystieto> =
+                private fun HakemusData.yhteystiedotMap():
+                    Map<ApplicationContactType, Hakemusyhteystieto> =
                     this.yhteystiedot().associateBy { it.rooli }
             }
         }
