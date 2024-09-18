@@ -246,7 +246,8 @@ object HakemusUpdateRequestFactory {
         name: String = DEFAULT_CUSTOMER_NAME,
         email: String = DEFAULT_CUSTOMER_EMAIL,
         phone: String = DEFAULT_CUSTOMER_PHONE,
-        registryKey: String = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKey: String? = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKeyHidden: Boolean = false,
         vararg hankekayttajaIds: UUID
     ) =
         when (this) {
@@ -275,6 +276,7 @@ object HakemusUpdateRequestFactory {
                                 email = email,
                                 phone = phone,
                                 registryKey = registryKey,
+                                registryKeyHidden = registryKeyHidden,
                             ),
                             hankekayttajaIds.map { ContactRequest(it) },
                         ))
