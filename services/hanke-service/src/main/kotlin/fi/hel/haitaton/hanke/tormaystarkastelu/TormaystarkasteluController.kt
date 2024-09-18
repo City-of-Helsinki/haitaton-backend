@@ -58,7 +58,7 @@ class TormaystarkasteluController(
             throw EndBeforeStartException(request.haittaAlkuPvm, request.haittaLoppuPvm)
         }
 
-        val haittaajanKestoDays = daysBetween(request.haittaAlkuPvm, request.haittaLoppuPvm)!!
+        val haittaajanKestoDays = daysBetween(request.haittaAlkuPvm, request.haittaLoppuPvm)
 
         return tormaystarkasteluLaskentaService.calculateTormaystarkastelu(
             request.geometriat.featureCollection,

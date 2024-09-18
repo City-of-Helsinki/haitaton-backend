@@ -36,9 +36,7 @@ import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
-import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
-import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.LocalDate
@@ -47,8 +45,6 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
-import org.geojson.Feature
-import org.geojson.FeatureCollection
 import org.geojson.Polygon
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.MediaType
@@ -925,59 +921,48 @@ class HakemusService(
 
     /** Calculate the traffic nuisance indexes for each work area of an application. */
     private fun updateTormaystarkastelut(hakemusEntity: HakemusEntity) {
-        if (hakemusEntity.hakemusEntityData is KaivuilmoitusEntityData) {
-            val hakemusEntityData = hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData
-            if (hakemusEntityData.startTime != null && hakemusEntityData.endTime != null) {
-                hakemusEntity.hakemusEntityData =
-                    hakemusEntityData.copy(
-                        areas =
-                            hakemusEntityData.areas?.map { area ->
-                                updateTormaystarkastelutForArea(
-                                    area,
-                                    hakemusEntityData.startTime.toLocalDate(),
-                                    hakemusEntityData.endTime.toLocalDate(),
-                                )
-                            },
-                    )
+        val hakemusEntityData =
+            when (val data = hakemusEntity.hakemusEntityData) {
+                is JohtoselvityshakemusEntityData -> return
+                is KaivuilmoitusEntityData -> data
             }
+        if (hakemusEntityData.startTime == null || hakemusEntityData.endTime == null) {
+            return
         }
+        val areas =
+            hakemusEntityData.areas?.map { area ->
+                updateTormaystarkastelutForArea(
+                    area,
+                    hakemusEntityData.startTime.toLocalDate(),
+                    hakemusEntityData.endTime.toLocalDate(),
+                )
+            }
+        hakemusEntity.hakemusEntityData =
+            hakemusEntityData.copy(
+                areas = areas,
+            )
     }
 
     private fun updateTormaystarkastelutForArea(
         area: KaivuilmoitusAlue,
         startDate: LocalDate,
         endDate: LocalDate
-    ) =
-        area.copy(
-            tyoalueet =
-                area.tyoalueet.map { tyoalue ->
-                    updateTormaystarkasteluForTyoalue(
-                        tyoalue,
-                        startDate,
-                        endDate,
+    ): KaivuilmoitusAlue {
+        val tyoalueet =
+            area.tyoalueet.map { tyoalue ->
+                val tormaystarkasteluTulos =
+                    tormaystarkasteluLaskentaService.calculateTormaystarkastelu(
+                        tyoalue.geometry,
+                        daysBetween(startDate, endDate),
                         area.kaistahaitta,
                         area.kaistahaittojenPituus,
                     )
-                },
+                tyoalue.copy(tormaystarkasteluTulos = tormaystarkasteluTulos)
+            }
+        return area.copy(
+            tyoalueet = tyoalueet,
         )
-
-    private fun updateTormaystarkasteluForTyoalue(
-        tyoalue: Tyoalue,
-        startDate: LocalDate,
-        endDate: LocalDate,
-        kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
-        kaistapituushaitta: AutoliikenteenKaistavaikutustenPituus,
-    ) =
-        tyoalue.copy(
-            tormaystarkasteluTulos =
-                tormaystarkasteluLaskentaService.calculateTormaystarkastelu(
-                    FeatureCollection().apply {
-                        add(Feature().apply { this.geometry = tyoalue.geometry })
-                    },
-                    daysBetween(startDate, endDate)!!,
-                    kaistahaitta,
-                    kaistapituushaitta),
-        )
+    }
 
     private fun updateYhteystiedot(
         hakemusEntity: HakemusEntity,

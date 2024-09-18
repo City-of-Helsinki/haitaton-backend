@@ -40,7 +40,25 @@ data class Tyoalue(
     val geometry: Polygon,
     val area: Double,
     val tormaystarkasteluTulos: TormaystarkasteluTulos?,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Tyoalue
+
+        if (geometry != other.geometry) return false
+        if (area != other.area) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = geometry.hashCode()
+        result = 31 * result + area.hashCode()
+        return result
+    }
+}
 
 fun List<KaivuilmoitusAlue>?.combinedAddress(): PostalAddress? =
     this?.map { it.katuosoite }

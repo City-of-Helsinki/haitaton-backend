@@ -114,8 +114,6 @@ import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
-import fi.hel.haitaton.hanke.tormaystarkastelu.IndeksiType
-import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaindeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
@@ -1184,7 +1182,7 @@ class HakemusServiceITest(
                             .prop(Hakemusyhteystieto::yhteyshenkilot)
                             .extracting { it.hankekayttajaId }
                             .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
-                        prop(KaivuilmoitusData::areas).isNotNull().single()
+                        prop(KaivuilmoitusData::areas).isNotNull().single().isEqualTo(area)
                     }
 
                 val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
@@ -1201,7 +1199,7 @@ class HakemusServiceITest(
                             .prop(Hakemusyhteystieto::yhteyshenkilot)
                             .extracting { it.hankekayttajaId }
                             .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
-                        prop(KaivuilmoitusData::areas).isNotNull().single()
+                        prop(KaivuilmoitusData::areas).isNotNull().single().isEqualTo(area)
                     }
             }
 
@@ -1358,6 +1356,21 @@ class HakemusServiceITest(
                         .toUpdateRequest()
                         .withDates(ZonedDateTime.now(), ZonedDateTime.now().plusDays(1))
                         .withArea(area)
+                val exepectedTormaysTarkasteluTulos =
+                    TormaystarkasteluTulos(
+                        autoliikenne =
+                            Autoliikenneluokittelu(
+                                indeksi = 3.1f,
+                                haitanKesto = 1,
+                                katuluokka = 4,
+                                liikennemaara = 5,
+                                kaistahaitta = 2,
+                                kaistapituushaitta = 2,
+                            ),
+                        pyoraliikenneindeksi = 3.0f,
+                        linjaautoliikenneindeksi = 3.0f,
+                        raitioliikenneindeksi = 5.0f,
+                    )
 
                 val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
@@ -1371,7 +1384,7 @@ class HakemusServiceITest(
                     .single()
                     .prop(Tyoalue::tormaystarkasteluTulos)
                     .isNotNull()
-                    .isCorrectTormaystarkasteluTulos()
+                    .isEqualTo(exepectedTormaysTarkasteluTulos)
 
                 val persistedHakemus = hakemusService.getById(updatedHakemus.id)
                 assertThat(persistedHakemus.applicationData)
@@ -1384,7 +1397,7 @@ class HakemusServiceITest(
                     .single()
                     .prop(Tyoalue::tormaystarkasteluTulos)
                     .isNotNull()
-                    .isCorrectTormaystarkasteluTulos()
+                    .isEqualTo(exepectedTormaysTarkasteluTulos)
             }
         }
     }
@@ -2739,28 +2752,6 @@ class HakemusServiceITest(
                 else -> throw IllegalArgumentException()
             }
     }
-}
-
-private fun Assert<TormaystarkasteluTulos>.isCorrectTormaystarkasteluTulos():
-    Assert<TormaystarkasteluTulos> {
-    this.all {
-        prop(TormaystarkasteluTulos::liikennehaittaindeksi).all {
-            prop(LiikennehaittaindeksiType::indeksi).isEqualTo(5.0f)
-            prop(LiikennehaittaindeksiType::tyyppi).isEqualTo(IndeksiType.RAITIOLIIKENNEINDEKSI)
-        }
-        prop(TormaystarkasteluTulos::pyoraliikenneindeksi).isEqualTo(3.0f)
-        prop(TormaystarkasteluTulos::autoliikenne).all {
-            prop(Autoliikenneluokittelu::indeksi).isEqualTo(3.1f)
-            prop(Autoliikenneluokittelu::haitanKesto).isEqualTo(1)
-            prop(Autoliikenneluokittelu::katuluokka).isEqualTo(4)
-            prop(Autoliikenneluokittelu::liikennemaara).isEqualTo(5)
-            prop(Autoliikenneluokittelu::kaistahaitta).isEqualTo(2)
-            prop(Autoliikenneluokittelu::kaistapituushaitta).isEqualTo(2)
-        }
-        prop(TormaystarkasteluTulos::linjaautoliikenneindeksi).isEqualTo(3.0f)
-        prop(TormaystarkasteluTulos::raitioliikenneindeksi).isEqualTo(5.0f)
-    }
-    return this
 }
 
 private fun JohtoselvityshakemusData.setOrdererForCustomer(

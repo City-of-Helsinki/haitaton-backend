@@ -140,7 +140,11 @@ fun String?.isValidOVT(): Boolean {
 /** Helper function to calculate the duration between two dates, inclusive. */
 fun daysBetween(haittaAlkuPvm: Temporal?, haittaLoppuPvm: Temporal?): Int? =
     if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
-        ChronoUnit.DAYS.between(haittaAlkuPvm, haittaLoppuPvm).toInt() + 1
+        daysBetween(haittaAlkuPvm, haittaLoppuPvm)
     } else {
         null
     }
+
+/** Helper function to calculate the duration between two dates, inclusive. */
+fun daysBetween(haittaAlkuPvm: Temporal, haittaLoppuPvm: Temporal): Int =
+    ChronoUnit.DAYS.between(haittaAlkuPvm, haittaLoppuPvm).toInt() + 1

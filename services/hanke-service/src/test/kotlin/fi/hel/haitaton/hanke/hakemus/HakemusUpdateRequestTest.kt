@@ -5,6 +5,8 @@ import assertk.assertions.isFalse
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationEntity
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createBlankExcavationNotificationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
@@ -183,39 +185,28 @@ class HakemusUpdateRequestTest {
                     ),
             )
 
-    private fun createApplicationEntityWithTormaystarkastelu(): HakemusEntity =
-        ApplicationFactory.createApplicationEntity(
+    private fun createApplicationEntityWithTormaystarkastelu(): HakemusEntity {
+        val tormaystarkasteluTulos =
+            TormaystarkasteluTulos(
+                TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
+                3.0f,
+                5.0f,
+                5.0f,
+            )
+        val tyoalue = createTyoalue(tormaystarkasteluTulos = tormaystarkasteluTulos)
+        val area = createExcavationNotificationArea(tyoalueet = listOf(tyoalue))
+        val hakemusEntityData = createBlankExcavationNotificationData().copy(areas = listOf(area))
+        return createApplicationEntity(
             applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-            hakemusEntityData =
-                ApplicationFactory.createBlankExcavationNotificationData()
-                    .copy(
-                        areas =
-                            listOf(
-                                createExcavationNotificationArea(
-                                    tyoalueet =
-                                        listOf(
-                                            createTyoalue(
-                                                tormaystarkasteluTulos =
-                                                    TormaystarkasteluTulos(
-                                                        TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
-                                                        3.0f,
-                                                        5.0f,
-                                                        5.0f),
-                                            ),
-                                        ),
-                                ),
-                            ),
-                    ),
+            hakemusEntityData = hakemusEntityData,
             hanke = HankeFactory.createMinimalEntity(),
         )
+    }
 
     private fun createKaivuilmoitusUpdateRequestWithoutTormaystarkastelu():
-        KaivuilmoitusUpdateRequest =
-        HakemusUpdateRequestFactory.createBlankKaivuilmoitusUpdateRequest()
-            .copy(
-                areas =
-                    listOf(
-                        createExcavationNotificationArea(),
-                    ),
-            )
+        KaivuilmoitusUpdateRequest {
+        val area = createExcavationNotificationArea()
+        return HakemusUpdateRequestFactory.createBlankKaivuilmoitusUpdateRequest()
+            .copy(areas = listOf(area))
+    }
 }
