@@ -86,13 +86,12 @@ object Validators {
 }
 
 sealed class ValidationResult {
-    abstract val errorPaths: List<String>
+    abstract val errorPaths: Set<String>
 
     /** Using a data class here to avoid the need to implement equals and hashCode for the class. */
-    private data class Result(override val errorPaths: List<String> = listOf()) :
-        ValidationResult()
+    private data class Result(override val errorPaths: Set<String> = setOf()) : ValidationResult()
 
-    fun errorPaths(): List<String> = errorPaths
+    fun errorPaths(): List<String> = errorPaths.toList()
 
     fun isOk() = errorPaths.isEmpty()
 
@@ -158,7 +157,7 @@ sealed class ValidationResult {
 
         fun success(): ValidationResult = empty
 
-        fun failure(errorPath: String): ValidationResult = Result(listOf(errorPath))
+        fun failure(errorPath: String): ValidationResult = Result(setOf(errorPath))
 
         fun <T> whenNotNull(value: T?, f: (T) -> ValidationResult): ValidationResult =
             success().whenNotNull(value, f)

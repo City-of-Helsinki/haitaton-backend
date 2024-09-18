@@ -5,8 +5,10 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.each
 import assertk.assertions.hasClass
 import assertk.assertions.isFalse
+import assertk.assertions.isIn
 import assertk.assertions.isTrue
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -22,7 +24,7 @@ import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.PostalAddressRequest
 import fi.hel.haitaton.hanke.hakemus.StreetAddress
 import fi.hel.haitaton.hanke.hakemus.validateRegistryKey
-import fi.hel.haitaton.hanke.test.Asserts.succeeds
+import fi.hel.haitaton.hanke.test.Asserts.isSuccess
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -573,7 +575,7 @@ class HakemusUpdateRequestValidatorTest {
 
             val result = request.validateRegistryKey("path")
 
-            assertThat(result).succeeds()
+            assertThat(result).isSuccess()
         }
 
         @ParameterizedTest
@@ -597,6 +599,9 @@ class HakemusUpdateRequestValidatorTest {
             val result = request.validateRegistryKey("path")
 
             assertThat(result).prop(ValidationResult::isOk).isFalse()
+            assertThat(result).prop(ValidationResult::errorPaths).each {
+                it.isIn("path.registryKey", "path.registryKeyHidden")
+            }
         }
     }
 

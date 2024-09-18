@@ -101,9 +101,13 @@ private fun validateRegistryKeyForPerson(
     registryKeyHidden: Boolean,
     path: String,
 ) =
-    validateRegistryKeyForOther(registryKey, registryKeyHidden, path).whenNotNull(registryKey) {
-        validateTrue(it.isValidHenkilotunnus(), "$path.registryKey")
-    }
+    validate()
+        .andWhen(registryKeyHidden) { validateNull(registryKey, "$path.registryKey") }
+        .andWhen(!registryKeyHidden) {
+            whenNotNull(registryKey) {
+                validateTrue(it.isValidHenkilotunnus(), "$path.registryKey")
+            }
+        }
 
 private fun JohtoselvityshakemusUpdateRequest.validateForErrors(): ValidationResult =
     whenNotNull(postalAddress) { it.validateForErrors("postalAddress") }

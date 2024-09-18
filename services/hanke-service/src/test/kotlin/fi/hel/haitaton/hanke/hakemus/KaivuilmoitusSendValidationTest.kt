@@ -9,8 +9,8 @@ import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.DEFAULT_OVT
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
-import fi.hel.haitaton.hanke.test.Asserts.failsWith
-import fi.hel.haitaton.hanke.test.Asserts.succeeds
+import fi.hel.haitaton.hanke.test.Asserts.failedWith
+import fi.hel.haitaton.hanke.test.Asserts.isSuccess
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -24,7 +24,7 @@ class KaivuilmoitusSendValidationTest {
 
     @Test
     fun `succeeds when kaivuilmoitus has all good data`() {
-        assertThat(hakemus.validateForSend()).succeeds()
+        assertThat(hakemus.validateForSend()).isSuccess()
     }
 
     @ParameterizedTest
@@ -32,7 +32,7 @@ class KaivuilmoitusSendValidationTest {
     fun `fails when name is empty or blank`(name: String) {
         val hakemus = hakemus.copy(name = name)
 
-        assertThat(hakemus.validateForSend()).failsWith("name")
+        assertThat(hakemus.validateForSend()).failedWith("name")
     }
 
     @ParameterizedTest
@@ -40,7 +40,7 @@ class KaivuilmoitusSendValidationTest {
     fun `fails when workDescription is empty or blank`(workDescription: String) {
         val hakemus = hakemus.copy(workDescription = workDescription)
 
-        assertThat(hakemus.validateForSend()).failsWith("workDescription")
+        assertThat(hakemus.validateForSend()).failedWith("workDescription")
     }
 
     @Test
@@ -53,7 +53,7 @@ class KaivuilmoitusSendValidationTest {
             )
 
         assertThat(hakemus.validateForSend())
-            .failsWith("constructionWork", "maintenanceWork", "emergencyWork")
+            .failedWith("constructionWork", "maintenanceWork", "emergencyWork")
     }
 
     @ParameterizedTest
@@ -79,7 +79,7 @@ class KaivuilmoitusSendValidationTest {
     fun `fails when requesting a new cable report but rock excavation not specified`() {
         val hakemus = hakemus.copy(cableReportDone = false, rockExcavation = null)
 
-        assertThat(hakemus.validateForSend()).failsWith("rockExcavation")
+        assertThat(hakemus.validateForSend()).failedWith("rockExcavation")
     }
 
     @ParameterizedTest
@@ -90,7 +90,7 @@ class KaivuilmoitusSendValidationTest {
     ) {
         val hakemus = hakemus.copy(cableReportDone = true, cableReports = cableReports)
 
-        assertThat(hakemus.validateForSend()).failsWith("cableReports")
+        assertThat(hakemus.validateForSend()).failedWith("cableReports")
     }
 
     @ParameterizedTest
@@ -102,28 +102,28 @@ class KaivuilmoitusSendValidationTest {
                 cableReports = listOf("JS2400001", "bad"),
             )
 
-        assertThat(hakemus.validateForSend()).failsWith("cableReports[1]")
+        assertThat(hakemus.validateForSend()).failedWith("cableReports[1]")
     }
 
     @Test
     fun `fails when required competence is not selected`() {
         val hakemus = hakemus.copy(requiredCompetence = false)
 
-        assertThat(hakemus.validateForSend()).failsWith("requiredCompetence")
+        assertThat(hakemus.validateForSend()).failedWith("requiredCompetence")
     }
 
     @Test
     fun `fails when start time is not selected`() {
         val hakemus = hakemus.copy(startTime = null)
 
-        assertThat(hakemus.validateForSend()).failsWith("startTime")
+        assertThat(hakemus.validateForSend()).failedWith("startTime")
     }
 
     @Test
     fun `fails when end time is not selected`() {
         val hakemus = hakemus.copy(endTime = null)
 
-        assertThat(hakemus.validateForSend()).failsWith("endTime")
+        assertThat(hakemus.validateForSend()).failedWith("endTime")
     }
 
     @Test
@@ -134,7 +134,7 @@ class KaivuilmoitusSendValidationTest {
                 endTime = DateFactory.getStartDatetime(),
             )
 
-        assertThat(hakemus.validateForSend()).failsWith("endTime")
+        assertThat(hakemus.validateForSend()).failedWith("endTime")
     }
 
     @ParameterizedTest
@@ -143,35 +143,35 @@ class KaivuilmoitusSendValidationTest {
     fun `fails when areas are null or empty`(areas: List<KaivuilmoitusAlue>?) {
         val hakemus = hakemus.copy(areas = areas)
 
-        assertThat(hakemus.validateForSend()).failsWith("areas")
+        assertThat(hakemus.validateForSend()).failedWith("areas")
     }
 
     @Test
     fun `fails when there is no customer`() {
         val hakemus = hakemus.copy(customerWithContacts = null)
 
-        assertThat(hakemus.validateForSend()).failsWith("customerWithContacts")
+        assertThat(hakemus.validateForSend()).failedWith("customerWithContacts")
     }
 
     @Test
     fun `fails when there is no contractor`() {
         val hakemus = hakemus.copy(contractorWithContacts = null)
 
-        assertThat(hakemus.validateForSend()).failsWith("contractorWithContacts")
+        assertThat(hakemus.validateForSend()).failedWith("contractorWithContacts")
     }
 
     @Test
     fun `succeeds when there is no property developer`() {
         val hakemus = hakemus.copy(propertyDeveloperWithContacts = null)
 
-        assertThat(hakemus.validateForSend()).succeeds()
+        assertThat(hakemus.validateForSend()).isSuccess()
     }
 
     @Test
     fun `succeeds when there is no representative`() {
         val hakemus = hakemus.copy(representativeWithContacts = null)
 
-        assertThat(hakemus.validateForSend()).succeeds()
+        assertThat(hakemus.validateForSend()).isSuccess()
     }
 
     @ParameterizedTest
@@ -182,7 +182,7 @@ class KaivuilmoitusSendValidationTest {
                 .withYhteyshenkilo()
         val hakemus = hakemus.copy(customerWithContacts = customer)
 
-        assertThat(hakemus.validateForSend()).failsWith("customerWithContacts.registryKey")
+        assertThat(hakemus.validateForSend()).failedWith("customerWithContacts.registryKey")
     }
 
     @ParameterizedTest
@@ -193,7 +193,7 @@ class KaivuilmoitusSendValidationTest {
                 .withYhteyshenkilo()
         val hakemus = hakemus.copy(customerWithContacts = customer)
 
-        assertThat(hakemus.validateForSend()).succeeds()
+        assertThat(hakemus.validateForSend()).isSuccess()
     }
 
     @ParameterizedTest
@@ -204,7 +204,7 @@ class KaivuilmoitusSendValidationTest {
                 .withYhteyshenkilo()
         val hakemus = hakemus.copy(contractorWithContacts = customer)
 
-        assertThat(hakemus.validateForSend()).succeeds()
+        assertThat(hakemus.validateForSend()).isSuccess()
     }
 
     @ParameterizedTest
@@ -215,7 +215,7 @@ class KaivuilmoitusSendValidationTest {
                 .withYhteyshenkilo()
         val hakemus = hakemus.copy(customerWithContacts = customer)
 
-        assertThat(hakemus.validateForSend()).failsWith("customerWithContacts.registryKey")
+        assertThat(hakemus.validateForSend()).failedWith("customerWithContacts.registryKey")
     }
 
     @Test
@@ -223,7 +223,7 @@ class KaivuilmoitusSendValidationTest {
         val customer = HakemusyhteystietoFactory.create()
         val hakemus = hakemus.copy(customerWithContacts = customer)
 
-        assertThat(hakemus.validateForSend()).failsWith("customerWithContacts.yhteyshenkilot")
+        assertThat(hakemus.validateForSend()).failedWith("customerWithContacts.yhteyshenkilot")
     }
 
     @Test
@@ -231,7 +231,7 @@ class KaivuilmoitusSendValidationTest {
         val customer = HakemusyhteystietoFactory.create()
         val hakemus = hakemus.copy(contractorWithContacts = customer)
 
-        assertThat(hakemus.validateForSend()).failsWith("contractorWithContacts.yhteyshenkilot")
+        assertThat(hakemus.validateForSend()).failedWith("contractorWithContacts.yhteyshenkilot")
     }
 
     @Test
@@ -239,7 +239,7 @@ class KaivuilmoitusSendValidationTest {
         val customer = HakemusyhteystietoFactory.create()
         val hakemus = hakemus.copy(propertyDeveloperWithContacts = customer)
 
-        assertThat(hakemus.validateForSend()).succeeds()
+        assertThat(hakemus.validateForSend()).isSuccess()
     }
 
     @Test
@@ -247,14 +247,14 @@ class KaivuilmoitusSendValidationTest {
         val customer = HakemusyhteystietoFactory.create()
         val hakemus = hakemus.copy(representativeWithContacts = customer)
 
-        assertThat(hakemus.validateForSend()).succeeds()
+        assertThat(hakemus.validateForSend()).isSuccess()
     }
 
     @Test
     fun `fails when there is no invoicing customer`() {
         val hakemus = hakemus.copy(invoicingCustomer = null)
 
-        assertThat(hakemus.validateForSend()).failsWith("invoicingCustomer")
+        assertThat(hakemus.validateForSend()).failedWith("invoicingCustomer")
     }
 
     @Test
@@ -262,21 +262,21 @@ class KaivuilmoitusSendValidationTest {
         val invoicingCustomer = HakemusyhteystietoFactory.createLaskutusyhteystieto(nimi = "")
         val hakemus = hakemus.copy(invoicingCustomer = invoicingCustomer)
 
-        assertThat(hakemus.validateForSend()).failsWith("invoicingCustomer.nimi")
+        assertThat(hakemus.validateForSend()).failedWith("invoicingCustomer.nimi")
     }
 
     @Test
     fun `fails when additional info is just blanks`() {
         val hakemus = hakemus.copy(additionalInfo = BLANK)
 
-        assertThat(hakemus.validateForSend()).failsWith("additionalInfo")
+        assertThat(hakemus.validateForSend()).failedWith("additionalInfo")
     }
 
     @Test
     fun `succeeds when additional info is empty`() {
         val hakemus = hakemus.copy(additionalInfo = "")
 
-        assertThat(hakemus.validateForSend()).succeeds()
+        assertThat(hakemus.validateForSend()).isSuccess()
     }
 
     @Nested
@@ -289,14 +289,14 @@ class KaivuilmoitusSendValidationTest {
                     ApplicationFactory.createExcavationNotificationArea(),
                 )
 
-            assertThat(validateAreas(areas, "areas")).succeeds()
+            assertThat(validateAreas(areas, "areas")).isSuccess()
         }
 
         @Test
         fun `fails when areas is empty`() {
             val areas = listOf<KaivuilmoitusAlue>()
 
-            assertThat(validateAreas(areas, "areas")).failsWith("areas")
+            assertThat(validateAreas(areas, "areas")).failedWith("areas")
         }
 
         @Test
@@ -308,7 +308,7 @@ class KaivuilmoitusSendValidationTest {
                     ApplicationFactory.createExcavationNotificationArea(),
                 )
 
-            assertThat(validateAreas(areas, "areas")).failsWith("areas[1].tyoalueet")
+            assertThat(validateAreas(areas, "areas")).failedWith("areas[1].tyoalueet")
         }
     }
 
@@ -318,14 +318,14 @@ class KaivuilmoitusSendValidationTest {
         fun `succeeds when the area has all necessary info`() {
             val area = ApplicationFactory.createExcavationNotificationArea()
 
-            assertThat(validateArea(area, "area")).succeeds()
+            assertThat(validateArea(area, "area")).isSuccess()
         }
 
         @Test
         fun `fails when the area has no tyoalueet`() {
             val area = ApplicationFactory.createExcavationNotificationArea(tyoalueet = listOf())
 
-            assertThat(validateArea(area, "area")).failsWith("area.tyoalueet")
+            assertThat(validateArea(area, "area")).failedWith("area.tyoalueet")
         }
 
         @ParameterizedTest
@@ -333,7 +333,7 @@ class KaivuilmoitusSendValidationTest {
         fun `fails when the area has blank or empty katuosoite`(osoite: String) {
             val area = ApplicationFactory.createExcavationNotificationArea(katuosoite = osoite)
 
-            assertThat(validateArea(area, "area")).failsWith("area.katuosoite")
+            assertThat(validateArea(area, "area")).failedWith("area.katuosoite")
         }
 
         @Test
@@ -341,7 +341,7 @@ class KaivuilmoitusSendValidationTest {
             val area =
                 ApplicationFactory.createExcavationNotificationArea(tyonTarkoitukset = setOf())
 
-            assertThat(validateArea(area, "area")).failsWith("area.tyonTarkoitukset")
+            assertThat(validateArea(area, "area")).failedWith("area.tyonTarkoitukset")
         }
     }
 
@@ -351,7 +351,7 @@ class KaivuilmoitusSendValidationTest {
         fun `succeeds when the yhteystieto has all necessary info`() {
             val yhteystieto = HakemusyhteystietoFactory.create()
 
-            assertThat(yhteystieto.validate("customer")).succeeds()
+            assertThat(yhteystieto.validate("customer")).isSuccess()
         }
 
         @ParameterizedTest
@@ -359,7 +359,7 @@ class KaivuilmoitusSendValidationTest {
         fun `fails when nimi is empty or blank`(nimi: String) {
             val yhteystieto = HakemusyhteystietoFactory.create(nimi = nimi)
 
-            assertThat(yhteystieto.validate("customer")).failsWith("customer.nimi")
+            assertThat(yhteystieto.validate("customer")).failedWith("customer.nimi")
         }
 
         @ParameterizedTest
@@ -367,7 +367,7 @@ class KaivuilmoitusSendValidationTest {
         fun `fails when sahkoposti is empty or blank`(sahkoposti: String) {
             val yhteystieto = HakemusyhteystietoFactory.create(sahkoposti = sahkoposti)
 
-            assertThat(yhteystieto.validate("customer")).failsWith("customer.sahkoposti")
+            assertThat(yhteystieto.validate("customer")).failedWith("customer.sahkoposti")
         }
 
         @ParameterizedTest
@@ -375,7 +375,7 @@ class KaivuilmoitusSendValidationTest {
         fun `fails when puhelinnumero is empty or blank`(puhelinnumero: String) {
             val yhteystieto = HakemusyhteystietoFactory.create(puhelinnumero = puhelinnumero)
 
-            assertThat(yhteystieto.validate("customer")).failsWith("customer.puhelinnumero")
+            assertThat(yhteystieto.validate("customer")).failedWith("customer.puhelinnumero")
         }
 
         @ParameterizedTest
@@ -383,21 +383,21 @@ class KaivuilmoitusSendValidationTest {
         fun `fails when ytunnus is invalid`(ytunnus: String) {
             val yhteystieto = HakemusyhteystietoFactory.create(registryKey = ytunnus)
 
-            assertThat(yhteystieto.validate("customer")).failsWith("customer.registryKey")
+            assertThat(yhteystieto.validate("customer")).failedWith("customer.registryKey")
         }
 
         @Test
         fun `succeeds when ytunnus is null`() {
             val yhteystieto = HakemusyhteystietoFactory.create(registryKey = null)
 
-            assertThat(yhteystieto.validate("customer")).succeeds()
+            assertThat(yhteystieto.validate("customer")).isSuccess()
         }
 
         @Test
         fun `succeeds when yhteyshenkilot is empty`() {
             val yhteystieto = HakemusyhteystietoFactory.create(yhteyshenkilot = listOf())
 
-            assertThat(yhteystieto.validate("customer")).succeeds()
+            assertThat(yhteystieto.validate("customer")).isSuccess()
         }
 
         @ParameterizedTest
@@ -409,7 +409,7 @@ class KaivuilmoitusSendValidationTest {
                     .withYhteyshenkilo(etunimi = etunimi)
 
             assertThat(yhteystieto.validate("customer"))
-                .failsWith("customer.yhteyshenkilot[1].etunimi")
+                .failedWith("customer.yhteyshenkilot[1].etunimi")
         }
 
         @ParameterizedTest
@@ -421,7 +421,7 @@ class KaivuilmoitusSendValidationTest {
                     .withYhteyshenkilo(sukunimi = sukunimi)
 
             assertThat(yhteystieto.validate("customer"))
-                .failsWith("customer.yhteyshenkilot[1].sukunimi")
+                .failedWith("customer.yhteyshenkilot[1].sukunimi")
         }
 
         @ParameterizedTest
@@ -433,7 +433,7 @@ class KaivuilmoitusSendValidationTest {
                     .withYhteyshenkilo()
 
             assertThat(yhteystieto.validate("customer"))
-                .failsWith("customer.yhteyshenkilot[0].sahkoposti")
+                .failedWith("customer.yhteyshenkilot[0].sahkoposti")
         }
 
         @ParameterizedTest
@@ -445,7 +445,7 @@ class KaivuilmoitusSendValidationTest {
                     .withYhteyshenkilo(puhelin = puhelin)
 
             assertThat(yhteystieto.validate("customer"))
-                .failsWith("customer.yhteyshenkilot[1].puhelin")
+                .failedWith("customer.yhteyshenkilot[1].puhelin")
         }
     }
 
@@ -455,7 +455,7 @@ class KaivuilmoitusSendValidationTest {
         fun `succeeds when invoicing customer has all necessary info`() {
             val invoicingCustomer = HakemusyhteystietoFactory.createLaskutusyhteystieto()
 
-            assertThat(invoicingCustomer.validate("invoicingCustomer")).succeeds()
+            assertThat(invoicingCustomer.validate("invoicingCustomer")).isSuccess()
         }
 
         @ParameterizedTest
@@ -464,7 +464,7 @@ class KaivuilmoitusSendValidationTest {
             val invoicingCustomer = HakemusyhteystietoFactory.createLaskutusyhteystieto(nimi = nimi)
 
             assertThat(invoicingCustomer.validate("invoicingCustomer"))
-                .failsWith("invoicingCustomer.nimi")
+                .failedWith("invoicingCustomer.nimi")
         }
 
         @Test
@@ -473,7 +473,7 @@ class KaivuilmoitusSendValidationTest {
                 HakemusyhteystietoFactory.createLaskutusyhteystieto(sahkoposti = BLANK)
 
             assertThat(invoicingCustomer.validate("invoicingCustomer"))
-                .failsWith("invoicingCustomer.sahkoposti")
+                .failedWith("invoicingCustomer.sahkoposti")
         }
 
         @Test
@@ -482,7 +482,7 @@ class KaivuilmoitusSendValidationTest {
                 HakemusyhteystietoFactory.createLaskutusyhteystieto(puhelinnumero = BLANK)
 
             assertThat(invoicingCustomer.validate("invoicingCustomer"))
-                .failsWith("invoicingCustomer.puhelinnumero")
+                .failedWith("invoicingCustomer.puhelinnumero")
         }
 
         @ParameterizedTest
@@ -492,7 +492,7 @@ class KaivuilmoitusSendValidationTest {
                 HakemusyhteystietoFactory.createLaskutusyhteystieto(registryKey = ytunnus)
 
             assertThat(invoicingCustomer.validate("invoicingCustomer"))
-                .failsWith("invoicingCustomer.registryKey")
+                .failedWith("invoicingCustomer.registryKey")
         }
 
         @Test
@@ -503,7 +503,7 @@ class KaivuilmoitusSendValidationTest {
                     registryKey = null,
                 )
 
-            assertThat(invoicingCustomer.validate("invoicingCustomer")).succeeds()
+            assertThat(invoicingCustomer.validate("invoicingCustomer")).isSuccess()
         }
 
         @Test
@@ -513,7 +513,7 @@ class KaivuilmoitusSendValidationTest {
                     tyyppi = CustomerType.COMPANY, registryKey = null)
 
             assertThat(invoicingCustomer.validate("invoicingCustomer"))
-                .failsWith("invoicingCustomer.registryKey")
+                .failedWith("invoicingCustomer.registryKey")
         }
 
         @ParameterizedTest
@@ -523,7 +523,7 @@ class KaivuilmoitusSendValidationTest {
                 HakemusyhteystietoFactory.createLaskutusyhteystieto(ovttunnus = ovt)
 
             assertThat(invoicingCustomer.validate("invoicingCustomer"))
-                .failsWith("invoicingCustomer.ovttunnus")
+                .failedWith("invoicingCustomer.ovttunnus")
         }
 
         @Test
@@ -538,7 +538,7 @@ class KaivuilmoitusSendValidationTest {
                 )
 
             assertThat(invoicingCustomer.validate("invoicingCustomer"))
-                .failsWith(
+                .failedWith(
                     "invoicingCustomer.ovttunnus",
                     "invoicingCustomer.valittajanTunnus",
                     "invoicingCustomer.katuosoite",
@@ -559,7 +559,7 @@ class KaivuilmoitusSendValidationTest {
                 )
 
             assertThat(invoicingCustomer.validate("invoicingCustomer"))
-                .failsWith(
+                .failedWith(
                     "invoicingCustomer.ovttunnus",
                     "invoicingCustomer.katuosoite",
                     "invoicingCustomer.postitoimipaikka",
@@ -577,7 +577,7 @@ class KaivuilmoitusSendValidationTest {
                     postitoimipaikka = "Helsinki",
                 )
 
-            assertThat(invoicingCustomer.validate("invoicingCustomer")).succeeds()
+            assertThat(invoicingCustomer.validate("invoicingCustomer")).isSuccess()
         }
 
         @Test
@@ -591,7 +591,7 @@ class KaivuilmoitusSendValidationTest {
                     postitoimipaikka = null,
                 )
 
-            assertThat(invoicingCustomer.validate("invoicingCustomer")).succeeds()
+            assertThat(invoicingCustomer.validate("invoicingCustomer")).isSuccess()
         }
     }
 
