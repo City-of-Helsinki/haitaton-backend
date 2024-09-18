@@ -908,9 +908,7 @@ class HakemusService(
         val updatedApplicationEntity =
             hakemusEntity.copy(
                 hakemusEntityData = request.toEntityData(hakemusEntity.hakemusEntityData),
-                yhteystiedot =
-                    updateYhteystiedot(
-                        hakemusEntity, hakemusEntity.yhteystiedot, request.customersByRole()))
+                yhteystiedot = updateYhteystiedot(hakemusEntity, request.customersByRole()))
         if (updatedApplicationEntity.hanke.generated) {
             updatedApplicationEntity.hanke.nimi = request.name
         }
@@ -966,14 +964,13 @@ class HakemusService(
 
     private fun updateYhteystiedot(
         hakemusEntity: HakemusEntity,
-        currentYhteystiedot: Map<ApplicationContactType, HakemusyhteystietoEntity>,
         newYhteystiedot: Map<ApplicationContactType, CustomerWithContactsRequest?>
     ): MutableMap<ApplicationContactType, HakemusyhteystietoEntity> {
         val updatedYhteystiedot = mutableMapOf<ApplicationContactType, HakemusyhteystietoEntity>()
         ApplicationContactType.entries.forEach { rooli ->
-            updateYhteystieto(
-                    rooli, hakemusEntity, currentYhteystiedot[rooli], newYhteystiedot[rooli])
-                ?.let { updatedYhteystiedot[rooli] = it }
+            updateYhteystieto(rooli, hakemusEntity, newYhteystiedot[rooli])?.let {
+                updatedYhteystiedot[rooli] = it
+            }
         }
         return updatedYhteystiedot
     }
@@ -981,20 +978,15 @@ class HakemusService(
     private fun updateYhteystieto(
         rooli: ApplicationContactType,
         hakemusEntity: HakemusEntity,
-        hakemusyhteystietoEntity: HakemusyhteystietoEntity?,
         customerWithContactsRequest: CustomerWithContactsRequest?
     ): HakemusyhteystietoEntity? {
         if (customerWithContactsRequest == null) {
             // customer was deleted
             return null
         }
-        if (hakemusyhteystietoEntity == null) {
-            // new customer was added
-            return customerWithContactsRequest.toNewHakemusyhteystietoEntity(rooli, hakemusEntity)
-        }
-        // update existing customer
-        return customerWithContactsRequest.toExistingHakemusyhteystietoEntity(
-            hakemusyhteystietoEntity)
+        return hakemusEntity.yhteystiedot[rooli]?.let {
+            customerWithContactsRequest.toExistingHakemusyhteystietoEntity(it, hakemusEntity)
+        } ?: customerWithContactsRequest.toNewHakemusyhteystietoEntity(rooli, hakemusEntity)
     }
 
     private fun CustomerWithContactsRequest.toNewHakemusyhteystietoEntity(
@@ -1025,13 +1017,22 @@ class HakemusService(
             tilaaja = false)
 
     private fun CustomerWithContactsRequest.toExistingHakemusyhteystietoEntity(
-        hakemusyhteystietoEntity: HakemusyhteystietoEntity
+        hakemusyhteystietoEntity: HakemusyhteystietoEntity,
+        hakemus: HakemusIdentifier,
     ): HakemusyhteystietoEntity {
+        if (customer.type != hakemusyhteystietoEntity.tyyppi && customer.registryKeyHidden) {
+            // If new customer type doesn't match the old one, the type of registry key will be
+            // wrong, but it will be retained if the key is hidden.
+            // Validation only checks the new type.
+            throw InvalidHiddenRegistryKey(hakemus, "New customer type doesn't match the old.")
+        }
         hakemusyhteystietoEntity.tyyppi = customer.type
         hakemusyhteystietoEntity.nimi = customer.name
         hakemusyhteystietoEntity.sahkoposti = customer.email
         hakemusyhteystietoEntity.puhelinnumero = customer.phone
-        hakemusyhteystietoEntity.registryKey = customer.registryKey
+        if (!customer.registryKeyHidden) {
+            hakemusyhteystietoEntity.registryKey = customer.registryKey
+        }
         hakemusyhteystietoEntity.yhteyshenkilot.update(hakemusyhteystietoEntity, this.contacts)
         return hakemusyhteystietoEntity
     }
@@ -1161,6 +1162,10 @@ class InvalidHakemusyhteystietoException(
 ) :
     RuntimeException(
         "Invalid hakemusyhteystieto received when updating hakemus. ${application.logString()}, role=$rooli, yhteystietoId=$yhteystietoId, newId=$newId")
+
+class InvalidHiddenRegistryKey(hakemus: HakemusIdentifier, message: String) :
+    RuntimeException(
+        "RegistryKeyHidden used in an incompatible way: $message ${hakemus.logString()}")
 
 class InvalidHakemusyhteyshenkiloException(message: String) : RuntimeException(message)
 

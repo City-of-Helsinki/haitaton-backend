@@ -418,6 +418,14 @@ The id needs to reference an excavation notification.
         return HankeError.HAI2010
     }
 
+    @ExceptionHandler(InvalidHiddenRegistryKey::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun invalidHiddenRegistryKey(ex: InvalidHiddenRegistryKey): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2010
+    }
+
     @ExceptionHandler(InvalidHakemusyhteyshenkiloException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
