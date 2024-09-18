@@ -189,6 +189,8 @@ data class KaivuilmoitusUpdateRequest(
 
     override fun hasChanges(hakemusEntity: HakemusEntity): Boolean {
         val applicationData = hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData
+        val areas = areas?.map { it.withoutTormaystarkastelut() }
+        val newAreas = applicationData.areas?.map { it.withoutTormaystarkastelut() }
         return name != applicationData.name ||
             workDescription != applicationData.workDescription ||
             constructionWork != applicationData.constructionWork ||
@@ -201,7 +203,7 @@ data class KaivuilmoitusUpdateRequest(
             requiredCompetence != applicationData.requiredCompetence ||
             startTime != applicationData.startTime ||
             endTime != applicationData.endTime ||
-            areas != applicationData.areas ||
+            areas != newAreas ||
             customerWithContacts.hasChanges(
                 hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]) ||
             contractorWithContacts.hasChanges(

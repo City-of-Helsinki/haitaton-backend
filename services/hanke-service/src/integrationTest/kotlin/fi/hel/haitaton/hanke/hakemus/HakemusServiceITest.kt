@@ -1182,7 +1182,11 @@ class HakemusServiceITest(
                             .prop(Hakemusyhteystieto::yhteyshenkilot)
                             .extracting { it.hankekayttajaId }
                             .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
-                        prop(KaivuilmoitusData::areas).isNotNull().single().isEqualTo(area)
+                        prop(KaivuilmoitusData::areas)
+                            .isNotNull()
+                            .single()
+                            .transform { it.withoutTormaystarkastelut() }
+                            .isEqualTo(area.withoutTormaystarkastelut())
                     }
 
                 val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
@@ -1199,7 +1203,11 @@ class HakemusServiceITest(
                             .prop(Hakemusyhteystieto::yhteyshenkilot)
                             .extracting { it.hankekayttajaId }
                             .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
-                        prop(KaivuilmoitusData::areas).isNotNull().single().isEqualTo(area)
+                        prop(KaivuilmoitusData::areas)
+                            .isNotNull()
+                            .single()
+                            .transform { it.withoutTormaystarkastelut() }
+                            .isEqualTo(area.withoutTormaystarkastelut())
                     }
             }
 
