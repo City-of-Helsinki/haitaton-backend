@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationArea
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCompanyInvoicingCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
@@ -16,6 +17,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
+import fi.hel.haitaton.hanke.hakemus.InvoicingCustomer
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
@@ -167,6 +169,14 @@ data class HakemusBuilder(
             { copy(requiredCompetence = requiredCompetence) },
         )
 
+    fun withInvoicingCustomer(
+        invoicingCustomer: InvoicingCustomer = createCompanyInvoicingCustomer()
+    ): HakemusBuilder =
+        updateApplicationData(
+            { throw InvalidParameterException("Not available for cable reports.") },
+            { copy(invoicingCustomer = invoicingCustomer) },
+        )
+
     private fun updateApplicationData(
         onCableReport: JohtoselvityshakemusEntityData.() -> JohtoselvityshakemusEntityData,
         onExcavationNotification: KaivuilmoitusEntityData.() -> KaivuilmoitusEntityData,
@@ -208,6 +218,7 @@ data class HakemusBuilder(
                     .withRequiredCompetence()
                     .hakija()
                     .tyonSuorittaja(founder())
+                    .withInvoicingCustomer()
         }
 
     /**

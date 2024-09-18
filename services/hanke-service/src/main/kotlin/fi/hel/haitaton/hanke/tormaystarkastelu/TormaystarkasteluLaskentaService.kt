@@ -5,9 +5,11 @@ import fi.hel.haitaton.hanke.SRID
 import fi.hel.haitaton.hanke.roundToOneDecimal
 import kotlin.math.max
 import org.geojson.Crs
+import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.geojson.GeoJsonObject
 import org.geojson.GeometryCollection
+import org.geojson.Polygon
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -59,6 +61,19 @@ class TormaystarkasteluLaskentaService(
             calculateRaitioliikenneindeksi(geometryCollection),
         )
     }
+
+    fun calculateTormaystarkastelu(
+        geometry: Polygon,
+        haittaajanKestoDays: Int,
+        kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
+        kaistapituushaitta: AutoliikenteenKaistavaikutustenPituus,
+    ): TormaystarkasteluTulos =
+        calculateTormaystarkastelu(
+            FeatureCollection().apply { add(Feature().apply { this.geometry = geometry }) },
+            haittaajanKestoDays,
+            kaistahaitta,
+            kaistapituushaitta,
+        )
 
     private fun hasAllRequiredInformation(alue: HankealueEntity): Boolean {
         return (alue.haittaAlkuPvm != null &&
