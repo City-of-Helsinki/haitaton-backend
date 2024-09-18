@@ -153,21 +153,50 @@ object HakemusUpdateRequestFactory {
             additionalInfo = "Lisätiedot",
         )
 
-    private fun createCustomerWithContactsRequest(
+    fun createCustomerWithContactsRequest(
+        customerType: CustomerType = CustomerType.COMPANY,
+        yhteystietoId: UUID? = UUID.randomUUID(),
+        registryKey: String?,
+        vararg hankekayttajaIds: UUID
+    ) =
+        CustomerWithContactsRequest(
+            createCustomer(
+                yhteystietoId = yhteystietoId,
+                type = customerType,
+                registryKey = registryKey,
+            ),
+            hankekayttajaIds.map { ContactRequest(it) },
+        )
+
+    fun createCustomerWithContactsRequest(
         customerType: CustomerType = CustomerType.COMPANY,
         yhteystietoId: UUID? = UUID.randomUUID(),
         vararg hankekayttajaIds: UUID
     ) =
-        CustomerWithContactsRequest(
-            CustomerRequest(
-                yhteystietoId = yhteystietoId,
-                type = customerType,
-                name = DEFAULT_CUSTOMER_NAME,
-                email = DEFAULT_CUSTOMER_EMAIL,
-                phone = DEFAULT_CUSTOMER_PHONE,
-                registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
-            ),
-            hankekayttajaIds.map { ContactRequest(it) },
+        createCustomerWithContactsRequest(
+            customerType = customerType,
+            yhteystietoId = yhteystietoId,
+            registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
+            hankekayttajaIds = hankekayttajaIds,
+        )
+
+    fun createCustomer(
+        yhteystietoId: UUID? = UUID.randomUUID(),
+        type: CustomerType = CustomerType.COMPANY,
+        name: String = DEFAULT_CUSTOMER_NAME,
+        email: String = DEFAULT_CUSTOMER_EMAIL,
+        phone: String = DEFAULT_CUSTOMER_PHONE,
+        registryKey: String? = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKeyHidden: Boolean = false,
+    ) =
+        CustomerRequest(
+            yhteystietoId = yhteystietoId,
+            type = type,
+            name = name,
+            email = email,
+            phone = phone,
+            registryKey = registryKey,
+            registryKeyHidden = registryKeyHidden,
         )
 
     private fun createInvoicingCustomerRequest(

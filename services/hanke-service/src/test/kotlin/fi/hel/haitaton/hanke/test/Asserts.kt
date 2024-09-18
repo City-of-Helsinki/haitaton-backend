@@ -64,10 +64,10 @@ object Asserts {
             .prop(StreetAddress::streetName)
             .isEqualTo(street)
 
-    fun Assert<ValidationResult>.failsWith(vararg paths: String) = all {
+    fun Assert<ValidationResult>.failedWith(vararg paths: String) = all {
         this.prop(ValidationResult::isOk).isFalse()
         this.prop(ValidationResult::errorPaths).containsExactlyInAnyOrder(*paths)
     }
 
-    fun Assert<ValidationResult>.succeeds() = this.prop(ValidationResult::isOk).isTrue()
+    fun Assert<ValidationResult>.isSuccess() = this.prop(ValidationResult::isOk).isTrue()
 }

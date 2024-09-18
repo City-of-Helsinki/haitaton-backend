@@ -265,6 +265,8 @@ data class CustomerRequest(
     val email: String,
     val phone: String,
     val registryKey: String? = null,
+    /** Value is false when read from JSON with null or empty value. */
+    val registryKeyHidden: Boolean = false,
 ) {
     /**
      * Returns true if this customer has changes compared to the given [hakemusyhteystietoEntity].
@@ -274,7 +276,7 @@ data class CustomerRequest(
             name != hakemusyhteystietoEntity.nimi ||
             email != hakemusyhteystietoEntity.sahkoposti ||
             phone != hakemusyhteystietoEntity.puhelinnumero ||
-            registryKey != hakemusyhteystietoEntity.registryKey
+            (!registryKeyHidden && registryKey != hakemusyhteystietoEntity.registryKey)
 }
 
 /** For referencing [fi.hel.haitaton.hanke.permissions.HankeKayttaja] by its id. */

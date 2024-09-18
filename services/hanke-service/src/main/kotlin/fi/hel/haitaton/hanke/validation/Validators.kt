@@ -34,6 +34,9 @@ object Validators {
     fun validateFalse(condition: Boolean?, path: String): ValidationResult =
         if (condition == false) ValidationResult.success() else ValidationResult.failure(path)
 
+    fun validateNull(value: Any?, path: String): ValidationResult =
+        validateTrue(value == null, path)
+
     fun notNull(value: Any?, path: String): ValidationResult = validateFalse(value == null, path)
 
     fun notBlank(value: String, path: String): ValidationResult =
@@ -83,13 +86,12 @@ object Validators {
 }
 
 sealed class ValidationResult {
-    abstract val errorPaths: List<String>
+    abstract val errorPaths: Set<String>
 
     /** Using a data class here to avoid the need to implement equals and hashCode for the class. */
-    private data class Result(override val errorPaths: List<String> = listOf()) :
-        ValidationResult()
+    private data class Result(override val errorPaths: Set<String> = setOf()) : ValidationResult()
 
-    fun errorPaths(): List<String> = errorPaths
+    fun errorPaths(): List<String> = errorPaths.toList()
 
     fun isOk() = errorPaths.isEmpty()
 
@@ -145,8 +147,9 @@ sealed class ValidationResult {
         f: (T, String) -> ValidationResult,
     ): ValidationResult {
         return this.addAll(
-            values.flatMapIndexed { index: Int, value: T -> f(value, "$path[$index]").errorPaths() }
-        )
+            values.flatMapIndexed { index: Int, value: T ->
+                f(value, "$path[$index]").errorPaths()
+            })
     }
 
     companion object {
@@ -154,7 +157,7 @@ sealed class ValidationResult {
 
         fun success(): ValidationResult = empty
 
-        fun failure(errorPath: String): ValidationResult = Result(listOf(errorPath))
+        fun failure(errorPath: String): ValidationResult = Result(setOf(errorPath))
 
         fun <T> whenNotNull(value: T?, f: (T) -> ValidationResult): ValidationResult =
             success().whenNotNull(value, f)
