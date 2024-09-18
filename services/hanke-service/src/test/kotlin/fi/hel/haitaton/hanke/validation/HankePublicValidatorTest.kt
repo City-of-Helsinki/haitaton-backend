@@ -1,13 +1,8 @@
 package fi.hel.haitaton.hanke.validation
 
 import assertk.assertThat
-import assertk.assertions.containsExactly
-import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.isEqualTo
-import assertk.assertions.isFalse
 import assertk.assertions.isGreaterThanOrEqualTo
-import assertk.assertions.isTrue
-import assertk.assertions.single
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
@@ -19,12 +14,12 @@ import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_ZERO_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.factory.modify
+import fi.hel.haitaton.hanke.test.Asserts.failedWith
+import fi.hel.haitaton.hanke.test.Asserts.isSuccess
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.touch
 import fi.hel.haitaton.hanke.validation.HankePublicValidator.validateHankeHasMandatoryFields
 import java.util.stream.Stream
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -54,88 +49,82 @@ class HankePublicValidatorTest {
                 Arguments.of(
                     "tyomaaKatuosoite",
                     "missing",
-                    completeHanke().apply { tyomaaKatuosoite = null }
+                    completeHanke().apply { tyomaaKatuosoite = null },
                 ),
                 Arguments.of(
-                    "tyomaaKatuosoite",
-                    "empty",
-                    completeHanke().apply { tyomaaKatuosoite = "" }
-                ),
+                    "tyomaaKatuosoite", "empty", completeHanke().apply { tyomaaKatuosoite = "" }),
                 Arguments.of(
                     "tyomaaKatuosoite",
                     "blank",
-                    completeHanke().apply { tyomaaKatuosoite = BLANK }
+                    completeHanke().apply { tyomaaKatuosoite = BLANK },
                 ),
                 Arguments.of("vaihe", "missing", completeHanke().apply { vaihe = null }),
                 Arguments.of("alueet", "empty", completeHanke().apply { alueet = mutableListOf() }),
                 Arguments.of(
                     "alueet[0].haittaAlkuPvm",
                     "missing",
-                    completeHanke().apply { alueet[0].haittaAlkuPvm = null }
+                    completeHanke().apply { alueet[0].haittaAlkuPvm = null },
                 ),
                 Arguments.of(
                     "alueet[0].haittaLoppuPvm",
                     "missing",
-                    completeHanke().apply { alueet[0].haittaLoppuPvm = null }
+                    completeHanke().apply { alueet[0].haittaLoppuPvm = null },
                 ),
                 Arguments.of(
                     "alueet[0].meluHaitta",
                     "missing",
-                    completeHanke().apply { alueet[0].meluHaitta = null }
+                    completeHanke().apply { alueet[0].meluHaitta = null },
                 ),
                 Arguments.of(
                     "alueet[0].polyHaitta",
                     "missing",
-                    completeHanke().apply { alueet[0].polyHaitta = null }
+                    completeHanke().apply { alueet[0].polyHaitta = null },
                 ),
                 Arguments.of(
                     "alueet[0].tarinaHaitta",
                     "missing",
-                    completeHanke().apply { alueet[0].tarinaHaitta = null }
+                    completeHanke().apply { alueet[0].tarinaHaitta = null },
                 ),
                 Arguments.of(
                     "alueet[0].kaistaHaitta",
                     "missing",
-                    completeHanke().apply { alueet[0].kaistaHaitta = null }
+                    completeHanke().apply { alueet[0].kaistaHaitta = null },
                 ),
                 Arguments.of(
                     "alueet[0].kaistaPituusHaitta",
                     "missing",
-                    completeHanke().apply { alueet[0].kaistaPituusHaitta = null }
+                    completeHanke().apply { alueet[0].kaistaPituusHaitta = null },
                 ),
                 Arguments.of(
                     "alueet[0].geometriat",
                     "missing",
-                    completeHanke().apply { alueet[0].geometriat = null }
+                    completeHanke().apply { alueet[0].geometriat = null },
                 ),
                 Arguments.of(
                     "alueet[0].geometriat.featureCollection",
                     "missing",
-                    completeHanke().apply { alueet[0].geometriat!!.featureCollection = null }
+                    completeHanke().apply { alueet[0].geometriat!!.featureCollection = null },
                 ),
                 Arguments.of(
                     "alueet[0].geometriat.featureCollection.features",
                     "missing",
                     completeHanke().apply {
                         alueet[0].geometriat!!.featureCollection!!.features = null
-                    }
+                    },
                 ),
                 Arguments.of(
                     "alueet[0].geometriat.featureCollection.features",
                     "empty",
                     completeHanke().apply {
                         alueet[0].geometriat!!.featureCollection!!.features = listOf()
-                    }
+                    },
                 ),
                 Arguments.of(
-                    "alueet[0].nimi",
-                    "empty",
-                    completeHanke().apply { alueet[0].nimi = "" }
-                ),
+                    "alueet[0].nimi", "empty", completeHanke().apply { alueet[0].nimi = "" }),
                 Arguments.of(
                     "alueet[0].haittojenhallintasuunnitelma",
                     "missing",
-                    completeHanke().apply { alueet[0].haittojenhallintasuunnitelma = null }
+                    completeHanke().apply { alueet[0].haittojenhallintasuunnitelma = null },
                 ),
                 Arguments.of(
                     "alueet[0].haittojenhallintasuunnitelma.YLEINEN",
@@ -145,11 +134,9 @@ class HankePublicValidatorTest {
                             alueet[0].copy(
                                 haittojenhallintasuunnitelma =
                                     HankealueFactory.createHaittojenhallintasuunnitelma(
-                                        Haittojenhallintatyyppi.YLEINEN to null
-                                    ),
-                                tormaystarkasteluTulos = null
-                            )
-                    }
+                                        Haittojenhallintatyyppi.YLEINEN to null),
+                                tormaystarkasteluTulos = null)
+                    },
                 ),
                 Arguments.of(
                     "alueet[0].haittojenhallintasuunnitelma.AUTOLIIKENNE",
@@ -157,9 +144,8 @@ class HankePublicValidatorTest {
                     completeHanke().apply {
                         alueet[0].haittojenhallintasuunnitelma =
                             HankealueFactory.createHaittojenhallintasuunnitelma(
-                                Haittojenhallintatyyppi.AUTOLIIKENNE to ""
-                            )
-                    }
+                                Haittojenhallintatyyppi.AUTOLIIKENNE to "")
+                    },
                 ),
                 Arguments.of(
                     "alueet[0].haittojenhallintasuunnitelma.MUUT",
@@ -167,74 +153,67 @@ class HankePublicValidatorTest {
                     completeHanke().apply {
                         alueet[0].haittojenhallintasuunnitelma =
                             HankealueFactory.createHaittojenhallintasuunnitelma(
-                                Haittojenhallintatyyppi.MUUT to BLANK
-                            )
-                    }
+                                Haittojenhallintatyyppi.MUUT to BLANK)
+                    },
                 ),
                 Arguments.of(
-                    "omistajat",
-                    "empty",
-                    completeHanke().apply { omistajat = mutableListOf() }
-                ),
+                    "omistajat", "empty", completeHanke().apply { omistajat = mutableListOf() }),
                 Arguments.of(
-                    "omistajat[0].nimi",
-                    "empty",
-                    completeHanke().apply { omistajat[0].nimi = "" }
-                ),
+                    "omistajat[0].nimi", "empty", completeHanke().apply { omistajat[0].nimi = "" }),
                 Arguments.of(
                     "omistajat[0].nimi",
                     "blank",
-                    completeHanke().apply { omistajat[0].nimi = BLANK }
+                    completeHanke().apply { omistajat[0].nimi = BLANK },
                 ),
                 Arguments.of(
                     "omistajat[0].email",
                     "empty",
-                    completeHanke().apply { omistajat[0].email = "" }
+                    completeHanke().apply { omistajat[0].email = "" },
                 ),
                 Arguments.of(
                     "omistajat[0].email",
                     "blank",
-                    completeHanke().apply { omistajat[0].email = BLANK }
+                    completeHanke().apply { omistajat[0].email = BLANK },
                 ),
                 Arguments.of(
                     "rakennuttajat[0].nimi",
                     "empty",
-                    completeHanke().apply { rakennuttajat[0].nimi = "" }
+                    completeHanke().apply { rakennuttajat[0].nimi = "" },
                 ),
                 Arguments.of(
                     "rakennuttajat[0].nimi",
                     "blank",
-                    completeHanke().apply { rakennuttajat[0].nimi = BLANK }
+                    completeHanke().apply { rakennuttajat[0].nimi = BLANK },
                 ),
                 Arguments.of(
                     "rakennuttajat[0].email",
                     "empty",
-                    completeHanke().apply { rakennuttajat[0].email = "" }
+                    completeHanke().apply { rakennuttajat[0].email = "" },
                 ),
                 Arguments.of(
                     "rakennuttajat[0].email",
                     "blank",
-                    completeHanke().apply { rakennuttajat[0].email = BLANK }
+                    completeHanke().apply { rakennuttajat[0].email = BLANK },
                 ),
                 Arguments.of(
                     "toteuttajat[0].nimi",
                     "empty",
-                    completeHanke().apply { toteuttajat[0].nimi = "" }
+                    completeHanke().apply { toteuttajat[0].nimi = "" },
                 ),
                 Arguments.of(
                     "toteuttajat[0].nimi",
                     "blank",
-                    completeHanke().apply { toteuttajat[0].nimi = BLANK }
+                    completeHanke().apply { toteuttajat[0].nimi = BLANK },
                 ),
                 Arguments.of(
                     "toteuttajat[0].email",
                     "empty",
-                    completeHanke().apply { toteuttajat[0].email = "" }
+                    completeHanke().apply { toteuttajat[0].email = "" },
                 ),
                 Arguments.of(
                     "toteuttajat[0].email",
                     "blank",
-                    completeHanke().apply { toteuttajat[0].email = BLANK }
+                    completeHanke().apply { toteuttajat[0].email = BLANK },
                 ),
             )
     }
@@ -243,17 +222,16 @@ class HankePublicValidatorTest {
     fun `when hanke has all mandatory fields should return ok`() {
         val result = validateHankeHasMandatoryFields(completeHanke())
 
-        assertTrue(result.isOk())
+        assertThat(result).isSuccess()
     }
 
     @Test
     fun `when rakennuttajat missing should return ok`() {
         val result =
             validateHankeHasMandatoryFields(
-                completeHanke().apply { rakennuttajat = mutableListOf() }
-            )
+                completeHanke().apply { rakennuttajat = mutableListOf() })
 
-        assertTrue(result.isOk())
+        assertThat(result).isSuccess()
     }
 
     @Test
@@ -261,7 +239,7 @@ class HankePublicValidatorTest {
         val result =
             validateHankeHasMandatoryFields(completeHanke().apply { toteuttajat = mutableListOf() })
 
-        assertTrue(result.isOk())
+        assertThat(result).isSuccess()
     }
 
     @Test
@@ -272,7 +250,7 @@ class HankePublicValidatorTest {
 
         val ytunnusCount = hanke.extractYhteystiedot().mapNotNull { it.ytunnus }.count()
         assertThat(ytunnusCount).isGreaterThanOrEqualTo(1)
-        assertTrue(result.isOk())
+        assertThat(result).isSuccess()
     }
 
     @Test
@@ -282,8 +260,7 @@ class HankePublicValidatorTest {
 
         val result = validateHankeHasMandatoryFields(hanke)
 
-        assertFalse(result.isOk())
-        assertThat(result.errorPaths()).containsExactly("rakennuttajat[0].ytunnus")
+        assertThat(result).failedWith("rakennuttajat[0].ytunnus")
     }
 
     @Test
@@ -300,7 +277,7 @@ class HankePublicValidatorTest {
 
         val ytunnusCount = hanke.extractYhteystiedot().mapNotNull { it.ytunnus }.count()
         assertThat(ytunnusCount).isEqualTo(0)
-        assertTrue(result.isOk())
+        assertThat(result).isSuccess()
     }
 
     @Test
@@ -309,8 +286,7 @@ class HankePublicValidatorTest {
 
         val result = validateHankeHasMandatoryFields(hanke)
 
-        assertFalse(result.isOk())
-        assertThat(result.errorPaths()).containsExactly("toteuttajat[0].ytunnus")
+        assertThat(result).failedWith("toteuttajat[0].ytunnus")
     }
 
     @Test
@@ -319,8 +295,7 @@ class HankePublicValidatorTest {
 
         val result = validateHankeHasMandatoryFields(hanke)
 
-        assertFalse(result.isOk())
-        assertThat(result.errorPaths()).containsExactly("omistajat[0].ytunnus")
+        assertThat(result).failedWith("omistajat[0].ytunnus")
     }
 
     @Test
@@ -330,15 +305,13 @@ class HankePublicValidatorTest {
             hanke.alueet[0].copy(
                 haittojenhallintasuunnitelma =
                     HankealueFactory.createHaittojenhallintasuunnitelma(
-                        Haittojenhallintatyyppi.PYORALIIKENNE to null
-                    ),
+                        Haittojenhallintatyyppi.PYORALIIKENNE to null),
                 tormaystarkasteluTulos =
-                    hanke.alueet[0].tormaystarkasteluTulos!!.copy(pyoraliikenneindeksi = 0f)
-            )
+                    hanke.alueet[0].tormaystarkasteluTulos!!.copy(pyoraliikenneindeksi = 0f))
 
         val result = validateHankeHasMandatoryFields(hanke)
 
-        assertThat(result.isOk()).isTrue()
+        assertThat(result).isSuccess()
     }
 
     @Test
@@ -348,14 +321,12 @@ class HankePublicValidatorTest {
             hanke.alueet[0].copy(
                 haittojenhallintasuunnitelma =
                     HankealueFactory.createHaittojenhallintasuunnitelma(
-                        Haittojenhallintatyyppi.AUTOLIIKENNE to ""
-                    ),
-                tormaystarkasteluTulos = null
-            )
+                        Haittojenhallintatyyppi.AUTOLIIKENNE to ""),
+                tormaystarkasteluTulos = null)
 
         val result = validateHankeHasMandatoryFields(hanke)
 
-        assertThat(result.isOk()).isTrue()
+        assertThat(result).isSuccess()
     }
 
     @Test
@@ -371,12 +342,10 @@ class HankePublicValidatorTest {
                     alueet[0].geometriat!!.featureCollection!!.features = null
                     alueet[0].nimi = ""
                     kuvaus = null
-                }
-            )
+                })
 
-        assertFalse(result.isOk())
-        assertThat(result.errorPaths())
-            .containsExactlyInAnyOrder(
+        assertThat(result)
+            .failedWith(
                 "toteuttajat[0].nimi",
                 "toteuttajat[0].email",
                 "alueet[0].geometriat.featureCollection.features",
@@ -396,8 +365,7 @@ class HankePublicValidatorTest {
 
         val result = validateHankeHasMandatoryFields(hanke)
 
-        assertFalse(result.isOk())
-        assertThat(result.errorPaths()).containsExactly(path)
+        assertThat(result).failedWith(path)
     }
 
     @Nested
@@ -409,8 +377,7 @@ class HankePublicValidatorTest {
                 autoliikenne = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
                 pyoraliikenneindeksi = 3f,
                 linjaautoliikenneindeksi = 3f,
-                raitioliikenneindeksi = 3f
-            )
+                raitioliikenneindeksi = 3f)
 
         @Test
         fun `returns success when suunnitelma present and matching tormaystarkastelutulos is positive`() {
@@ -423,7 +390,7 @@ class HankePublicValidatorTest {
                     "hhs",
                 )
 
-            assertThat(result.isOk()).isTrue()
+            assertThat(result).isSuccess()
         }
 
         @ParameterizedTest
@@ -445,8 +412,7 @@ class HankePublicValidatorTest {
                     "hhs",
                 )
 
-            assertThat(result.isOk()).isFalse()
-            assertThat(result.errorPaths).single().isEqualTo("hhs.$tyyppi")
+            assertThat(result).failedWith("hhs.$tyyppi")
         }
 
         @ParameterizedTest
@@ -468,8 +434,7 @@ class HankePublicValidatorTest {
                     "hhs",
                 )
 
-            assertThat(result.isOk()).isFalse()
-            assertThat(result.errorPaths).single().isEqualTo("hhs.$tyyppi")
+            assertThat(result).failedWith("hhs.$tyyppi")
         }
 
         @ParameterizedTest
@@ -491,8 +456,7 @@ class HankePublicValidatorTest {
                     "hhs",
                 )
 
-            assertThat(result.isOk()).isFalse()
-            assertThat(result.errorPaths).single().isEqualTo("hhs.$tyyppi")
+            assertThat(result).failedWith("hhs.$tyyppi")
         }
 
         @ParameterizedTest
@@ -510,7 +474,7 @@ class HankePublicValidatorTest {
                     "hhs",
                 )
 
-            assertThat(result.isOk()).isTrue()
+            assertThat(result).isSuccess()
         }
 
         private fun zeroes(): List<Arguments> =
@@ -518,21 +482,16 @@ class HankePublicValidatorTest {
                 Arguments.of(
                     Haittojenhallintatyyppi.AUTOLIIKENNE,
                     tormaystarkasteluTulos.copy(
-                        autoliikenne = TORMAYSTARKASTELU_ZERO_AUTOLIIKENNELUOKITTELU
-                    )
-                ),
+                        autoliikenne = TORMAYSTARKASTELU_ZERO_AUTOLIIKENNELUOKITTELU)),
                 Arguments.of(
                     Haittojenhallintatyyppi.LINJAAUTOLIIKENNE,
-                    tormaystarkasteluTulos.copy(linjaautoliikenneindeksi = 0f)
-                ),
+                    tormaystarkasteluTulos.copy(linjaautoliikenneindeksi = 0f)),
                 Arguments.of(
                     Haittojenhallintatyyppi.RAITIOLIIKENNE,
-                    tormaystarkasteluTulos.copy(raitioliikenneindeksi = 0f)
-                ),
+                    tormaystarkasteluTulos.copy(raitioliikenneindeksi = 0f)),
                 Arguments.of(
                     Haittojenhallintatyyppi.PYORALIIKENNE,
-                    tormaystarkasteluTulos.copy(pyoraliikenneindeksi = 0f)
-                ),
+                    tormaystarkasteluTulos.copy(pyoraliikenneindeksi = 0f)),
             )
     }
 
@@ -545,8 +504,7 @@ class HankePublicValidatorTest {
         fun `fails when muut is null or blank`(suunnitelma: String?) {
             val haittojenhallintasuunnitelma =
                 HankealueFactory.createHaittojenhallintasuunnitelma(
-                    Haittojenhallintatyyppi.MUUT to suunnitelma
-                )
+                    Haittojenhallintatyyppi.MUUT to suunnitelma)
 
             val result =
                 HankePublicValidator.validateHaittojenhallintasuunnitelmaCommonFields(
@@ -554,8 +512,7 @@ class HankePublicValidatorTest {
                     "hhs",
                 )
 
-            assertThat(result.isOk()).isFalse()
-            assertThat(result.errorPaths()).single().isEqualTo("hhs.MUUT")
+            assertThat(result).failedWith("hhs.MUUT")
         }
 
         @ParameterizedTest
@@ -564,8 +521,7 @@ class HankePublicValidatorTest {
         fun `fails when yleinen is null or blank`(suunnitelma: String?) {
             val haittojenhallintasuunnitelma =
                 HankealueFactory.createHaittojenhallintasuunnitelma(
-                    Haittojenhallintatyyppi.YLEINEN to suunnitelma
-                )
+                    Haittojenhallintatyyppi.YLEINEN to suunnitelma)
 
             val result =
                 HankePublicValidator.validateHaittojenhallintasuunnitelmaCommonFields(
@@ -573,8 +529,7 @@ class HankePublicValidatorTest {
                     "hhs",
                 )
 
-            assertThat(result.isOk()).isFalse()
-            assertThat(result.errorPaths()).single().isEqualTo("hhs.YLEINEN")
+            assertThat(result).failedWith("hhs.YLEINEN")
         }
     }
 }

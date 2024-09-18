@@ -3,13 +3,17 @@ package fi.hel.haitaton.hanke.hakemus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.isValidBusinessId
 import fi.hel.haitaton.hanke.isValidOVT
+import fi.hel.haitaton.hanke.validation.HenkilotunnusValidator.isValidHenkilotunnus
 import fi.hel.haitaton.hanke.validation.ValidationResult
 import fi.hel.haitaton.hanke.validation.ValidationResult.Companion.whenNotNull
 import fi.hel.haitaton.hanke.validation.Validators.given
 import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
+import fi.hel.haitaton.hanke.validation.Validators.notBlank
 import fi.hel.haitaton.hanke.validation.Validators.notJustWhitespace
 import fi.hel.haitaton.hanke.validation.Validators.notNull
 import fi.hel.haitaton.hanke.validation.Validators.validate
+import fi.hel.haitaton.hanke.validation.Validators.validateFalse
+import fi.hel.haitaton.hanke.validation.Validators.validateNull
 import fi.hel.haitaton.hanke.validation.Validators.validateTrue
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
@@ -48,10 +52,6 @@ fun HakemusUpdateRequest.validateCommonFieldsForErrors(): ValidationResult =
         .andWhen(startTime != null && endTime != null) {
             isBeforeOrEqual(startTime!!, endTime!!, "endTime")
         }
-        .whenNotNull(customerWithContacts) { it.validateForErrors("customerWithContacts") }
-        .whenNotNull(representativeWithContacts) {
-            it.validateForErrors("representativeWithContacts")
-        }
 
 fun CustomerWithContactsRequest.validateForErrors(path: String): ValidationResult =
     customer.validateForErrors("$path.customer")
@@ -60,18 +60,76 @@ fun CustomerRequest.validateForErrors(path: String): ValidationResult =
     validate { notJustWhitespace(name, "$path.name") }
         .and { notJustWhitespace(email, "$path.email") }
         .and { notJustWhitespace(phone, "$path.phone") }
-        .andWhen(
-            registryKey != null &&
-                (type == CustomerType.COMPANY || type == CustomerType.ASSOCIATION)
-        ) {
+        .and { validateRegistryKey(path) }
+
+fun CustomerRequest.validateRegistryKey(path: String): ValidationResult =
+    when (type) {
+        CustomerType.COMPANY ->
+            validateRegistryKeyForCompanies(this.registryKey, this.registryKeyHidden, path)
+        CustomerType.ASSOCIATION ->
+            validateRegistryKeyForCompanies(this.registryKey, this.registryKeyHidden, path)
+        CustomerType.PERSON ->
+            validateRegistryKeyForPerson(this.registryKey, this.registryKeyHidden, path)
+        CustomerType.OTHER ->
+            validateRegistryKeyForOther(this.registryKey, this.registryKeyHidden, path)
+    }
+
+private fun validateRegistryKeyForCompanies(
+    registryKey: String?,
+    registryKeyHidden: Boolean,
+    path: String,
+) =
+    validateFalse(registryKeyHidden, "$path.registryKeyHidden").and {
+        whenNotNull(registryKey) {
             validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
+        }
+    }
+
+private fun validateRegistryKeyForOther(
+    registryKey: String?,
+    registryKeyHidden: Boolean,
+    path: String,
+) =
+    validate()
+        .andWhen(registryKeyHidden) { validateNull(registryKey, "$path.registryKey") }
+        .andWhen(!registryKeyHidden) {
+            whenNotNull(registryKey) { notBlank(it, "$path.registryKey") }
+        }
+
+private fun validateRegistryKeyForPerson(
+    registryKey: String?,
+    registryKeyHidden: Boolean,
+    path: String,
+) =
+    validate()
+        .andWhen(registryKeyHidden) { validateNull(registryKey, "$path.registryKey") }
+        .andWhen(!registryKeyHidden) {
+            whenNotNull(registryKey) {
+                validateTrue(it.isValidHenkilotunnus(), "$path.registryKey")
+            }
         }
 
 private fun JohtoselvityshakemusUpdateRequest.validateForErrors(): ValidationResult =
     whenNotNull(postalAddress) { it.validateForErrors("postalAddress") }
-        .whenNotNull(contractorWithContacts) { it.validateForErrors("contractorWithContacts") }
+        .whenNotNull(customerWithContacts) {
+            it.validateForErrors("customerWithContacts").and {
+                it.validateNoHenkilotunnus("customerWithContacts")
+            }
+        }
+        .whenNotNull(representativeWithContacts) {
+            it.validateForErrors("representativeWithContacts").and {
+                it.validateNoHenkilotunnus("representativeWithContacts")
+            }
+        }
+        .whenNotNull(contractorWithContacts) {
+            it.validateForErrors("contractorWithContacts").and {
+                it.validateNoHenkilotunnus("contractorWithContacts")
+            }
+        }
         .whenNotNull(propertyDeveloperWithContacts) {
-            it.validateForErrors("propertyDeveloperWithContacts")
+            it.validateForErrors("propertyDeveloperWithContacts").and {
+                it.validateNoHenkilotunnus("propertyDeveloperWithContacts")
+            }
         }
 
 fun PostalAddressRequest.validateForErrors(path: String) = validate {
@@ -80,21 +138,40 @@ fun PostalAddressRequest.validateForErrors(path: String) = validate {
 
 private fun KaivuilmoitusUpdateRequest.validateForErrors(): ValidationResult =
     given(!cableReportDone) { notNull(rockExcavation, "rockExcavation") }
-        .whenNotNull(contractorWithContacts) { it.validateForErrors("contractorWithContacts") }
+        .whenNotNull(customerWithContacts) { it.validateForErrors("customerWithContacts") }
+        .whenNotNull(representativeWithContacts) {
+            it.validateForErrors("representativeWithContacts").and {
+                it.validateNoHenkilotunnus("representativeWithContacts")
+            }
+        }
+        .whenNotNull(contractorWithContacts) {
+            it.validateForErrors("contractorWithContacts").and {
+                it.validateNoHenkilotunnus("contractorWithContacts")
+            }
+        }
         .whenNotNull(propertyDeveloperWithContacts) {
-            it.validateForErrors("propertyDeveloperWithContacts")
+            it.validateForErrors("propertyDeveloperWithContacts").and {
+                it.validateNoHenkilotunnus("propertyDeveloperWithContacts")
+            }
         }
         .whenNotNull(invoicingCustomer) { it.validateForErrors("invoicingCustomer") }
         .and { notJustWhitespace(additionalInfo, "additionalInfo") }
+
+private fun CustomerWithContactsRequest.validateNoHenkilotunnus(path: String) =
+    customer.validateNoHenkilotunnus("$path.customer")
+
+private fun CustomerRequest.validateNoHenkilotunnus(path: String) =
+    validate().andWhen(type in listOf(CustomerType.PERSON, CustomerType.OTHER)) {
+        validateNull(registryKey, "$path.registryKey")
+    }
 
 fun InvoicingCustomerRequest.validateForErrors(path: String): ValidationResult =
     validate { notJustWhitespace(name, "$path.name") }
         .andWhen(
             registryKey != null &&
-                (type == CustomerType.COMPANY || type == CustomerType.ASSOCIATION)
-        ) {
-            validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
-        }
+                (type == CustomerType.COMPANY || type == CustomerType.ASSOCIATION)) {
+                validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
+            }
         .andWhen(!ovt.isNullOrBlank()) { validateTrue(ovt.isValidOVT(), "$path.ovt") }
         .and { notJustWhitespace(ovt, "$path.ovt") }
         .and { notJustWhitespace(invoicingOperator, "$path.invoicingOperator") }
@@ -110,5 +187,4 @@ fun InvoicingPostalAddressRequest.validateForErrors(path: String): ValidationRes
 
 class InvalidHakemusDataException(val errorPaths: List<String>) :
     RuntimeException(
-        "Application contains invalid data. Errors at paths: ${errorPaths.joinToString { "applicationData.$it" }}"
-    )
+        "Application contains invalid data. Errors at paths: ${errorPaths.joinToString { "applicationData.$it" }}")
