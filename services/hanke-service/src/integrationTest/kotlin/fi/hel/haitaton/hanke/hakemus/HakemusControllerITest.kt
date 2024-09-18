@@ -1284,19 +1284,27 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             .andExpect(registryKeys("contractorWithContacts", null, false))
             .andExpect(registryKeys("propertyDeveloperWithContacts", "5425233-4", false))
             .andExpect(registryKeys("representativeWithContacts", null, false))
+            .andExpect(
+                jsonPath("$.applicationData.invoicingCustomer.registryKey").doesNotHaveJsonPath())
+            .andExpect(
+                jsonPath("$.applicationData.invoicingCustomer.registryKeyHidden").value(true))
 
-    private fun hakemusDataForRegistryKeyTest(tyyppi: CustomerType): JohtoselvityshakemusData {
+    private fun hakemusDataForRegistryKeyTest(tyyppi: CustomerType): KaivuilmoitusData {
         val hakija =
             HakemusyhteystietoFactory.createPerson(tyyppi = tyyppi, registryKey = "280341-912F")
         val suorittaja = HakemusyhteystietoFactory.createPerson(tyyppi = tyyppi, registryKey = null)
         val rakennuttaja = HakemusyhteystietoFactory.create(registryKey = "5425233-4")
         val asianhoitaja = HakemusyhteystietoFactory.create(registryKey = null)
+        val laskutusyhteystieto =
+            HakemusyhteystietoFactory.createLaskutusyhteystieto(
+                tyyppi = tyyppi, registryKey = "280341-912F")
         val hakemusdata =
-            HakemusFactory.createJohtoselvityshakemusData(
+            HakemusFactory.createKaivuilmoitusData(
                 customerWithContacts = hakija,
                 contractorWithContacts = suorittaja,
                 propertyDeveloperWithContacts = rakennuttaja,
                 representativeWithContacts = asianhoitaja,
+                invoicingCustomer = laskutusyhteystieto,
             )
         return hakemusdata
     }

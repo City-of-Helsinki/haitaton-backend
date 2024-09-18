@@ -69,6 +69,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withContractor
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomer
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomerWithContactsRequest
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withDates
+import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withInvoicingCustomer
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withName
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRequiredCompetence
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
@@ -1292,7 +1293,9 @@ class HakemusServiceITest(
             @ParameterizedTest
             @ValueSource(strings = ["Something completely different"])
             @NullSource
-            fun `keeps old registry key when registry key hidden is true`(newRegistryKey: String?) {
+            fun `keeps old customer registry key when registry key hidden is true`(
+                newRegistryKey: String?
+            ) {
                 val henkilotunnus = "090626-885W"
                 val hakemus =
                     hakemusFactory
@@ -1326,6 +1329,68 @@ class HakemusServiceITest(
                     .prop(KaivuilmoitusData::customerWithContacts)
                     .isNotNull()
                     .prop(Hakemusyhteystieto::registryKey)
+                    .isEqualTo(henkilotunnus)
+            }
+
+            @Test
+            fun `throws exception when an existing laskutusyhteystieto has registry key hidden but different type in the request`() {
+                val hakemus =
+                    hakemusFactory
+                        .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                        .withInvoicingCustomer(ApplicationFactory.createCompanyInvoicingCustomer())
+                        .save()
+                val request =
+                    (hakemus.toUpdateRequest() as KaivuilmoitusUpdateRequest).withInvoicingCustomer(
+                        CustomerType.PERSON,
+                        registryKey = null,
+                        registryKeyHidden = true,
+                    )
+
+                val failure = assertFailure {
+                    hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+                }
+
+                failure.all {
+                    hasClass(InvalidHiddenRegistryKey::class)
+                    messageContains("id=${hakemus.id}")
+                    messageContains("RegistryKeyHidden used in an incompatible way")
+                    messageContains("New invoicing customer type doesn't match the old")
+                }
+            }
+
+            @ParameterizedTest
+            @ValueSource(strings = ["Something completely different"])
+            @NullSource
+            fun `keeps old invoicing customer registry key when registry key hidden is true`(
+                newRegistryKey: String?
+            ) {
+                val henkilotunnus = ApplicationFactory.DEFAULT_HENKILOTUNNUS
+                val hakemus =
+                    hakemusFactory
+                        .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                        .withInvoicingCustomer(ApplicationFactory.createPersonInvoicingCustomer())
+                        .save()
+                val request =
+                    (hakemus.toUpdateRequest() as KaivuilmoitusUpdateRequest).withInvoicingCustomer(
+                        CustomerType.PERSON,
+                        registryKey = newRegistryKey,
+                        registryKeyHidden = true,
+                    )
+
+                val result = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                assertThat(result.applicationData)
+                    .isInstanceOf(KaivuilmoitusData::class)
+                    .prop(KaivuilmoitusData::invoicingCustomer)
+                    .isNotNull()
+                    .prop(Laskutusyhteystieto::registryKey)
+                    .isEqualTo(henkilotunnus)
+                val persistedHakemus = hakemusService.getById(result.id)
+                assertThat(persistedHakemus.applicationData)
+                    .isInstanceOf(KaivuilmoitusData::class)
+                    .prop(KaivuilmoitusData::invoicingCustomer)
+                    .isNotNull()
+                    .prop(Laskutusyhteystieto::registryKey)
                     .isEqualTo(henkilotunnus)
             }
 

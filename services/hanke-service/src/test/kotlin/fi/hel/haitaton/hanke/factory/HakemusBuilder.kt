@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationArea
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCompanyInvoicingCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
@@ -170,7 +169,7 @@ data class HakemusBuilder(
         )
 
     fun withInvoicingCustomer(
-        invoicingCustomer: InvoicingCustomer = createCompanyInvoicingCustomer()
+        invoicingCustomer: InvoicingCustomer? = ApplicationFactory.createCompanyInvoicingCustomer()
     ): HakemusBuilder =
         updateApplicationData(
             { throw InvalidParameterException("Not available for cable reports.") },

@@ -142,15 +142,15 @@ object HakemusUpdateRequestFactory {
             representativeWithContacts = null,
             invoicingCustomer =
                 createInvoicingCustomerRequest(
-                    CustomerType.COMPANY,
-                    "Testiyritys",
-                    DEFAULT_CUSTOMER_REGISTRY_KEY,
-                    DEFAULT_OVT,
-                    "Välittäjän tunnus",
-                    DEFAULT_CUSTOMER_REFERENCE,
-                    DEFAULT_INVOICE_CUSTOMER_ADDRESS,
-                    DEFAULT_CUSTOMER_EMAIL,
-                    DEFAULT_CUSTOMER_PHONE,
+                    customerType = CustomerType.COMPANY,
+                    name = "Testiyritys",
+                    registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
+                    ovt = DEFAULT_OVT,
+                    invoicingOperator = "Välittäjän tunnus",
+                    customerReference = DEFAULT_CUSTOMER_REFERENCE,
+                    postalAddressRequest = DEFAULT_INVOICE_CUSTOMER_ADDRESS,
+                    email = DEFAULT_CUSTOMER_EMAIL,
+                    phone = DEFAULT_CUSTOMER_PHONE,
                 ),
             additionalInfo = "Lisätiedot",
         )
@@ -201,10 +201,11 @@ object HakemusUpdateRequestFactory {
             registryKeyHidden = registryKeyHidden,
         )
 
-    private fun createInvoicingCustomerRequest(
+    fun createInvoicingCustomerRequest(
         customerType: CustomerType = CustomerType.COMPANY,
         name: String = DEFAULT_CUSTOMER_NAME,
-        registryKey: String = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKey: String? = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKeyHidden: Boolean = false,
         ovt: String? = null,
         invoicingOperator: String? = null,
         customerReference: String? = null,
@@ -216,6 +217,7 @@ object HakemusUpdateRequestFactory {
             type = customerType,
             name = name,
             registryKey = registryKey,
+            registryKeyHidden = registryKeyHidden,
             ovt = ovt,
             invoicingOperator = invoicingOperator,
             customerReference = customerReference,
@@ -345,9 +347,10 @@ object HakemusUpdateRequestFactory {
         }
 
     fun KaivuilmoitusUpdateRequest.withInvoicingCustomer(
-        type: CustomerType? = CustomerType.COMPANY,
+        type: CustomerType = CustomerType.COMPANY,
         name: String? = DEFAULT_CUSTOMER_NAME,
         registryKey: String? = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKeyHidden: Boolean = false,
         ovt: String? = null,
         invoicingOperator: String? = null,
         customerReference: String? = null,
@@ -361,6 +364,7 @@ object HakemusUpdateRequestFactory {
                     type = type,
                     name = name,
                     registryKey = registryKey,
+                    registryKeyHidden = registryKeyHidden,
                     ovt = ovt,
                     invoicingOperator = invoicingOperator,
                     customerReference = customerReference,
