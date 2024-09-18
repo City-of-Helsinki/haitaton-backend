@@ -183,6 +183,7 @@ data class InvoicingCustomerResponse(
     val type: CustomerType?,
     val name: String?,
     val registryKey: String?,
+    val registryKeyHidden: Boolean,
     val ovt: String?,
     val invoicingOperator: String?,
     val customerReference: String?,

@@ -64,7 +64,8 @@ data class Laskutusyhteystieto(
         InvoicingCustomerResponse(
             tyyppi,
             nimi,
-            registryKey,
+            registryKey = if (hideRegistryKey()) null else registryKey,
+            registryKeyHidden = hideRegistryKey(),
             ovttunnus,
             valittajanTunnus,
             asiakkaanViite,
@@ -72,4 +73,7 @@ data class Laskutusyhteystieto(
             sahkoposti,
             puhelinnumero,
         )
+
+    private fun hideRegistryKey(): Boolean =
+        registryKey != null && (tyyppi == CustomerType.PERSON || tyyppi == CustomerType.OTHER)
 }

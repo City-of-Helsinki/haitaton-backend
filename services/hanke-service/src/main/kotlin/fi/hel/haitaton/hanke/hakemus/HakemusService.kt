@@ -907,7 +907,7 @@ class HakemusService(
         val originalContactUserIds = hakemusEntity.allContactUsers().map { it.id }.toSet()
         val updatedApplicationEntity =
             hakemusEntity.copy(
-                hakemusEntityData = request.toEntityData(hakemusEntity.hakemusEntityData),
+                hakemusEntityData = request.toEntityData(hakemusEntity),
                 yhteystiedot = updateYhteystiedot(hakemusEntity, request.customersByRole()))
         if (updatedApplicationEntity.hanke.generated) {
             updatedApplicationEntity.hanke.nimi = request.name
