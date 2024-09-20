@@ -39,6 +39,7 @@ class HankeKayttajaFactory(
         kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
         tunniste: String = "existing",
         kutsuttu: OffsetDateTime = INVITATION_DATE,
+        kutsujaId: UUID? = null,
     ): HankekayttajaEntity =
         addToken(
             hankeKayttaja =
@@ -49,6 +50,7 @@ class HankeKayttajaFactory(
                     sahkoposti = sahkoposti,
                     puhelin = puhelin,
                     permissionEntity = null,
+                    kutsujaId = kutsujaId,
                 ),
             tunniste = tunniste,
             kayttooikeustaso = kayttooikeustaso,
@@ -89,7 +91,7 @@ class HankeKayttajaFactory(
                 sukunimi = input.sukunimi,
                 sahkoposti = input.email,
                 puhelin = input.puhelin,
-                kayttooikeustaso = kayttooikeustaso
+                kayttooikeustaso = kayttooikeustaso,
             )
 
     fun saveUser(
@@ -112,8 +114,7 @@ class HankeKayttajaFactory(
                 permission = permissionEntity,
                 kayttajakutsu = kayttajakutsuEntity,
                 kutsujaId = kutsujaId,
-            )
-        )
+            ))
 
     fun addToken(
         hankeKayttaja: HankekayttajaEntity,
@@ -136,8 +137,7 @@ class HankeKayttajaFactory(
                 createdAt = createdAt,
                 kayttooikeustaso = kayttooikeustaso,
                 hankekayttaja = this,
-            )
-        )
+            ))
 
     @Transactional
     fun getFounderFromHakemus(applicationId: Long): HankekayttajaEntity {
@@ -265,7 +265,7 @@ class HankeKayttajaFactory(
                 sahkoposti = sahkoposti,
                 puhelin = puhelin,
                 permission = permission,
-                kayttajakutsu = kutsu
+                kayttajakutsu = kutsu,
             )
 
         fun createDto(

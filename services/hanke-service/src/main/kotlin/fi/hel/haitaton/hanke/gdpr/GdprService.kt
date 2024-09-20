@@ -192,6 +192,7 @@ class GdprService(
         // Not really sure why the user delete needs to be flushed before deleting the hanke, but
         // not doing so causes a constraint violation from hakemusyhteystieto to
         // hakemusyhteyshenkilo.
+        hankekayttajaRepository.findByKutsujaId(kayttaja.id).forEach { it.kutsujaId = null }
         hankekayttajaRepository.delete(kayttaja)
         hankekayttajaRepository.flush()
 
@@ -199,6 +200,7 @@ class GdprService(
     }
 
     private fun deleteKayttaja(kayttaja: HankekayttajaEntity) {
+        hankekayttajaRepository.findByKutsujaId(kayttaja.id).forEach { it.kutsujaId = null }
         hankekayttajaRepository.delete(kayttaja)
     }
 }
