@@ -11,9 +11,11 @@ import java.io.IOException
 import java.net.URL
 import javax.imageio.ImageIO
 import org.geojson.Crs
+import org.geojson.LngLatAlt
 import org.geojson.Polygon as JsonPolygon
 import org.geotools.api.feature.simple.SimpleFeature
 import org.geotools.api.feature.simple.SimpleFeatureType
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem
 import org.geotools.brewer.styling.builder.PolygonSymbolizerBuilder
 import org.geotools.data.DataUtilities
 import org.geotools.data.simple.SimpleFeatureCollection
@@ -44,9 +46,63 @@ object WMS {
         println("ASDF $title $v")
     }
 
+    private fun coords(
+        polygons: List<JsonPolygon>,
+        coordSelect: (LngLatAlt) -> Double
+    ): List<Double> = polygons.flatMap { it.coordinates.flatten().map(coordSelect) }
+
+    private fun minLat(polygons: List<JsonPolygon>): Double =
+        coords(polygons, LngLatAlt::getLatitude).min()
+
+    private fun maxLat(polygons: List<JsonPolygon>): Double =
+        coords(polygons, LngLatAlt::getLatitude).max()
+
+    private fun minLng(polygons: List<JsonPolygon>): Double =
+        coords(polygons, LngLatAlt::getLongitude).min()
+
+    private fun maxLng(polygons: List<JsonPolygon>): Double =
+        coords(polygons, LngLatAlt::getLongitude).max()
+
+    private fun calcBounds(polygons: List<JsonPolygon>): MapBounds {
+        val allCoords = polygons.flatMap { it.coordinates.flatten() }
+        val latitudes = allCoords.map { it.latitude }
+        val minLatitude = latitudes.min()
+        val maxLatitude = latitudes.max()
+        val longitudes = allCoords.map { it.longitude }
+        val minLongitude = longitudes.min()
+        val maxLongitude = longitudes.max()
+        val latitudeSize = maxLatitude - minLatitude
+        val longitudeSize = maxLongitude - minLongitude
+        debug("latitudeSize", latitudeSize)
+        debug("longitudeSize", longitudeSize)
+        return if (latitudeSize > longitudeSize) {
+            val diff = (latitudeSize - longitudeSize) / 2
+            debug("latitudeSize > longitudeSize", diff)
+            MapBounds(minLatitude, minLongitude - diff, maxLatitude, maxLongitude + diff).padded()
+        } else {
+            val diff = (longitudeSize - latitudeSize) / 2
+            debug("latitudeSize =< longitudeSize", diff)
+            MapBounds(minLatitude - diff, minLongitude, maxLatitude + diff, maxLongitude).padded()
+        }
+    }
+
     // @EventListener(ApplicationReadyEvent::class)
     fun areaImage(polygons: List<JsonPolygon>): ByteArray {
         println("ASDF Starting WMS part:")
+
+        debug("min X", minLat(polygons))
+        debug("max X", maxLat(polygons))
+        debug("min Y", minLng(polygons))
+        debug("max Y", maxLng(polygons))
+
+        val bounds = calcBounds(polygons)
+        debug("bounds", bounds)
+
+        val y2 = bounds.maxLongitude
+        val y1 = bounds.minLongitude
+
+        val x2 = bounds.maxLatitude
+        val x1 = bounds.minLatitude
 
         val wms = WebMapServer(URL(INFO_URL))
 
@@ -58,11 +114,12 @@ object WMS {
 
         if (capabilities.request.getFeatureInfo != null) {
             println(
-                "ASDF capabilities.request.getFeatureInfo.get ${capabilities.request.getFeatureInfo.get}"
-            )
+                "ASDF capabilities.request.getFeatureInfo.get ${capabilities.request.getFeatureInfo.get}")
         }
 
         // capabilities.request.getMap.formats.forEach { println("ASDF Format: $it") }
+
+        // WMSUtils.getNamedLayers(capabilities).forEach { debug("Layer", it.title) }
 
         val kantakarttaLayer =
             WMSUtils.getNamedLayers(capabilities).find { it.title == KANTAKARTTA_LAYER_TITLE }!!
@@ -76,24 +133,18 @@ object WMS {
         println("       " + env.lowerCorner + " x " + env.upperCorner)
 
         // Get layer styles
-        val styles: List<*> = kantakarttaLayer.getStyles()
-
-        val it: Iterator<*> = styles.iterator()
-        while (it.hasNext()) {
-            val elem: StyleImpl = it.next() as StyleImpl
-
+        val styles: List<StyleImpl> = kantakarttaLayer.getStyles()
+        styles.forEach {
             // Print style info
             println("Style:")
-            println("  Name:" + elem.name)
-            println("  Title:" + elem.title)
+            println("  Name:" + it.name)
+            println("  Title:" + it.title)
         }
 
         val request = wms.createGetMapRequest()
         request.setFormat("image/png")
-        request.setDimensions(
-            "800",
-            "800"
-        ) // sets the dimensions of the image to be returned from the server
+        // sets the dimensions of the image to be returned from the server
+        request.setDimensions("800", "800")
         request.setTransparent(false)
         request.setSRS("EPSG:3879")
         println("ASDF x size: $y2 - $y1 = ${y2 - y1}")
@@ -121,8 +172,7 @@ object WMS {
                 val oldX = coordinate.x
                 coordinate.x = coordinate.y
                 coordinate.y = oldX
-            }
-        )
+            })
         geometry.coordinates.forEach { println("ASDF reversed coordinate: $it") }
         println("ASDF geometry.geometryType: ${geometry.geometryType}")
 
@@ -159,9 +209,7 @@ object WMS {
     private fun createMap(wms: WebMapServer, layer: Layer, polygons: List<JsonPolygon>): ByteArray {
         val file = "render.png"
 
-        val sourceCRS = CRS.decode("EPSG:3879")
-
-        val mapLayer = WMSLayer(wms, layer, "default-style-avoindata:Kantakartta", "image/png")
+        val mapLayer = WMSLayer(wms, layer, KANTAKARTTA_STYLE, "image/png")
         val map = MapContent()
 
         map.addLayer(mapLayer)
@@ -187,7 +235,7 @@ object WMS {
         renderer.mapContent = map
 
         val imageBounds: Rectangle?
-        val mapBounds = ReferencedEnvelope(x1 * 1.0, x2 * 1.0, y1 * 1.0, y2 * 1.0, sourceCRS)
+        val mapBounds = calcBounds(polygons).asReferencedEnvelope()
         try {
             val heightToWidth = mapBounds.getSpan(1) / mapBounds.getSpan(0)
             imageBounds =
@@ -218,30 +266,39 @@ object WMS {
         }
     }
 
-    // companion object {
     const val KANTAKARTTA_LAYER_TITLE = "Kantakartta"
+    const val KANTAKARTTA_STYLE = "default-style-avoindata:Kantakartta"
+
+    const val KARTTASARJA_LAYER_TITLE = "Karttasarja"
+    const val KARTTASARJA_STYLE = "default-style-avoindata:Karttasarja"
+
     const val INFO_URL =
         "https://kartta.hel.fi/ws/geoserver/avoindata/wms?REQUEST=GetCapabilities&SERVICE=WMS&VERSION=1.1.1"
 
     const val IMAGE_WIDTH = 1600
     const val IMAGE_HEIGHT = 1600
+}
 
-    val padding = 30
-    val y1 = 25493996 - padding
-    val y2 = 25493996 + padding
-    val x1 = 6679878 - padding
-    val x2 = 6679878 + padding
+data class MapBounds(
+    val minLatitude: Double,
+    val minLongitude: Double,
+    val maxLatitude: Double,
+    val maxLongitude: Double,
+) {
+    fun padded() =
+        MapBounds(
+            minLatitude - PADDING,
+            minLongitude - PADDING,
+            maxLatitude + PADDING,
+            maxLongitude + PADDING,
+        )
 
-    val geoJson =
-        """{
-                "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::3879"}},
-                "type": "Polygon", "coordinates": [[
-                [25493996.96814304, 6679878.954325488],
-                [25493998.09339202, 6679877.360834192],
-                [25493999.686883315,6679878.486083172],
-                [25493998.561634336,6679880.079574469],
-                [25493996.96814304, 6679878.954325488]
-               ]]
-            }"""
-    // }
+    fun asReferencedEnvelope() =
+        ReferencedEnvelope(minLatitude, maxLatitude, minLongitude, maxLongitude, sourceCRS)
+
+    companion object {
+        const val PADDING = 30.0
+
+        val sourceCRS: CoordinateReferenceSystem = CRS.decode("EPSG:3879")
+    }
 }

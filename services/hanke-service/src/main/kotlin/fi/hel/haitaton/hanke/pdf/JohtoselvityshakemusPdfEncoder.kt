@@ -71,12 +71,14 @@ object JohtoselvityshakemusPdfEncoder {
                     .joinToString("\n\n"))
         }
 
-        data.areas?.map { it.geometry }?.let {
-            val bytes = WMS.areaImage(it)
-            val image = Image.getInstance(bytes)
-            image.scaleToFit(400f, 400f)
-            document.add(image)
-        }
+        data.areas
+            ?.map { it.geometry }
+            ?.let {
+                val bytes = WMS.areaImage(it)
+                val image = Image.getInstance(bytes)
+                image.scaleToFit(400f, 400f)
+                document.add(image)
+            }
 
         document.newPage()
 
