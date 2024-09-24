@@ -7,13 +7,19 @@ import com.lowagie.text.Font
 import com.lowagie.text.Paragraph
 import com.lowagie.text.Phrase
 import com.lowagie.text.Rectangle
+import com.lowagie.text.pdf.BaseFont
 import com.lowagie.text.pdf.PdfPTable
 
-val titleFont = Font(Font.HELVETICA, 18f, Font.BOLD)
-val sectionFont = Font(Font.HELVETICA, 15f, Font.BOLD)
+private val baseRegularFont =
+    BaseFont.createFont("HelsinkiGrotesk-Regular.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED)
+private val baseBoldFont =
+    BaseFont.createFont("HelsinkiGrotesk-Medium.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED)
 
-val headerFont = Font(Font.HELVETICA, 10f, Font.BOLD)
-val textFont = Font(Font.HELVETICA, 10f, Font.NORMAL)
+private val titleFont = Font(baseBoldFont, 18f, Font.BOLD)
+private val sectionFont = Font(baseBoldFont, 15f, Font.BOLD)
+
+private val headerFont = Font(baseBoldFont, 10f, Font.BOLD)
+private val textFont = Font(baseRegularFont, 10f, Font.NORMAL)
 
 fun Document.newline() {
     this.add(Paragraph(Chunk.NEWLINE))
