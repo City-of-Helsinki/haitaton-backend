@@ -335,7 +335,7 @@ class GdprServiceITest(
         }
 
         @Test
-        fun `deletes hanke with applications when there only unidentified users`() {
+        fun `deletes hanke with applications when there are only unidentified users`() {
             val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
             val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
             hankeFactory.addYhteystiedotTo(hanke) { omistaja(founder) }
@@ -557,7 +557,7 @@ class GdprServiceITest(
         }
 
         @Test
-        fun `deletes the user sets the inviter to null when the user is an inviter for other users`() {
+        fun `deletes the user and sets the inviter to null when the user is an inviter for other users`() {
             val invitedUserId = "InvitedUser"
             val hanke = hankeFactory.builder(OTHER_USER_ID).withHankealue().saveEntity()
             val kayttaja =

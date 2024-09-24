@@ -189,11 +189,10 @@ class GdprService(
             "There are no other users for this hanke, so removing the hanke in response to the GDPR request. ${hanke.logString()}"
         }
 
+        deleteKayttaja(kayttaja)
         // Not really sure why the user delete needs to be flushed before deleting the hanke, but
         // not doing so causes a constraint violation from hakemusyhteystieto to
         // hakemusyhteyshenkilo.
-        hankekayttajaRepository.findByKutsujaId(kayttaja.id).forEach { it.kutsujaId = null }
-        hankekayttajaRepository.delete(kayttaja)
         hankekayttajaRepository.flush()
 
         hankeService.deleteHanke(hanke.hankeTunnus, kayttaja.permission!!.userId)
