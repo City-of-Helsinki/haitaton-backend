@@ -529,7 +529,7 @@ The id needs to reference an excavation notification.
     @ExceptionHandler(CompletionDateException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
-    fun operationalConditionDateException(ex: CompletionDateException): HankeError {
+    fun conditionDateException(ex: CompletionDateException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2014
     }
