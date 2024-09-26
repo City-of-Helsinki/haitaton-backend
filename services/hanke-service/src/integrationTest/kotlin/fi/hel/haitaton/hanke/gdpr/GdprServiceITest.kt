@@ -335,6 +335,26 @@ class GdprServiceITest(
         }
 
         @Test
+        fun `deletes hanke with applications when there are only unidentified users`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            hankeFactory.addYhteystiedotTo(hanke) { omistaja(founder) }
+            hakemusFactory.builder(hanke).hakija(founder).save()
+            hankekayttajaFactory.saveUnidentifiedUser(
+                hankeId = hanke.id,
+                sahkoposti = "invited@user",
+                kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
+                kutsujaId = founder.id,
+            )
+
+            gdprService.deleteInfo(USERNAME)
+
+            assertThat(hankeRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
+            assertThat(hankekayttajaRepository.findAll()).isEmpty()
+        }
+
+        @Test
         fun `deletes hankekayttaja when there are other non-admin users`() {
             val hanke =
                 hankeFactory.builder(USERNAME).withHankealue().saveWithYhteystiedot {
@@ -534,6 +554,54 @@ class GdprServiceITest(
             assertThat(hankekayttajaRepository.findByHankeId(oneAdminHanke.id))
                 .extracting { it.permission!!.userId }
                 .containsExactly(HankeKayttajaFactory.FAKE_USERID)
+        }
+
+        @Test
+        fun `deletes the user and sets the inviter to null when the user is an inviter for other users`() {
+            val invitedUserId = "InvitedUser"
+            val hanke = hankeFactory.builder(OTHER_USER_ID).withHankealue().saveEntity()
+            val kayttaja =
+                hankekayttajaFactory.saveIdentifiedUser(
+                    kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
+                    userId = USERNAME,
+                    hankeId = hanke.id,
+                )
+            hankeFactory.addYhteystiedotTo(hanke) { omistaja(kayttaja) }
+            val invitedKayttaja =
+                hankekayttajaFactory.saveIdentifiedUser(
+                    hankeId = hanke.id,
+                    sahkoposti = "invited@user",
+                    kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
+                    kutsujaId = kayttaja.id,
+                    userId = invitedUserId,
+                )
+            val unidentifiedKayttaja =
+                hankekayttajaFactory.saveUnidentifiedUser(
+                    hankeId = hanke.id,
+                    sahkoposti = "notaccepted@user",
+                    kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
+                    kutsujaId = kayttaja.id,
+                )
+            val hakemus = hakemusFactory.builder(hanke).hakija(kayttaja).save()
+            val founder: HankekayttajaEntity =
+                hankeKayttajaService.getKayttajaByUserId(hanke.id, OTHER_USER_ID)!!
+
+            gdprService.deleteInfo(USERNAME)
+
+            assertThat(hankeRepository.findAll()).single().prop(HankeEntity::id).isEqualTo(hanke.id)
+            assertThat(hakemusRepository.findAll())
+                .single()
+                .prop(HakemusEntity::id)
+                .isEqualTo(hakemus.id)
+            assertThat(hankeKayttajaService.getKayttajatByHankeId(hanke.id))
+                .extracting { it.id }
+                .containsExactlyInAnyOrder(founder.id, invitedKayttaja.id, unidentifiedKayttaja.id)
+            assertThat(hankeKayttajaService.getKayttajaForHanke(invitedKayttaja.id, hanke.id))
+                .prop(HankekayttajaEntity::kutsujaId)
+                .isNull()
+            assertThat(hankeKayttajaService.getKayttajaForHanke(unidentifiedKayttaja.id, hanke.id))
+                .prop(HankekayttajaEntity::kutsujaId)
+                .isNull()
         }
     }
 }
