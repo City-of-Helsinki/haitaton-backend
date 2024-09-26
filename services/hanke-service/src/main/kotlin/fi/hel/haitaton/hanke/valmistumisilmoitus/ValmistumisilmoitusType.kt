@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.valmistumisilmoitus
 
-enum class ValmistumisilmoitusType {
-    TOIMINNALLINEN_KUNTO,
-    TYO_VALMIS,
+enum class ValmistumisilmoitusType(val urlSuffix: String, val logName: String) {
+    TOIMINNALLINEN_KUNTO("operationalcondition", "operational condition"),
+    TYO_VALMIS("workfinished", "work finished"),
 }

@@ -26,6 +26,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
 import fi.hel.haitaton.hanke.parseJson
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZonedDateTime
@@ -37,9 +38,12 @@ import okio.Buffer
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.http.HttpHeaders.CONTENT_DISPOSITION
 import org.springframework.http.HttpHeaders.CONTENT_TYPE
 import org.springframework.http.MediaType
@@ -275,32 +279,54 @@ class AlluClientITests {
     }
 
     @Nested
-    inner class ReportOperationalCondition {
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class ReportCompletionDate {
         private val applicationId = 241
         private val date = LocalDate.of(2024, 8, 12)
 
-        @Test
-        fun `calls Allu with the correct path and time`() {
+        private fun urls() =
+            listOf(
+                Arguments.of(
+                    ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO,
+                    "/v2/excavationannouncements/$applicationId/operationalcondition",
+                ),
+                Arguments.of(
+                    ValmistumisilmoitusType.TYO_VALMIS,
+                    "/v2/excavationannouncements/$applicationId/workfinished",
+                ),
+            )
+
+        @ParameterizedTest
+        @MethodSource("urls")
+        fun `calls Allu with the correct path and time`(
+            ilmoitusType: ValmistumisilmoitusType,
+            url: String,
+        ) {
             mockWebServer.enqueue(MockResponse().setResponseCode(200))
 
-            service.reportOperationalCondition(applicationId, date)
+            service.reportCompletionDate(ilmoitusType, applicationId, date)
 
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("PUT")
-            assertThat(createRequest.path)
-                .isEqualTo("/v2/excavationannouncements/$applicationId/operationalcondition")
+            assertThat(createRequest.path).isEqualTo(url)
             assertThat(createRequest.body.readUtf8()).isEqualTo("\"2024-08-12T00:00:00Z\"")
         }
 
-        @Test
-        fun `throws an exception if there's a problem with the call`() {
+        @ParameterizedTest
+        @MethodSource("urls")
+        fun `throws an exception if there's a problem with the call`(
+            ilmoitusType: ValmistumisilmoitusType,
+            url: String,
+        ) {
             mockWebServer.enqueue(MockResponse().setResponseCode(409))
 
-            val failure = assertFailure { service.reportOperationalCondition(applicationId, date) }
+            val failure = assertFailure {
+                service.reportCompletionDate(ilmoitusType, applicationId, date)
+            }
 
             failure.all {
                 hasClass(WebClientResponseException.Conflict::class)
-                messageContains("/v2/excavationannouncements/$applicationId/operationalcondition")
+                messageContains(url)
                 messageContains("409 Conflict from PUT")
             }
         }

@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.Duration.ofSeconds
 import java.time.Instant
 import java.time.LocalDate
@@ -209,15 +210,19 @@ class AlluClient(
         }
     }
 
-    fun reportOperationalCondition(alluApplicationId: Int, operationalConditionDate: LocalDate) {
-        logger.info { "Reporting operational condition for application $alluApplicationId." }
+    fun reportCompletionDate(
+        type: ValmistumisilmoitusType,
+        alluApplicationId: Int,
+        reportDate: LocalDate,
+    ) {
+        logger.info { "Reporting ${type.logName} for application $alluApplicationId." }
         put(
-                "excavationannouncements/$alluApplicationId/operationalcondition",
-                operationalConditionDate.atStartOfDay(TZ_UTC).toJsonString())
+                "excavationannouncements/$alluApplicationId/${type.urlSuffix}",
+                reportDate.atStartOfDay(TZ_UTC).toJsonString())
             .bodyToMono(Void::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
-                logError("Error reporting operation condition to Allu", it)
+                logError("Error reporting ${type.logName} to Allu", it)
             }
             .block()
     }

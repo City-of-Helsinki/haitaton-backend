@@ -46,6 +46,7 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import io.mockk.called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -65,6 +66,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
@@ -72,8 +74,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
-import org.junit.jupiter.params.provider.NullSource
-import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.context.ApplicationEventPublisher
@@ -461,7 +461,8 @@ class HakemusServiceTest {
     }
 
     @Nested
-    inner class ReportOperationalCondition {
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class ReportCompletionDate {
         private val today: LocalDate = LocalDate.now()
         private val tomorrow: LocalDate = today.plusDays(1)
         private val startDate: ZonedDateTime = ZonedDateTime.parse("2024-08-08T00:00Z")
@@ -489,40 +490,47 @@ class HakemusServiceTest {
                 hanke = hanke,
             )
 
-        @ParameterizedTest
-        @ValueSource(
-            strings =
-                [
+        private fun allowedDateParams() =
+            listOf(
                     "2024-08-08", // Start date
                     "2024-08-09", // After start date
                     "2024-08-12", // End date
                     "2024-08-13", // After end date
-                ])
+                )
+                .map(LocalDate::parse)
+                .flatMap { date -> ValmistumisilmoitusType.entries.map { Arguments.of(it, date) } }
+
+        @ParameterizedTest
+        @MethodSource("allowedDateParams")
         fun `sends the date to Allu when the date is between the hakemus start date and today`(
-            date: LocalDate
+            ilmoitusType: ValmistumisilmoitusType,
+            date: LocalDate,
         ) {
             every { hakemusRepository.findOneById(id) } returns hakemus
-            justRun { alluClient.reportOperationalCondition(alluId, date) }
+            justRun { alluClient.reportCompletionDate(ilmoitusType, alluId, date) }
 
-            hakemusService.reportOperationalCondition(hakemus.id, date)
+            hakemusService.reportCompletionDate(ilmoitusType, hakemus.id, date)
 
             verifySequence {
                 hakemusRepository.findOneById(id)
-                alluClient.reportOperationalCondition(alluId, date)
+                alluClient.reportCompletionDate(ilmoitusType, alluId, date)
             }
         }
 
-        @Test
-        fun `throws exception when date is before the start date of the application`() {
+        @ParameterizedTest
+        @EnumSource(ValmistumisilmoitusType::class)
+        fun `throws exception when date is before the start date of the application`(
+            ilmoitusType: ValmistumisilmoitusType
+        ) {
             every { hakemusRepository.findOneById(id) } returns hakemus
 
             val failure = assertFailure {
-                hakemusService.reportOperationalCondition(id, beforeStart)
+                hakemusService.reportCompletionDate(ilmoitusType, id, beforeStart)
             }
 
             failure.all {
-                hasClass(OperationalConditionDateException::class)
-                messageContains("Invalid date in operational condition report")
+                hasClass(CompletionDateException::class)
+                messageContains("Invalid date in ${ilmoitusType.logName} report")
                 messageContains("Date is before the hakemus start date")
                 messageContains("start date: 2024-08-08T00:00")
                 messageContains("date=2024-08-07")
@@ -531,8 +539,9 @@ class HakemusServiceTest {
             verifySequence { hakemusRepository.findOneById(id) }
         }
 
-        @Test
-        fun `throws exception when date is in the future`() {
+        @ParameterizedTest
+        @EnumSource(ValmistumisilmoitusType::class)
+        fun `throws exception when date is in the future`(ilmoitusType: ValmistumisilmoitusType) {
             every { hakemusRepository.findOneById(id) } returns
                 hakemus.copy(
                     hakemusEntityData =
@@ -542,12 +551,12 @@ class HakemusServiceTest {
                         ))
 
             val failure = assertFailure {
-                hakemusService.reportOperationalCondition(hakemus.id, tomorrow)
+                hakemusService.reportCompletionDate(ilmoitusType, hakemus.id, tomorrow)
             }
 
             failure.all {
-                hasClass(OperationalConditionDateException::class)
-                messageContains("Invalid date in operational condition report")
+                hasClass(CompletionDateException::class)
+                messageContains("Invalid date in ${ilmoitusType.logName} report")
                 messageContains("Date is in the future")
                 messageContains("date=$tomorrow")
                 messageContains("id=${hakemus.id}")
@@ -555,53 +564,78 @@ class HakemusServiceTest {
             verifySequence { hakemusRepository.findOneById(id) }
         }
 
+        private val allowedStatusesForToiminnallinenKunto =
+            setOf(
+                ApplicationStatus.PENDING,
+                ApplicationStatus.HANDLING,
+                ApplicationStatus.INFORMATION_RECEIVED,
+                ApplicationStatus.RETURNED_TO_PREPARATION,
+                ApplicationStatus.DECISIONMAKING,
+                ApplicationStatus.DECISION,
+            )
+
+        private val allowedStatusesForTyoValmis =
+            allowedStatusesForToiminnallinenKunto + ApplicationStatus.OPERATIONAL_CONDITION
+
+        private fun allowedStatusParams(): List<Arguments> {
+            val forToiminnallinenKunto =
+                allowedStatusesForToiminnallinenKunto.map {
+                    Arguments.of(ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO, it)
+                }
+            val forTyoValmis =
+                allowedStatusesForTyoValmis.map {
+                    Arguments.of(ValmistumisilmoitusType.TYO_VALMIS, it)
+                }
+            return forToiminnallinenKunto + forTyoValmis
+        }
+
+        private fun rejectedStatusParams(
+            ilmoitusType: ValmistumisilmoitusType,
+            allowed: Set<ApplicationStatus>,
+        ): List<Arguments> {
+            val rejected =
+                ApplicationStatus.entries.minus(allowed).map { Arguments.of(ilmoitusType, it) }
+            return rejected + Arguments.of(ilmoitusType, null)
+        }
+
+        private fun rejectedStatusParams(): List<Arguments> {
+            val forToiminnallinenKunto =
+                rejectedStatusParams(
+                    ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO,
+                    allowedStatusesForToiminnallinenKunto)
+            val forTyoValmis =
+                rejectedStatusParams(
+                    ValmistumisilmoitusType.TYO_VALMIS, allowedStatusesForTyoValmis)
+            return forToiminnallinenKunto + forTyoValmis
+        }
+
         @ParameterizedTest
-        @EnumSource(
-            ApplicationStatus::class,
-            names =
-                [
-                    "PENDING",
-                    "HANDLING",
-                    "INFORMATION_RECEIVED",
-                    "RETURNED_TO_PREPARATION",
-                    "DECISIONMAKING",
-                    "DECISION",
-                ],
-        )
+        @MethodSource("allowedStatusParams")
         fun `sends the date to Allu when the date is today and the status is allowed`(
-            status: ApplicationStatus
+            ilmoitusType: ValmistumisilmoitusType,
+            status: ApplicationStatus,
         ) {
             every { hakemusRepository.findOneById(id) } returns hakemus.copy(alluStatus = status)
-            justRun { alluClient.reportOperationalCondition(alluId, today) }
+            justRun { alluClient.reportCompletionDate(ilmoitusType, alluId, today) }
 
-            hakemusService.reportOperationalCondition(hakemus.id, today)
+            hakemusService.reportCompletionDate(ilmoitusType, hakemus.id, today)
 
             verifySequence {
                 hakemusRepository.findOneById(id)
-                alluClient.reportOperationalCondition(hakemus.alluid!!, today)
+                alluClient.reportCompletionDate(ilmoitusType, hakemus.alluid!!, today)
             }
         }
 
         @ParameterizedTest
-        @NullSource
-        @EnumSource(
-            ApplicationStatus::class,
-            names =
-                [
-                    "PENDING",
-                    "HANDLING",
-                    "INFORMATION_RECEIVED",
-                    "RETURNED_TO_PREPARATION",
-                    "DECISIONMAKING",
-                    "DECISION",
-                ],
-            mode = EnumSource.Mode.EXCLUDE,
-        )
-        fun `throws exception when application status is not allowed`(status: ApplicationStatus?) {
+        @MethodSource("rejectedStatusParams")
+        fun `throws exception when application status is not allowed`(
+            ilmoitusType: ValmistumisilmoitusType,
+            status: ApplicationStatus?,
+        ) {
             every { hakemusRepository.findOneById(id) } returns hakemus.copy(alluStatus = status)
 
             val failure = assertFailure {
-                hakemusService.reportOperationalCondition(hakemus.id, today)
+                hakemusService.reportCompletionDate(ilmoitusType, hakemus.id, today)
             }
 
             failure.all {

@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.toHankeError
 import fi.hel.haitaton.hanke.validation.ValidCreateHankeRequest
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -261,7 +262,7 @@ The valid states are:
   - HANDLING,
   - INFORMATION_RECEIVED,
   - RETURNED_TO_PREPARATION,
-  - DECISIONMAKING
+  - DECISIONMAKING,
   - DECISION.
 
 The date cannot be before the application was started and not in the future.
@@ -297,7 +298,58 @@ The id needs to reference an excavation notification.
         logger.info {
             "Received request to report application to operational condition id=$id, date=$date"
         }
-        hakemusService.reportOperationalCondition(id, date)
+        hakemusService.reportCompletionDate(ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO, id, date)
+    }
+
+    @PostMapping("/hakemukset/{id}/tyo-valmis")
+    @Operation(
+        summary = "Report the work finished date for an excavation notification",
+        description =
+            """
+                Report the date the work finished on the excavation.
+                The reported date will be sent to Allu as the work finished date.
+
+                The excavation notification needs to be in a valid state to accept the report.
+                The valid states are:
+                  - PENDING,
+                  - HANDLING,
+                  - INFORMATION_RECEIVED,
+                  - RETURNED_TO_PREPARATION,
+                  - DECISIONMAKING,
+                  - DECISION,
+                  - OPERATIONAL_CONDITION.
+
+                The date cannot be before the application was started and not in the future.
+                The id needs to reference an excavation notification.
+            """,
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "Work finished reported, no body", responseCode = "200"),
+                ApiResponse(
+                    description =
+                        "The date is malformed, the date isn't in the allowed bounds " +
+                            "or the application not an excavation notification",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                ApiResponse(
+                    description = "An application was not found with the given id",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                ApiResponse(
+                    description = "The application is not in one of the allowed states",
+                    responseCode = "409",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+            ])
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
+    fun reportWorkFinished(
+        @PathVariable(name = "id") id: Long,
+        @RequestBody request: DateReportRequest,
+    ) {
+        val date = request.date
+        logger.info { "Received request to report application to work finished id=$id, date=$date" }
+        hakemusService.reportCompletionDate(ValmistumisilmoitusType.TYO_VALMIS, id, date)
     }
 
     @PostMapping("/hakemukset/{id}/laheta")
@@ -474,10 +526,10 @@ The id needs to reference an excavation notification.
         return HankeError.HAI2002
     }
 
-    @ExceptionHandler(OperationalConditionDateException::class)
+    @ExceptionHandler(CompletionDateException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
-    fun operationalConditionDateException(ex: OperationalConditionDateException): HankeError {
+    fun conditionDateException(ex: CompletionDateException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2014
     }

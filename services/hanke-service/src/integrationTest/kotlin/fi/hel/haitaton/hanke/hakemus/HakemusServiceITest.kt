@@ -134,9 +134,12 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
@@ -2283,14 +2286,16 @@ class HakemusServiceITest(
     }
 
     @Nested
-    inner class ReportOperationalCondition {
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class ReportCompletionDate {
         private val date: LocalDate = LocalDate.parse("2024-08-13")
         private val startDate: ZonedDateTime = ZonedDateTime.parse("2024-08-08T00:00Z")
         private val endDate: ZonedDateTime = ZonedDateTime.parse("2024-08-12T00:00Z")
 
-        @Test
-        fun `throws exception when hakemus is not found`() {
-            val failure = assertFailure { hakemusService.reportOperationalCondition(414L, date) }
+        @ParameterizedTest
+        @EnumSource(ValmistumisilmoitusType::class)
+        fun `throws exception when hakemus is not found`(type: ValmistumisilmoitusType) {
+            val failure = assertFailure { hakemusService.reportCompletionDate(type, 414L, date) }
 
             failure.all {
                 hasClass(HakemusNotFoundException::class)
@@ -2298,8 +2303,9 @@ class HakemusServiceITest(
             }
         }
 
-        @Test
-        fun `throws exception when hakemus is not in Allu`() {
+        @ParameterizedTest
+        @EnumSource(ValmistumisilmoitusType::class)
+        fun `throws exception when hakemus is not in Allu`(type: ValmistumisilmoitusType) {
             val hakemus =
                 hakemusFactory
                     .builder(ApplicationType.EXCAVATION_NOTIFICATION)
@@ -2307,7 +2313,7 @@ class HakemusServiceITest(
                     .save()
 
             val failure = assertFailure {
-                hakemusService.reportOperationalCondition(hakemus.id, date)
+                hakemusService.reportCompletionDate(type, hakemus.id, date)
             }
 
             failure.all {
@@ -2317,30 +2323,38 @@ class HakemusServiceITest(
             }
         }
 
+        private fun unallowedApplicationTypeParameters() =
+            ApplicationType.entries.minus(ApplicationType.EXCAVATION_NOTIFICATION).flatMap {
+                applicationType ->
+                ValmistumisilmoitusType.entries.map { Arguments.of(applicationType, it) }
+            }
+
         @ParameterizedTest
-        @EnumSource(
-            ApplicationType::class,
-            names = ["EXCAVATION_NOTIFICATION"],
-            mode = EnumSource.Mode.EXCLUDE,
-        )
-        fun `throws exception when hakemus is of wrong type`(type: ApplicationType) {
-            val hakemus = hakemusFactory.builder(type).withStatus().save()
+        @MethodSource("unallowedApplicationTypeParameters")
+        fun `throws exception when hakemus is of wrong type`(
+            applicationType: ApplicationType,
+            ilmoitusType: ValmistumisilmoitusType,
+        ) {
+            val hakemus = hakemusFactory.builder(applicationType).withStatus().save()
 
             val failure = assertFailure {
-                hakemusService.reportOperationalCondition(hakemus.id, date)
+                hakemusService.reportCompletionDate(ilmoitusType, hakemus.id, date)
             }
 
             failure.all {
                 hasClass(WrongHakemusTypeException::class)
                 messageContains("Wrong application type for this action")
-                messageContains("type=$type")
+                messageContains("type=$applicationType")
                 messageContains("allowed types=EXCAVATION_NOTIFICATION")
                 messageContains("id=${hakemus.id}")
             }
         }
 
-        @Test
-        fun `sends the date to Allu when the hakemus passes all checks`() {
+        @ParameterizedTest
+        @EnumSource(ValmistumisilmoitusType::class)
+        fun `sends the date to Allu when the hakemus passes all checks`(
+            ilmoitusType: ValmistumisilmoitusType
+        ) {
             val hakemus =
                 hakemusFactory
                     .builder(ApplicationType.EXCAVATION_NOTIFICATION)
@@ -2349,15 +2363,17 @@ class HakemusServiceITest(
                     .withStartTime(startDate)
                     .withEndTime(endDate)
                     .save()
-            justRun { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
+            justRun { alluClient.reportCompletionDate(ilmoitusType, hakemus.alluid!!, date) }
 
-            hakemusService.reportOperationalCondition(hakemus.id, date)
+            hakemusService.reportCompletionDate(ilmoitusType, hakemus.id, date)
 
-            verifySequence { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
+            verifySequence { alluClient.reportCompletionDate(ilmoitusType, hakemus.alluid!!, date) }
         }
 
-        @Test
-        fun `saves the report event to database`() {
+        @ParameterizedTest
+        @EnumSource(ValmistumisilmoitusType::class)
+        fun `saves the report event to database`(ilmoitusType: ValmistumisilmoitusType) {
+
             val hakemus =
                 hakemusFactory
                     .builder(ApplicationType.EXCAVATION_NOTIFICATION)
@@ -2366,23 +2382,18 @@ class HakemusServiceITest(
                     .withStartTime(startDate)
                     .withEndTime(endDate)
                     .save()
-            justRun { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
+            justRun { alluClient.reportCompletionDate(ilmoitusType, hakemus.alluid!!, date) }
 
-            hakemusService.reportOperationalCondition(hakemus.id, date)
+            hakemusService.reportCompletionDate(ilmoitusType, hakemus.id, date)
 
             val savedHakemus: Hakemus = hakemusService.getById(hakemus.id)
-            assertThat(savedHakemus.valmistumisilmoitukset)
-                .key(ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO)
-                .single()
-                .all {
-                    prop(Valmistumisilmoitus::type)
-                        .isEqualTo(ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO)
-                    prop(Valmistumisilmoitus::dateReported).isEqualTo(date)
-                    prop(Valmistumisilmoitus::createdAt).isRecent()
-                    prop(Valmistumisilmoitus::hakemustunnus)
-                        .isEqualTo(hakemus.applicationIdentifier)
-                }
-            verifySequence { alluClient.reportOperationalCondition(hakemus.alluid!!, date) }
+            assertThat(savedHakemus.valmistumisilmoitukset).key(ilmoitusType).single().all {
+                prop(Valmistumisilmoitus::type).isEqualTo(ilmoitusType)
+                prop(Valmistumisilmoitus::dateReported).isEqualTo(date)
+                prop(Valmistumisilmoitus::createdAt).isRecent()
+                prop(Valmistumisilmoitus::hakemustunnus).isEqualTo(hakemus.applicationIdentifier)
+            }
+            verifySequence { alluClient.reportCompletionDate(ilmoitusType, hakemus.alluid!!, date) }
         }
     }
 

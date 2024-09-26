@@ -376,7 +376,11 @@ class HakemusService(
     }
 
     @Transactional
-    fun reportOperationalCondition(hakemusId: Long, date: LocalDate) {
+    fun reportCompletionDate(
+        ilmoitusType: ValmistumisilmoitusType,
+        hakemusId: Long,
+        date: LocalDate,
+    ) {
         val entity = getEntityById(hakemusId)
         val hakemus = entity.toHakemus()
         val alluid = hakemus.alluid ?: throw HakemusNotYetInAlluException(hakemus)
@@ -387,38 +391,49 @@ class HakemusService(
                     throw WrongHakemusTypeException(
                         hakemus,
                         hakemus.applicationType,
-                        listOf(ApplicationType.EXCAVATION_NOTIFICATION))
+                        listOf(ApplicationType.EXCAVATION_NOTIFICATION),
+                    )
                 is KaivuilmoitusData -> hakemus.applicationData
             }
 
         if (hakemusData.startTime == null || date.isBefore(hakemusData.startTime.toLocalDate())) {
-            throw OperationalConditionDateException(
-                "Date is before the hakemus start date: ${hakemusData.startTime}", date, hakemus)
+            throw CompletionDateException(
+                ilmoitusType,
+                "Date is before the hakemus start date: ${hakemusData.startTime}",
+                date,
+                hakemus)
         }
         if (date.isAfter(LocalDate.now())) {
-            throw OperationalConditionDateException("Date is in the future.", date, hakemus)
+            throw CompletionDateException(ilmoitusType, "Date is in the future.", date, hakemus)
         }
 
         val allowedStatuses =
             listOf(
-                ApplicationStatus.PENDING,
-                ApplicationStatus.HANDLING,
-                ApplicationStatus.INFORMATION_RECEIVED,
-                ApplicationStatus.RETURNED_TO_PREPARATION,
-                ApplicationStatus.DECISIONMAKING,
-                ApplicationStatus.DECISION,
-            )
+                    ApplicationStatus.PENDING,
+                    ApplicationStatus.HANDLING,
+                    ApplicationStatus.INFORMATION_RECEIVED,
+                    ApplicationStatus.RETURNED_TO_PREPARATION,
+                    ApplicationStatus.DECISIONMAKING,
+                    ApplicationStatus.DECISION,
+                )
+                .let {
+                    when (ilmoitusType) {
+                        ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO -> it
+                        ValmistumisilmoitusType.TYO_VALMIS ->
+                            it + ApplicationStatus.OPERATIONAL_CONDITION
+                    }
+                }
         if (hakemus.alluStatus !in allowedStatuses) {
             throw HakemusInWrongStatusException(hakemus, hakemus.alluStatus, allowedStatuses)
         }
 
         logger.info {
-            "Reporting operational condition for hakemus with the date $date. ${hakemus.logString()}"
+            "Reporting ${ilmoitusType.logName} for hakemus with the date $date. ${hakemus.logString()}"
         }
-        alluClient.reportOperationalCondition(alluid, date)
+        alluClient.reportCompletionDate(ilmoitusType, alluid, date)
         entity.valmistumisilmoitukset.add(
             ValmistumisilmoitusEntity(
-                type = ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO,
+                type = ilmoitusType,
                 hakemustunnus = entity.applicationIdentifier!!,
                 dateReported = date,
                 hakemus = entity,
@@ -1207,10 +1222,11 @@ class HakemusInWrongStatusException(
         "Hakemus is in the wrong status for this operation. status=$status, " +
             "allowed statuses=${allowed.joinToString(", ")}, ${hakemus.logString()}, ")
 
-class OperationalConditionDateException(
+class CompletionDateException(
+    type: ValmistumisilmoitusType,
     error: String,
     date: LocalDate,
     hakemus: HakemusIdentifier,
 ) :
     RuntimeException(
-        "Invalid date in operational condition report. $error date=$date, ${hakemus.logString()}")
+        "Invalid date in ${type.logName} report. $error date=$date, ${hakemus.logString()}")
