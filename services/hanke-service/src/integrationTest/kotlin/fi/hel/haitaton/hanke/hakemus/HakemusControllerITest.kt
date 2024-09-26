@@ -844,9 +844,10 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         }
     }
 
-    @Nested
-    inner class ReportOperationalCondition {
-        private val url = "/hakemukset/$id/toiminnallinen-kunto"
+    abstract inner class ReportCompletion(
+        val url: String,
+        val ilmoitusType: ValmistumisilmoitusType
+    ) {
         private val date = LocalDate.of(2024, 8, 8)
         private val request = DateReportRequest(date)
 
@@ -870,13 +871,13 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            justRun { hakemusService.reportOperationalCondition(id, date) }
+            justRun { hakemusService.reportCompletionDate(ilmoitusType, id, date) }
 
             post(url, request).andExpect(status().isOk).andExpect(content().string(""))
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-                hakemusService.reportOperationalCondition(id, date)
+                hakemusService.reportCompletionDate(ilmoitusType, id, date)
             }
         }
 
@@ -925,8 +926,12 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @Test
         fun `returns 400 when the date is invalid`() {
             val exception =
-                OperationalConditionDateException(
-                    "Date is in the future.", date, HakemusFactory.create(id = id))
+                CompletionDateException(
+                    ilmoitusType,
+                    "Date is in the future.",
+                    date,
+                    HakemusFactory.create(id = id),
+                )
 
             withMockedException(exception) {
                 post(url, request)
@@ -955,16 +960,30 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { hakemusService.reportOperationalCondition(id, date) } throws ex
+            every { hakemusService.reportCompletionDate(ilmoitusType, id, date) } throws ex
 
             f()
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-                hakemusService.reportOperationalCondition(id, date)
+                hakemusService.reportCompletionDate(ilmoitusType, id, date)
             }
         }
     }
+
+    @Nested
+    inner class ReportOperationalCondition :
+        ReportCompletion(
+            url = "/hakemukset/$id/toiminnallinen-kunto",
+            ilmoitusType = ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO,
+        )
+
+    @Nested
+    inner class ReportWorkFinished :
+        ReportCompletion(
+            url = "/hakemukset/$id/tyo-valmis",
+            ilmoitusType = ValmistumisilmoitusType.TYO_VALMIS,
+        )
 
     @Nested
     inner class SendHakemus {
