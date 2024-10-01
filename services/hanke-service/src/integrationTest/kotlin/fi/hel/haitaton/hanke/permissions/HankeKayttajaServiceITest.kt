@@ -160,30 +160,34 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
         @ParameterizedTest
         @ValueSource(booleans = [true, false])
-        fun `returns the correct answer when the kayttaja is identified`(expected: Boolean) {
+        fun `returns the correct answer when the kayttaja is identified`(
+            hasEditPermission: Boolean,
+        ) {
             val kayttajaEntity =
                 kayttajaFactory.saveIdentifiedUser(
                     hankeFactory.saveMinimal().id,
-                    kayttooikeustaso = kayttooikeustaso(expected),
+                    kayttooikeustaso = kayttooikeustaso(hasEditPermission),
                 )
 
             val result = hankeKayttajaService.hasPermission(kayttajaEntity, PermissionCode.EDIT)
 
-            assertThat(result).isEqualTo(expected)
+            assertThat(result).isEqualTo(hasEditPermission)
         }
 
         @ParameterizedTest
         @ValueSource(booleans = [true, false])
-        fun `returns the correct answer when the kayttaja is unidentified`(expected: Boolean) {
+        fun `returns the correct answer when the kayttaja is unidentified`(
+            hasEditPermission: Boolean,
+        ) {
             val kayttajaEntity =
                 kayttajaFactory.saveUnidentifiedUser(
                     hankeFactory.saveMinimal().id,
-                    kayttooikeustaso = kayttooikeustaso(expected),
+                    kayttooikeustaso = kayttooikeustaso(hasEditPermission),
                 )
 
             val result = hankeKayttajaService.hasPermission(kayttajaEntity, PermissionCode.EDIT)
 
-            assertThat(result).isEqualTo(expected)
+            assertThat(result).isEqualTo(hasEditPermission)
         }
 
         @Test
