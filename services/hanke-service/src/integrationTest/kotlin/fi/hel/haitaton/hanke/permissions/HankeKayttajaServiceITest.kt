@@ -70,6 +70,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.context.SecurityContext
 
@@ -145,6 +147,52 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                 prop(HankeKayttaja::id).isEqualTo(kayttajaEntity.id)
                 prop(HankeKayttaja::permissionId).isNull()
             }
+        }
+    }
+
+    @Nested
+    inner class HasPermission {
+        private fun kayttooikeustaso(hasEditPermission: Boolean) =
+            when (hasEditPermission) {
+                true -> Kayttooikeustaso.HANKEMUOKKAUS
+                false -> Kayttooikeustaso.KATSELUOIKEUS
+            }
+
+        @ParameterizedTest
+        @ValueSource(booleans = [true, false])
+        fun `returns the correct answer when the kayttaja is identified`(expected: Boolean) {
+            val kayttajaEntity =
+                kayttajaFactory.saveIdentifiedUser(
+                    hankeFactory.saveMinimal().id,
+                    kayttooikeustaso = kayttooikeustaso(expected),
+                )
+
+            val result = hankeKayttajaService.hasPermission(kayttajaEntity, PermissionCode.EDIT)
+
+            assertThat(result).isEqualTo(expected)
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = [true, false])
+        fun `returns the correct answer when the kayttaja is unidentified`(expected: Boolean) {
+            val kayttajaEntity =
+                kayttajaFactory.saveUnidentifiedUser(
+                    hankeFactory.saveMinimal().id,
+                    kayttooikeustaso = kayttooikeustaso(expected),
+                )
+
+            val result = hankeKayttajaService.hasPermission(kayttajaEntity, PermissionCode.EDIT)
+
+            assertThat(result).isEqualTo(expected)
+        }
+
+        @Test
+        fun `returns false when the user has neither permission nor kayttajakutsu`() {
+            val kayttajaEntity = kayttajaFactory.saveUser(hankeFactory.saveMinimal().id)
+
+            val result = hankeKayttajaService.hasPermission(kayttajaEntity, PermissionCode.EDIT)
+
+            assertThat(result).isFalse()
         }
     }
 

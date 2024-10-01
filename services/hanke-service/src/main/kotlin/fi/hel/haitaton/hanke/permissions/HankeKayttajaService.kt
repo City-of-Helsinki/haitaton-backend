@@ -36,6 +36,12 @@ class HankeKayttajaService(
             ?: throw HankeKayttajaNotFoundException(kayttajaId)
 
     @Transactional(readOnly = true)
+    fun hasPermission(hankeKayttaja: HankekayttajaEntity, permission: PermissionCode): Boolean =
+        hankeKayttaja.deriveKayttooikeustaso()?.let {
+            permissionService.hasPermission(it, permission)
+        } ?: false
+
+    @Transactional(readOnly = true)
     fun getKayttajatByHankeId(hankeId: Int): List<HankeKayttajaDto> =
         hankekayttajaRepository.findByHankeId(hankeId).map { it.toDto() }
 

@@ -126,6 +126,7 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifySequence
+import jakarta.mail.internet.MimeMessage
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
@@ -2866,6 +2867,62 @@ class HakemusServiceITest(
                 .startsWith("${hakemus.id}/")
             verifyAlluDownload(status)
             verify { alluClient.getApplicationInformation(alluId) }
+        }
+
+        @Test
+        fun `sends one email for every user with edit applications permission when the new status is WAITING_INFORMATION`() {
+            val hanke = hankeFactory.saveMinimal()
+            val hakija =
+                hankeKayttajaFactory.saveIdentifiedUser(
+                    hankeId = hanke.id,
+                    sahkoposti = "hakija@yritys.test",
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
+                )
+            val suorittaja =
+                hankeKayttajaFactory.saveIdentifiedUser(
+                    hankeId = hanke.id,
+                    sahkoposti = "suorittaja@yritys.test",
+                    kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
+                )
+            val rakennuttaja =
+                hankeKayttajaFactory.saveIdentifiedUser(
+                    hankeId = hanke.id,
+                    sahkoposti = "rakennuttaja@yritys.test",
+                    kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS,
+                )
+            val asianhoitaja =
+                hankeKayttajaFactory.saveIdentifiedUser(
+                    hankeId = hanke.id,
+                    sahkoposti = "asianhoitaja@yritys.test",
+                    kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+                )
+            hakemusFactory
+                .builder(hanke)
+                .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
+                .hakija(hakija)
+                .tyonSuorittaja(suorittaja, hakija)
+                .rakennuttaja(rakennuttaja, suorittaja, asianhoitaja)
+                .asianhoitaja(asianhoitaja, rakennuttaja, suorittaja, hakija)
+                .save()
+            val event =
+                ApplicationHistoryFactory.createEvent(
+                    applicationIdentifier = identifier,
+                    newStatus = ApplicationStatus.WAITING_INFORMATION,
+                )
+            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+
+            hakemusService.handleHakemusUpdates(histories, updateTime)
+
+            val emails = greenMail.receivedMessages
+            val recipients = emails.map { it.allRecipients.toList() }.flatten()
+            assertThat(recipients)
+                .extracting { it.toString() }
+                .containsExactlyInAnyOrder(hakija.sahkoposti, suorittaja.sahkoposti)
+            assertThat(emails).each {
+                it.prop(MimeMessage::getSubject)
+                    .isEqualTo(
+                        "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö")
+            }
         }
 
         private fun mockAlluDownload(status: ApplicationStatus) =

@@ -53,3 +53,10 @@ data class RemovalFromHankeNotificationEmail(
     val deletedByName: String,
     val deletedByEmail: String,
 ) : EmailEvent
+
+data class InformationRequestEmail(
+    override val to: String,
+    val hakemusNimi: String,
+    val hakemusTunnus: String,
+    val hakemusId: Long,
+) : EmailEvent
