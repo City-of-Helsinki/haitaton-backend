@@ -165,7 +165,7 @@ class HakemusServiceTest {
                     3, capture(applicationCapturingSlot), Status.SUCCESS)
             }
 
-            hakemusService.sendHakemus(3, USERNAME)
+            hakemusService.sendHakemus(3, null, USERNAME)
 
             val sent = applicationCapturingSlot.captured
             assertThat(sent.identificationNumber).isEqualTo(hankeTunnus)
@@ -262,7 +262,7 @@ class HakemusServiceTest {
             every { alluClient.create(any()) } throws AlluException()
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
-            assertThrows<AlluException> { hakemusService.sendHakemus(3, USERNAME) }
+            assertThrows<AlluException> { hakemusService.sendHakemus(3, null, USERNAME) }
 
             verifySequence {
                 hakemusRepository.findOneById(3)
@@ -286,7 +286,7 @@ class HakemusServiceTest {
             every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
             every { alluClient.create(any()) } throws AlluLoginException(RuntimeException())
 
-            assertThrows<AlluLoginException> { hakemusService.sendHakemus(3, USERNAME) }
+            assertThrows<AlluLoginException> { hakemusService.sendHakemus(3, null, USERNAME) }
 
             verifySequence {
                 hakemusRepository.findOneById(3)
@@ -322,7 +322,7 @@ class HakemusServiceTest {
                 AlluFactory.createAlluApplicationResponse(alluId)
             justRun { attachmentService.sendInitialAttachments(alluId, any()) }
 
-            hakemusService.sendHakemus(3, USERNAME)
+            hakemusService.sendHakemus(3, null, USERNAME)
 
             val sent = applicationCapturingSlot.captured
             val expectedDescription = applicationData.workDescription + "\n" + expectedSuffix
@@ -353,7 +353,7 @@ class HakemusServiceTest {
             applicationEntity.hakemusEntityData = hakemusEntityData
             every { hakemusRepository.findOneById(3) } returns applicationEntity
 
-            assertFailure { hakemusService.sendHakemus(3, USERNAME) }
+            assertFailure { hakemusService.sendHakemus(3, null, USERNAME) }
                 .all {
                     hasClass(InvalidHakemusDataException::class)
                     hasMessage("Application contains invalid data. Errors at paths: $path")
@@ -368,7 +368,7 @@ class HakemusServiceTest {
             applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]!!.nimi = ""
             every { hakemusRepository.findOneById(3) } returns applicationEntity
 
-            assertFailure { hakemusService.sendHakemus(3, USERNAME) }
+            assertFailure { hakemusService.sendHakemus(3, null, USERNAME) }
                 .all {
                     hasClass(InvalidHakemusDataException::class)
                     hasMessage(
@@ -387,7 +387,7 @@ class HakemusServiceTest {
             hankekayttaja.sukunimi = ""
             every { hakemusRepository.findOneById(3) } returns applicationEntity
 
-            assertFailure { hakemusService.sendHakemus(3, USERNAME) }
+            assertFailure { hakemusService.sendHakemus(3, null, USERNAME) }
                 .all {
                     hasClass(InvalidHakemusDataException::class)
                     hasMessage(
@@ -408,7 +408,7 @@ class HakemusServiceTest {
                         permission = PermissionFactory.createEntity(userId = USERNAME))
             every { hakemusRepository.findOneById(3) } returns applicationEntity
 
-            assertFailure { hakemusService.sendHakemus(3, USERNAME) }
+            assertFailure { hakemusService.sendHakemus(3, null, USERNAME) }
                 .all {
                     hasClass(InvalidHakemusDataException::class)
                     hasMessage(
@@ -429,7 +429,7 @@ class HakemusServiceTest {
                         permission = PermissionFactory.createEntity(userId = USERNAME))
             every { hakemusRepository.findOneById(3) } returns applicationEntity
 
-            assertFailure { hakemusService.sendHakemus(3, USERNAME) }
+            assertFailure { hakemusService.sendHakemus(3, null, USERNAME) }
                 .all {
                     hasClass(InvalidHakemusDataException::class)
                     hasMessage(

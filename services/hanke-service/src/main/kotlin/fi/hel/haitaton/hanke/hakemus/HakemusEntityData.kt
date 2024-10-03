@@ -32,8 +32,11 @@ sealed interface HakemusEntityData {
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<Hakemusalue>?
+    val paperDecisionReceiver: PaperDecisionReceiver?
 
     fun copy(pendingOnClient: Boolean): HakemusEntityData
+
+    fun copy(paperDecisionReceiver: PaperDecisionReceiver?): HakemusEntityData
 }
 
 @JsonView(ChangeLogView::class)
@@ -51,9 +54,15 @@ data class JohtoselvityshakemusEntityData(
     override val startTime: ZonedDateTime?,
     override val endTime: ZonedDateTime?,
     override val areas: List<JohtoselvitysHakemusalue>?,
+    override val paperDecisionReceiver: PaperDecisionReceiver?,
 ) : HakemusEntityData {
     override fun copy(pendingOnClient: Boolean): JohtoselvityshakemusEntityData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
+
+    override fun copy(
+        paperDecisionReceiver: PaperDecisionReceiver?
+    ): JohtoselvityshakemusEntityData =
+        copy(applicationType = applicationType, paperDecisionReceiver = paperDecisionReceiver)
 
     fun toHakemusData(
         yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>
@@ -71,6 +80,7 @@ data class JohtoselvityshakemusEntityData(
             endTime = endTime,
             pendingOnClient = pendingOnClient,
             areas = areas,
+            paperDecisionReceiver = paperDecisionReceiver,
             customerWithContacts = yhteystiedot[ApplicationContactType.HAKIJA],
             contractorWithContacts = yhteystiedot[ApplicationContactType.TYON_SUORITTAJA],
             propertyDeveloperWithContacts = yhteystiedot[ApplicationContactType.RAKENNUTTAJA],
@@ -95,12 +105,16 @@ data class KaivuilmoitusEntityData(
     override val startTime: ZonedDateTime?,
     override val endTime: ZonedDateTime?,
     override val areas: List<KaivuilmoitusAlue>?,
+    override val paperDecisionReceiver: PaperDecisionReceiver?,
     val invoicingCustomer: InvoicingCustomer? = null,
     val customerReference: String? = null,
     val additionalInfo: String? = null,
 ) : HakemusEntityData {
     override fun copy(pendingOnClient: Boolean): KaivuilmoitusEntityData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
+
+    override fun copy(paperDecisionReceiver: PaperDecisionReceiver?): KaivuilmoitusEntityData =
+        copy(applicationType = applicationType, paperDecisionReceiver = paperDecisionReceiver)
 
     fun copy(areas: List<KaivuilmoitusAlue>?): KaivuilmoitusEntityData =
         copy(applicationType = applicationType, areas = areas)
@@ -127,6 +141,7 @@ data class KaivuilmoitusEntityData(
             representativeWithContacts = yhteystiedot[ApplicationContactType.ASIANHOITAJA],
             invoicingCustomer = invoicingCustomer.toLaskutusyhteystieto(customerReference),
             additionalInfo = additionalInfo,
+            paperDecisionReceiver = paperDecisionReceiver,
         )
 
     fun createAccompanyingJohtoselvityshakemusData(): JohtoselvityshakemusEntityData =
@@ -144,6 +159,7 @@ data class KaivuilmoitusEntityData(
             startTime = startTime,
             endTime = endTime,
             areas = areas?.flatMap { it.geometries() }?.map { JohtoselvitysHakemusalue("", it) },
+            paperDecisionReceiver = paperDecisionReceiver,
         )
 }
 
