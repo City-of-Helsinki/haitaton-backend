@@ -411,4 +411,63 @@ class EmailSenderServiceITest : IntegrationTest() {
             }
         }
     }
+
+    @Nested
+    inner class InformationRequest {
+        private val notification =
+            InformationRequestEmail(
+                to = TEST_EMAIL,
+                hakemusNimi = HANKE_NIMI,
+                hakemusTunnus = APPLICATION_IDENTIFIER,
+                hakemusId = 13L,
+            )
+
+        @Test
+        fun `Send email with correct recipient`() {
+            emailSenderService.sendInformationRequestEmail(notification)
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.allRecipients).hasSize(1)
+            assertThat(email.allRecipients[0].toString()).isEqualTo(TEST_EMAIL)
+        }
+
+        @Test
+        fun `Send email with sender from properties`() {
+            emailSenderService.sendInformationRequestEmail(notification)
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.from).hasSize(1)
+            assertThat(email.from[0].toString()).isEqualTo(HAITATON_NO_REPLY)
+        }
+
+        @Test
+        fun `Send email with correct subject`() {
+            emailSenderService.sendInformationRequestEmail(notification)
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö")
+        }
+
+        @Test
+        fun `Send email with parametrized hybrid body`() {
+            emailSenderService.sendInformationRequestEmail(notification)
+
+            val email = greenMail.firstReceivedMessage()
+            val (textBody, htmlBody) = email.bodies()
+            assertThat(textBody).all {
+                contains(
+                    "Hakemuksellesi $HANKE_NIMI ($APPLICATION_IDENTIFIER) on tullut täydennyspyyntö")
+                contains(
+                    "Käy vastaamassa siihen Haitattomassa: http://localhost:3001/fi/hakemus/13")
+            }
+            assertThat(htmlBody).all {
+                contains(
+                    "Hakemuksellesi $HANKE_NIMI ($APPLICATION_IDENTIFIER) on tullut täydennyspyyntö")
+                contains(
+                    """Käy vastaamassa siihen Haitattomassa: <a href="http://localhost:3001/fi/hakemus/13">http://localhost:3001/fi/hakemus/13</a>""")
+            }
+        }
+    }
 }

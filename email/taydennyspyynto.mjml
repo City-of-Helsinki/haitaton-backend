@@ -1,0 +1,42 @@
+<mjml>
+    <mj-head>
+        <mj-include path="common/attributes.partial"/>
+    </mj-head>
+    <mj-body>
+        <mj-include path="common/header-content.partial"/>
+        <mj-section>
+            <mj-column>
+                <mj-text mj-class="header-txt">
+                    Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi
+                    on tullut täydennyspyyntö
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Hakemuksellesi {{hakemusNimi}} ({{hakemusTunnus}}) on tullut täydennyspyyntö. Käy vastaamassa siihen
+                    Haitattomassa:
+                    <a href="{{baseUrl}}/fi/hakemus/{{hakemusId}}">{{baseUrl}}/fi/hakemus/{{hakemusId}}</a>.
+                </mj-text>
+                <mj-include path="common/signature-fi.partial"/>
+
+                <mj-divider mj-class="language-separator"/>
+
+                <mj-text mj-class="basic-txt">
+                    Hakemuksellesi {{hakemusNimi}} ({{hakemusTunnus}}) on tullut täydennyspyyntö. Käy vastaamassa siihen
+                    Haitattomassa:
+                    <a href="{{baseUrl}}/sv/ansokan/{{hakemusTunnus}}">{{baseUrl}}/sv/ansokan/{{hakemusTunnus}}</a>.
+                </mj-text>
+                <mj-include path="common/signature-sv.partial"/>
+
+                <mj-divider mj-class="language-separator"/>
+
+                <mj-text mj-class="basic-txt">
+                    Hakemuksellesi {{hakemusNimi}} ({{hakemusTunnus}}) on tullut täydennyspyyntö. Käy vastaamassa siihen
+                    Haitattomassa:
+                    <a href="{{baseUrl}}/en/application/{{hakemusTunnus}}">
+                        {{baseUrl}}/en/application/{{hakemusTunnus}}</a>.
+                </mj-text>
+                <mj-include path="common/signature-en.partial"/>
+            </mj-column>
+        </mj-section>
+        <mj-include path="common/footer-content.partial"/>
+    </mj-body>
+</mjml>
