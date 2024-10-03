@@ -41,6 +41,7 @@ enum class EmailTemplate(val value: String) {
     EXCAVATION_NOTIFICATION_DECISION("kaivuilmoitus-paatos"),
     INVITATION_HANKE("kayttaja-lisatty-hanke"),
     REMOVAL_FROM_HANKE_NOTIFICATION("kayttaja-poistettu-hanke"),
+    INFORMATION_REQUEST("taydennyspyynto"),
 }
 
 @Service
@@ -155,6 +156,27 @@ class EmailSenderService(
         sendHybridEmail(
             data.to,
             EmailTemplate.REMOVAL_FROM_HANKE_NOTIFICATION,
+            templateData,
+        )
+    }
+
+    @TransactionalEventListener
+    fun sendInformationRequestEmail(data: InformationRequestEmail) {
+        logger.info { "Sending notification email for information request" }
+
+        val templateData =
+            mapOf(
+                "baseUrl" to emailConfig.baseUrl,
+                "recipientEmail" to data.to,
+                "hakemusNimi" to data.hakemusNimi,
+                "hakemusTunnus" to data.hakemusTunnus,
+                "hakemusId" to data.hakemusId,
+                "signatures" to signatures(),
+            )
+
+        sendHybridEmail(
+            data.to,
+            EmailTemplate.INFORMATION_REQUEST,
             templateData,
         )
     }

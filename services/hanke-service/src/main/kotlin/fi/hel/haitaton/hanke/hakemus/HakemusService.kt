@@ -20,6 +20,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.daysBetween
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.email.ApplicationNotificationEmail
+import fi.hel.haitaton.hanke.email.InformationRequestEmail
 import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -35,6 +36,7 @@ import fi.hel.haitaton.hanke.pdf.JohtoselvityshakemusPdfEncoder
 import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
@@ -577,6 +579,10 @@ class HakemusService(
                 // made at the same time, so take the status and identifier from that update.
                 paatosService.markReplaced(event.applicationIdentifier)
             }
+            ApplicationStatus.WAITING_INFORMATION -> {
+                updateStatus()
+                sendInformationRequestEmails(application, event.applicationIdentifier)
+            }
             else -> updateStatus()
         }
     }
@@ -1094,6 +1100,21 @@ class HakemusService(
                 )
             applicationEventPublisher.publishEvent(data)
         }
+    }
+
+    private fun sendInformationRequestEmails(hakemus: HakemusEntity, hakemusTunnus: String) {
+        hakemus
+            .allContactUsers()
+            .filter { hankeKayttajaService.hasPermission(it, PermissionCode.EDIT_APPLICATIONS) }
+            .forEach {
+                applicationEventPublisher.publishEvent(
+                    InformationRequestEmail(
+                        it.sahkoposti,
+                        hakemus.hakemusEntityData.name,
+                        hakemusTunnus,
+                        hakemus.id,
+                    ))
+            }
     }
 
     @Transactional
