@@ -78,6 +78,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
 import fi.hel.haitaton.hanke.factory.PaatosFactory
+import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -1536,7 +1537,7 @@ class HakemusServiceITest(
 
         @Test
         fun `throws exception when the application doesn't exist`() {
-            val failure = assertFailure { hakemusService.sendHakemus(1234, USERNAME) }
+            val failure = assertFailure { hakemusService.sendHakemus(1234, null, USERNAME) }
 
             failure.all {
                 hasClass(HakemusNotFoundException::class)
@@ -1549,7 +1550,9 @@ class HakemusServiceITest(
             val application =
                 hakemusFactory.builder().withMandatoryFields().withStatus(alluId = alluId).save()
 
-            val failure = assertFailure { hakemusService.sendHakemus(application.id, USERNAME) }
+            val failure = assertFailure {
+                hakemusService.sendHakemus(application.id, null, USERNAME)
+            }
 
             failure.all {
                 hasClass(HakemusAlreadySentException::class)
@@ -1564,7 +1567,9 @@ class HakemusServiceITest(
             val application =
                 hakemusFactory.builder().withMandatoryFields().withRockExcavation(null).save()
 
-            val failure = assertFailure { hakemusService.sendHakemus(application.id, USERNAME) }
+            val failure = assertFailure {
+                hakemusService.sendHakemus(application.id, null, USERNAME)
+            }
 
             failure
                 .isInstanceOf(InvalidHakemusDataException::class)
@@ -1587,7 +1592,7 @@ class HakemusServiceITest(
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
-            hakemusService.sendHakemus(application.id, USERNAME)
+            hakemusService.sendHakemus(application.id, null, USERNAME)
 
             verifySequence {
                 alluClient.create(any())
@@ -1616,7 +1621,7 @@ class HakemusServiceITest(
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(id = alluId)
 
-            val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
+            val response = hakemusService.sendHakemus(hakemus.id, null, USERNAME)
 
             val responseApplicationData = response.applicationData as JohtoselvityshakemusData
             assertThat(responseApplicationData.pendingOnClient).isFalse()
@@ -1641,7 +1646,9 @@ class HakemusServiceITest(
                     .inHandling(alluId = alluId)
                     .saveEntity()
 
-            val failure = assertFailure { hakemusService.sendHakemus(application.id, USERNAME) }
+            val failure = assertFailure {
+                hakemusService.sendHakemus(application.id, null, USERNAME)
+            }
 
             failure.all {
                 hasClass(HakemusAlreadySentException::class)
@@ -1662,7 +1669,7 @@ class HakemusServiceITest(
             justRun { alluClient.addAttachment(alluId, any()) }
             every { alluClient.getApplicationInformation(alluId) } throws AlluException()
 
-            val response = hakemusService.sendHakemus(application.id, USERNAME)
+            val response = hakemusService.sendHakemus(application.id, null, USERNAME)
 
             assertThat(response).all {
                 prop(Hakemus::alluid).isEqualTo(alluId)
@@ -1693,7 +1700,7 @@ class HakemusServiceITest(
                     .withArea(areaOutsideDefaultHanke)
                     .save()
 
-            val failure = assertFailure { hakemusService.sendHakemus(hakemus.id, USERNAME) }
+            val failure = assertFailure { hakemusService.sendHakemus(hakemus.id, null, USERNAME) }
 
             failure.all {
                 hasClass(HakemusGeometryNotInsideHankeException::class)
@@ -1715,7 +1722,7 @@ class HakemusServiceITest(
             justRun { alluClient.cancel(alluId) }
             every { alluClient.sendSystemComment(alluId, any()) } returns 4141
 
-            val failure = assertFailure { hakemusService.sendHakemus(hakemus.id, USERNAME) }
+            val failure = assertFailure { hakemusService.sendHakemus(hakemus.id, null, USERNAME) }
 
             failure.hasClass(AlluException::class)
             verifySequence {
@@ -1735,7 +1742,7 @@ class HakemusServiceITest(
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
-            val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
+            val response = hakemusService.sendHakemus(hakemus.id, null, USERNAME)
 
             assertThat(response.alluid).isEqualTo(alluId)
             assertThat(response.alluStatus).isEqualTo(ApplicationStatus.PENDING)
@@ -1766,7 +1773,7 @@ class HakemusServiceITest(
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
-            val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
+            val response = hakemusService.sendHakemus(hakemus.id, null, USERNAME)
 
             assertThat(response).all {
                 prop(Hakemus::alluid).isEqualTo(alluId)
@@ -1814,7 +1821,7 @@ class HakemusServiceITest(
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
-            val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
+            val response = hakemusService.sendHakemus(hakemus.id, null, USERNAME)
 
             assertThat(response).prop(Hakemus::applicationData).isEqualTo(expectedDataAfterSend)
             assertThat(hakemusService.getById(hakemus.id))
@@ -1835,7 +1842,7 @@ class HakemusServiceITest(
         fun `throws exception when sender is not a contact`() {
             val hakemus = hakemusFactory.builder(userId = "Other user").withMandatoryFields().save()
 
-            val failure = assertFailure { hakemusService.sendHakemus(hakemus.id, USERNAME) }
+            val failure = assertFailure { hakemusService.sendHakemus(hakemus.id, null, USERNAME) }
 
             failure.all {
                 hasClass(UserNotInContactsException::class)
@@ -1876,7 +1883,7 @@ class HakemusServiceITest(
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
-            hakemusService.sendHakemus(hakemus.id, USERNAME)
+            hakemusService.sendHakemus(hakemus.id, null, USERNAME)
 
             val yhteystietoEntries = auditLogRepository.findAll()
             assertThat(yhteystietoEntries).hasSize(5)
@@ -1944,6 +1951,62 @@ class HakemusServiceITest(
             }
         }
 
+        @Test
+        fun `saves audit logs when request decision on paper`() {
+            val hakemus = hakemusFactory.builder().withMandatoryFields().save()
+            val paperDecisionReceiver = PaperDecisionReceiverFactory.default
+            every { alluClient.create(any()) } returns alluId
+            justRun { alluClient.addAttachment(alluId, any()) }
+            every { alluClient.getApplicationInformation(any()) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+            auditLogRepository.deleteAll()
+
+            hakemusService.sendHakemus(hakemus.id, paperDecisionReceiver, USERNAME)
+
+            val expectedDataAfter =
+                (hakemus.applicationData as JohtoselvityshakemusData).copy(
+                    paperDecisionReceiver = paperDecisionReceiver)
+            assertThat(auditLogRepository.findByType(ObjectType.HAKEMUS)).single().isSuccess(
+                Operation.UPDATE) {
+                    hasUserActor(USERNAME)
+                    withTarget {
+                        hasObjectBefore(hakemus)
+                        hasObjectAfter(hakemus.copy(applicationData = expectedDataAfter))
+                    }
+                }
+            verifySequence {
+                alluClient.create(any())
+                alluClient.addAttachment(alluId, any())
+                alluClient.getApplicationInformation(alluId)
+            }
+        }
+
+        @Test
+        fun `saves the paper decision receiver for the hakemus`() {
+            val hakemus = hakemusFactory.builder().withMandatoryFields().save()
+            val paperDecisionReceiver = PaperDecisionReceiverFactory.default
+            every { alluClient.create(any()) } returns alluId
+            justRun { alluClient.addAttachment(alluId, any()) }
+            every { alluClient.getApplicationInformation(any()) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            val result = hakemusService.sendHakemus(hakemus.id, paperDecisionReceiver, USERNAME)
+
+            assertThat(result)
+                .prop(Hakemus::applicationData)
+                .prop(HakemusData::paperDecisionReceiver)
+                .isEqualTo(paperDecisionReceiver)
+            assertThat(hakemusRepository.getReferenceById(hakemus.id))
+                .prop(HakemusEntity::hakemusEntityData)
+                .prop(HakemusEntityData::paperDecisionReceiver)
+                .isEqualTo(paperDecisionReceiver)
+            verifySequence {
+                alluClient.create(any())
+                alluClient.addAttachment(alluId, any())
+                alluClient.getApplicationInformation(alluId)
+            }
+        }
+
         @Nested
         inner class Kaivuilmoitus {
 
@@ -1976,7 +2039,7 @@ class HakemusServiceITest(
                         AlluFactory.createAlluApplicationResponse(
                             alluId, applicationId = DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
 
-                    val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
+                    val response = hakemusService.sendHakemus(hakemus.id, null, USERNAME)
 
                     assertThat(response).all {
                         prop(Hakemus::alluid).isEqualTo(alluId)
@@ -2093,7 +2156,7 @@ class HakemusServiceITest(
 
                 @Test
                 fun `saves johtoselvitys to DB`() {
-                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, USERNAME)
+                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, null, USERNAME)
 
                     assertThat(hakemusRepository.getOneByAlluid(cableReportAlluId))
                         .isNotNull()
@@ -2110,7 +2173,7 @@ class HakemusServiceITest(
 
                 @Test
                 fun `sends johtoselvitys and kaivuilmoitus to Allu`() {
-                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, USERNAME)
+                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, null, USERNAME)
 
                     verifySequence {
                         // first the cable report is sent
@@ -2128,7 +2191,8 @@ class HakemusServiceITest(
 
                 @Test
                 fun `returns the created kaivuilmoitus`() {
-                    val response = hakemusService.sendHakemus(kaivuilmoitusHakemusId, USERNAME)
+                    val response =
+                        hakemusService.sendHakemus(kaivuilmoitusHakemusId, null, USERNAME)
 
                     assertThat(response).all {
                         prop(Hakemus::alluid).isEqualTo(excavationNotificationAlluId)
@@ -2143,7 +2207,7 @@ class HakemusServiceITest(
                 fun `writes the created hakemus to audit logs`() {
                     auditLogRepository.deleteAll()
 
-                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, USERNAME)
+                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, null, USERNAME)
 
                     val logs = auditLogRepository.findByType(ObjectType.HAKEMUS)
                     assertThat(logs).single().isSuccess(Operation.CREATE) {

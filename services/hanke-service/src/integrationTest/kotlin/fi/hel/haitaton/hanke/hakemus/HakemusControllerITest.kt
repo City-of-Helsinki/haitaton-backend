@@ -10,12 +10,14 @@ import assertk.assertions.isNull
 import assertk.assertions.key
 import assertk.assertions.prop
 import assertk.assertions.single
+import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
+import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.andReturnBody
@@ -30,6 +32,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescrip
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
+import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -1015,13 +1018,14 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { hakemusService.sendHakemus(id, USERNAME) } throws HakemusNotFoundException(id)
+            every { hakemusService.sendHakemus(id, null, USERNAME) } throws
+                HakemusNotFoundException(id)
 
             post(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2001))
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-                hakemusService.sendHakemus(id, USERNAME)
+                hakemusService.sendHakemus(id, null, USERNAME)
             }
         }
 
@@ -1030,14 +1034,14 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { hakemusService.sendHakemus(id, USERNAME) } throws
+            every { hakemusService.sendHakemus(id, null, USERNAME) } throws
                 UserNotInContactsException(HakemusFactory.create(id = id))
 
             post(url).andExpect(status().isForbidden).andExpect(hankeError(HankeError.HAI2012))
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-                hakemusService.sendHakemus(id, USERNAME)
+                hakemusService.sendHakemus(id, null, USERNAME)
             }
         }
 
@@ -1046,14 +1050,14 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { hakemusService.sendHakemus(id, USERNAME) } throws
+            every { hakemusService.sendHakemus(id, null, USERNAME) } throws
                 HakemusGeometryNotInsideHankeException("Message")
 
             post(url).andExpect(status().isBadRequest).andExpect(hankeError(HankeError.HAI2007))
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-                hakemusService.sendHakemus(id, USERNAME)
+                hakemusService.sendHakemus(id, null, USERNAME)
             }
         }
 
@@ -1062,14 +1066,14 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { hakemusService.sendHakemus(id, USERNAME) } throws
+            every { hakemusService.sendHakemus(id, null, USERNAME) } throws
                 HakemusAlreadySentException(id, 414, ApplicationStatus.PENDING)
 
             post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI2009))
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-                hakemusService.sendHakemus(id, USERNAME)
+                hakemusService.sendHakemus(id, null, USERNAME)
             }
         }
 
@@ -1078,7 +1082,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { hakemusService.sendHakemus(id, USERNAME) } throws
+            every { hakemusService.sendHakemus(id, null, USERNAME) } throws
                 InvalidHakemusDataException(listOf("rockExcavation"))
 
             post(url)
@@ -1089,7 +1093,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-                hakemusService.sendHakemus(id, USERNAME)
+                hakemusService.sendHakemus(id, null, USERNAME)
             }
         }
 
@@ -1104,7 +1108,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { hakemusService.sendHakemus(id, USERNAME) } returns sentHakemus
+            every { hakemusService.sendHakemus(id, null, USERNAME) } returns sentHakemus
 
             val response = post(url).andExpect(status().isOk()).andReturnContent()
 
@@ -1115,7 +1119,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             )
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-                hakemusService.sendHakemus(id, USERNAME)
+                hakemusService.sendHakemus(id, null, USERNAME)
             }
         }
 
@@ -1132,13 +1136,59 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { hakemusService.sendHakemus(id, USERNAME) } returns hakemus
+            every { hakemusService.sendHakemus(id, null, USERNAME) } returns hakemus
 
             post(url).andExpect(status().isOk).andVerifyRegistryKeys()
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
-                hakemusService.sendHakemus(id, USERNAME)
+                hakemusService.sendHakemus(id, null, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 400 when request body is missing fields`() {
+            val paperDecisionReceiver = PaperDecisionReceiverFactory.default
+            val request = HakemusSendRequest(paperDecisionReceiver = paperDecisionReceiver)
+            val json: ObjectNode = OBJECT_MAPPER.valueToTree(request)
+            val child = json.get("paperDecisionReceiver") as ObjectNode
+            child.remove("name")
+
+            post(url, json).andExpect(status().isBadRequest())
+        }
+
+        @Test
+        fun `returns paper decision receiver when request body is present`() {
+            val paperDecisionReceiver = PaperDecisionReceiverFactory.default
+            val request = HakemusSendRequest(paperDecisionReceiver = paperDecisionReceiver)
+            every {
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { hakemusService.sendHakemus(id, paperDecisionReceiver, USERNAME) } returns
+                HakemusFactory.create(
+                    applicationData =
+                        HakemusFactory.createJohtoselvityshakemusData()
+                            .copy(paperDecisionReceiver = paperDecisionReceiver))
+
+            post(url, request)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("applicationData.paperDecisionReceiver").exists())
+                .andExpect(
+                    jsonPath("applicationData.paperDecisionReceiver.name")
+                        .value(paperDecisionReceiver.name))
+                .andExpect(
+                    jsonPath("applicationData.paperDecisionReceiver.streetAddress")
+                        .value(paperDecisionReceiver.streetAddress))
+                .andExpect(
+                    jsonPath("applicationData.paperDecisionReceiver.postalCode")
+                        .value(paperDecisionReceiver.postalCode))
+                .andExpect(
+                    jsonPath("applicationData.paperDecisionReceiver.city")
+                        .value(paperDecisionReceiver.city))
+
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                hakemusService.sendHakemus(id, paperDecisionReceiver, USERNAME)
             }
         }
     }

@@ -52,6 +52,7 @@ fun KaivuilmoitusData.validateForSend(): ValidationResult =
         .whenNotNull(propertyDeveloperWithContacts) { it.validate("propertyDeveloperWithContacts") }
         .andWithNotNull(invoicingCustomer, "invoicingCustomer") { validate(it) }
         .whenNotNull(additionalInfo) { notJustWhitespace(it, "additionalInfo") }
+        .whenNotNull(paperDecisionReceiver) { it.validate("paperDecisionReceiver") }
 
 internal fun validateAreas(areas: List<KaivuilmoitusAlue>, path: String) =
     validate { notEmpty(areas, path) }.and { allIn(areas, path, ::validateArea) }

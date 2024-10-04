@@ -58,6 +58,7 @@ sealed interface HakemusData {
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<Hakemusalue>?
+    val paperDecisionReceiver: PaperDecisionReceiver?
     val customerWithContacts: Hakemusyhteystieto?
 
     fun toResponse(): HakemusDataResponse
@@ -79,6 +80,7 @@ data class JohtoselvityshakemusData(
     override val endTime: ZonedDateTime? = null,
     override val pendingOnClient: Boolean,
     override val areas: List<JohtoselvitysHakemusalue>? = null,
+    override val paperDecisionReceiver: PaperDecisionReceiver?,
     override val customerWithContacts: Hakemusyhteystieto? = null,
     val contractorWithContacts: Hakemusyhteystieto? = null,
     val propertyDeveloperWithContacts: Hakemusyhteystieto? = null,
@@ -99,6 +101,7 @@ data class JohtoselvityshakemusData(
             startTime = startTime,
             endTime = endTime,
             areas = areas ?: listOf(),
+            paperDecisionReceiver = paperDecisionReceiver,
             customerWithContacts = customerWithContacts?.toResponse(),
             contractorWithContacts = contractorWithContacts?.toResponse(),
             propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toResponse(),
@@ -130,6 +133,7 @@ data class KaivuilmoitusData(
     override val startTime: ZonedDateTime?,
     override val endTime: ZonedDateTime?,
     override val areas: List<KaivuilmoitusAlue>?,
+    override val paperDecisionReceiver: PaperDecisionReceiver?,
     override val customerWithContacts: Hakemusyhteystieto?,
     val contractorWithContacts: Hakemusyhteystieto?,
     val propertyDeveloperWithContacts: Hakemusyhteystieto?,
@@ -154,6 +158,7 @@ data class KaivuilmoitusData(
             startTime = startTime,
             endTime = endTime,
             areas = areas ?: listOf(),
+            paperDecisionReceiver = paperDecisionReceiver,
             customerWithContacts = customerWithContacts?.toResponse(),
             contractorWithContacts = contractorWithContacts?.toResponse(),
             propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toResponse(),
