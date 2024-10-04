@@ -1164,7 +1164,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { hakemusService.sendHakemus(id, any(), USERNAME) } returns
+            every { hakemusService.sendHakemus(id, paperDecisionReceiver, USERNAME) } returns
                 HakemusFactory.create(
                     applicationData =
                         HakemusFactory.createJohtoselvityshakemusData()
