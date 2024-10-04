@@ -21,6 +21,7 @@ import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
+import fi.hel.haitaton.hanke.hakemus.PaperDecisionReceiver
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.paatos.Paatos
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
@@ -134,6 +135,7 @@ class HakemusFactory(
             pendingOnClient: Boolean = false,
             areas: List<JohtoselvitysHakemusalue>? =
                 listOf(ApplicationFactory.createCableReportApplicationArea()),
+            paperDecisionReceiver: PaperDecisionReceiver? = null,
             customerWithContacts: Hakemusyhteystieto? = null,
             contractorWithContacts: Hakemusyhteystieto? = null,
             representativeWithContacts: Hakemusyhteystieto? = null,
@@ -156,7 +158,7 @@ class HakemusFactory(
                 endTime = endTime,
                 pendingOnClient = pendingOnClient,
                 areas = areas,
-                paperDecisionReceiver = null,
+                paperDecisionReceiver = paperDecisionReceiver,
                 customerWithContacts = customerWithContacts,
                 contractorWithContacts = contractorWithContacts,
                 representativeWithContacts = representativeWithContacts,
@@ -179,6 +181,7 @@ class HakemusFactory(
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             areas: List<KaivuilmoitusAlue>? =
                 listOf(ApplicationFactory.createExcavationNotificationArea()),
+            paperDecisionReceiver: PaperDecisionReceiver? = null,
             customerWithContacts: Hakemusyhteystieto? = null,
             contractorWithContacts: Hakemusyhteystieto? = null,
             representativeWithContacts: Hakemusyhteystieto? = null,
@@ -201,7 +204,7 @@ class HakemusFactory(
                 startTime = startTime,
                 endTime = endTime,
                 areas = areas,
-                paperDecisionReceiver = null,
+                paperDecisionReceiver = paperDecisionReceiver,
                 customerWithContacts = customerWithContacts,
                 contractorWithContacts = contractorWithContacts,
                 representativeWithContacts = representativeWithContacts,

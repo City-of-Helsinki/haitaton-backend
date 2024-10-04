@@ -74,17 +74,18 @@ object JohtoselvityshakemusPdfEncoder {
 
         document.section("Yhteystiedot") {
             if (data.customerWithContacts != null) {
-                row("Työstä vastaavat", data.customerWithContacts.format())
+                row("Työstä vastaava", data.customerWithContacts.format())
             }
             if (data.contractorWithContacts != null) {
-                row("Työn suorittajat", data.contractorWithContacts.format())
+                row("Työn suorittaja", data.contractorWithContacts.format())
             }
             if (data.propertyDeveloperWithContacts != null) {
-                row("Rakennuttajat", data.propertyDeveloperWithContacts.format())
+                row("Rakennuttaja", data.propertyDeveloperWithContacts.format())
             }
             if (data.representativeWithContacts != null) {
-                row("Asianhoitajat", data.representativeWithContacts.format())
+                row("Asianhoitaja", data.representativeWithContacts.format())
             }
+            data.paperDecisionReceiver?.let { row("Päätös tilattu paperisena", it.format()) }
         }
 
         document.newPage()

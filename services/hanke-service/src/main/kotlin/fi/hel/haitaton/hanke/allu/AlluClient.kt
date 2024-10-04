@@ -31,7 +31,7 @@ import reactor.core.publisher.Mono
 
 private val logger = KotlinLogging.logger {}
 
-const val HAITATON_SYSTEM = "Haitaton järjestelmä"
+const val HAITATON_SYSTEM = "Haitaton-järjestelmä"
 const val AUTH_TOKEN_SAFETY_MARGIN_SECONDS = 5L * 60L
 
 class AlluClient(

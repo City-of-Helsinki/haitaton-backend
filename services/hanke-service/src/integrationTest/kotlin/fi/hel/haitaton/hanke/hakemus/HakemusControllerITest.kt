@@ -1167,8 +1167,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every { hakemusService.sendHakemus(id, paperDecisionReceiver, USERNAME) } returns
                 HakemusFactory.create(
                     applicationData =
-                        HakemusFactory.createJohtoselvityshakemusData()
-                            .copy(paperDecisionReceiver = paperDecisionReceiver))
+                        HakemusFactory.createJohtoselvityshakemusData(
+                            paperDecisionReceiver = paperDecisionReceiver))
 
             post(url, request)
                 .andExpect(status().isOk)
