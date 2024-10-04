@@ -965,10 +965,7 @@ class HakemusService(
                     hakemusEntityData.endTime.toLocalDate(),
                 )
             }
-        hakemusEntity.hakemusEntityData =
-            hakemusEntityData.copy(
-                areas = areas,
-            )
+        hakemusEntity.hakemusEntityData = hakemusEntityData.copy(areas = areas)
     }
 
     private fun updateTormaystarkastelutForArea(
@@ -987,9 +984,7 @@ class HakemusService(
                     )
                 tyoalue.copy(tormaystarkasteluTulos = tormaystarkasteluTulos)
             }
-        return area.copy(
-            tyoalueet = tyoalueet,
-        )
+        return area.copy(tyoalueet = tyoalueet)
     }
 
     private fun updateYhteystiedot(

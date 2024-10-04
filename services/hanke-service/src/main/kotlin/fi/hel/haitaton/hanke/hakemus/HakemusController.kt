@@ -356,7 +356,8 @@ The id needs to reference an excavation notification.
     @Operation(
         summary = "Send an application to Allu for processing",
         description =
-            """Returns the application with updated status fields.
+            """
+               Returns the application with updated status fields.
                - Sets the pendingOnClient value of the application to false. This means the application is no longer a draft.
                - A clerk at Allu can start processing the application after this call.
                - The application cannot be edited after it has been sent.
