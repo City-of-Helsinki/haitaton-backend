@@ -28,6 +28,7 @@ sealed interface HakemusDataResponse {
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<Hakemusalue>
+    val paperDecisionReceiver: PaperDecisionReceiver?
     val customerWithContacts: CustomerWithContactsResponse?
 
     fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsResponse>
@@ -36,7 +37,6 @@ sealed interface HakemusDataResponse {
 data class JohtoselvitysHakemusDataResponse(
     override val applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
     override val pendingOnClient: Boolean,
-    // 1. sivu Perustiedot (first filled in Create)
     /** Työn nimi */
     override val name: String,
     /** Katuosoite */
@@ -56,14 +56,13 @@ data class JohtoselvitysHakemusDataResponse(
     val rockExcavation: Boolean?,
     /** Työn kuvaus */
     val workDescription: String,
-    // 2. sivu Alueet
     /** Työn arvioitu alkupäivä */
     override val startTime: ZonedDateTime?,
     /** Työn arvioitu loppupäivä */
     override val endTime: ZonedDateTime?,
     /** Työalueet */
     override val areas: List<JohtoselvitysHakemusalue>,
-    // 3. sivu Yhteystiedot
+    override val paperDecisionReceiver: PaperDecisionReceiver?,
     /** Hakijan tiedot */
     override val customerWithContacts: CustomerWithContactsResponse?,
     /** Työn suorittajan tiedot */
@@ -72,8 +71,6 @@ data class JohtoselvitysHakemusDataResponse(
     val propertyDeveloperWithContacts: CustomerWithContactsResponse?,
     /** Asianhoitajan tiedot */
     val representativeWithContacts: CustomerWithContactsResponse?,
-    // 4. sivu Liitteet (separete endpoint)
-    // 5. sivu Yhteenveto (no input data)
 ) : HakemusDataResponse {
     override fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsResponse> =
         listOfNotNull(
@@ -88,7 +85,6 @@ data class JohtoselvitysHakemusDataResponse(
 data class KaivuilmoitusDataResponse(
     override val applicationType: ApplicationType = ApplicationType.EXCAVATION_NOTIFICATION,
     override val pendingOnClient: Boolean,
-    // 1. sivu Perustiedot (first filled in Create)
     /** Työn nimi */
     override val name: String,
     /** Työn kuvaus */
@@ -112,15 +108,13 @@ data class KaivuilmoitusDataResponse(
     val placementContracts: List<String>?,
     /** Työhän vaadittava pätevyys */
     val requiredCompetence: Boolean,
-    // 2. sivu Alueet
     /** Työn alkupäivämäärä */
     override val startTime: ZonedDateTime?,
     /** Työn loppupäivämäärä */
     override val endTime: ZonedDateTime?,
     /** Työalueet */
     override val areas: List<KaivuilmoitusAlue>,
-    // 3. sivu Haittojen hallinta - included in areas
-    // 4. sivu Yhteystiedot
+    override val paperDecisionReceiver: PaperDecisionReceiver?,
     /** Hakijan tiedot */
     override val customerWithContacts: CustomerWithContactsResponse?,
     /** Työn suorittajan tiedot */
@@ -131,9 +125,7 @@ data class KaivuilmoitusDataResponse(
     val representativeWithContacts: CustomerWithContactsResponse?,
     /** Laskutustiedot */
     val invoicingCustomer: InvoicingCustomerResponse?,
-    // 5. sivu Liitteet
     val additionalInfo: String?,
-    // 6. sivu Yhteenveto (no input data)
 ) : HakemusDataResponse {
     override fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsResponse> =
         listOfNotNull(

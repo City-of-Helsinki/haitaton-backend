@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Nested
@@ -40,7 +41,10 @@ class TestDataServiceITest : IntegrationTest() {
                     alluStatus = ApplicationStatus.entries[i + 4],
                     alluId = i,
                     applicationIdentifier = "JS00$i",
-                    hakemusEntityData = applicationData.copy(pendingOnClient = false),
+                    hakemusEntityData =
+                        applicationData
+                            .copy(pendingOnClient = false)
+                            .copy(paperDecisionReceiver = PaperDecisionReceiverFactory.default),
                 )
 
                 applicationFactory.saveApplicationEntity(
@@ -62,6 +66,7 @@ class TestDataServiceITest : IntegrationTest() {
                 application.transform { it.applicationIdentifier }.isNull()
                 application.transform { it.alluStatus }.isNull()
                 application.transform { it.hakemusEntityData.pendingOnClient }.isTrue()
+                application.transform { it.hakemusEntityData.paperDecisionReceiver }.isNull()
             }
         }
     }

@@ -140,14 +140,15 @@ class ApplicationFactory(
         ): JohtoselvityshakemusEntityData =
             JohtoselvityshakemusEntityData(
                 applicationType = ApplicationType.CABLE_REPORT,
+                pendingOnClient = pendingOnClient,
                 name = name,
-                areas = areas,
+                postalAddress = postalAddress,
+                rockExcavation = rockExcavation,
+                workDescription = workDescription,
                 startTime = startTime,
                 endTime = endTime,
-                pendingOnClient = pendingOnClient,
-                workDescription = workDescription,
-                rockExcavation = rockExcavation,
-                postalAddress = postalAddress,
+                areas = areas,
+                paperDecisionReceiver = null,
             )
 
         internal fun createBlankCableReportApplicationData() =
@@ -191,9 +192,10 @@ class ApplicationFactory(
                 cableReports = cableReports,
                 placementContracts = placementContracts,
                 requiredCompetence = requiredCompetence,
-                areas = areas,
                 startTime = startTime,
                 endTime = endTime,
+                areas = areas,
+                paperDecisionReceiver = null,
                 invoicingCustomer = invoicingCustomer,
                 customerReference = customerReference,
                 additionalInfo = additionalInfo,

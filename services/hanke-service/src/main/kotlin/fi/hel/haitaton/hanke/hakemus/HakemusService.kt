@@ -148,6 +148,7 @@ class HakemusService(
                 endTime = null,
                 rockExcavation = null,
                 workDescription = "",
+                paperDecisionReceiver = null,
             )
         val entity =
             HakemusEntity(
@@ -213,8 +214,19 @@ class HakemusService(
     }
 
     @Transactional
-    fun sendHakemus(id: Long, currentUserId: String): Hakemus {
+    fun sendHakemus(
+        id: Long,
+        paperDecisionReceiver: PaperDecisionReceiver?,
+        currentUserId: String,
+    ): Hakemus {
         val hakemus = getEntityById(id)
+
+        if (paperDecisionReceiver != null) {
+            val hakemusBefore = hakemus.toHakemus()
+            hakemus.hakemusEntityData =
+                hakemus.hakemusEntityData.copy(paperDecisionReceiver = paperDecisionReceiver)
+            hakemusLoggingService.logUpdate(hakemusBefore, hakemus.toHakemus(), currentUserId)
+        }
 
         HakemusDataValidator.ensureValidForSend(hakemus.toHakemus().applicationData)
 
@@ -242,7 +254,8 @@ class HakemusService(
             createAccompanyingJohtoselvityshakemus(hakemus, currentUserId)
         if (accompanyingJohtoselvityshakemus != null) {
             val sentJohtoselvityshakemus =
-                sendHakemus(accompanyingJohtoselvityshakemus.id, currentUserId)
+                sendHakemus(
+                    accompanyingJohtoselvityshakemus.id, paperDecisionReceiver, currentUserId)
             // add the application identifier of the cable report to the list of cable reports in
             // the excavation announcement
             val hakemusEntityData = hakemus.hakemusEntityData as KaivuilmoitusEntityData
@@ -488,6 +501,7 @@ class HakemusService(
             startTime = null,
             endTime = null,
             areas = null,
+            paperDecisionReceiver = null,
         )
 
     private fun CreateKaivuilmoitusRequest.newExcavationNotificationData() =
@@ -507,6 +521,7 @@ class HakemusService(
             startTime = null,
             endTime = null,
             areas = null,
+            paperDecisionReceiver = null,
         )
 
     private fun handleHakemusUpdate(applicationHistory: ApplicationHistory) {
@@ -956,10 +971,7 @@ class HakemusService(
                     hakemusEntityData.endTime.toLocalDate(),
                 )
             }
-        hakemusEntity.hakemusEntityData =
-            hakemusEntityData.copy(
-                areas = areas,
-            )
+        hakemusEntity.hakemusEntityData = hakemusEntityData.copy(areas = areas)
     }
 
     private fun updateTormaystarkastelutForArea(
@@ -978,9 +990,7 @@ class HakemusService(
                     )
                 tyoalue.copy(tormaystarkasteluTulos = tormaystarkasteluTulos)
             }
-        return area.copy(
-            tyoalueet = tyoalueet,
-        )
+        return area.copy(tyoalueet = tyoalueet)
     }
 
     private fun updateYhteystiedot(

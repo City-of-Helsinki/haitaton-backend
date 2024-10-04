@@ -356,11 +356,14 @@ The id needs to reference an excavation notification.
     @Operation(
         summary = "Send an application to Allu for processing",
         description =
-            """Returns the application with updated status fields.
+            """
+               Returns the application with updated status fields.
                - Sets the pendingOnClient value of the application to false. This means the application is no longer a draft.
                - A clerk at Allu can start processing the application after this call.
                - The application cannot be edited after it has been sent.
-               - The caller needs to be a contact on the application for at least one customer. 
+               - The caller needs to be a contact on the application for at least one customer.
+
+               Request body is optional. Can be used to request a paper copy of the decision to be sent to the address provided.
             """)
     @ApiResponses(
         value =
@@ -380,8 +383,11 @@ The id needs to reference an excavation notification.
                     content = [Content(schema = Schema(implementation = HankeError::class))]),
             ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
-    fun sendHakemus(@PathVariable(name = "id") id: Long): HakemusResponse =
-        hakemusService.sendHakemus(id, currentUserId()).toResponse()
+    fun sendHakemus(
+        @PathVariable(name = "id") id: Long,
+        @RequestBody(required = false) request: HakemusSendRequest?,
+    ): HakemusResponse =
+        hakemusService.sendHakemus(id, request?.paperDecisionReceiver, currentUserId()).toResponse()
 
     @GetMapping("/hakemukset/{id}/paatos")
     @Operation(
