@@ -9,10 +9,7 @@ import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluLoginException
-import fi.hel.haitaton.hanke.allu.AlluStatusRepository
-import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -21,9 +18,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.daysBetween
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.email.ApplicationNotificationEmail
-import fi.hel.haitaton.hanke.email.InformationRequestEmail
-import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
-import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.getCurrentTimeUTCAsLocalTime
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
@@ -37,15 +31,12 @@ import fi.hel.haitaton.hanke.pdf.JohtoselvityshakemusPdfEncoder
 import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.permissions.PermissionCode
-import fi.hel.haitaton.hanke.taydennys.TaydennysService
 import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
@@ -78,11 +69,9 @@ class HakemusService(
     private val hankeKayttajaService: HankeKayttajaService,
     private val attachmentService: ApplicationAttachmentService,
     private val alluClient: AlluClient,
-    private val alluStatusRepository: AlluStatusRepository,
     private val paatosService: PaatosService,
     private val applicationEventPublisher: ApplicationEventPublisher,
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
-    private val taydennysService: TaydennysService,
 ) {
 
     @Transactional(readOnly = true)
@@ -477,17 +466,6 @@ class HakemusService(
         return Pair(filename, pdfBytes)
     }
 
-    @Transactional
-    fun handleHakemusUpdates(
-        applicationHistories: List<ApplicationHistory>,
-        updateTime: OffsetDateTime
-    ) {
-        applicationHistories.forEach { handleHakemusUpdate(it) }
-        val status = alluStatusRepository.getReferenceById(1)
-        status.historyLastUpdated = updateTime
-        alluStatusRepository.save(status)
-    }
-
     private fun newApplicationData(createHakemusRequest: CreateHakemusRequest): HakemusEntityData =
         when (createHakemusRequest) {
             is CreateJohtoselvityshakemusRequest ->
@@ -533,112 +511,6 @@ class HakemusService(
             areas = null,
             paperDecisionReceiver = null,
         )
-
-    private fun handleHakemusUpdate(applicationHistory: ApplicationHistory) {
-        val application = hakemusRepository.getOneByAlluid(applicationHistory.applicationId)
-        if (application == null) {
-            logger.error {
-                "Allu had events for a hakemus we don't have anymore. alluId=${applicationHistory.applicationId}"
-            }
-            return
-        }
-        applicationHistory.events
-            .sortedBy { it.eventTime }
-            .forEach { handleApplicationEvent(application, it) }
-        hakemusRepository.save(application)
-    }
-
-    private fun handleApplicationEvent(application: HakemusEntity, event: ApplicationStatusEvent) {
-        fun updateStatus() {
-            application.alluStatus = event.newStatus
-            application.applicationIdentifier = event.applicationIdentifier
-            logger.info {
-                "Updating hakemus with new status, " +
-                    "id=${application.id}, " +
-                    "alluId=${application.alluid}, " +
-                    "application identifier=${application.applicationIdentifier}, " +
-                    "new status=${application.alluStatus}, " +
-                    "event time=${event.eventTime}"
-            }
-        }
-
-        when (event.newStatus) {
-            ApplicationStatus.DECISION -> {
-                updateStatus()
-                sendDecisionReadyEmails(application, event.applicationIdentifier)
-                if (application.applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
-                    paatosService.saveKaivuilmoituksenPaatos(application, event)
-                }
-            }
-            ApplicationStatus.OPERATIONAL_CONDITION -> {
-                updateStatus()
-                when (application.applicationType) {
-                    ApplicationType.CABLE_REPORT ->
-                        logger.error {
-                            "Got ${event.newStatus} update for a cable report. ${application.logString()}"
-                        }
-                    ApplicationType.EXCAVATION_NOTIFICATION -> {
-                        sendDecisionReadyEmails(application, event.applicationIdentifier)
-                        paatosService.saveKaivuilmoituksenToiminnallinenKunto(application, event)
-                    }
-                }
-            }
-            ApplicationStatus.FINISHED -> {
-                updateStatus()
-                when (application.applicationType) {
-                    ApplicationType.CABLE_REPORT ->
-                        logger.error {
-                            "Got ${event.newStatus} update for a cable report. ${application.logString()}"
-                        }
-                    ApplicationType.EXCAVATION_NOTIFICATION -> {
-                        sendDecisionReadyEmails(application, event.applicationIdentifier)
-                        paatosService.saveKaivuilmoituksenTyoValmis(application, event)
-                    }
-                }
-            }
-            ApplicationStatus.REPLACED -> {
-                logger.info {
-                    "A decision has been replaced. Marking the old decisions as replaced. hakemustunnus = ${event.applicationIdentifier}, ${application.logString()}"
-                }
-                // Don't update application status or identifier. A new decision has been
-                // made at the same time, so take the status and identifier from that update.
-                paatosService.markReplaced(event.applicationIdentifier)
-            }
-            ApplicationStatus.WAITING_INFORMATION -> {
-                updateStatus()
-                taydennysService.saveTaydennyspyyntoFromAllu(application)
-                sendInformationRequestEmails(application, event.applicationIdentifier)
-            }
-            else -> updateStatus()
-        }
-    }
-
-    private fun sendDecisionReadyEmails(application: HakemusEntity, applicationIdentifier: String) {
-        val receivers = application.allContactUsers()
-
-        if (receivers.isEmpty()) {
-            logger.error {
-                "No receivers found for hakemus ${application.alluStatus} ready email, not sending any. ${application.logString()}"
-            }
-            return
-        }
-        logger.info {
-            "Sending hakemus ${application.alluStatus} ready emails to ${receivers.size} receivers"
-        }
-
-        receivers.forEach {
-            val event =
-                when (application.applicationType) {
-                    ApplicationType.CABLE_REPORT ->
-                        JohtoselvitysCompleteEmail(
-                            it.sahkoposti, application.id, applicationIdentifier)
-                    ApplicationType.EXCAVATION_NOTIFICATION ->
-                        KaivuilmoitusDecisionEmail(
-                            it.sahkoposti, application.id, applicationIdentifier)
-                }
-            applicationEventPublisher.publishEvent(event)
-        }
-    }
 
     /** Find the application entity or throw an exception. */
     private fun getEntityById(id: Long): HakemusEntity =
@@ -1126,21 +998,6 @@ class HakemusService(
                 )
             applicationEventPublisher.publishEvent(data)
         }
-    }
-
-    private fun sendInformationRequestEmails(hakemus: HakemusEntity, hakemusTunnus: String) {
-        hakemus
-            .allContactUsers()
-            .filter { hankeKayttajaService.hasPermission(it, PermissionCode.EDIT_APPLICATIONS) }
-            .forEach {
-                applicationEventPublisher.publishEvent(
-                    InformationRequestEmail(
-                        it.sahkoposti,
-                        hakemus.hakemusEntityData.name,
-                        hakemusTunnus,
-                        hakemus.id,
-                    ))
-            }
     }
 
     @Transactional
