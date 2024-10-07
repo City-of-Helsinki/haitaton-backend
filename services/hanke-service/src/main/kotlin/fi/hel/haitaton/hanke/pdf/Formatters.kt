@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.pdf
 
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
+import fi.hel.haitaton.hanke.hakemus.PaperDecisionReceiver
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -21,6 +22,14 @@ fun Hakemusyhteystieto.format(): String =
     listOfNotNull("$nimi\n", registryKey, sahkoposti, puhelinnumero, "\nYhteyshenkilöt\n")
         .filter { it.isNotBlank() }
         .joinToString("\n") + this.yhteyshenkilot.joinToString("\n") { "\n" + it.format() }
+
+fun PaperDecisionReceiver.format(): String =
+    """
+        $name
+        $streetAddress
+        $postalCode $city
+    """
+        .trimIndent()
 
 fun ZonedDateTime?.format(): String? =
     this?.withZoneSameInstant(ZoneId.of("Europe/Helsinki"))?.format(FINNISH_DATE_FORMAT)

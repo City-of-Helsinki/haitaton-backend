@@ -60,6 +60,10 @@ const val ALLU_USER_CANCELLATION_MSG = "Käyttäjä perui hakemuksen Haitattomas
 const val ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG =
     "Haitaton ei saanut lisättyä hakemuksen liitteitä. Hakemus peruttu."
 
+private const val FORM_DATA_PDF_FILENAME = "haitaton-form-data.pdf"
+private const val PAPER_DECISION_MSG =
+    "Asiakas haluaa päätöksen myös paperisena. Liitteessä $FORM_DATA_PDF_FILENAME on päätöksen toimitukseen liittyvät osoitetiedot."
+
 @Service
 class HakemusService(
     private val hakemusRepository: HakemusRepository,
@@ -690,9 +694,14 @@ class HakemusService(
     ): Int {
         val alluData = hakemusData.toAlluData(hankeTunnus)
 
-        return withFormDataPdfUploading(applicationId, hankeTunnus, hakemusData) {
-            withDisclosureLogging(applicationId, alluData) { alluClient.create(alluData) }
+        val alluId =
+            withFormDataPdfUploading(applicationId, hankeTunnus, hakemusData) {
+                withDisclosureLogging(applicationId, alluData) { alluClient.create(alluData) }
+            }
+        if (hakemusData.paperDecisionReceiver != null) {
+            alluClient.sendSystemComment(alluId, PAPER_DECISION_MSG)
         }
+        return alluId
     }
 
     /**
@@ -770,7 +779,7 @@ class HakemusService(
             AttachmentMetadata(
                 id = null,
                 mimeType = MediaType.APPLICATION_PDF_VALUE,
-                name = "haitaton-form-data.pdf",
+                name = FORM_DATA_PDF_FILENAME,
                 description = "Original form data from Haitaton, dated ${LocalDateTime.now()}.",
             )
         logger.info { "Created the PDF for data attachment." }

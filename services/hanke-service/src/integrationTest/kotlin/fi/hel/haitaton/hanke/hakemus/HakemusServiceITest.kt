@@ -1957,6 +1957,7 @@ class HakemusServiceITest(
             val paperDecisionReceiver = PaperDecisionReceiverFactory.default
             every { alluClient.create(any()) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
+            every { alluClient.sendSystemComment(alluId, any()) } returns 4
             every { alluClient.getApplicationInformation(any()) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
             auditLogRepository.deleteAll()
@@ -1977,6 +1978,7 @@ class HakemusServiceITest(
             verifySequence {
                 alluClient.create(any())
                 alluClient.addAttachment(alluId, any())
+                alluClient.sendSystemComment(alluId, any())
                 alluClient.getApplicationInformation(alluId)
             }
         }
@@ -1987,6 +1989,7 @@ class HakemusServiceITest(
             val paperDecisionReceiver = PaperDecisionReceiverFactory.default
             every { alluClient.create(any()) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
+            every { alluClient.sendSystemComment(alluId, any()) } returns 4
             every { alluClient.getApplicationInformation(any()) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
@@ -2003,6 +2006,30 @@ class HakemusServiceITest(
             verifySequence {
                 alluClient.create(any())
                 alluClient.addAttachment(alluId, any())
+                alluClient.sendSystemComment(alluId, any())
+                alluClient.getApplicationInformation(alluId)
+            }
+        }
+
+        @Test
+        fun `sends a system comment to Allu when there is a paper decision receiver`() {
+            val hakemus = hakemusFactory.builder().withMandatoryFields().save()
+            val paperDecisionReceiver = PaperDecisionReceiverFactory.default
+            every { alluClient.create(any()) } returns alluId
+            justRun { alluClient.addAttachment(alluId, any()) }
+            every { alluClient.sendSystemComment(alluId, any()) } returns 4
+            every { alluClient.getApplicationInformation(any()) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            hakemusService.sendHakemus(hakemus.id, paperDecisionReceiver, USERNAME)
+
+            verifySequence {
+                alluClient.create(any())
+                alluClient.addAttachment(alluId, any())
+                alluClient.sendSystemComment(
+                    alluId,
+                    "Asiakas haluaa päätöksen myös paperisena. Liitteessä " +
+                        "haitaton-form-data.pdf on päätöksen toimitukseen liittyvät osoitetiedot.")
                 alluClient.getApplicationInformation(alluId)
             }
         }
