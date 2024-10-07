@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
+import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import java.time.ZonedDateTime
 import org.geojson.Polygon
@@ -176,10 +177,10 @@ class JohtoselvityshakemusPdfEncoderTest {
                 JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
-                contains("Työstä vastaavat")
-                contains("Työn suorittajat")
-                contains("Rakennuttajat")
-                contains("Asianhoitajat")
+                contains("Työstä vastaava")
+                contains("Työn suorittaja")
+                contains("Rakennuttaja")
+                contains("Asianhoitaja")
                 contains("Yhteyshenkilöt")
             }
         }
@@ -198,26 +199,21 @@ class JohtoselvityshakemusPdfEncoderTest {
                 JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
-                contains("Työstä vastaavat")
-                contains("Työn suorittajat")
-                doesNotContain("Rakennuttajat")
-                doesNotContain("Asianhoitajat")
+                contains("Työstä vastaava")
+                contains("Työn suorittaja")
+                doesNotContain("Rakennuttaja")
+                doesNotContain("Asianhoitaja")
             }
         }
 
         @Test
         fun `created PDF contains contact information`() {
-            val hakija = createCompany()
-            val tyonSuorittaja = createContractor()
-            val asianhoitaja = createRepresentative()
-            val rakennuttaja = createDeveloper()
-
             val hakemusData =
                 HakemusFactory.createJohtoselvityshakemusData(
-                    customerWithContacts = hakija,
-                    contractorWithContacts = tyonSuorittaja,
-                    representativeWithContacts = asianhoitaja,
-                    propertyDeveloperWithContacts = rakennuttaja,
+                    customerWithContacts = createCompany(),
+                    contractorWithContacts = createContractor(),
+                    representativeWithContacts = createRepresentative(),
+                    propertyDeveloperWithContacts = createDeveloper(),
                 )
 
             val pdfData =
@@ -253,6 +249,34 @@ class JohtoselvityshakemusPdfEncoderTest {
                 contains("denise@developer.test")
                 contains("0502222222")
             }
+        }
+
+        @Test
+        fun `created PDF contains paper decision receiver when present on the application`() {
+            val hakemusData =
+                HakemusFactory.createJohtoselvityshakemusData(
+                    paperDecisionReceiver = PaperDecisionReceiverFactory.default)
+
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+
+            assertThat(getPdfAsText(pdfData)).all {
+                contains("Päätös tilattu paperisena")
+                contains("Pekka Paperinen")
+                contains("Paperipolku 3 A 4")
+                contains("00451 Helsinki")
+            }
+        }
+
+        @Test
+        fun `created PDF doesn't contain paper decision receiver header when not present on the application`() {
+            val hakemusData =
+                HakemusFactory.createJohtoselvityshakemusData(paperDecisionReceiver = null)
+
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+
+            assertThat(getPdfAsText(pdfData)).doesNotContain("Päätös tilattu paperisena")
         }
 
         @Test

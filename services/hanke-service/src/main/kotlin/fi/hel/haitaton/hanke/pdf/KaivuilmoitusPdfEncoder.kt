@@ -72,6 +72,7 @@ object KaivuilmoitusPdfEncoder {
             data.contractorWithContacts?.let { row("Työn suorittaja", it.format()) }
             data.propertyDeveloperWithContacts?.let { row("Rakennuttaja", it.format()) }
             data.representativeWithContacts?.let { row("Asianhoitaja", it.format()) }
+            data.paperDecisionReceiver?.let { row("Päätös tilattu paperisena", it.format()) }
         }
         document.newPage()
 

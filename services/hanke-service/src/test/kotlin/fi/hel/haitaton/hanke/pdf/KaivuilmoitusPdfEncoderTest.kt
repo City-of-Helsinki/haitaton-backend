@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
+import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.Tyoalue
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
@@ -278,6 +279,31 @@ class KaivuilmoitusPdfEncoderTest {
                 contains("denise@developer.test")
                 contains("0502222222")
             }
+        }
+
+        @Test
+        fun `created PDF contains paper decision receiver when present on the application`() {
+            val hakemusData =
+                HakemusFactory.createKaivuilmoitusData(
+                    paperDecisionReceiver = PaperDecisionReceiverFactory.default)
+
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+
+            assertThat(getPdfAsText(pdfData)).all {
+                contains("Päätös tilattu paperisena")
+                contains("Pekka Paperinen")
+                contains("Paperipolku 3 A 4")
+                contains("00451 Helsinki")
+            }
+        }
+
+        @Test
+        fun `created PDF doesn't contain paper decision receiver header when not present on the application`() {
+            val hakemusData = HakemusFactory.createKaivuilmoitusData(paperDecisionReceiver = null)
+
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+
+            assertThat(getPdfAsText(pdfData)).doesNotContain("Päätös tilattu paperisena")
         }
 
         @Test

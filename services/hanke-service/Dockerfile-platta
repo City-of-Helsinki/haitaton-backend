@@ -1,7 +1,7 @@
 # Uses different base images for build and run. RedHat Ubi stronger security policies prevent gradle builds.
 
 # Stage 1: Build application
-FROM public.ecr.aws/docker/library/eclipse-temurin:17 as build
+FROM public.ecr.aws/docker/library/eclipse-temurin:17 AS build
 
 # Set the working directory, copy gradle and source code
 WORKDIR /app

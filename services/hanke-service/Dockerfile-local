@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/eclipse-temurin:17 as build
+FROM public.ecr.aws/docker/library/eclipse-temurin:17 AS build
 WORKDIR /workspace/app
 
 COPY gradlew settings.gradle.kts ./
