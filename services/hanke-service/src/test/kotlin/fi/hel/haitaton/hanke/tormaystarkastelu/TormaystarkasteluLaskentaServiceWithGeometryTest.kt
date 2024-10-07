@@ -145,7 +145,7 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
     @Nested
     inner class CalculatePyoraliikenneindeksi {
         @ParameterizedTest
-        @ValueSource(ints = [2, 3, 5])
+        @ValueSource(ints = [1, 2, 3, 5])
         fun `returns the matching float when the geometries intersect with cycle routes`(
             hierarkiaValue: Int
         ) {
