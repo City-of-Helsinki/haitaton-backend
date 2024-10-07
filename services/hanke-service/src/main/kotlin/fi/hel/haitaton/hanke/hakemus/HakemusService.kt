@@ -38,6 +38,7 @@ import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.taydennys.TaydennysService
 import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
@@ -81,6 +82,7 @@ class HakemusService(
     private val paatosService: PaatosService,
     private val applicationEventPublisher: ApplicationEventPublisher,
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
+    private val taydennysService: TaydennysService,
 ) {
 
     @Transactional(readOnly = true)
@@ -604,6 +606,7 @@ class HakemusService(
             }
             ApplicationStatus.WAITING_INFORMATION -> {
                 updateStatus()
+                taydennysService.saveTaydennyspyyntoFromAllu(application)
                 sendInformationRequestEmails(application, event.applicationIdentifier)
             }
             else -> updateStatus()

@@ -193,3 +193,5 @@ databaseChangeLog:
       file: db/changelog/changesets/081-create-valmistumisilmoitukset.sql
   - include:
       file: db/changelog/changesets/082-rename-ytunnus-to-registry-key-for-hakemusyhteystieto.sql
+  - include:
+      file: db/changelog/changesets/083-create-tables-for-taydennyspyynto.sql

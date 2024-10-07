@@ -227,33 +227,38 @@ class AlluClient(
             .block()
     }
 
-    fun getInformationRequests(alluApplicationId: Int): List<InformationRequest> {
+    fun getInformationRequest(alluApplicationId: Int): InformationRequest {
         logger.info { "Fetching information request for application $alluApplicationId." }
         return get("applications/$alluApplicationId/informationrequests")
-            .bodyToFlux(InformationRequest::class.java)
+            .bodyToMono(InformationRequest::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error getting application information from Allu", it)
             }
-            .collectList()
-            .blockOptional()
-            .orElseThrow()
+            .block()!!
     }
 
     fun respondToInformationRequest(
         alluApplicationId: Int,
         requestId: Int,
-        cableReport: AlluCableReportApplicationData,
+        applicationData: AlluApplicationData,
         updatedFields: List<InformationRequestFieldKey>,
     ) {
-        logger.info { "Responding to information request." }
-        post(
-                "cablereports/$alluApplicationId/informationrequests/$requestId/response",
-                CableReportInformationRequestResponse(cableReport, updatedFields),
-            )
-            .toBodilessEntity()
-            .timeout(defaultTimeout)
-            .block()
+        logger.info {
+            "Responding to information request. Application: $alluApplicationId, request: $requestId."
+        }
+
+        val path =
+            when (applicationData) {
+                is AlluCableReportApplicationData ->
+                    "cablereports/$alluApplicationId/informationrequests/$requestId/response"
+
+                is AlluExcavationNotificationData ->
+                    "excavationannouncements/$alluApplicationId/informationrequests/$requestId/response"
+            }
+
+        val request = InformationRequestResponse(applicationData, updatedFields)
+        post(path, request).toBodilessEntity().timeout(defaultTimeout).block()
     }
 
     fun getDecisionPdf(alluApplicationId: Int): ByteArray {

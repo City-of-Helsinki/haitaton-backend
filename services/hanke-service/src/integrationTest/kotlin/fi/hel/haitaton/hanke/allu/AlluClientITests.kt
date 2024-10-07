@@ -333,6 +333,42 @@ class AlluClientITests {
     }
 
     @Nested
+    inner class GetInformationRequest {
+        val alluid = 47188
+
+        @Test
+        fun `calls the correct address and returns the information request`() {
+
+            val body = AlluFactory.createInformationRequest(applicationAlluId = alluid)
+            val mockResponse =
+                MockResponse()
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .setResponseCode(200)
+                    .setBody(body.toJsonString())
+            mockWebServer.enqueue(mockResponse)
+
+            val response = service.getInformationRequest(alluid)
+
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("GET")
+            assertThat(request.path).isEqualTo("/v2/applications/$alluid/informationrequests")
+            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+
+            assertThat(response).isEqualTo(body)
+        }
+
+        @Test
+        fun `throws an exception when Allu returns an error`() {
+            val mockResponse = MockResponse().setResponseCode(500)
+            mockWebServer.enqueue(mockResponse)
+
+            val failure = assertFailure { service.getInformationRequest(alluid) }
+
+            failure.hasClass(WebClientResponseException.InternalServerError::class)
+        }
+    }
+
+    @Nested
     inner class GetDecisionPdf {
         @Test
         fun `returns PDF file as bytes`() {
