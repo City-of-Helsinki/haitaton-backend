@@ -200,6 +200,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
 // values
 
 enum class PyoraliikenteenHierarkia(val value: Int, val hierarkia: String) {
+    PUISTOREITTI(1, "Puistoreitti"),
     MUU_YHTEYS(2, "Muu yhteys"),
     MUU_PYORAREITTI(3, "Muu pyöräreitti"),
     BAANA(5, "Baana"),
