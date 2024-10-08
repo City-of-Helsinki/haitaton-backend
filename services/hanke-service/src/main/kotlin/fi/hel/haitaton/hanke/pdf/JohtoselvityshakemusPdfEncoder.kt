@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.pdf
 
 import com.lowagie.text.Document
+import com.lowagie.text.Image
 import com.lowagie.text.PageSize
 import com.lowagie.text.pdf.PdfWriter
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
@@ -69,6 +70,15 @@ object JohtoselvityshakemusPdfEncoder {
                     .mapIndexed { i, area -> "${areaNames[i]}\n\nPinta-ala: ${area.format()} m²" }
                     .joinToString("\n\n"))
         }
+
+        data.areas
+            ?.map { it.geometry }
+            ?.let {
+                val bytes = WMS.areaImage(it)
+                val image = Image.getInstance(bytes)
+                image.scaleToFit(400f, 400f)
+                document.add(image)
+            }
 
         document.newPage()
 

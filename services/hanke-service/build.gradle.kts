@@ -8,8 +8,16 @@ group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
 
 val sentryVersion = "7.14.0"
+val geoToolsVersion = "31-SNAPSHOT"
 
-repositories { mavenCentral() }
+repositories {
+    mavenCentral().content {
+        excludeModule("javax.media", "jai_core")
+    }
+    maven { url = uri("https://repo.osgeo.org/repository/release/") }
+    maven { url = uri("https://repo.osgeo.org/repository/snapshot/") }
+    maven { url = uri("https://maven.geotoolkit.org") }
+}
 
 sourceSets {
     create("integrationTest") {
@@ -125,6 +133,12 @@ dependencies {
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity")
+
+    // Geotools
+    implementation("org.geotools:gt-wms:$geoToolsVersion")
+    implementation("org.geotools:gt-brewer:$geoToolsVersion")
+    implementation("org.geotools:gt-epsg-hsql:$geoToolsVersion")
+    implementation("org.locationtech.jts.io:jts-io-common:1.19.0")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }
