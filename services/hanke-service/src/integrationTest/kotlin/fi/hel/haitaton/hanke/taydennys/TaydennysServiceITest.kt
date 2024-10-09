@@ -4,6 +4,7 @@ import assertk.all
 import assertk.assertThat
 import assertk.assertions.containsOnly
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNull
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.IntegrationTest
@@ -11,7 +12,14 @@ import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
+import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory
+import io.mockk.checkUnnecessaryStub
+import io.mockk.clearAllMocks
+import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.verifySequence
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,8 +29,41 @@ class TaydennysServiceITest(
     @Autowired private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
     @Autowired private val alluClient: AlluClient,
     @Autowired private val hakemusFactory: HakemusFactory,
+    @Autowired private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
 ) : IntegrationTest() {
     private val alluId = 3464
+
+    @BeforeEach
+    fun clearMocks() {
+        clearAllMocks()
+    }
+
+    @AfterEach
+    fun checkMocks() {
+        checkUnnecessaryStub()
+        confirmVerified(alluClient)
+    }
+
+    @Nested
+    inner class FindTaydennyspyynto {
+
+        @Test
+        fun `returns null when taydennyspyynto doesn't exist`() {
+            val result = taydennysService.findTaydennyspyynto(1L)
+
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `returns taydennyspyynto when it exists`() {
+            val hakemus = hakemusFactory.builder().withStatus().save()
+            val taydennyspyynto = taydennyspyyntoFactory.save(hakemus.id)
+
+            val result = taydennysService.findTaydennyspyynto(hakemus.id)
+
+            assertThat(result).isEqualTo(taydennyspyynto)
+        }
+    }
 
     @Nested
     inner class SaveTaydennyspyyntoFromAllu {
@@ -52,6 +93,7 @@ class TaydennysServiceITest(
                         InformationRequestFieldKey.ATTACHMENT to "Needs a letter of attorney",
                     )
             }
+            verifySequence { alluClient.getInformationRequest(hakemus.alluid!!) }
         }
     }
 }

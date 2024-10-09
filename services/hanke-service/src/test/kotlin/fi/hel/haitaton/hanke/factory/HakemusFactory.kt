@@ -12,7 +12,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusService
-import fi.hel.haitaton.hanke.hakemus.HakemusWithPaatokset
+import fi.hel.haitaton.hanke.hakemus.HakemusWithExtras
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
@@ -25,6 +25,7 @@ import fi.hel.haitaton.hanke.hakemus.PaperDecisionReceiver
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.paatos.Paatos
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.taydennys.Taydennyspyynto
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
 import java.time.ZonedDateTime
@@ -245,8 +246,9 @@ class HakemusFactory(
             hankeTunnus: String = "HAI-1234",
             hankeId: Int = 1,
             paatokset: List<Paatos>,
+            taydennyspyynto: Taydennyspyynto? = null,
         ) =
-            HakemusWithPaatokset(
+            HakemusWithExtras(
                 create(
                     id,
                     alluid,
@@ -258,6 +260,7 @@ class HakemusFactory(
                     hankeId,
                 ),
                 paatokset,
+                taydennyspyynto,
             )
     }
 }

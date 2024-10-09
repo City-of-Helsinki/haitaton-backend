@@ -31,6 +31,7 @@ import fi.hel.haitaton.hanke.pdf.JohtoselvityshakemusPdfEncoder
 import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.taydennys.TaydennysService
 import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
@@ -72,16 +73,18 @@ class HakemusService(
     private val paatosService: PaatosService,
     private val applicationEventPublisher: ApplicationEventPublisher,
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
+    private val taydennysService: TaydennysService,
 ) {
 
     @Transactional(readOnly = true)
     fun getById(applicationId: Long): Hakemus = getEntityById(applicationId).toHakemus()
 
     @Transactional(readOnly = true)
-    fun getWithPaatokset(applicationId: Long): HakemusWithPaatokset {
-        val hakemus = getById(applicationId)
-        val paatokset = paatosService.findByHakemusId(applicationId)
-        return HakemusWithPaatokset(hakemus, paatokset)
+    fun getWithExtras(hakemusId: Long): HakemusWithExtras {
+        val hakemus = getById(hakemusId)
+        val paatokset = paatosService.findByHakemusId(hakemusId)
+        val taydennyspyynto = taydennysService.findTaydennyspyynto(hakemusId)
+        return HakemusWithExtras(hakemus, paatokset, taydennyspyynto)
     }
 
     @Transactional(readOnly = true)

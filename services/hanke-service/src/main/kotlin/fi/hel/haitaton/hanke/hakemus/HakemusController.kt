@@ -66,9 +66,9 @@ class HakemusController(
                 ),
             ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
-    fun getById(@PathVariable(name = "id") id: Long): HakemusWithPaatoksetResponse {
+    fun getById(@PathVariable(name = "id") id: Long): HakemusWithExtrasResponse {
         logger.info { "Finding application $id" }
-        val response = hakemusService.getWithPaatokset(id).toResponse()
+        val response = hakemusService.getWithExtras(id).toResponse()
         disclosureLogService.saveDisclosureLogsForHakemusResponse(response.hakemus, currentUserId())
         return response
     }
