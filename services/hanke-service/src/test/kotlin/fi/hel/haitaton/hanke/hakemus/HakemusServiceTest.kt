@@ -43,6 +43,7 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.taydennys.TaydennysService
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
@@ -93,6 +94,7 @@ class HakemusServiceTest {
     private val paatosService: PaatosService = mockk()
     private val publisher: ApplicationEventPublisher = mockk()
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService = mockk()
+    private val taydennysService: TaydennysService = mockk()
 
     private val hakemusService =
         HakemusService(
@@ -110,6 +112,7 @@ class HakemusServiceTest {
             paatosService,
             publisher,
             tormaystarkasteluLaskentaService,
+            taydennysService,
         )
 
     @BeforeEach

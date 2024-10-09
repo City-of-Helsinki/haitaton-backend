@@ -9,11 +9,17 @@ import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
+import fi.hel.haitaton.hanke.allu.InformationRequest
+import fi.hel.haitaton.hanke.allu.InformationRequestField
+import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 import org.springframework.http.MediaType
 
 object AlluFactory {
+    const val DEFAULT_INFORMATION_REQUEST_ID = 248765
+    const val DEFAULT_INFORMATION_REQUEST_DESCRIPTION = "Default change request for a field."
+
     fun createAlluApplicationResponse(
         id: Int = 42,
         status: ApplicationStatus = ApplicationStatus.PENDING,
@@ -122,6 +128,22 @@ object AlluFactory {
             trafficArrangements = null,
             trafficArrangementImpediment = null,
         )
+
+    fun createInformationRequest(
+        applicationAlluId: Int = 1,
+        informationRequestId: Int = DEFAULT_INFORMATION_REQUEST_ID,
+        fields: List<InformationRequestField> = listOf(createInformationRequestField()),
+    ): InformationRequest =
+        InformationRequest(
+            applicationId = applicationAlluId,
+            informationRequestId = informationRequestId,
+            fields = fields,
+        )
+
+    fun createInformationRequestField(
+        fieldKey: InformationRequestFieldKey = InformationRequestFieldKey.OTHER,
+        requestDescription: String = "Default change request for a field.",
+    ) = InformationRequestField(requestDescription, fieldKey)
 
     val customer =
         Customer(
