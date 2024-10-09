@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.hakemus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.isValidBusinessId
 import fi.hel.haitaton.hanke.isValidOVT
+import fi.hel.haitaton.hanke.validation.HenkilotunnusValidator.isValidHenkilotunnus
 import fi.hel.haitaton.hanke.validation.ValidationResult
 import fi.hel.haitaton.hanke.validation.ValidationResult.Companion.allIn
 import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
@@ -42,7 +43,7 @@ fun KaivuilmoitusData.validateForSend(): ValidationResult =
         .andWithNotNull(areas, "areas", ::validateAreas)
         .andWithNotNull(customerWithContacts, "customerWithContacts") {
             validate(it)
-                .and { validateTrue(isRegistryKeyValid(tyyppi, registryKey), "$it.registryKey") }
+                .and { notNull(registryKey, "$it.registryKey") }
                 .and { notEmpty(yhteyshenkilot, "$it.yhteyshenkilot") }
         }
         .andWithNotNull(contractorWithContacts, "contractorWithContacts") {
@@ -75,16 +76,16 @@ internal fun Hakemusyhteystieto.validate(path: String) =
         .and { notBlank(sahkoposti, "$path.sahkoposti") }
         .and { notBlank(puhelinnumero, "$path.puhelinnumero") }
         .whenNotNull(registryKey) {
-            validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
+            validateTrue(isRegistryKeyValid(tyyppi, it), "$path.registryKey")
         }
         .andAllIn(yhteyshenkilot, "$path.yhteyshenkilot", ::validateFullInfo)
 
-private fun isRegistryKeyValid(tyyppi: CustomerType, ytunnus: String?): Boolean =
+private fun isRegistryKeyValid(tyyppi: CustomerType, registryKey: String): Boolean =
     when (tyyppi) {
-        CustomerType.COMPANY -> ytunnus != null
-        CustomerType.ASSOCIATION -> ytunnus != null
-        CustomerType.PERSON -> true // TODO: Validate for personal identity code
-        CustomerType.OTHER -> true // TODO: ???
+        CustomerType.COMPANY -> registryKey.isValidBusinessId()
+        CustomerType.ASSOCIATION -> registryKey.isValidBusinessId()
+        CustomerType.PERSON -> registryKey.isValidHenkilotunnus()
+        CustomerType.OTHER -> registryKey.isNotBlank()
     }
 
 private fun validateFullInfo(yhteyshenkilo: Hakemusyhteyshenkilo, path: String) =
@@ -97,10 +98,10 @@ internal fun Laskutusyhteystieto.validate(path: String): ValidationResult =
     validate { notBlank(nimi, "$path.nimi") }
         .and { notJustWhitespace(sahkoposti, "$path.sahkoposti") }
         .and { notJustWhitespace(puhelinnumero, "$path.puhelinnumero") }
+        .and { notNull(registryKey, "$path.registryKey") }
         .whenNotNull(registryKey) {
-            validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
+            validateTrue(isRegistryKeyValid(tyyppi, it), "$path.registryKey")
         }
-        .and { validateTrue(isRegistryKeyValid(tyyppi, registryKey), "$path.registryKey") }
         .whenNotNull(ovttunnus) { validateTrue(ovttunnus.isValidOVT(), "$path.ovttunnus") }
         .and {
             validate {
