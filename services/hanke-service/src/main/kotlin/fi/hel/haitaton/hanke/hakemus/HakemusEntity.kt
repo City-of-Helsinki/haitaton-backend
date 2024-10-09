@@ -30,7 +30,7 @@ data class HakemusEntity(
     @Enumerated(EnumType.STRING) var alluStatus: ApplicationStatus?,
     override var applicationIdentifier: String?,
     var userId: String?,
-    @Enumerated(EnumType.STRING) val applicationType: ApplicationType,
+    @Enumerated(EnumType.STRING) override val applicationType: ApplicationType,
     @Type(JsonType::class)
     @Column(columnDefinition = "jsonb", name = "applicationdata")
     var hakemusEntityData: HakemusEntityData,

@@ -15,6 +15,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
+import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.daysBetween
@@ -254,14 +255,10 @@ class HakemusService(
 
         // For excavation announcements, a cable report can be applied for at the same time.
         // If so, it should be sent before the excavation announcement.
-        val accompanyingJohtoselvityshakemus =
-            createAccompanyingJohtoselvityshakemus(hakemus, currentUserId)
-        if (accompanyingJohtoselvityshakemus != null) {
-            val sentJohtoselvityshakemus =
-                sendHakemus(
-                    accompanyingJohtoselvityshakemus.id, paperDecisionReceiver, currentUserId)
-            // add the application identifier of the cable report to the list of cable reports in
-            // the excavation announcement
+        createAccompanyingJohtoselvityshakemus(hakemus, currentUserId)?.let {
+            val sentJohtoselvityshakemus = sendHakemus(it.id, paperDecisionReceiver, currentUserId)
+            // Add the application identifier of the cable report to the list of cable reports
+            // in the excavation announcement
             val hakemusEntityData = hakemus.hakemusEntityData as KaivuilmoitusEntityData
             val cableReports = hakemusEntityData.cableReports ?: emptyList()
             hakemus.hakemusEntityData =
@@ -321,8 +318,15 @@ class HakemusService(
                 hakemusEntityData = johtoselvityshakemusData,
                 hanke = hakemus.hanke,
             )
-        johtoselvityshakemus.yhteystiedot.putAll(
-            hakemus.yhteystiedot.mapValues { it.value.copyWithHakemus(johtoselvityshakemus) })
+        val yhteystiedot =
+            hakemus.yhteystiedot.mapValues { it.value.copyWithHakemus(johtoselvityshakemus) }
+        // In johtoselvityshakemus, person and other type customers don't need to have registry
+        // keys, so they should be removed.
+        yhteystiedot.values
+            .filter { it.tyyppi in listOf(CustomerType.PERSON, CustomerType.OTHER) }
+            .forEach { it.registryKey = null }
+        johtoselvityshakemus.yhteystiedot.putAll(yhteystiedot)
+
         val savedJohtoselvityshakemus = hakemusRepository.save(johtoselvityshakemus)
         copyOtherAttachments(hakemus, savedJohtoselvityshakemus)
         logger.info(
