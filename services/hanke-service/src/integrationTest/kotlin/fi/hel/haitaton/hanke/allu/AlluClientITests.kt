@@ -74,7 +74,7 @@ class AlluClientITests {
         val properties = AlluProperties(baseUrl, "fake_username", "any_password", 2)
         val builder = WebClient.builder()
         // To fix the date formatting for the tests, customize ObjectMapper used by the WebClient.
-        // In production, when the client is build by Configuration, the builder is injected with an
+        // In production, when the client is built by Configuration, the builder is injected with an
         // object mapper with correct date handling.
         builder.codecs {
             it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OBJECT_MAPPER))
