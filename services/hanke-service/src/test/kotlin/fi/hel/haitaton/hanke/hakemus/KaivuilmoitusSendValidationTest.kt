@@ -198,9 +198,9 @@ class KaivuilmoitusSendValidationTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["", BLANK])
-    fun `fails when the other customer has blank henkilotunnus`() {
+    fun `fails when the other customer has blank henkilotunnus`(registryKey: String) {
         val customer =
-            HakemusyhteystietoFactory.create(tyyppi = CustomerType.OTHER, registryKey = BLANK)
+            HakemusyhteystietoFactory.create(tyyppi = CustomerType.OTHER, registryKey = registryKey)
                 .withYhteyshenkilo()
         val hakemus = hakemus.copy(customerWithContacts = customer)
 
