@@ -2199,6 +2199,36 @@ class HakemusServiceITest(
                 }
 
                 @Test
+                fun `erases henkilotunnukset from the accompanying johtoselvitys`() {
+                    val hakija = hakemusyhteystietoRepository.findAll().first { it.rooli == HAKIJA }
+                    hakija.tyyppi = CustomerType.PERSON
+                    hakija.registryKey = "060623F6387"
+                    hakemusyhteystietoRepository.save(hakija)
+                    every {
+                        alluClient.create(match { it is AlluCableReportApplicationData })
+                    } returns cableReportAlluId
+                    every {
+                        alluClient.create(match { it is AlluExcavationNotificationData })
+                    } returns excavationNotificationAlluId
+
+                    hakemusService.sendHakemus(kaivuilmoitusHakemusId, null, USERNAME)
+
+                    val entity = hakemusRepository.getOneByAlluid(cableReportAlluId)!!
+                    val johtoselvitys = hakemusService.getById(entity.id)
+                    assertThat(johtoselvitys.applicationData.customerWithContacts)
+                        .isNotNull()
+                        .prop(Hakemusyhteystieto::registryKey)
+                        .isNull()
+                    verify {
+                        alluClient.create(
+                            match {
+                                it is AlluCableReportApplicationData &&
+                                    it.customerWithContacts.customer.registryKey == null
+                            })
+                    }
+                }
+
+                @Test
                 fun `sends johtoselvitys and kaivuilmoitus to Allu`() {
                     hakemusService.sendHakemus(kaivuilmoitusHakemusId, null, USERNAME)
 
