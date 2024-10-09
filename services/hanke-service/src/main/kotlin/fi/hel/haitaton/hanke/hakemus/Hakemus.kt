@@ -16,7 +16,7 @@ data class Hakemus(
     override val alluid: Int?,
     val alluStatus: ApplicationStatus?,
     override val applicationIdentifier: String?,
-    val applicationType: ApplicationType,
+    override val applicationType: ApplicationType,
     val applicationData: HakemusData,
     val hankeTunnus: String,
     val hankeId: Int,
@@ -180,8 +180,10 @@ interface HakemusIdentifier : HasId<Long> {
     override val id: Long
     val alluid: Int?
     val applicationIdentifier: String?
+    val applicationType: ApplicationType
 
-    fun logString() = "Hakemus: (id=$id, alluId=$alluid, identifier=$applicationIdentifier)"
+    fun logString() =
+        "Hakemus: (id=$id, alluId=$alluid, identifier=$applicationIdentifier, type=$applicationType)"
 }
 
 /** Without application data, just the identifiers and metadata. */
@@ -190,6 +192,6 @@ data class HakemusMetaData(
     override val alluid: Int?,
     val alluStatus: ApplicationStatus?,
     override val applicationIdentifier: String?,
-    val applicationType: ApplicationType,
+    override val applicationType: ApplicationType,
     val hankeTunnus: String,
 ) : HakemusIdentifier

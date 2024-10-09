@@ -276,8 +276,7 @@ class HakemusService(
             hakemus.alluStatus = response.status
         }
 
-        logger.info(
-            "Sent hakemus ${hakemus.applicationType}. ${hakemus.logString()}, alluStatus = ${hakemus.alluStatus}")
+        logger.info("Sent hakemus. ${hakemus.logString()}, alluStatus = ${hakemus.alluStatus}")
         // Save only if sendApplicationToAllu didn't throw an exception
         return hakemusRepository.save(hakemus).toHakemus()
     }
