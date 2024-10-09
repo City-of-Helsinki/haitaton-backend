@@ -17,6 +17,7 @@ import assertk.assertions.messageContains
 import assertk.assertions.prop
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
@@ -44,6 +45,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
+import org.skyscreamer.jsonassert.JSONAssert
+import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.http.HttpHeaders.CONTENT_DISPOSITION
 import org.springframework.http.HttpHeaders.CONTENT_TYPE
 import org.springframework.http.MediaType
@@ -51,6 +54,8 @@ import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.http.MediaType.IMAGE_PNG
+import org.springframework.http.codec.json.Jackson2JsonDecoder
+import org.springframework.http.codec.json.Jackson2JsonEncoder
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 
@@ -67,7 +72,15 @@ class AlluClientITests {
 
         val baseUrl = mockWebServer.url("/").toUrl().toString()
         val properties = AlluProperties(baseUrl, "fake_username", "any_password", 2)
-        val webClient = webClientWithLargeBuffer(WebClient.builder())
+        val builder = WebClient.builder()
+        // To fix the date formatting for the tests, customize ObjectMapper used by the WebClient.
+        // In production, when the client is built by Configuration, the builder is injected with an
+        // object mapper with correct date handling.
+        builder.codecs {
+            it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OBJECT_MAPPER))
+            it.defaultCodecs().jackson2JsonDecoder(Jackson2JsonDecoder(OBJECT_MAPPER))
+        }
+        val webClient = webClientWithLargeBuffer(builder)
         authToken = createMockToken()
         service = AlluClient(webClient, properties)
         service.authToken = authToken
@@ -329,6 +342,96 @@ class AlluClientITests {
                 messageContains(url)
                 messageContains("409 Conflict from PUT")
             }
+        }
+    }
+
+    @Nested
+    inner class GetInformationRequest {
+        val alluid = 47188
+
+        @Test
+        fun `calls the correct address and returns the information request`() {
+
+            val body = AlluFactory.createInformationRequest(applicationAlluId = alluid)
+            val mockResponse =
+                MockResponse()
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .setResponseCode(200)
+                    .setBody(body.toJsonString())
+            mockWebServer.enqueue(mockResponse)
+
+            val response = service.getInformationRequest(alluid)
+
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("GET")
+            assertThat(request.path).isEqualTo("/v2/applications/$alluid/informationrequests")
+            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+
+            assertThat(response).isEqualTo(body)
+        }
+
+        @Test
+        fun `throws an exception when Allu returns an error`() {
+            val mockResponse = MockResponse().setResponseCode(500)
+            mockWebServer.enqueue(mockResponse)
+
+            val failure = assertFailure { service.getInformationRequest(alluid) }
+
+            failure.hasClass(WebClientResponseException.InternalServerError::class)
+        }
+    }
+
+    @Nested
+    inner class RespondToInformationRequest {
+        private val alluid = 47188
+        private val requestId = 9927
+
+        @Test
+        fun `calls the right address when the hakemus is a johtoselvityshakemus`() {
+            val applicationData = AlluFactory.createCableReportApplicationData()
+            val fields = listOf(InformationRequestFieldKey.AREA, InformationRequestFieldKey.OTHER)
+            mockWebServer.enqueue(MockResponse().setResponseCode(200))
+
+            service.respondToInformationRequest(
+                alluid,
+                requestId,
+                applicationData,
+                fields,
+            )
+
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("POST")
+            assertThat(request.path)
+                .isEqualTo("/v2/cablereports/$alluid/informationrequests/$requestId/response")
+            val expectedBody = InformationRequestResponse(applicationData, fields).toJsonString()
+            val actualBody = request.body.readUtf8()
+            JSONAssert.assertEquals(expectedBody, actualBody, JSONCompareMode.NON_EXTENSIBLE)
+            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+        }
+
+        @Test
+        fun `calls the right address when the hakemus is a kaivuilmoitus`() {
+            val applicationData = AlluFactory.createExcavationNotificationData()
+            val fields =
+                listOf(InformationRequestFieldKey.START_TIME, InformationRequestFieldKey.END_TIME)
+            mockWebServer.enqueue(MockResponse().setResponseCode(200))
+
+            service.respondToInformationRequest(
+                alluid,
+                requestId,
+                applicationData,
+                fields,
+            )
+
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("POST")
+            assertThat(request.path)
+                .isEqualTo(
+                    "/v2/excavationannouncements/$alluid/informationrequests/$requestId/response")
+            val expectedBody = InformationRequestResponse(applicationData, fields).toJsonString()
+            val actualBody = request.body.readUtf8()
+            JSONAssert.assertEquals(expectedBody, actualBody, JSONCompareMode.NON_EXTENSIBLE)
+            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
         }
     }
 

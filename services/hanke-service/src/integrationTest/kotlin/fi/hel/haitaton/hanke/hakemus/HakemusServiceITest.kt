@@ -7,6 +7,7 @@ import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.containsOnly
 import assertk.assertions.each
 import assertk.assertions.extracting
 import assertk.assertions.hasClass
@@ -40,6 +41,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.attachment.PDF_BYTES
@@ -99,6 +101,8 @@ import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.paatos.PaatosTila
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
+import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasStreetName
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
@@ -164,6 +168,7 @@ class HakemusServiceITest(
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val alluClient: AlluClient,
     @Autowired private val alluStatusRepository: AlluStatusRepository,
+    @Autowired private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
     @Autowired private val hankeService: HankeService,
 ) : IntegrationTest() {
 
@@ -3031,6 +3036,8 @@ class HakemusServiceITest(
                     newStatus = ApplicationStatus.WAITING_INFORMATION,
                 )
             val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+            every { alluClient.getInformationRequest(alluId) } returns
+                AlluFactory.createInformationRequest()
 
             hakemusService.handleHakemusUpdates(histories, updateTime)
 
@@ -3044,6 +3051,38 @@ class HakemusServiceITest(
                     .isEqualTo(
                         "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö")
             }
+            verifySequence { alluClient.getInformationRequest(alluId) }
+        }
+
+        @Test
+        fun `gets the information request from Allu and saves it when the new status is WAITING_INFORMATION`() {
+            val hanke = hankeFactory.saveMinimal()
+            val hakemus =
+                hakemusFactory
+                    .builder(hanke)
+                    .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
+                    .save()
+            val event =
+                ApplicationHistoryFactory.createEvent(
+                    applicationIdentifier = identifier,
+                    newStatus = ApplicationStatus.WAITING_INFORMATION,
+                )
+            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+            every { alluClient.getInformationRequest(alluId) } returns
+                AlluFactory.createInformationRequest(applicationAlluId = alluId)
+
+            hakemusService.handleHakemusUpdates(histories, updateTime)
+
+            assertThat(taydennyspyyntoRepository.findAll()).single().all {
+                prop(TaydennyspyyntoEntity::alluId)
+                    .isEqualTo(AlluFactory.DEFAULT_INFORMATION_REQUEST_ID)
+                prop(TaydennyspyyntoEntity::applicationId).isEqualTo(hakemus.id)
+                prop(TaydennyspyyntoEntity::kentat)
+                    .containsOnly(
+                        InformationRequestFieldKey.OTHER to
+                            AlluFactory.DEFAULT_INFORMATION_REQUEST_DESCRIPTION)
+            }
+            verifySequence { alluClient.getInformationRequest(alluId) }
         }
 
         private fun mockAlluDownload(status: ApplicationStatus) =

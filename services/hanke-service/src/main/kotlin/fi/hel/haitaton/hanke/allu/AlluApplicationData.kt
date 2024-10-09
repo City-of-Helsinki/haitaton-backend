@@ -59,8 +59,8 @@ data class AlluCableReportApplicationData(
             .toMap()
 }
 
-data class CableReportInformationRequestResponse(
-    val applicationData: AlluCableReportApplicationData,
+data class InformationRequestResponse(
+    val applicationData: AlluApplicationData,
     val updatedFields: List<InformationRequestFieldKey>
 )
 
