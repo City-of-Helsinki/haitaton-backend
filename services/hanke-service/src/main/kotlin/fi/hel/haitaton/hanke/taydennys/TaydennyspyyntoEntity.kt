@@ -28,5 +28,7 @@ class TaydennyspyyntoEntity(
     @MapKeyColumn(name = "key")
     @Column(name = "description")
     @MapKeyEnumerated(EnumType.STRING)
-    val kentat: Map<InformationRequestFieldKey, String> = mutableMapOf(),
-)
+    val kentat: MutableMap<InformationRequestFieldKey, String> = mutableMapOf(),
+) {
+    fun toDomain(): Taydennyspyynto = Taydennyspyynto(id, kentat.toMap())
+}
