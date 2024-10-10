@@ -7,6 +7,7 @@ import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.containsOnly
 import assertk.assertions.each
 import assertk.assertions.extracting
 import assertk.assertions.hasClass
@@ -39,6 +40,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container
@@ -74,6 +76,9 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
+import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory
+import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory.Companion.addKentta
+import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory.Companion.clearKentat
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -94,7 +99,7 @@ import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.paatos.PaatosTila
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
-import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
+import fi.hel.haitaton.hanke.taydennys.Taydennyspyynto
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasStreetName
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
@@ -158,7 +163,7 @@ class HakemusServiceITest(
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val alluClient: AlluClient,
     @Autowired private val alluStatusRepository: AlluStatusRepository,
-    @Autowired private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
+    @Autowired private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
     @Autowired private val hankeService: HankeService,
 ) : IntegrationTest() {
 
@@ -226,7 +231,7 @@ class HakemusServiceITest(
     inner class GetWithPaatokset {
         @Test
         fun `throws an exception when the hakemus does not exist`() {
-            val failure = assertFailure { hakemusService.getWithPaatokset(1234) }
+            val failure = assertFailure { hakemusService.getWithExtras(1234) }
 
             failure.all {
                 hasClass(HakemusNotFoundException::class)
@@ -238,7 +243,7 @@ class HakemusServiceITest(
         fun `returns hakemus`() {
             val hakemus = hakemusFactory.builder(USERNAME).withMandatoryFields().save()
 
-            val response = hakemusService.getWithPaatokset(hakemus.id)
+            val response = hakemusService.getWithExtras(hakemus.id)
 
             assertThat(response.hakemus).all {
                 prop(Hakemus::id).isEqualTo(hakemus.id)
@@ -263,9 +268,36 @@ class HakemusServiceITest(
             val paatos1 = paatosFactory.save(hakemus, tila = PaatosTila.KORVATTU)
             val paatos2 = paatosFactory.save(hakemus, hakemus.applicationIdentifier + "-1")
 
-            val response = hakemusService.getWithPaatokset(hakemus.id)
+            val response = hakemusService.getWithExtras(hakemus.id)
 
             assertThat(response.paatokset).containsExactlyInAnyOrder(paatos1, paatos2)
+        }
+
+        @Test
+        fun `returns taydennyspyynto when it exists`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                    .save()
+            val taydennyspyynto =
+                taydennyspyyntoFactory.save(hakemus.id) {
+                    clearKentat()
+                    addKentta(InformationRequestFieldKey.START_TIME, "Too soon")
+                    addKentta(InformationRequestFieldKey.GEOMETRY, "Not enough")
+                }
+
+            val response = hakemusService.getWithExtras(hakemus.id)
+
+            assertThat(response.taydennyspyynto).isNotNull().all {
+                prop(Taydennyspyynto::id).isEqualTo(taydennyspyynto.id)
+                prop(Taydennyspyynto::kentat)
+                    .containsOnly(
+                        InformationRequestFieldKey.START_TIME to "Too soon",
+                        InformationRequestFieldKey.GEOMETRY to "Not enough",
+                    )
+            }
         }
     }
 

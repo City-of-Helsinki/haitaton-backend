@@ -33,6 +33,7 @@ import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
+import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -135,7 +136,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @EnumSource(ApplicationType::class)
         fun `returns hakemus when it exists`(applicationType: ApplicationType) {
             every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
-            every { hakemusService.getWithPaatokset(id) } returns
+            every { hakemusService.getWithExtras(id) } returns
                 HakemusFactory.createWithPaatokset(
                     id = id,
                     applicationType = applicationType,
@@ -151,10 +152,11 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                     jsonPath("$.applicationData.applicationType").value(applicationType.name))
                 .andExpect(jsonPath("$.paatokset").isMap())
                 .andExpect(jsonPath("$.paatokset").isEmpty())
+                .andExpect(jsonPath("$.taydennyspyynto").value(null))
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
-                hakemusService.getWithPaatokset(id)
+                hakemusService.getWithExtras(id)
             }
         }
 
@@ -176,8 +178,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                         hakemus, "KP2400001-2", TOIMINNALLINEN_KUNTO, NYKYINEN),
                     PaatosFactory.createForHakemus(hakemus, "KP2400001-2", TYO_VALMIS, NYKYINEN),
                 )
-            every { hakemusService.getWithPaatokset(id) } returns
-                HakemusWithPaatokset(hakemus, paatokset)
+            every { hakemusService.getWithExtras(id) } returns
+                HakemusWithExtras(hakemus, paatokset, null)
 
             get(url)
                 .andExpect(status().isOk)
@@ -202,7 +204,38 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
-                hakemusService.getWithPaatokset(id)
+                hakemusService.getWithExtras(id)
+            }
+        }
+
+        @ParameterizedTest
+        @EnumSource(ApplicationType::class)
+        fun `returns taydennyspyynto when it exists`(applicationType: ApplicationType) {
+            val hakemus =
+                HakemusFactory.create(
+                    id = id, applicationType = applicationType, hankeTunnus = HANKE_TUNNUS)
+            val taydennyspyynto = TaydennyspyyntoFactory.create()
+            every { hakemusService.getWithExtras(id) } returns
+                HakemusWithExtras(hakemus, listOf(), taydennyspyynto)
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.taydennyspyynto").exists())
+                .andExpect(
+                    jsonPath("$.taydennyspyynto.id")
+                        .value(TaydennyspyyntoFactory.DEFAULT_ID.toString()))
+                .andExpect(jsonPath("$.taydennyspyynto.kentat[0].key").value("CUSTOMER"))
+                .andExpect(
+                    jsonPath("$.taydennyspyynto.kentat[0].message").value("Customer is missing"))
+                .andExpect(jsonPath("$.taydennyspyynto.kentat[1].key").value("ATTACHMENT"))
+                .andExpect(
+                    jsonPath("$.taydennyspyynto.kentat[1].message")
+                        .value("Needs a letter of attorney"))
+
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
+                hakemusService.getWithExtras(id)
             }
         }
 
@@ -219,8 +252,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                                 dateReported = LocalDate.parse("2024-12-24")),
                         ))
             every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
-            every { hakemusService.getWithPaatokset(id) } returns
-                HakemusWithPaatokset(hakemus, listOf())
+            every { hakemusService.getWithExtras(id) } returns
+                HakemusWithExtras(hakemus, listOf(), null)
 
             val response: HakemusResponse = get(url).andExpect(status().isOk).andReturnBody()
 
@@ -240,7 +273,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             }
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
-                hakemusService.getWithPaatokset(id)
+                hakemusService.getWithExtras(id)
             }
         }
 
@@ -249,8 +282,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val hakemus =
                 HakemusFactory.create(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
             every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
-            every { hakemusService.getWithPaatokset(id) } returns
-                HakemusWithPaatokset(hakemus, listOf())
+            every { hakemusService.getWithExtras(id) } returns
+                HakemusWithExtras(hakemus, listOf(), null)
 
             get(url)
                 .andExpect(status().isOk)
@@ -259,7 +292,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
-                hakemusService.getWithPaatokset(id)
+                hakemusService.getWithExtras(id)
             }
         }
 
@@ -277,8 +310,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                                 dateReported = LocalDate.parse("2024-12-24")),
                         ))
             every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
-            every { hakemusService.getWithPaatokset(id) } returns
-                HakemusWithPaatokset(hakemus, listOf())
+            every { hakemusService.getWithExtras(id) } returns
+                HakemusWithExtras(hakemus, listOf(), null)
 
             get(url)
                 .andExpect(status().isOk)
@@ -286,7 +319,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
-                hakemusService.getWithPaatokset(id)
+                hakemusService.getWithExtras(id)
             }
         }
 
@@ -302,13 +335,13 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                     paatokset = listOf(),
                 )
             every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
-            every { hakemusService.getWithPaatokset(id) } returns hakemus
+            every { hakemusService.getWithExtras(id) } returns hakemus
 
             get(url).andExpect(status().isOk).andVerifyRegistryKeys()
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
-                hakemusService.getWithPaatokset(id)
+                hakemusService.getWithExtras(id)
             }
         }
     }
