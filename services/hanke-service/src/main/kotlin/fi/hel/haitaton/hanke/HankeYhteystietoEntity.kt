@@ -47,10 +47,6 @@ class HankeYhteystietoEntity(
     /** For contacts with tyyppi other than YKSITYISHENKILO. */
     @JsonView(ChangeLogView::class) @Column(name = "y_tunnus") var ytunnus: String? = null,
 
-    // Personal data processing restriction (or other needs to prevent changes)
-    @JsonView(NotInChangeLogView::class) var dataLocked: Boolean? = false,
-    @JsonView(NotInChangeLogView::class) var dataLockInfo: String? = null,
-
     // NOTE: createdByUserId must be non-null for valid data, but to allow creating instances with
     // no-arg constructor and programming convenience, this class allows it to be null
     // (temporarily).
@@ -68,7 +64,7 @@ class HankeYhteystietoEntity(
         fetch = FetchType.LAZY,
         mappedBy = "hankeYhteystieto",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     var yhteyshenkilot: MutableList<HankeYhteyshenkiloEntity> = mutableListOf(),
 ) {
@@ -156,8 +152,6 @@ class HankeYhteystietoEntity(
                 osasto = hankeYht.osasto,
                 rooli = hankeYht.rooli,
                 tyyppi = hankeYht.tyyppi,
-                dataLocked = false,
-                dataLockInfo = null,
                 createdByUserId = createdByUserId,
                 createdAt = getCurrentTimeUTCAsLocalTime(),
                 id = hankeYht.id,
