@@ -104,7 +104,6 @@ import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.core.context.SecurityContext
-import org.springframework.transaction.annotation.Transactional
 
 private const val NAME_1 = "etu1 suku1"
 private const val NAME_2 = "etu2 suku2"
@@ -479,123 +478,6 @@ class HankeServiceITests(
                 hasNoObjectAfter()
             }
         }
-    }
-
-    @Test
-    @Transactional // due to lazy initialized fields being accessed
-    fun `test personal data processing restriction`() {
-        // Setup Hanke with two Yhteystietos in different groups. The test will only manipulate the
-        // rakennuttaja.
-        val hanke =
-            hankeFactory
-                .builder(USERNAME)
-                .withGeneratedOmistaja(1)
-                .withGeneratedRakennuttaja(2)
-                .save()
-        // Logs must have 2 entries (two yhteystietos were created):
-        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(2)
-
-        // Get the non-owner yhteystieto, and set the processing restriction (i.e. locked) -flag
-        // (must be done via entities):
-        // Fetching the yhteystieto is a bit clumsy since we don't have separate a
-        // YhteystietoRepository.
-        var hankeEntity = hankeRepository.findById(hanke.id).get()
-        var yhteystietos = hankeEntity.yhteystiedot
-        var rakennuttajaEntity =
-            yhteystietos.filter { it.contactType == ContactType.RAKENNUTTAJA }[0]
-        val rakennuttajaId = rakennuttajaEntity.id.toString()
-        rakennuttajaEntity.dataLocked = true
-        // Not setting the info field, or adding audit log entry, since the idea is to only test
-        // that the locking actually prevents processing.
-        // Saving the hanke will save the yhteystieto in it, too:
-        hankeRepository.save(hankeEntity)
-
-        // Try to update the yhteystieto. It should fail and add a new log entry.
-        val hankeWithLockedYT = hankeService.loadHanke(hanke.hankeTunnus)
-        hankeWithLockedYT!!.rakennuttajat[0].nimi = "Muhaha-Evil-Change"
-
-        assertFailure {
-                hankeService.updateHanke(hanke.hankeTunnus, hankeWithLockedYT.toModifyRequest())
-            }
-            .hasClass(HankeYhteystietoProcessingRestrictedException::class.java)
-        // The initial create has created two entries to the log, and now the failed update should
-        // have added one more.
-        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(3)
-        var auditLogEvents =
-            auditLogRepository
-                .findByType(ObjectType.YHTEYSTIETO)
-                .map { it.message.auditEvent }
-                .filter { it.target.id == rakennuttajaId }
-        // For the second yhteystieto, there should be one entry for the earlier creation and
-        // another for this failed update.
-        assertThat(auditLogEvents).hasSize(2)
-        assertThat(auditLogEvents[1].operation).isEqualTo(Operation.UPDATE)
-        assertThat(auditLogEvents[1].actor.userId).isEqualTo(USERNAME)
-        assertThat(auditLogEvents[1].actor.role).isEqualTo(UserRole.USER)
-        assertThat(auditLogEvents[1].status).isEqualTo(Status.FAILED)
-        assertThat(auditLogEvents[1].failureDescription)
-            .isEqualTo("update hanke yhteystieto BLOCKED by data processing restriction")
-        assertThat(auditLogEvents[1].target.type).isEqualTo(ObjectType.YHTEYSTIETO)
-        assertThat(auditLogEvents[1].target.objectBefore).isNotNull().contains(NAME_2)
-        assertThat(auditLogEvents[1].target.objectAfter).isNotNull().contains("Muhaha-Evil-Change")
-
-        // Try to delete the yhteystieto. It should fail and add a new log entry.
-        hankeWithLockedYT.rakennuttajat[0] = clearYhteystieto(hankeWithLockedYT.rakennuttajat[0])
-        assertFailure {
-                hankeService.updateHanke(hanke.hankeTunnus, hankeWithLockedYT.toModifyRequest())
-            }
-            .hasClass(HankeYhteystietoProcessingRestrictedException::class.java)
-        // There should be one more entry in the audit log.
-        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(4)
-        auditLogEvents =
-            auditLogRepository
-                .findByType(ObjectType.YHTEYSTIETO)
-                .map { it.message.auditEvent }
-                .filter { it.target.id == rakennuttajaId }
-        // For the second yhteystieto, there should be one more audit log entry for this failed
-        // deletion:
-        assertThat(auditLogEvents).hasSize(3)
-        assertThat(auditLogEvents[2].operation).isEqualTo(Operation.DELETE)
-        assertThat(auditLogEvents[2].actor.userId).isEqualTo(USERNAME)
-        assertThat(auditLogEvents[2].actor.role).isEqualTo(UserRole.USER)
-        assertThat(auditLogEvents[2].status).isEqualTo(Status.FAILED)
-        assertThat(auditLogEvents[2].failureDescription)
-            .isEqualTo("delete hanke yhteystieto BLOCKED by data processing restriction")
-        assertThat(auditLogEvents[2].target.type).isEqualTo(ObjectType.YHTEYSTIETO)
-        assertThat(auditLogEvents[2].target.objectBefore).isNotNull().contains(NAME_2)
-        assertThat(auditLogEvents[2].target.objectAfter).isNull()
-
-        // Check that both yhteystietos still exist and the values have not gotten changed.
-        val returnedHankeAfterBlockedActions = hankeService.loadHanke(hanke.hankeTunnus)
-        assertThat(returnedHankeAfterBlockedActions!!.rakennuttajat)
-            .single()
-            .prop(HankeYhteystieto::nimi)
-            .isEqualTo(NAME_2)
-
-        // Unset the processing restriction flag:
-        hankeEntity = hankeRepository.findById(hanke.id).get()
-        yhteystietos = hankeEntity.yhteystiedot
-        rakennuttajaEntity = yhteystietos.filter { it.contactType == ContactType.RAKENNUTTAJA }[0]
-        rakennuttajaEntity.dataLocked = false
-        hankeRepository.save(hankeEntity)
-
-        // Updating the yhteystieto should now work:
-        val hankeWithUnlockedYT = hankeService.loadHanke(hanke.hankeTunnus)
-        hankeWithUnlockedYT!!.rakennuttajat[0].nimi = "Hopefully-Not-Evil-Change"
-        val finalHanke =
-            hankeService.updateHanke(hanke.hankeTunnus, hankeWithUnlockedYT.toModifyRequest())
-
-        // Check that the change went through:
-        assertThat(finalHanke.rakennuttajat[0].nimi).isEqualTo("Hopefully-Not-Evil-Change")
-        // There should be one more entry in the log.
-        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(5)
-        auditLogEvents =
-            auditLogRepository
-                .findByType(ObjectType.YHTEYSTIETO)
-                .map { it.message.auditEvent }
-                .filter { it.target.id == rakennuttajaId }
-        // For the second yhteystieto, there should be one more entry in the log:
-        assertThat(auditLogEvents).hasSize(4)
     }
 
     @Nested

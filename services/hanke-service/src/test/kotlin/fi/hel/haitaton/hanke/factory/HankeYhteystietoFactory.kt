@@ -66,8 +66,6 @@ object HankeYhteystietoFactory {
                     organisaatioNimi = organisaatioNimi,
                     osasto = osasto,
                     rooli = rooli,
-                    dataLocked = false,
-                    dataLockInfo = "info",
                     createdByUserId = createdBy,
                     createdAt = createdAt?.toLocalDateTime(),
                     modifiedByUserId = modifiedBy,
@@ -78,7 +76,7 @@ object HankeYhteystietoFactory {
                     yhteyshenkilot =
                         mutableListOf(
                             HankeYhteyshenkiloFactory.createEntity(id * 2, this),
-                            HankeYhteyshenkiloFactory.createEntity(id * 2 + 1, this)
+                            HankeYhteyshenkiloFactory.createEntity(id * 2 + 1, this),
                         )
                 }
         }
