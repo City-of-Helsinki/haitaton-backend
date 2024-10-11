@@ -829,25 +829,6 @@ class HankeServiceITests(
         }"""
 
     /**
-     * Clear all information fields from the yhteystieto. Returns a copy.
-     *
-     * The fields are set to empty strings instead of nulls, since nulls are interpreted as "no
-     * change" in update operations.
-     *
-     * Follows [fi.hel.haitaton.hanke.domain.Yhteystieto.isAnyFieldSet] in which fields are emptied.
-     */
-    private fun clearYhteystieto(yhteystieto: HankeYhteystieto) =
-        yhteystieto.copy(
-            nimi = "",
-            email = "",
-            puhelinnumero = "",
-            organisaatioNimi = "",
-            osasto = "",
-            rooli = "",
-            ytunnus = "",
-        )
-
-    /**
      * Find all audit logs for a specific object type. Getting all and filtering would obviously not
      * be acceptable in production, but in tests we usually have a very limited number of entities
      * at any one test.
