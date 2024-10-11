@@ -24,6 +24,7 @@ import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.security.AccessRules
+import fi.hel.haitaton.hanke.taydennys.TaydennysService
 import fi.hel.haitaton.hanke.testdata.TestDataService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
@@ -100,6 +101,8 @@ class IntegrationTestConfiguration {
     @Bean fun permissionService(): PermissionService = mockk()
 
     @Bean fun profiiliClient(): ProfiiliClient = mockk()
+
+    @Bean fun taydennysService(): TaydennysService = mockk()
 
     @Bean fun testDataService(): TestDataService = mockk(relaxUnitFun = true)
 

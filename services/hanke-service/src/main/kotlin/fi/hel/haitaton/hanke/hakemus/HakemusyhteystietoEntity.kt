@@ -2,6 +2,8 @@ package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
+import fi.hel.haitaton.hanke.taydennys.YhteyshenkiloEntity
+import fi.hel.haitaton.hanke.taydennys.YhteystietoEntity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -20,13 +22,13 @@ import org.springframework.data.jpa.repository.JpaRepository
 @Entity
 @Table(name = "hakemusyhteystieto")
 class HakemusyhteystietoEntity(
-    @Id val id: UUID = UUID.randomUUID(),
-    @Enumerated(EnumType.STRING) var tyyppi: CustomerType,
-    @Enumerated(EnumType.STRING) val rooli: ApplicationContactType,
-    var nimi: String,
-    var sahkoposti: String,
-    var puhelinnumero: String,
-    @Column(name = "registry_key") var registryKey: String?,
+    @Id override val id: UUID = UUID.randomUUID(),
+    @Enumerated(EnumType.STRING) override var tyyppi: CustomerType,
+    @Enumerated(EnumType.STRING) override val rooli: ApplicationContactType,
+    override var nimi: String,
+    override var sahkoposti: String,
+    override var puhelinnumero: String,
+    @Column(name = "registry_key") override var registryKey: String?,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id")
     var application: HakemusEntity,
@@ -36,31 +38,8 @@ class HakemusyhteystietoEntity(
         cascade = [CascadeType.ALL],
         orphanRemoval = true)
     @BatchSize(size = 100)
-    val yhteyshenkilot: MutableList<HakemusyhteyshenkiloEntity> = mutableListOf(),
-) {
-
-    fun toDomain() =
-        Hakemusyhteystieto(
-            id = id,
-            tyyppi = tyyppi,
-            rooli = rooli,
-            nimi = nimi,
-            sahkoposti = sahkoposti,
-            puhelinnumero = puhelinnumero,
-            registryKey = registryKey,
-            yhteyshenkilot =
-                yhteyshenkilot.map { yhteyshenkilo ->
-                    Hakemusyhteyshenkilo(
-                        id = id,
-                        hankekayttajaId = yhteyshenkilo.hankekayttaja.id,
-                        etunimi = yhteyshenkilo.hankekayttaja.etunimi,
-                        sukunimi = yhteyshenkilo.hankekayttaja.sukunimi,
-                        sahkoposti = yhteyshenkilo.hankekayttaja.sahkoposti,
-                        puhelin = yhteyshenkilo.hankekayttaja.puhelin,
-                        tilaaja = yhteyshenkilo.tilaaja,
-                    )
-                })
-
+    override val yhteyshenkilot: MutableList<HakemusyhteyshenkiloEntity> = mutableListOf(),
+) : YhteystietoEntity<HakemusyhteyshenkiloEntity> {
     fun copyWithHakemus(hakemus: HakemusEntity) =
         HakemusyhteystietoEntity(
                 tyyppi = tyyppi,
@@ -79,15 +58,15 @@ class HakemusyhteystietoEntity(
 @Entity
 @Table(name = "hakemusyhteyshenkilo")
 class HakemusyhteyshenkiloEntity(
-    @Id val id: UUID = UUID.randomUUID(),
+    @Id override val id: UUID = UUID.randomUUID(),
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hakemusyhteystieto_id")
     var hakemusyhteystieto: HakemusyhteystietoEntity,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hankekayttaja_id")
-    var hankekayttaja: HankekayttajaEntity,
-    var tilaaja: Boolean
-) {
+    override var hankekayttaja: HankekayttajaEntity,
+    override var tilaaja: Boolean
+) : YhteyshenkiloEntity {
     fun copyWithYhteystieto(yhteystieto: HakemusyhteystietoEntity) =
         HakemusyhteyshenkiloEntity(
             hakemusyhteystieto = yhteystieto, hankekayttaja = hankekayttaja, tilaaja = tilaaja)

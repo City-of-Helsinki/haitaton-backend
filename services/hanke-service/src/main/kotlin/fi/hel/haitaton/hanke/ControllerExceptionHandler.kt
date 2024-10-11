@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import fi.hel.haitaton.hanke.hakemus.HakemusAlreadyProcessingException
+import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
@@ -155,6 +156,14 @@ class ControllerExceptionHandler {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI2003
+    }
+
+    @ExceptionHandler(HakemusInWrongStatusException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun hakemusInWrongStatusException(ex: HakemusInWrongStatusException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2015
     }
 
     @ExceptionHandler(AttachmentNotFoundException::class)
