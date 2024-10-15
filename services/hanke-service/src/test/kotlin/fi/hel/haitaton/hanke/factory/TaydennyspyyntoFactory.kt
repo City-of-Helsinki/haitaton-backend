@@ -15,7 +15,14 @@ class TaydennyspyyntoFactory(private val taydennyspyyntoRepository: Taydennyspyy
         alluId: Int = DEFAULT_ALLU_ID,
         kentat: Map<InformationRequestFieldKey, String> = DEFAULT_KENTAT,
         mutator: TaydennyspyyntoEntity.() -> Unit = {},
-    ): Taydennyspyynto {
+    ): Taydennyspyynto = saveEntity(applicationId, alluId, kentat, mutator).toDomain()
+
+    fun saveEntity(
+        applicationId: Long,
+        alluId: Int = DEFAULT_ALLU_ID,
+        kentat: Map<InformationRequestFieldKey, String> = DEFAULT_KENTAT,
+        mutator: TaydennyspyyntoEntity.() -> Unit = {},
+    ): TaydennyspyyntoEntity {
         val entity =
             TaydennyspyyntoEntity(
                 applicationId = applicationId,
@@ -23,7 +30,7 @@ class TaydennyspyyntoFactory(private val taydennyspyyntoRepository: Taydennyspyy
                 kentat = kentat.toMutableMap(),
             )
         mutator(entity)
-        return taydennyspyyntoRepository.save(entity).toDomain()
+        return taydennyspyyntoRepository.save(entity)
     }
 
     companion object {
