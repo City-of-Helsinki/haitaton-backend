@@ -462,6 +462,32 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 hakemusService.hankkeenHakemukset(HANKE_TUNNUS)
             }
         }
+
+        @Test
+        fun `With areas included return application areas`() {
+            val cableReportApplicationResponses =
+                HakemusFactory.createSeveral(2, applicationType = ApplicationType.CABLE_REPORT)
+            val excavationNotificationResponses =
+                HakemusFactory.createSeveral(
+                    2, applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
+            val hakemukset = cableReportApplicationResponses + excavationNotificationResponses
+            every { hakemusService.hankkeenHakemukset(HANKE_TUNNUS) } returns hakemukset
+            every {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
+            } returns true
+
+            val response: HankkeenHakemuksetResponse =
+                get("$url?areas=true").andExpect(status().isOk).andReturnBody()
+
+            assertThat(response.applications).isNotEmpty()
+            val expected =
+                HankkeenHakemuksetResponse(hakemukset.map { HankkeenHakemusResponse(it, true) })
+            assertThat(response).isEqualTo(expected)
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
+                hakemusService.hankkeenHakemukset(HANKE_TUNNUS)
+            }
+        }
     }
 
     @Nested
