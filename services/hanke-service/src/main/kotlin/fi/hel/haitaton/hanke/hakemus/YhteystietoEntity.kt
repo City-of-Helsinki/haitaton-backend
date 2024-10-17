@@ -1,9 +1,7 @@
-package fi.hel.haitaton.hanke.taydennys
+package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
-import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
-import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import java.util.UUID
 
 interface YhteystietoEntity<H : YhteyshenkiloEntity> {
@@ -38,4 +36,10 @@ interface YhteystietoEntity<H : YhteyshenkiloEntity> {
                         tilaaja = yhteyshenkilo.tilaaja,
                     )
                 })
+}
+
+interface YhteyshenkiloEntity {
+    val id: UUID
+    var hankekayttaja: HankekayttajaEntity
+    var tilaaja: Boolean
 }

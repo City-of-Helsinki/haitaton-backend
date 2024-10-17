@@ -2,8 +2,6 @@ package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
-import fi.hel.haitaton.hanke.taydennys.YhteyshenkiloEntity
-import fi.hel.haitaton.hanke.taydennys.YhteystietoEntity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

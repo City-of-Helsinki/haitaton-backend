@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.taydennys
 
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
+import fi.hel.haitaton.hanke.hakemus.YhteystietoEntity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.taydennys
 
+import fi.hel.haitaton.hanke.hakemus.YhteyshenkiloEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
