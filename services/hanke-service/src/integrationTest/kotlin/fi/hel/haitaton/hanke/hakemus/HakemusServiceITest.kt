@@ -56,6 +56,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_EXCAVA
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
 import fi.hel.haitaton.hanke.factory.CreateHakemusRequestFactory
+import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
@@ -76,6 +77,7 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
+import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory
 import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory.Companion.addKentta
 import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory.Companion.clearKentat
@@ -99,6 +101,7 @@ import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.paatos.PaatosTila
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.taydennys.Taydennys
 import fi.hel.haitaton.hanke.taydennys.Taydennyspyynto
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasStreetName
@@ -164,6 +167,7 @@ class HakemusServiceITest(
     @Autowired private val alluClient: AlluClient,
     @Autowired private val alluStatusRepository: AlluStatusRepository,
     @Autowired private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
+    @Autowired private val taydennysFactory: TaydennysFactory,
     @Autowired private val hankeService: HankeService,
 ) : IntegrationTest() {
 
@@ -228,7 +232,7 @@ class HakemusServiceITest(
     }
 
     @Nested
-    inner class GetWithPaatokset {
+    inner class GetWithExtras {
         @Test
         fun `throws an exception when the hakemus does not exist`() {
             val failure = assertFailure { hakemusService.getWithExtras(1234) }
@@ -255,6 +259,8 @@ class HakemusServiceITest(
                 }
             }
             assertThat(response.paatokset).isEmpty()
+            assertThat(response.taydennyspyynto).isNull()
+            assertThat(response.taydennys).isNull()
         }
 
         @Test
@@ -297,6 +303,27 @@ class HakemusServiceITest(
                         InformationRequestFieldKey.START_TIME to "Too soon",
                         InformationRequestFieldKey.GEOMETRY to "Not enough",
                     )
+            }
+        }
+
+        @Test
+        fun `returns taydennys when it exists`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                    .save()
+            val taydennys = taydennysFactory.save(applicationId = hakemus.id)
+
+            val response = hakemusService.getWithExtras(hakemus.id)
+
+            assertThat(response.taydennys).isNotNull().all {
+                prop(Taydennys::id).isEqualTo(taydennys.id)
+                prop(Taydennys::hakemusData).all {
+                    prop(HakemusData::name).isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_NAME)
+                    prop(HakemusData::startTime).isEqualTo(DateFactory.getStartDatetime())
+                }
             }
         }
     }
