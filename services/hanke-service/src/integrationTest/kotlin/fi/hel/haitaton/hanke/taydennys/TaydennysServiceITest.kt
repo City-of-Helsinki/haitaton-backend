@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
+import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
@@ -53,6 +54,7 @@ class TaydennysServiceITest(
     @Autowired private val alluClient: AlluClient,
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
+    @Autowired private val taydennysFactory: TaydennysFactory,
     @Autowired private val auditLogRepository: AuditLogRepository,
 ) : IntegrationTest() {
     private val alluId = 3464
@@ -86,6 +88,26 @@ class TaydennysServiceITest(
             val result = taydennysService.findTaydennyspyynto(hakemus.id)
 
             assertThat(result).isEqualTo(taydennyspyynto)
+        }
+    }
+
+    @Nested
+    inner class FindTaydennys {
+        @Test
+        fun `returns null when taydennys doesn't exist`() {
+            val result = taydennysService.findTaydennys(1L)
+
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `returns taydennys when it exists`() {
+            val hakemus = hakemusFactory.builder().withStatus().save()
+            val taydennys = taydennysFactory.save(applicationId = hakemus.id)
+
+            val result = taydennysService.findTaydennys(hakemus.id)
+
+            assertThat(result).isEqualTo(taydennys)
         }
     }
 

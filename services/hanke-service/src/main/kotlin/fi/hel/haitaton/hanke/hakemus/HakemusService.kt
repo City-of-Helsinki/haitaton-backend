@@ -84,7 +84,8 @@ class HakemusService(
         val hakemus = getById(hakemusId)
         val paatokset = paatosService.findByHakemusId(hakemusId)
         val taydennyspyynto = taydennysService.findTaydennyspyynto(hakemusId)
-        return HakemusWithExtras(hakemus, paatokset, taydennyspyynto)
+        val taydennys = taydennysService.findTaydennys(hakemusId)
+        return HakemusWithExtras(hakemus, paatokset, taydennyspyynto, taydennys)
     }
 
     @Transactional(readOnly = true)

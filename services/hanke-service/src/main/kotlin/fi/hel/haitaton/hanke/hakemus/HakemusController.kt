@@ -70,6 +70,9 @@ class HakemusController(
         logger.info { "Finding application $id" }
         val response = hakemusService.getWithExtras(id).toResponse()
         disclosureLogService.saveDisclosureLogsForHakemusResponse(response.hakemus, currentUserId())
+        response.taydennys?.let {
+            disclosureLogService.saveDisclosureLogsForTaydennys(it, currentUserId())
+        }
         return response
     }
 
