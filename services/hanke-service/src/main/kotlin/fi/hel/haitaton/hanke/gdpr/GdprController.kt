@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.gdpr
 import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
-import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.toJsonString
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
@@ -34,7 +33,6 @@ private val logger = KotlinLogging.logger {}
 @Validated
 class GdprController(
     private val gdprService: GdprService,
-    private val disclosureLogService: DisclosureLogService,
     private val gdprProperties: GdprProperties,
 ) {
 
@@ -86,7 +84,6 @@ class GdprController(
             return ResponseEntity.noContent().build()
         }
 
-        disclosureLogService.saveDisclosureLogsForProfiili(userId, gdprInfo)
         logger.info { "Returning GDPR information for user $userId" }
         return ResponseEntity.ok().body(gdprInfo)
     }

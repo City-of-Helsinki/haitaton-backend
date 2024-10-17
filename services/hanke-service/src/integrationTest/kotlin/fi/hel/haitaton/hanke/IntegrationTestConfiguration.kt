@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusAuthorizer
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.logging.DisclosureLoggingAspect
 import fi.hel.haitaton.hanke.paatos.PaatosAuthorizer
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaAuthorizer
@@ -33,9 +34,11 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.sentry.Sentry
 import io.sentry.protocol.SentryId
+import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.context.event.EventListener
 import org.springframework.jdbc.core.JdbcOperations
@@ -46,6 +49,7 @@ import org.springframework.security.web.SecurityFilterChain
 @TestConfiguration
 @EnableConfigurationProperties(GdprProperties::class, FeatureFlags::class)
 @EnableMethodSecurity(prePostEnabled = true)
+@Import(value = [AopAutoConfiguration::class, DisclosureLoggingAspect::class])
 class IntegrationTestConfiguration {
 
     @Bean fun applicationAttachmentMetadataService(): ApplicationAttachmentMetadataService = mockk()

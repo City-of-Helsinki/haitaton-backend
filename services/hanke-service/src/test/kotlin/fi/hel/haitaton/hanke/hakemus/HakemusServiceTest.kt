@@ -150,7 +150,7 @@ class HakemusServiceTest {
             justRun { attachmentService.sendInitialAttachments(alluId, any()) }
             val applicationCapturingSlot = slot<AlluCableReportApplicationData>()
             justRun {
-                disclosureLogService.saveDisclosureLogsForAllu(
+                disclosureLogService.saveForAllu(
                     3, capture(applicationCapturingSlot), Status.SUCCESS)
             }
 
@@ -233,7 +233,7 @@ class HakemusServiceTest {
                 attachmentService.getMetadataList(applicationEntity.id)
                 geometriatDao.calculateArea(any())
                 alluClient.create(any())
-                disclosureLogService.saveDisclosureLogsForAllu(3, any(), Status.SUCCESS)
+                disclosureLogService.saveForAllu(3, any(), Status.SUCCESS)
                 alluClient.addAttachment(alluId, any())
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
@@ -260,7 +260,7 @@ class HakemusServiceTest {
                 attachmentService.getMetadataList(applicationEntity.id)
                 geometriatDao.calculateArea(any())
                 alluClient.create(any())
-                disclosureLogService.saveDisclosureLogsForAllu(
+                disclosureLogService.saveForAllu(
                     3, any(), Status.FAILED, ALLU_APPLICATION_ERROR_MSG)
             }
         }
@@ -324,7 +324,7 @@ class HakemusServiceTest {
                 attachmentService.getMetadataList(applicationEntity.id)
                 geometriatDao.calculateArea(any())
                 alluClient.create(any())
-                disclosureLogService.saveDisclosureLogsForAllu(3, any(), Status.SUCCESS)
+                disclosureLogService.saveForAllu(3, any(), Status.SUCCESS)
                 alluClient.addAttachment(alluId, any())
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
