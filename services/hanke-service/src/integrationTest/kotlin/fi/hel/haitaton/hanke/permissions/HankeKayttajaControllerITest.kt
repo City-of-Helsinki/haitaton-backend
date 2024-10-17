@@ -103,7 +103,7 @@ class HankeKayttajaControllerITest(
             PermissionEntity(
                 hankeId = hankeId,
                 userId = USERNAME,
-                kayttooikeustasoEntity = KayttooikeustasoEntity(0, kayttooikeustaso, 1 or 4)
+                kayttooikeustasoEntity = KayttooikeustasoEntity(0, kayttooikeustaso, 1 or 4),
             )
 
         private val hankeKayttajaEntity =
@@ -194,7 +194,7 @@ class HankeKayttajaControllerITest(
                     hankeKayttajaId = null,
                     kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
                     permissionCode = VIEW.code,
-                )
+                ),
             )
 
         @Test
@@ -242,7 +242,7 @@ class HankeKayttajaControllerITest(
         private val kayttaja =
             HankeKayttajaFactory.create(
                 id = kayttajaId,
-                roolit = listOf(ContactType.OMISTAJA, ContactType.TOTEUTTAJA)
+                roolit = listOf(ContactType.OMISTAJA, ContactType.TOTEUTTAJA),
             )
         private val url = "/kayttajat/$kayttajaId"
 
@@ -297,10 +297,7 @@ class HankeKayttajaControllerITest(
             val testData =
                 listOf(
                     HankeKayttajaFactory.createHankeKayttaja(
-                        1,
-                        ContactType.OMISTAJA,
-                        ContactType.MUU
-                    ),
+                        1, ContactType.OMISTAJA, ContactType.MUU),
                     HankeKayttajaFactory.createHankeKayttaja(2),
                     HankeKayttajaFactory.createHankeKayttaja(3),
                 )
@@ -328,7 +325,7 @@ class HankeKayttajaControllerITest(
                 hankeKayttajaService.getKayttajatByHankeId(hanke.id)
                 disclosureLogService.saveDisclosureLogsForHankeKayttajat(
                     response.kayttajat,
-                    USERNAME
+                    USERNAME,
                 )
             }
         }
@@ -422,6 +419,7 @@ class HankeKayttajaControllerITest(
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.CREATE_USER.name)
                 hankeService.loadHanke(HANKE_TUNNUS)
                 hankeKayttajaService.createNewUser(request, hanke, USERNAME)
+                disclosureLogService.saveDisclosureLogsForHankeKayttaja(response, USERNAME)
             }
         }
     }
@@ -443,14 +441,11 @@ class HankeKayttajaControllerITest(
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS.name)
             } throws HankeNotFoundException(HANKE_TUNNUS)
+            val request =
+                PermissionUpdate(
+                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
 
-            put(
-                    url,
-                    PermissionUpdate(
-                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
-                    )
-                )
-                .andExpect(status().isNotFound)
+            put(url, request).andExpect(status().isNotFound)
 
             verify { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS.name) }
             verify { hankeKayttajaService wasNot Called }
@@ -464,24 +459,17 @@ class HankeKayttajaControllerITest(
             every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hankeIdentifier
             every {
                 permissionService.hasPermission(
-                    hankeIdentifier.id,
-                    USERNAME,
-                    PermissionCode.MODIFY_DELETE_PERMISSIONS
-                )
+                    hankeIdentifier.id, USERNAME, PermissionCode.MODIFY_DELETE_PERMISSIONS)
             } returns false
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
             justRun {
                 hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
             }
+            val request =
+                PermissionUpdate(
+                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
 
-            put(
-                    url,
-                    PermissionUpdate(
-                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
-                    )
-                )
-                .andExpect(status().isNoContent)
-                .andExpect(content().string(""))
+            put(url, request).andExpect(status().isNoContent).andExpect(content().string(""))
 
             verifyCalls(updates)
         }
@@ -494,23 +482,17 @@ class HankeKayttajaControllerITest(
             every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hankeIdentifier
             every {
                 permissionService.hasPermission(
-                    hankeIdentifier.id,
-                    USERNAME,
-                    PermissionCode.MODIFY_DELETE_PERMISSIONS
-                )
+                    hankeIdentifier.id, USERNAME, PermissionCode.MODIFY_DELETE_PERMISSIONS)
             } returns true
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
             justRun {
                 hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
             }
+            val request =
+                PermissionUpdate(
+                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
 
-            put(
-                    url,
-                    PermissionUpdate(
-                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
-                    )
-                )
-                .andExpect(status().isNoContent)
+            put(url, request).andExpect(status().isNoContent)
 
             verifyCalls(updates, deleteAdminPermission = true)
         }
@@ -518,13 +500,11 @@ class HankeKayttajaControllerITest(
         @Test
         fun `Returns forbidden when missing admin permissions`() {
             val updates = setupForException(MissingAdminPermissionException(USERNAME))
+            val request =
+                PermissionUpdate(
+                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
 
-            put(
-                    url,
-                    PermissionUpdate(
-                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
-                    )
-                )
+            put(url, request)
                 .andExpect(status().isForbidden)
                 .andExpect(hankeError(HankeError.HAI0005))
 
@@ -534,13 +514,11 @@ class HankeKayttajaControllerITest(
         @Test
         fun `Returns forbidden when changing own permissions`() {
             val updates = setupForException(ChangingOwnPermissionException(USERNAME))
+            val request =
+                PermissionUpdate(
+                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
 
-            put(
-                    url,
-                    PermissionUpdate(
-                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
-                    )
-                )
+            put(url, request)
                 .andExpect(status().isForbidden)
                 .andExpect(hankeError(HankeError.HAI4002))
 
@@ -551,15 +529,12 @@ class HankeKayttajaControllerITest(
         fun `Returns internal server error if there are users without either permission or tunniste`() {
             val updates =
                 setupForException(
-                    UsersWithoutKayttooikeustasoException(missingIds = listOf(hankeKayttajaId))
-                )
+                    UsersWithoutKayttooikeustasoException(missingIds = listOf(hankeKayttajaId)))
+            val request =
+                PermissionUpdate(
+                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
 
-            put(
-                    url,
-                    PermissionUpdate(
-                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
-                    )
-                )
+            put(url, request)
                 .andExpect(status().isInternalServerError)
                 .andExpect(hankeError(HankeError.HAI4003))
 
@@ -569,13 +544,11 @@ class HankeKayttajaControllerITest(
         @Test
         fun `Returns conflict if there would be no admins remaining`() {
             val updates = setupForException(NoAdminRemainingException(hankeIdentifier))
+            val request =
+                PermissionUpdate(
+                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
 
-            put(
-                    url,
-                    PermissionUpdate(
-                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
-                    )
-                )
+            put(url, request)
                 .andExpect(status().isConflict)
                 .andExpect(hankeError(HankeError.HAI4003))
 
@@ -586,15 +559,12 @@ class HankeKayttajaControllerITest(
         fun `Returns bad request if there would be no admins remaining`() {
             val updates =
                 setupForException(
-                    HankeKayttajatNotFoundException(listOf(hankeKayttajaId), hankeIdentifier)
-                )
+                    HankeKayttajatNotFoundException(listOf(hankeKayttajaId), hankeIdentifier))
+            val request =
+                PermissionUpdate(
+                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
 
-            put(
-                    url,
-                    PermissionUpdate(
-                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
-                    )
-                )
+            put(url, request)
                 .andExpect(status().isBadRequest)
                 .andExpect(hankeError(HankeError.HAI4001))
 
@@ -610,13 +580,13 @@ class HankeKayttajaControllerITest(
                 permissionService.hasPermission(
                     hankeIdentifier.id,
                     USERNAME,
-                    PermissionCode.MODIFY_DELETE_PERMISSIONS
+                    PermissionCode.MODIFY_DELETE_PERMISSIONS,
                 )
                 hankeKayttajaService.updatePermissions(
                     hankeIdentifier,
                     updates,
                     deleteAdminPermission,
-                    USERNAME
+                    USERNAME,
                 )
             }
         }
@@ -628,10 +598,7 @@ class HankeKayttajaControllerITest(
             every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hankeIdentifier
             every {
                 permissionService.hasPermission(
-                    hankeIdentifier.id,
-                    USERNAME,
-                    PermissionCode.MODIFY_DELETE_PERMISSIONS
-                )
+                    hankeIdentifier.id, USERNAME, PermissionCode.MODIFY_DELETE_PERMISSIONS)
             } returns false
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
             every {
@@ -793,6 +760,7 @@ class HankeKayttajaControllerITest(
             verifySequence {
                 authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name)
                 hankeKayttajaService.resendInvitation(kayttajaId, USERNAME)
+                disclosureLogService.saveDisclosureLogsForHankeKayttaja(response, USERNAME)
             }
         }
     }
@@ -841,7 +809,7 @@ class HankeKayttajaControllerITest(
             } returns
                 HankeKayttajaFactory.create(
                     sahkoposti = update.sahkoposti,
-                    puhelinnumero = update.puhelinnumero
+                    puhelinnumero = update.puhelinnumero,
                 )
 
             val response: HankeKayttajaDto =
@@ -854,6 +822,7 @@ class HankeKayttajaControllerITest(
             verifySequence {
                 authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name)
                 hankeKayttajaService.updateOwnContactInfo(hanketunnus, update, USERNAME)
+                disclosureLogService.saveDisclosureLogsForHankeKayttaja(response, USERNAME)
             }
         }
     }
@@ -928,7 +897,7 @@ class HankeKayttajaControllerITest(
                     etunimi = update.etunimi!!,
                     sukunimi = update.sukunimi!!,
                     sahkoposti = update.sahkoposti,
-                    puhelinnumero = update.puhelinnumero
+                    puhelinnumero = update.puhelinnumero,
                 )
 
             val response: HankeKayttajaDto =
@@ -943,6 +912,7 @@ class HankeKayttajaControllerITest(
             verifySequence {
                 authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
                 hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
+                disclosureLogService.saveDisclosureLogsForHankeKayttaja(response, USERNAME)
             }
         }
 
@@ -952,7 +922,7 @@ class HankeKayttajaControllerITest(
             every { hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId) } returns
                 HankeKayttajaFactory.create(
                     sahkoposti = update.sahkoposti,
-                    puhelinnumero = update.puhelinnumero
+                    puhelinnumero = update.puhelinnumero,
                 )
 
             val response: HankeKayttajaDto =
@@ -965,6 +935,7 @@ class HankeKayttajaControllerITest(
             verifySequence {
                 authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
                 hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
+                disclosureLogService.saveDisclosureLogsForHankeKayttaja(response, USERNAME)
             }
         }
     }

@@ -22,11 +22,9 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.test.USERNAME
-import io.mockk.Called
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import jakarta.validation.ConstraintViolationException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -65,12 +63,10 @@ class HankeControllerTest {
         fun hankeController(
             hankeService: HankeService,
             permissionService: PermissionService,
-            disclosureLogService: DisclosureLogService,
         ): HankeController =
             HankeController(
                 hankeService,
                 permissionService,
-                disclosureLogService,
             )
     }
 
@@ -79,7 +75,6 @@ class HankeControllerTest {
     @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var permissionService: PermissionService
     @Autowired private lateinit var hankeController: HankeController
-    @Autowired private lateinit var disclosureLogService: DisclosureLogService
     @Autowired private lateinit var hankeAuthorizer: HankeAuthorizer
 
     @BeforeEach
@@ -107,9 +102,8 @@ class HankeControllerTest {
                     getCurrentTimeUTC(),
                     null,
                     null,
-                    HankeStatus.DRAFT
-                )
-            )
+                    HankeStatus.DRAFT,
+                ))
         every {
             hankeAuthorizer.authorizeHankeTunnus(mockedHankeTunnus, PermissionCode.VIEW)
         } returns true
@@ -118,7 +112,6 @@ class HankeControllerTest {
 
         assertThat(response).isNotNull()
         assertThat(response.nimi).isNotEmpty()
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(USERNAME)) }
     }
 
     @Test
@@ -137,7 +130,7 @@ class HankeControllerTest {
                     getCurrentTimeUTC(),
                     null,
                     null,
-                    HankeStatus.DRAFT
+                    HankeStatus.DRAFT,
                 ),
                 Hanke(
                     50,
@@ -151,8 +144,8 @@ class HankeControllerTest {
                     getCurrentTimeUTC(),
                     null,
                     null,
-                    HankeStatus.DRAFT
-                )
+                    HankeStatus.DRAFT,
+                ),
             )
         every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
             .returns(listOf(1234, 50))
@@ -164,7 +157,6 @@ class HankeControllerTest {
         assertThat(hankeList[1].nimi).isEqualTo("Hämeenlinnanväylän uudistus")
         assertThat(hankeList[0].alueet.geometriat()).isEmpty()
         assertThat(hankeList[1].alueet.geometriat()).isEmpty()
-        verify { disclosureLogService.saveDisclosureLogsForHankkeet(any(), eq(USERNAME)) }
     }
 
     @Test
@@ -183,7 +175,7 @@ class HankeControllerTest {
                 createdAt = getCurrentTimeUTC(),
                 modifiedBy = null,
                 modifiedAt = null,
-                status = HankeStatus.DRAFT
+                status = HankeStatus.DRAFT,
             )
         val request = partialHanke.toModifyRequest()
         every { hankeService.updateHanke(hanketunnus, request) }
@@ -194,7 +186,6 @@ class HankeControllerTest {
 
         assertThat(response).isNotNull()
         assertThat(response.nimi).isEqualTo("hankkeen nimi")
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(USERNAME)) }
     }
 
     @Test
@@ -213,7 +204,7 @@ class HankeControllerTest {
                 createdAt = null,
                 modifiedBy = null,
                 modifiedAt = null,
-                status = HankeStatus.DRAFT
+                status = HankeStatus.DRAFT,
             )
         val request = partialHanke.toModifyRequest()
         every { hankeService.loadHanke(hanketunnus) }.returns(HankeFactory.create())
@@ -225,6 +216,5 @@ class HankeControllerTest {
             hasClass(ConstraintViolationException::class)
             messageContains("updateHanke.hankeUpdate.nimi: " + HankeError.HAI1002.toString())
         }
-        verify { disclosureLogService wasNot Called }
     }
 }

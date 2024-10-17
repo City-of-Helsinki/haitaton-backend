@@ -97,7 +97,7 @@ internal class DisclosureLogServiceTest {
                     StringNode("puhelin", TEPPO_PHONE),
                 ))
 
-        disclosureLogService.saveDisclosureLogsForProfiili(userId, info)
+        disclosureLogService.saveDisclosureLogsForProfiili(info, userId)
 
         val expectedObject =
             """

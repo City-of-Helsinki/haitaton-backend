@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.taydennys
 
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.currentUserId
-import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -25,10 +24,7 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @Validated
 @SecurityRequirement(name = "bearerAuth")
-class TaydennysController(
-    private val taydennysService: TaydennysService,
-    private val disclosureLogService: DisclosureLogService,
-) {
+class TaydennysController(private val taydennysService: TaydennysService) {
 
     @PostMapping("/hakemukset/{id}/taydennys")
     @Operation(
@@ -55,12 +51,8 @@ class TaydennysController(
                 ),
             ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
-    fun create(@PathVariable id: Long): TaydennysResponse {
-        val userId = currentUserId()
-        val response = taydennysService.create(id, userId).toResponse()
-        disclosureLogService.saveDisclosureLogsForTaydennys(response, userId)
-        return response
-    }
+    fun create(@PathVariable id: Long): TaydennysResponse =
+        taydennysService.create(id, currentUserId()).toResponse()
 
     @ExceptionHandler(NoTaydennyspyyntoException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
