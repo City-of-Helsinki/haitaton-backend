@@ -59,7 +59,7 @@ class PaatosController(
     fun download(@PathVariable("id") id: UUID): ResponseEntity<ByteArray> {
         val paatos: Paatos = paatosService.findById(id)
         val (filename, pdfBytes) = paatosService.downloadDecision(paatos)
-        disclosureLogService.saveDisclosureLogsForPaatos(paatos.toMetadata(), currentUserId())
+        disclosureLogService.saveForPaatos(paatos.toMetadata(), currentUserId())
 
         val headers = HttpHeaders()
         headers.add("Content-Disposition", "inline; filename=$filename")

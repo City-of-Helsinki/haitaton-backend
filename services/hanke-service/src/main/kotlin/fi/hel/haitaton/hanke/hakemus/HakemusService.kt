@@ -681,8 +681,7 @@ class HakemusService(
     ): T {
         try {
             val result = f()
-            disclosureLogService.saveDisclosureLogsForAllu(
-                applicationId, alluApplicationData, Status.SUCCESS)
+            disclosureLogService.saveForAllu(applicationId, alluApplicationData, Status.SUCCESS)
             return result
         } catch (e: AlluLoginException) {
             // Since the login failed we didn't send the application itself, so logging not needed.
@@ -691,7 +690,7 @@ class HakemusService(
             // There was an exception outside login, so there was at least an attempt to send the
             // application to Allu. Allu might have read it and rejected it, so we should log this
             // as a disclosure event.
-            disclosureLogService.saveDisclosureLogsForAllu(
+            disclosureLogService.saveForAllu(
                 applicationId, alluApplicationData, Status.FAILED, ALLU_APPLICATION_ERROR_MSG)
             throw e
         }

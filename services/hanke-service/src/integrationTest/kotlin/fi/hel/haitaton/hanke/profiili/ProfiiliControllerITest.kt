@@ -92,7 +92,7 @@ class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : Contro
         @Test
         fun `returns verified names`() {
             every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
-            every { disclosureLogService.saveDisclosureLogsForProfiiliNimi(any(), any()) } just Runs
+            every { disclosureLogService.saveForProfiiliNimi(any(), any()) } just Runs
 
             val names: Names =
                 get(url).andExpect(MockMvcResultMatchers.status().isOk).andReturnBody()
@@ -104,7 +104,7 @@ class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : Contro
             }
             verifyAll {
                 profiiliClient.getVerifiedName(any())
-                disclosureLogService.saveDisclosureLogsForProfiiliNimi(any(), any())
+                disclosureLogService.saveForProfiiliNimi(any(), any())
             }
         }
     }

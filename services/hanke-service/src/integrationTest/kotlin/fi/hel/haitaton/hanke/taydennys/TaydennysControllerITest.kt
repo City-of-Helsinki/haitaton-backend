@@ -152,7 +152,7 @@ class TaydennysControllerITest(@Autowired override val mockMvc: MockMvc) : Contr
                 hakemusAuthorizer.authorizeHakemusId(
                     hakemusId, PermissionCode.EDIT_APPLICATIONS.name)
                 taydennysService.create(hakemusId, USERNAME)
-                disclosureLogService.saveDisclosureLogsForTaydennys(response, USERNAME)
+                disclosureLogService.saveForTaydennys(response, USERNAME)
             }
         }
     }

@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
-import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.validation.ValidCreateHankeRequest
@@ -45,7 +44,6 @@ private val logger = KotlinLogging.logger {}
 class HankeController(
     private val hankeService: HankeService,
     private val permissionService: PermissionService,
-    private val disclosureLogService: DisclosureLogService,
 ) {
 
     @GetMapping("/{hankeTunnus}")
@@ -56,29 +54,24 @@ class HankeController(
                 ApiResponse(
                     description = "Success",
                     responseCode = "200",
-                    content = [Content(schema = Schema(implementation = Hanke::class))]
-                ),
+                    content = [Content(schema = Schema(implementation = Hanke::class))]),
                 ApiResponse(
                     description = "Hanke by requested hankeTunnus not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                )
-            ]
-    )
+                    content = [Content(schema = Schema(implementation = HankeError::class))])])
     @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
-    fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): Hanke {
-        val hanke = hankeService.loadHanke(hankeTunnus)!!
-        disclosureLogService.saveDisclosureLogsForHanke(hanke, currentUserId())
-        return hanke
-    }
+    fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): Hanke =
+        hankeService.loadHanke(hankeTunnus)!!
 
     @GetMapping
     @Operation(
         summary = "Get hanke list",
         description =
-            """Get Hanke list to which the user has permission to. 
-            Contains e.g. personal contact information, which is not available in a public Hanke."""
-    )
+            """
+                Get Hanke list to which the user has permission to.
+
+                Contains e.g. personal contact information, which is not available in a public Hanke.
+            """)
     @ApiResponses(
         value =
             [
@@ -88,12 +81,8 @@ class HankeController(
                     content =
                         [
                             Content(
-                                array = ArraySchema(schema = Schema(implementation = Hanke::class))
-                            )
-                        ]
-                )
-            ]
-    )
+                                array =
+                                    ArraySchema(schema = Schema(implementation = Hanke::class)))])])
     fun getHankeList(
         @Parameter(
             description =
@@ -115,7 +104,6 @@ class HankeController(
             hankeList.forEach { hanke -> hanke.alueet.forEach { alue -> alue.geometriat = null } }
         }
 
-        disclosureLogService.saveDisclosureLogsForHankkeet(hankeList, userid)
         return hankeList
     }
 
@@ -130,23 +118,18 @@ The hanke can be updated with the PUT endpoint after creation to flesh it out.
 When Hanke is created:
 1. A unique Hanke tunnus is created.
 2. The status of the hanke is set as DRAFT.
-"""
-    )
+""")
     @ApiResponses(
         value =
             [
                 ApiResponse(
                     description = "Success",
                     responseCode = "200",
-                    content = [Content(schema = Schema(implementation = Hanke::class))]
-                ),
+                    content = [Content(schema = Schema(implementation = Hanke::class))]),
                 ApiResponse(
                     description = "The request body was invalid",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                )
-            ]
-    )
+                    content = [Content(schema = Schema(implementation = HankeError::class))])])
     @PreAuthorize("@featureService.isEnabled('HANKE_EDITING')")
     fun createHanke(
         @ValidCreateHankeRequest @RequestBody request: CreateHankeRequest,
@@ -156,7 +139,6 @@ When Hanke is created:
 
         val createdHanke = hankeService.createHanke(request, securityContext)
 
-        disclosureLogService.saveDisclosureLogsForHanke(createdHanke, currentUserId())
         logger.info { "Created Hanke ${createdHanke.hankeTunnus}." }
         return createdHanke
     }
@@ -171,32 +153,25 @@ Update an existing hanke. Data must comply with the restrictions defined in Hank
 On update following will happen automatically:
 1. Status is updated. PUBLIC if required fields are filled. Else DRAFT.
 2. Tormaystarkastelu (project nuisance) is re-calculated.
-"""
-    )
+""")
     @ApiResponses(
         value =
             [
                 ApiResponse(
                     description = "Success",
                     responseCode = "200",
-                    content = [Content(schema = Schema(implementation = Hanke::class))]
-                ),
+                    content = [Content(schema = Schema(implementation = Hanke::class))]),
                 ApiResponse(
                     description = "The request body was invalid",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                ),
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
                 ApiResponse(
                     description = "Hanke by requested tunnus not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                )
-            ]
-    )
+                    content = [Content(schema = Schema(implementation = HankeError::class))])])
     @PreAuthorize(
         "@featureService.isEnabled('HANKE_EDITING') && " +
-            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'EDIT')"
-    )
+            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'EDIT')")
     fun updateHanke(
         @ValidHanke @RequestBody hankeUpdate: ModifyHankeRequest,
         @PathVariable hankeTunnus: String
@@ -205,7 +180,6 @@ On update following will happen automatically:
 
         val updatedHanke = hankeService.updateHanke(hankeTunnus, hankeUpdate)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
-        disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, updatedHanke.modifiedBy!!)
         return updatedHanke
     }
 
@@ -214,8 +188,7 @@ On update following will happen automatically:
     @Operation(
         summary = "Delete hanke",
         description =
-            "Delete an existing hanke. Deletion is not possible if Hanke contains active applications."
-    )
+            "Delete an existing hanke. Deletion is not possible if Hanke contains active applications.")
     @ApiResponses(
         value =
             [
@@ -223,15 +196,11 @@ On update following will happen automatically:
                 ApiResponse(
                     description = "Hanke by requested hankeTunnus not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                ),
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
                 ApiResponse(
                     description = "Hanke has active application(s) in Allu, will not delete.",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                )
-            ]
-    )
+                    content = [Content(schema = Schema(implementation = HankeError::class))])])
     @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'DELETE')")
     fun deleteHanke(@PathVariable hankeTunnus: String) {
         logger.info { "Deleting hanke: $hankeTunnus" }
