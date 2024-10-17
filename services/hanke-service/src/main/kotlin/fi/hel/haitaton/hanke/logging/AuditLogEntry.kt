@@ -56,6 +56,9 @@ enum class ObjectType {
     PAATOS,
     PERMISSION,
     PROFIILI_NIMI,
+    TAYDENNYS,
+    TAYDENNYS_CONTACT,
+    TAYDENNYS_CUSTOMER,
     YHTEYSTIETO,
 }
 

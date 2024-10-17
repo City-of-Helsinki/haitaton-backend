@@ -539,12 +539,4 @@ The id needs to reference an excavation notification.
         logger.warn(ex) { ex.message }
         return HankeError.HAI2014
     }
-
-    @ExceptionHandler(HakemusInWrongStatusException::class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    @Hidden
-    fun hakemusInWrongStatusException(ex: HakemusInWrongStatusException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2015
-    }
 }
