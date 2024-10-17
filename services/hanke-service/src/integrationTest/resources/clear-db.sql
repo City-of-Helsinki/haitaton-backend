@@ -18,8 +18,11 @@ TRUNCATE TABLE
     kayttajakutsu,
     paatos,
     permissions,
+    taydennys,
     taydennyspyynnon_kentta,
     taydennyspyynto,
+    taydennysyhteyshenkilo,
+    taydennysyhteystieto,
     tormaystarkastelutulos,
     ui_notification_banner,
     valmistumisilmoitus;

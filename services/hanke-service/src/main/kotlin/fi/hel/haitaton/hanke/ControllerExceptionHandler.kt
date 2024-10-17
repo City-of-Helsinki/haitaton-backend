@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import fi.hel.haitaton.hanke.hakemus.HakemusAlreadyProcessingException
+import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
@@ -61,20 +62,6 @@ class ControllerExceptionHandler {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI1020
-    }
-
-    @ExceptionHandler(HankeYhteystietoProcessingRestrictedException::class)
-    // Using 451 (since the restriction is typically due to legal reasons).
-    // However, in some cases 403 forbidden might be considered correct response, too.
-    @ResponseStatus(HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS)
-    @Hidden
-    fun hankeYhteystietoProcessingRestricted(
-        ex: HankeYhteystietoProcessingRestrictedException
-    ): HankeError {
-        logger.warn { ex.message }
-        // TODO: the response body SHOULD include an explanation and link to server;
-        //  left as future exercise. See https://tools.ietf.org/html/rfc7725
-        return HankeError.HAI1029
     }
 
     @ExceptionHandler(HankeAlluConflictException::class)
@@ -155,6 +142,14 @@ class ControllerExceptionHandler {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI2003
+    }
+
+    @ExceptionHandler(HakemusInWrongStatusException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun hakemusInWrongStatusException(ex: HakemusInWrongStatusException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2015
     }
 
     @ExceptionHandler(AttachmentNotFoundException::class)
