@@ -407,7 +407,7 @@ The id needs to reference an excavation notification.
         val userId = currentUserId()
         val (filename, pdfBytes) = hakemusService.downloadDecision(id)
         val application = hakemusService.getById(id)
-        disclosureLogService.saveDisclosureLogsForCableReport(application.toMetadata(), userId)
+        disclosureLogService.saveForCableReport(application.toMetadata(), userId)
 
         val headers = HttpHeaders()
         headers.add("Content-Disposition", "inline; filename=$filename.pdf")

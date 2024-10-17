@@ -283,7 +283,7 @@ class HankeKayttajaControllerITest(
             verifySequence {
                 authorizer.authorizeKayttajaId(kayttajaId, "VIEW")
                 hankeKayttajaService.getKayttaja(kayttajaId)
-                disclosureLogService.saveDisclosureLogsForHankeKayttaja(kayttaja.toDto(), USERNAME)
+                disclosureLogService.saveForHankeKayttaja(kayttaja.toDto(), USERNAME)
             }
         }
     }
@@ -323,10 +323,7 @@ class HankeKayttajaControllerITest(
             verifyOrder {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name)
                 hankeKayttajaService.getKayttajatByHankeId(hanke.id)
-                disclosureLogService.saveDisclosureLogsForHankeKayttajat(
-                    response.kayttajat,
-                    USERNAME,
-                )
+                disclosureLogService.saveForHankeKayttajat(response.kayttajat, USERNAME)
             }
         }
 
@@ -419,7 +416,7 @@ class HankeKayttajaControllerITest(
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.CREATE_USER.name)
                 hankeService.loadHanke(HANKE_TUNNUS)
                 hankeKayttajaService.createNewUser(request, hanke, USERNAME)
-                disclosureLogService.saveDisclosureLogsForHankeKayttaja(response, USERNAME)
+                disclosureLogService.saveForHankeKayttaja(response, USERNAME)
             }
         }
     }
@@ -760,7 +757,7 @@ class HankeKayttajaControllerITest(
             verifySequence {
                 authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name)
                 hankeKayttajaService.resendInvitation(kayttajaId, USERNAME)
-                disclosureLogService.saveDisclosureLogsForHankeKayttaja(response, USERNAME)
+                disclosureLogService.saveForHankeKayttaja(response, USERNAME)
             }
         }
     }
@@ -822,7 +819,7 @@ class HankeKayttajaControllerITest(
             verifySequence {
                 authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name)
                 hankeKayttajaService.updateOwnContactInfo(hanketunnus, update, USERNAME)
-                disclosureLogService.saveDisclosureLogsForHankeKayttaja(response, USERNAME)
+                disclosureLogService.saveForHankeKayttaja(response, USERNAME)
             }
         }
     }
@@ -912,7 +909,7 @@ class HankeKayttajaControllerITest(
             verifySequence {
                 authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
                 hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
-                disclosureLogService.saveDisclosureLogsForHankeKayttaja(response, USERNAME)
+                disclosureLogService.saveForHankeKayttaja(response, USERNAME)
             }
         }
 
@@ -935,7 +932,7 @@ class HankeKayttajaControllerITest(
             verifySequence {
                 authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
                 hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
-                disclosureLogService.saveDisclosureLogsForHankeKayttaja(response, USERNAME)
+                disclosureLogService.saveForHankeKayttaja(response, USERNAME)
             }
         }
     }

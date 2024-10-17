@@ -126,7 +126,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hankeService.loadHanke(HANKE_TUNNUS)
-                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
+                disclosureLogService.saveForHanke(hanke, USERNAME)
             }
         }
 
@@ -188,7 +188,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hankeService.loadHanke(HANKE_TUNNUS)
-                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
+                disclosureLogService.saveForHanke(hanke, USERNAME)
             }
         }
 
@@ -236,7 +236,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hankeService.loadHanke(HANKE_TUNNUS)
-                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
+                disclosureLogService.saveForHanke(hanke, USERNAME)
             }
         }
     }
@@ -300,7 +300,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
                 hankeService.loadHankkeetByIds(hankeIds)
-                disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME)
+                disclosureLogService.saveForHankkeet(hankkeet, USERNAME)
             }
         }
 
@@ -345,7 +345,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
                 hankeService.loadHankkeetByIds(hankeIds)
-                disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME)
+                disclosureLogService.saveForHankkeet(hankkeet, USERNAME)
             }
         }
 
@@ -378,7 +378,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
                 hankeService.loadHankkeetByIds(hankeIds)
-                disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME)
+                disclosureLogService.saveForHankkeet(hankkeet, USERNAME)
             }
         }
     }
@@ -417,7 +417,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             verifySequence {
                 hankeService.createHanke(request, any())
-                disclosureLogService.saveDisclosureLogsForHanke(createdHanke, USERNAME)
+                disclosureLogService.saveForHanke(createdHanke, USERNAME)
             }
         }
 
@@ -492,7 +492,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
                 hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any())
-                disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, USERNAME)
+                disclosureLogService.saveForHanke(updatedHanke, USERNAME)
             }
         }
 
@@ -517,7 +517,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
                 hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any())
-                disclosureLogService.saveDisclosureLogsForHanke(modifiedHanke, USERNAME)
+                disclosureLogService.saveForHanke(modifiedHanke, USERNAME)
             }
         }
 
@@ -584,7 +584,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
                 hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any())
-                disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME)
+                disclosureLogService.saveForHanke(expectedHanke, USERNAME)
             }
         }
     }

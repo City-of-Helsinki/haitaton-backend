@@ -19,6 +19,7 @@ import fi.hel.haitaton.hanke.permissions.WhoamiResponse
 import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.taydennys.TaydennysResponse
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import kotlin.reflect.KClass
 import org.aspectj.lang.annotation.AfterReturning
 import org.aspectj.lang.annotation.Aspect
 import org.springframework.http.ResponseEntity
@@ -37,27 +38,22 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
     }
 
     private fun logResult(result: Any) {
-        val userId = currentUserId()
         when (result) {
             // For types that (can) contain personal information, log said information
-            is CollectionNode -> disclosureLogService.saveDisclosureLogsForProfiili(result, userId)
+            is CollectionNode -> disclosureLogService.saveForProfiili(result, currentUserId())
             is HakemusResponse ->
-                disclosureLogService.saveDisclosureLogsForHakemusResponse(result, userId)
+                disclosureLogService.saveForHakemusResponse(result, currentUserId())
             is HakemusWithExtrasResponse -> {
-                disclosureLogService.saveDisclosureLogsForHakemusResponse(result.hakemus, userId)
-                result.taydennys?.let {
-                    disclosureLogService.saveDisclosureLogsForTaydennys(it, userId)
-                }
+                disclosureLogService.saveForHakemusResponse(result.hakemus, currentUserId())
+                result.taydennys?.let { disclosureLogService.saveForTaydennys(it, currentUserId()) }
             }
-            is Hanke -> disclosureLogService.saveDisclosureLogsForHanke(result, userId)
+            is Hanke -> disclosureLogService.saveForHanke(result, currentUserId())
             is HankeKayttajaDto ->
-                disclosureLogService.saveDisclosureLogsForHankeKayttaja(result, userId)
+                disclosureLogService.saveForHankeKayttaja(result, currentUserId())
             is HankeKayttajaResponse ->
-                disclosureLogService.saveDisclosureLogsForHankeKayttajat(
-                    result.kayttajat, currentUserId())
-            is Names -> disclosureLogService.saveDisclosureLogsForProfiiliNimi(result, userId)
-            is TaydennysResponse ->
-                disclosureLogService.saveDisclosureLogsForTaydennys(result, userId)
+                disclosureLogService.saveForHankeKayttajat(result.kayttajat, currentUserId())
+            is Names -> disclosureLogService.saveForProfiiliNimi(result, currentUserId())
+            is TaydennysResponse -> disclosureLogService.saveForTaydennys(result, currentUserId())
 
             // Some classes cannot hold personal information, so they are skipped
             is ApplicationAttachmentMetadataDto -> return
@@ -76,13 +72,11 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
             // Content is extracted from wrapper types and any non-null content is evaluated
             is ResponseEntity<*> -> result.body?.let { logResult(it) }
             is List<*> -> logResultList(result.filterNotNull())
-            is Map<*, *> -> {
-                logResultList(result.values.filterNotNull())
-            }
+            is Map<*, *> -> logResultList(result.values.filterNotNull())
 
             // Throw an exception if nothing matches. This will ensure we specify whether a new
             // response type can contain personal information or not.
-            else -> throw RuntimeException("Unknown response type: ${result::class.qualifiedName}")
+            else -> throw UnknownResponseTypeException(result::class)
         }
     }
 
@@ -91,17 +85,17 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
         when (val first = results.first()) {
             is Hanke -> {
                 val hankkeet = checkAllElementsAreOfClass<Hanke>(results)
-                disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, currentUserId())
+                disclosureLogService.saveForHankkeet(hankkeet, currentUserId())
             }
+
             is ApplicationAttachmentMetadataDto -> return
             is BannerResponse -> return
             is HankeAttachmentMetadataDto -> return
             is PublicHanke -> return
             is String -> return
             is WhoamiResponse -> return
-            else -> {
-                throw RuntimeException("Unknown response list type: ${first::class.qualifiedName}")
-            }
+
+            else -> throw UnknownResponseListTypeException(first::class)
         }
     }
 
@@ -109,8 +103,17 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
         if (list.all { it is T }) {
             return list.filterIsInstance<T>()
         } else {
-            val classes = list.map { it::class }.toSet().map { it.qualifiedName }
-            throw RuntimeException("Mixed elements in response list: ${classes.joinToString()}")
+            throw MixedElementsInResponseException(T::class, list.map { it::class }.toSet())
         }
     }
 }
+
+class UnknownResponseTypeException(kclass: KClass<*>) :
+    RuntimeException("Unknown response type: ${kclass.qualifiedName}")
+
+class UnknownResponseListTypeException(kclass: KClass<*>) :
+    RuntimeException("Unknown response type inside a list: ${kclass.qualifiedName}")
+
+class MixedElementsInResponseException(expected: KClass<*>, actual: Set<KClass<*>>) :
+    RuntimeException(
+        "Mixed types inside a list. Expected type: ${expected.qualifiedName} Actual types: ${actual.map { it.qualifiedName }.joinToString ()}")
