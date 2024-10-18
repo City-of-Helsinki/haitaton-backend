@@ -93,7 +93,13 @@ object HakemusyhteystietoFactory {
         tilaaja: Boolean = HakemusyhteyshenkiloFactory.DEFAULT_TILAAJA,
     ): Hakemusyhteystieto {
         val yhteyshenkilo =
-            HakemusyhteyshenkiloFactory.create(etunimi, sukunimi, sahkoposti, puhelin, tilaaja)
+            HakemusyhteyshenkiloFactory.create(
+                etunimi = etunimi,
+                sukunimi = sukunimi,
+                sahkoposti = sahkoposti,
+                puhelin = puhelin,
+                tilaaja = tilaaja,
+            )
         return copy(yhteyshenkilot = yhteyshenkilot + yhteyshenkilo)
     }
 
