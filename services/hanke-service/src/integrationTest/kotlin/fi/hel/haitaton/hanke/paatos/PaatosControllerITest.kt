@@ -147,10 +147,7 @@ class PaatosControllerITest(
                 authorizer.authorizePaatosId(id, PermissionCode.VIEW.name)
                 paatosService.findById(id)
                 paatosService.downloadDecision(paatos)
-                disclosureLogService.saveDisclosureLogsForPaatos(
-                    paatos.toMetadata(),
-                    USERNAME,
-                )
+                disclosureLogService.saveForPaatos(paatos.toMetadata(), USERNAME)
             }
         }
     }
