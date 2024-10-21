@@ -229,7 +229,7 @@ data class GdprError(val code: String, val message: LocalizedMessage) {
     companion object {
         fun fromSentApplication(applicationIdentifier: String?) =
             GdprError(
-                HankeError.HAI2003.errorCode,
+                HankeError.HAI2003.name,
                 LocalizedMessage(
                     "Keskeneräinen hakemus tunnuksella $applicationIdentifier. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
                     "Pågående ansökan med koden $applicationIdentifier. Kontakta alueidenkaytto@hel.fi för att ta bort ansökan.",

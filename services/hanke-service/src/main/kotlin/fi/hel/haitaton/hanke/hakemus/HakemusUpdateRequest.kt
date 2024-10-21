@@ -35,10 +35,10 @@ sealed interface HakemusUpdateRequest {
     fun hasChanges(hakemusData: HakemusData): Boolean
 
     /**
-     * Converts this update request to an [HakemusEntityData] object using the given [hakemusEntity]
-     * as a basis.
+     * Converts this update request to an [HakemusEntityData] object using the given
+     * [hakemusEntityData] as a basis.
      */
-    fun toEntityData(hakemusEntity: HakemusEntity): HakemusEntityData
+    fun toEntityData(hakemusEntityData: HakemusEntityData): HakemusEntityData
 
     fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsRequest?>
 }
@@ -106,8 +106,8 @@ data class JohtoselvityshakemusUpdateRequest(
             representativeWithContacts.hasChanges(hakemusData.propertyDeveloperWithContacts)
     }
 
-    override fun toEntityData(hakemusEntity: HakemusEntity) =
-        (hakemusEntity.hakemusEntityData as JohtoselvityshakemusEntityData).copy(
+    override fun toEntityData(hakemusEntityData: HakemusEntityData) =
+        (hakemusEntityData as JohtoselvityshakemusEntityData).copy(
             name = this.name,
             postalAddress =
                 PostalAddress(StreetAddress(this.postalAddress?.streetAddress?.streetName), "", ""),
@@ -210,8 +210,8 @@ data class KaivuilmoitusUpdateRequest(
             additionalInfo != hakemusData.additionalInfo
     }
 
-    override fun toEntityData(hakemusEntity: HakemusEntity) =
-        (hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData).copy(
+    override fun toEntityData(hakemusEntityData: HakemusEntityData) =
+        (hakemusEntityData as KaivuilmoitusEntityData).copy(
             name = this.name,
             workDescription = this.workDescription,
             constructionWork = this.constructionWork,
@@ -225,7 +225,7 @@ data class KaivuilmoitusUpdateRequest(
             startTime = this.startTime,
             endTime = this.endTime,
             areas = this.areas,
-            invoicingCustomer = this.invoicingCustomer.toCustomer(hakemusEntity),
+            invoicingCustomer = this.invoicingCustomer.toCustomer(hakemusEntityData),
             customerReference = this.invoicingCustomer?.customerReference,
             additionalInfo = this.additionalInfo,
         )
@@ -349,15 +349,15 @@ fun InvoicingPostalAddressRequest?.hasChanges(postalAddress: PostalAddress?): Bo
         city != postalAddress.city
 }
 
-fun InvoicingCustomerRequest?.toCustomer(hakemus: HakemusEntity): InvoicingCustomer? {
+fun InvoicingCustomerRequest?.toCustomer(hakemusEntityData: HakemusEntityData): InvoicingCustomer? {
     return this?.let {
-        val baseData = (hakemus.hakemusEntityData as KaivuilmoitusEntityData).invoicingCustomer
+        val baseData = (hakemusEntityData as KaivuilmoitusEntityData).invoicingCustomer
         if (baseData != null && type != baseData.type && registryKeyHidden) {
             // If new invoicing customer type doesn't match the old one, the type of registry key
             // will be wrong, but it will be retained if the key is hidden.
             // Validation only checks the new type.
             throw InvalidHiddenRegistryKey(
-                hakemus, "New invoicing customer type doesn't match the old.")
+                "New invoicing customer type doesn't match the old.", type, baseData.type)
         }
 
         InvoicingCustomer(

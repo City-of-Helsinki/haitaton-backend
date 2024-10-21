@@ -173,7 +173,8 @@ class HakemusController(
     @Operation(
         summary = "Update an application",
         description =
-            """Returns the updated application.
+            """
+               Returns the updated application.
                The application can be updated until it has been sent to Allu.
                If the application hasn't changed since the last update, nothing more is done.
                The pendingOnClient value can't be changed with this endpoint.
@@ -456,48 +457,6 @@ The id needs to reference an excavation notification.
     ): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2002
-    }
-
-    @ExceptionHandler(HakemusGeometryException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @Hidden
-    fun applicationGeometryException(ex: HakemusGeometryException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2005
-    }
-
-    @ExceptionHandler(HakemusGeometryNotInsideHankeException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @Hidden
-    fun applicationGeometryNotInsideHankeException(
-        ex: HakemusGeometryNotInsideHankeException
-    ): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2007
-    }
-
-    @ExceptionHandler(InvalidHakemusyhteystietoException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @Hidden
-    fun invalidHakemusyhteystietoException(ex: InvalidHakemusyhteystietoException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2010
-    }
-
-    @ExceptionHandler(InvalidHiddenRegistryKey::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @Hidden
-    fun invalidHiddenRegistryKey(ex: InvalidHiddenRegistryKey): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2010
-    }
-
-    @ExceptionHandler(InvalidHakemusyhteyshenkiloException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @Hidden
-    fun invalidHakemusyhteyshenkiloException(ex: InvalidHakemusyhteyshenkiloException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2011
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

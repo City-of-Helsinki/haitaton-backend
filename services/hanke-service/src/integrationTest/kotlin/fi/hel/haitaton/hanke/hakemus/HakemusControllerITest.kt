@@ -30,12 +30,12 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRegistryKey
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withTimes
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
-import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory
+import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -358,7 +358,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @ParameterizedTest
         @EnumSource(CustomerType::class, names = ["PERSON", "OTHER"])
         fun `hides the registry key of person customers when it's not null`(tyyppi: CustomerType) {
-            val hakemusdata = hakemusDataForRegistryKeyTest(tyyppi)
+            val hakemusdata = HakemusFactory.hakemusDataForRegistryKeyTest(tyyppi)
             val hakemus =
                 HakemusFactory.create(
                     id = id,
@@ -793,7 +793,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
-                HakemusGeometryException("Invalid geometry")
+                HakemusGeometryException(GeometriatDao.InvalidDetail("", ""))
 
             put(url, request)
                 .andExpect(status().isBadRequest)
@@ -833,12 +833,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
-                InvalidHakemusyhteystietoException(
-                    HakemusFactory.create(id = id),
-                    ApplicationContactType.HAKIJA,
-                    null,
-                    UUID.randomUUID(),
-                )
+                InvalidHakemusyhteystietoException(UUID.randomUUID(), UUID.randomUUID())
 
             put(url, request)
                 .andExpect(status().isBadRequest)
@@ -857,7 +852,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
-                InvalidHiddenRegistryKey(HakemusFactory.create(id = id), "Reason for error")
+                InvalidHiddenRegistryKey(
+                    "Reason for error", CustomerType.COMPANY, CustomerType.PERSON)
 
             put(url, request)
                 .andExpect(status().isBadRequest)
@@ -877,7 +873,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
-                InvalidHakemusyhteyshenkiloException("Invalid contact")
+                InvalidHakemusyhteyshenkiloException(setOf())
 
             put(url, request)
                 .andExpect(status().isBadRequest)
@@ -917,7 +913,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @ParameterizedTest
         @EnumSource(CustomerType::class, names = ["PERSON", "OTHER"])
         fun `hides the registry key of person customers when it's not null`(tyyppi: CustomerType) {
-            val hakemusdata = hakemusDataForRegistryKeyTest(tyyppi)
+            val hakemusdata = HakemusFactory.hakemusDataForRegistryKeyTest(tyyppi)
             val hakemus =
                 HakemusFactory.create(
                     id = id,
@@ -1220,7 +1216,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @ParameterizedTest
         @EnumSource(CustomerType::class, names = ["PERSON", "OTHER"])
         fun `hides the registry key of person customers when it's not null`(tyyppi: CustomerType) {
-            val hakemusdata = hakemusDataForRegistryKeyTest(tyyppi)
+            val hakemusdata = HakemusFactory.hakemusDataForRegistryKeyTest(tyyppi)
             val hakemus =
                 HakemusFactory.create(
                     id = id,
@@ -1432,40 +1428,20 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             }
         }
     }
+}
 
-    private fun registryKeys(role: String, key: String?, hidden: Boolean) = ResultMatcher {
+fun ResultActions.andVerifyRegistryKeys() {
+    fun registryKeys(role: String, key: String?, hidden: Boolean) = ResultMatcher {
         val prefix = "$.applicationData.$role.customer"
         jsonPath("$prefix.registryKey").value(key).match(it)
         jsonPath("$prefix.registryKeyHidden").value(hidden).match(it)
     }
 
-    private fun ResultActions.andVerifyRegistryKeys() =
-        andExpect(registryKeys("customerWithContacts", null, true))
-            .andExpect(registryKeys("contractorWithContacts", null, false))
-            .andExpect(registryKeys("propertyDeveloperWithContacts", "5425233-4", false))
-            .andExpect(registryKeys("representativeWithContacts", null, false))
-            .andExpect(
-                jsonPath("$.applicationData.invoicingCustomer.registryKey").doesNotHaveJsonPath())
-            .andExpect(
-                jsonPath("$.applicationData.invoicingCustomer.registryKeyHidden").value(true))
-
-    private fun hakemusDataForRegistryKeyTest(tyyppi: CustomerType): KaivuilmoitusData {
-        val hakija =
-            HakemusyhteystietoFactory.createPerson(tyyppi = tyyppi, registryKey = "280341-912F")
-        val suorittaja = HakemusyhteystietoFactory.createPerson(tyyppi = tyyppi, registryKey = null)
-        val rakennuttaja = HakemusyhteystietoFactory.create(registryKey = "5425233-4")
-        val asianhoitaja = HakemusyhteystietoFactory.create(registryKey = null)
-        val laskutusyhteystieto =
-            HakemusyhteystietoFactory.createLaskutusyhteystieto(
-                tyyppi = tyyppi, registryKey = "280341-912F")
-        val hakemusdata =
-            HakemusFactory.createKaivuilmoitusData(
-                customerWithContacts = hakija,
-                contractorWithContacts = suorittaja,
-                propertyDeveloperWithContacts = rakennuttaja,
-                representativeWithContacts = asianhoitaja,
-                invoicingCustomer = laskutusyhteystieto,
-            )
-        return hakemusdata
-    }
+    andExpect(registryKeys("customerWithContacts", null, true))
+        .andExpect(registryKeys("contractorWithContacts", null, false))
+        .andExpect(registryKeys("propertyDeveloperWithContacts", "5425233-4", false))
+        .andExpect(registryKeys("representativeWithContacts", null, false))
+        .andExpect(
+            jsonPath("$.applicationData.invoicingCustomer.registryKey").doesNotHaveJsonPath())
+        .andExpect(jsonPath("$.applicationData.invoicingCustomer.registryKeyHidden").value(true))
 }

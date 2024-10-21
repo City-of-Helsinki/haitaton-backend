@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
@@ -124,7 +125,7 @@ class HakemusFactory(
         fun createSeveral(n: Long, applicationType: ApplicationType) =
             (1..n).map { i -> create(id = i, applicationType = applicationType) }
 
-        private fun createHakemusData(type: ApplicationType): HakemusData =
+        fun createHakemusData(type: ApplicationType): HakemusData =
             when (type) {
                 ApplicationType.CABLE_REPORT -> createJohtoselvityshakemusData()
                 ApplicationType.EXCAVATION_NOTIFICATION -> createKaivuilmoitusData()
@@ -223,11 +224,11 @@ class HakemusFactory(
             alluid: Int? = null,
             alluStatus: ApplicationStatus? = null,
             applicationIdentifier: String? = null,
-            userId: String,
+            userId: String = USERNAME,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
             hakemusEntityData: HakemusEntityData =
                 ApplicationFactory.createBlankApplicationData(applicationType),
-            hanke: HankeEntity,
+            hanke: HankeEntity = HankeFactory.createEntity(),
         ): HakemusEntity =
             HakemusEntity(
                 id = id,
@@ -245,5 +246,26 @@ class HakemusFactory(
             taydennyspyynto: Taydennyspyynto? = null,
             taydennys: Taydennys? = null,
         ) = HakemusWithExtras(this, paatokset, taydennyspyynto, taydennys)
+
+        fun hakemusDataForRegistryKeyTest(tyyppi: CustomerType): KaivuilmoitusData {
+            val hakija =
+                HakemusyhteystietoFactory.createPerson(tyyppi = tyyppi, registryKey = "280341-912F")
+            val suorittaja =
+                HakemusyhteystietoFactory.createPerson(tyyppi = tyyppi, registryKey = null)
+            val rakennuttaja = HakemusyhteystietoFactory.create(registryKey = "5425233-4")
+            val asianhoitaja = HakemusyhteystietoFactory.create(registryKey = null)
+            val laskutusyhteystieto =
+                HakemusyhteystietoFactory.createLaskutusyhteystieto(
+                    tyyppi = tyyppi, registryKey = "280341-912F")
+            val hakemusdata =
+                createKaivuilmoitusData(
+                    customerWithContacts = hakija,
+                    contractorWithContacts = suorittaja,
+                    propertyDeveloperWithContacts = rakennuttaja,
+                    representativeWithContacts = asianhoitaja,
+                    invoicingCustomer = laskutusyhteystieto,
+                )
+            return hakemusdata
+        }
     }
 }
