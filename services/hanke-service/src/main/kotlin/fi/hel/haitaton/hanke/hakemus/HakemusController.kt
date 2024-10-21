@@ -68,12 +68,7 @@ class HakemusController(
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
     fun getById(@PathVariable(name = "id") id: Long): HakemusWithExtrasResponse {
         logger.info { "Finding application $id" }
-        val response = hakemusService.getWithExtras(id).toResponse()
-        disclosureLogService.saveDisclosureLogsForHakemusResponse(response.hakemus, currentUserId())
-        response.taydennys?.let {
-            disclosureLogService.saveDisclosureLogsForTaydennys(it, currentUserId())
-        }
-        return response
+        return hakemusService.getWithExtras(id).toResponse()
     }
 
     @GetMapping("/hankkeet/{hankeTunnus}/hakemukset")
@@ -212,13 +207,8 @@ class HakemusController(
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun update(
         @PathVariable(name = "id") id: Long,
-        @ValidHakemusUpdateRequest @RequestBody request: HakemusUpdateRequest
-    ): HakemusResponse {
-        val userId = currentUserId()
-        val response = hakemusService.updateHakemus(id, request, userId).toResponse()
-        disclosureLogService.saveDisclosureLogsForHakemusResponse(response, userId)
-        return response
-    }
+        @ValidHakemusUpdateRequest @RequestBody request: HakemusUpdateRequest,
+    ): HakemusResponse = hakemusService.updateHakemus(id, request, currentUserId()).toResponse()
 
     @DeleteMapping("/hakemukset/{id}")
     @Operation(
@@ -417,7 +407,7 @@ The id needs to reference an excavation notification.
         val userId = currentUserId()
         val (filename, pdfBytes) = hakemusService.downloadDecision(id)
         val application = hakemusService.getById(id)
-        disclosureLogService.saveDisclosureLogsForCableReport(application.toMetadata(), userId)
+        disclosureLogService.saveForCableReport(application.toMetadata(), userId)
 
         val headers = HttpHeaders()
         headers.add("Content-Disposition", "inline; filename=$filename.pdf")

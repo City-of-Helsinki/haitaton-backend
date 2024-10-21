@@ -162,8 +162,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
                 hakemusService.getWithExtras(id)
-                disclosureLogService.saveDisclosureLogsForHakemusResponse(
-                    hakemus.toResponse(), USERNAME)
+                disclosureLogService.saveForHakemusResponse(hakemus.toResponse(), USERNAME)
             }
         }
 
@@ -270,9 +269,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
                 hakemusService.getWithExtras(id)
-                disclosureLogService.saveDisclosureLogsForHakemusResponse(any(), USERNAME)
-                disclosureLogService.saveDisclosureLogsForTaydennys(
-                    taydennys.toResponse(), USERNAME)
+                disclosureLogService.saveForHakemusResponse(any(), USERNAME)
+                disclosureLogService.saveForTaydennys(taydennys.toResponse(), USERNAME)
             }
         }
 
@@ -884,8 +882,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.updateHakemus(id, request, USERNAME)
-                disclosureLogService.saveDisclosureLogsForHakemusResponse(
-                    expectedResponse, USERNAME)
+                disclosureLogService.saveForHakemusResponse(expectedResponse, USERNAME)
             }
         }
 
@@ -911,8 +908,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.updateHakemus(id, request, USERNAME)
-                disclosureLogService.saveDisclosureLogsForHakemusResponse(
-                    hakemus.toResponse(), USERNAME)
+                disclosureLogService.saveForHakemusResponse(hakemus.toResponse(), USERNAME)
             }
         }
     }
@@ -1404,10 +1400,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
                 hakemusService.downloadDecision(id)
                 hakemusService.getById(id)
-                disclosureLogService.saveDisclosureLogsForCableReport(
-                    hakemus.toMetadata(),
-                    USERNAME,
-                )
+                disclosureLogService.saveForCableReport(hakemus.toMetadata(), USERNAME)
             }
         }
     }
