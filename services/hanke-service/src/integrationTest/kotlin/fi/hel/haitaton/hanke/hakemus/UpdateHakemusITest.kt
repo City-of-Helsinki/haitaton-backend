@@ -27,6 +27,7 @@ import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.email.EmailSenderService.Companion.translations
 import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
@@ -69,6 +70,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
@@ -104,6 +106,168 @@ class UpdateHakemusITest(
         confirmVerified(alluClient)
     }
 
+    @ParameterizedTest
+    @EnumSource(ApplicationType::class)
+    fun `throws exception when the application does not exist`(type: ApplicationType) {
+        assertThat(hakemusRepository.findAll()).isEmpty()
+        val request = HakemusUpdateRequestFactory.createFilledUpdateRequest(type)
+
+        val exception = assertFailure { hakemusService.updateHakemus(1234, request, USERNAME) }
+
+        exception.hasClass(HakemusNotFoundException::class)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationType::class)
+    fun `throws exception when the application has been sent to Allu`(type: ApplicationType) {
+        val hakemus = hakemusFactory.builder(type).withStatus(alluId = 21).save()
+        val request = hakemus.toUpdateRequest()
+
+        val exception = assertFailure {
+            hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+        }
+
+        exception.all {
+            hasClass(HakemusAlreadySentException::class)
+            messageContains("id=${hakemus.id}")
+            messageContains("alluId=21")
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationType::class)
+    fun `does not create a new audit log entry when the application has not changed`(
+        type: ApplicationType
+    ) {
+        val hakemus = hakemusFactory.builder(type).save()
+        val originalAuditLogSize = auditLogRepository.findByType(ObjectType.HAKEMUS).size
+        // The saved hakemus has null in areas, but the response replaces it with an empty
+        // list, so set the value back to null in the request.
+        val request = hakemus.toUpdateRequest().withAreas(null)
+
+        hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+        val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
+        assertThat(applicationLogs).hasSize(originalAuditLogSize)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationType::class)
+    fun `throws exception when the request has a persisted contact but the application does not`(
+        type: ApplicationType
+    ) {
+        val hakemus = hakemusFactory.builder(type).save()
+        val requestYhteystietoId = UUID.randomUUID()
+        val request =
+            hakemus
+                .toUpdateRequest()
+                .withCustomerWithContactsRequest(CustomerType.COMPANY, requestYhteystietoId)
+
+        val exception = assertFailure {
+            hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+        }
+
+        exception.all {
+            hasClass(InvalidHakemusyhteystietoException::class)
+            messageContains("id=${hakemus.id}")
+            messageContains("role=${HAKIJA}")
+            messageContains("yhteystietoId=null")
+            messageContains("newId=$requestYhteystietoId")
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationType::class)
+    fun `throws exception when the request has different persisted contact than the application`(
+        type: ApplicationType
+    ) {
+        val hakemus = hakemusFactory.builder(type).hakija().save()
+        val originalYhteystietoId = hakemusyhteystietoRepository.findAll().first().id
+        val requestYhteystietoId = UUID.randomUUID()
+        val request =
+            hakemus.toUpdateRequest().withCustomer(CustomerType.COMPANY, requestYhteystietoId)
+
+        val exception = assertFailure {
+            hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+        }
+
+        exception.all {
+            hasClass(InvalidHakemusyhteystietoException::class)
+            messageContains("id=${hakemus.id}")
+            messageContains("role=$HAKIJA")
+            messageContains("yhteystietoId=$originalYhteystietoId")
+            messageContains("newId=$requestYhteystietoId")
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationType::class)
+    fun `throws exception when the request has a contact that is not a user on hanke`(
+        type: ApplicationType
+    ) {
+        val hakemus = hakemusFactory.builder(type).hakija().save()
+        val yhteystieto = hakemusyhteystietoRepository.findAll().first()
+        val requestHankekayttajaId = UUID.randomUUID()
+        val request =
+            hakemus
+                .toUpdateRequest()
+                .withCustomer(CustomerType.COMPANY, yhteystieto.id, requestHankekayttajaId)
+
+        val exception = assertFailure {
+            hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+        }
+
+        exception.all {
+            hasClass(InvalidHakemusyhteyshenkiloException::class)
+            messageContains("id=${hakemus.id}")
+            messageContains("invalidHankeKayttajaIds=[$requestHankekayttajaId]")
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationType::class)
+    fun `doesn't send email when the caller adds themself as contact`(type: ApplicationType) {
+        val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+        val hakemus = hakemusFactory.builder(USERNAME, hanke, type).save()
+        val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
+        assertThat(founder.permission?.userId).isNotNull().isEqualTo(USERNAME)
+        val request =
+            hakemus
+                .toUpdateRequest()
+                .withCustomer(CustomerType.COMPANY, null, founder.id)
+                .withContractor(CustomerType.COMPANY, null, founder.id)
+
+        hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+        assertThat(greenMail.receivedMessages).isEmpty()
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationType::class)
+    fun `sends email to new contacts`(type: ApplicationType) {
+        val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+        val hakemus = hakemusFactory.builder(USERNAME, hanke, type).hakija().save()
+        val yhteystieto = hakemusyhteystietoRepository.findAll().first()
+        val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
+        val request =
+            hakemus
+                .toUpdateRequest()
+                .withCustomer(CustomerType.COMPANY, yhteystieto.id, newKayttaja.id)
+                .withContractor(CustomerType.COMPANY, null, newKayttaja.id)
+
+        hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+        val email = greenMail.firstReceivedMessage()
+        assertThat(email.allRecipients.single().toString()).isEqualTo(newKayttaja.sahkoposti)
+        assertThat(email.subject)
+            .isEqualTo(
+                "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application")
+        val typeTranslation = type.translations().fi
+        assertThat(email.textBody())
+            .contains(
+                "laatimassa $typeTranslation hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})")
+    }
+
     @Nested
     inner class WithJohtoselvitys {
 
@@ -121,36 +285,6 @@ class UpdateHakemusITest(
             )
 
         @Test
-        fun `throws exception when the application has been sent to Allu`() {
-            val hakemus = hakemusFactory.builder().withStatus(alluId = 21).save()
-            val request = hakemus.toUpdateRequest()
-
-            val exception = assertFailure {
-                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-            }
-
-            exception.all {
-                hasClass(HakemusAlreadySentException::class)
-                messageContains("id=${hakemus.id}")
-                messageContains("alluId=21")
-            }
-        }
-
-        @Test
-        fun `does not create a new audit log entry when the application has not changed`() {
-            val hakemus = hakemusFactory.builder().save()
-            val originalAuditLogSize = auditLogRepository.findByType(ObjectType.HAKEMUS).size
-            // The saved hakemus has null in areas, but the response replaces it with an empty
-            // list, so set the value back to null in the request.
-            val request = hakemus.toUpdateRequest().withAreas(null)
-
-            hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-
-            val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
-            assertThat(applicationLogs).hasSize(originalAuditLogSize)
-        }
-
-        @Test
         fun `throws exception when there are invalid geometry in areas`() {
             val hakemus = hakemusFactory.builder().save()
             val request = hakemus.toUpdateRequest().withArea(intersectingArea)
@@ -165,68 +299,6 @@ class UpdateHakemusITest(
                 messageContains("reason=Self-intersection")
                 messageContains(
                     "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}")
-            }
-        }
-
-        @Test
-        fun `throws exception when the request has a persisted contact but the application does not`() {
-            val hakemus = hakemusFactory.builder().save()
-            val requestYhteystietoId = UUID.randomUUID()
-            val request =
-                hakemus.toUpdateRequest().withCustomer(CustomerType.COMPANY, requestYhteystietoId)
-
-            val exception = assertFailure {
-                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-            }
-
-            exception.all {
-                hasClass(InvalidHakemusyhteystietoException::class)
-                messageContains("id=${hakemus.id}")
-                messageContains("role=$HAKIJA")
-                messageContains("yhteystietoId=null")
-                messageContains("newId=$requestYhteystietoId")
-            }
-        }
-
-        @Test
-        fun `throws exception when the request has different persisted contact than the application`() {
-            val hakemus = hakemusFactory.builder().hakija().save()
-            val originalYhteystietoId = hakemusyhteystietoRepository.findAll().first().id
-            val requestYhteystietoId = UUID.randomUUID()
-            val request =
-                hakemus.toUpdateRequest().withCustomer(CustomerType.COMPANY, requestYhteystietoId)
-
-            val exception = assertFailure {
-                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-            }
-
-            exception.all {
-                hasClass(InvalidHakemusyhteystietoException::class)
-                messageContains("id=${hakemus.id}")
-                messageContains("role=$HAKIJA")
-                messageContains("yhteystietoId=$originalYhteystietoId")
-                messageContains("newId=$requestYhteystietoId")
-            }
-        }
-
-        @Test
-        fun `throws exception when the request has a contact that is not a user on hanke`() {
-            val hakemus = hakemusFactory.builder().hakija().save()
-            val yhteystieto = hakemusyhteystietoRepository.findAll().first()
-            val requestHankekayttajaId = UUID.randomUUID()
-            val request =
-                hakemus
-                    .toUpdateRequest()
-                    .withCustomer(CustomerType.COMPANY, yhteystieto.id, requestHankekayttajaId)
-
-            val exception = assertFailure {
-                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-            }
-
-            exception.all {
-                hasClass(InvalidHakemusyhteyshenkiloException::class)
-                messageContains("id=${hakemus.id}")
-                messageContains("invalidHankeKayttajaIds=[$requestHankekayttajaId]")
             }
         }
 
@@ -377,47 +449,6 @@ class UpdateHakemusITest(
         }
 
         @Test
-        fun `sends email to new contacts`() {
-            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
-            val hakemus = hakemusFactory.builder(USERNAME, hanke).hakija().save()
-            val yhteystieto = hakemusyhteystietoRepository.findAll().first()
-            val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
-            val request =
-                hakemus
-                    .toUpdateRequest()
-                    .withCustomer(CustomerType.COMPANY, yhteystieto.id, newKayttaja.id)
-                    .withContractor(CustomerType.COMPANY, null, newKayttaja.id)
-
-            hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-
-            val email = greenMail.firstReceivedMessage()
-            assertThat(email.allRecipients.single().toString()).isEqualTo(newKayttaja.sahkoposti)
-            assertThat(email.subject)
-                .isEqualTo(
-                    "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application")
-            assertThat(email.textBody())
-                .contains(
-                    "laatimassa johtoselvityshakemusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})")
-        }
-
-        @Test
-        fun `doesn't send email when the caller adds themself as contact`() {
-            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
-            val hakemus = hakemusFactory.builder(USERNAME, hanke).save()
-            val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
-            assertThat(founder.permission?.userId).isNotNull().isEqualTo(USERNAME)
-            val request =
-                hakemus
-                    .toUpdateRequest()
-                    .withCustomer(CustomerType.COMPANY, null, founder.id)
-                    .withContractor(CustomerType.COMPANY, null, founder.id)
-
-            hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-
-            assertThat(greenMail.receivedMessages).isEmpty()
-        }
-
-        @Test
         fun `updates project name when application name is changed`() {
             val hakemus = hakemusFactory.builderWithGeneratedHanke().save()
             val request = hakemus.toUpdateRequest().withName("New name")
@@ -450,60 +481,6 @@ class UpdateHakemusITest(
             )
 
         @Test
-        fun `throws exception when the application does not exist`() {
-            assertThat(hakemusRepository.findAll()).isEmpty()
-            val request = HakemusUpdateRequestFactory.createFilledKaivuilmoitusUpdateRequest()
-
-            val exception = assertFailure { hakemusService.updateHakemus(1234, request, USERNAME) }
-
-            exception.hasClass(HakemusNotFoundException::class)
-        }
-
-        @Test
-        fun `throws exception when the application has been sent to Allu`() {
-            val hakemus =
-                hakemusFactory
-                    .builder(
-                        userId = USERNAME,
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                    )
-                    .withStatus(alluId = 21)
-                    .save()
-            val request = hakemus.toUpdateRequest()
-
-            val exception = assertFailure {
-                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-            }
-
-            exception.all {
-                hasClass(HakemusAlreadySentException::class)
-                messageContains("id=${hakemus.id}")
-                messageContains("alluId=21")
-            }
-        }
-
-        @Test
-        fun `does not create a new audit log entry when the application has not changed`() {
-            val hakemus =
-                hakemusFactory
-                    .builder(
-                        userId = USERNAME,
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                    )
-                    .save()
-            val originalAuditLogSize = auditLogRepository.findByType(ObjectType.HAKEMUS).size
-            // The saved hakemus has null in areas, but the response replaces it with an empty
-            // list,
-            // so set the value back to null in the request.
-            val request = hakemus.toUpdateRequest().withAreas(null)
-
-            hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-
-            val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
-            assertThat(applicationLogs).hasSize(originalAuditLogSize)
-        }
-
-        @Test
         fun `throws exception when there are invalid geometry in areas`() {
             val hakemus =
                 hakemusFactory
@@ -524,96 +501,6 @@ class UpdateHakemusITest(
                 messageContains("reason=Self-intersection")
                 messageContains(
                     "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}")
-            }
-        }
-
-        @Test
-        fun `throws exception when the request has a persisted contact but the application does not`() {
-            val hakemus =
-                hakemusFactory
-                    .builder(
-                        userId = USERNAME,
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                    )
-                    .save()
-            val requestYhteystietoId = UUID.randomUUID()
-            val request =
-                hakemus
-                    .toUpdateRequest()
-                    .withCustomerWithContactsRequest(CustomerType.COMPANY, requestYhteystietoId)
-
-            val exception = assertFailure {
-                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-            }
-
-            exception.all {
-                hasClass(InvalidHakemusyhteystietoException::class)
-                messageContains("id=${hakemus.id}")
-                messageContains("role=${HAKIJA}")
-                messageContains("yhteystietoId=null")
-                messageContains("newId=$requestYhteystietoId")
-            }
-        }
-
-        @Test
-        fun `throws exception when the request has different persisted contact than the application`() {
-            val hakemus =
-                hakemusFactory
-                    .builder(
-                        userId = USERNAME,
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                    )
-                    .hakija()
-                    .save()
-            val originalYhteystietoId = hakemusyhteystietoRepository.findAll().first().id
-            val requestYhteystietoId = UUID.randomUUID()
-            val request =
-                hakemus
-                    .toUpdateRequest()
-                    .withCustomerWithContactsRequest(CustomerType.COMPANY, requestYhteystietoId)
-
-            val exception = assertFailure {
-                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-            }
-
-            exception.all {
-                hasClass(InvalidHakemusyhteystietoException::class)
-                messageContains("id=${hakemus.id}")
-                messageContains("role=${HAKIJA}")
-                messageContains("yhteystietoId=$originalYhteystietoId")
-                messageContains("newId=$requestYhteystietoId")
-            }
-        }
-
-        @Test
-        fun `throws exception when the request has a contact that is not a user on hanke`() {
-            val hakemus =
-                hakemusFactory
-                    .builder(
-                        userId = USERNAME,
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                    )
-                    .hakija()
-                    .save()
-            val yhteystieto = hakemusyhteystietoRepository.findAll().first()
-            val requestHankekayttajaId = UUID.randomUUID()
-            val request =
-                hakemus
-                    .toUpdateRequest()
-                    .withCustomerWithContactsRequest(
-                        CustomerType.COMPANY,
-                        yhteystieto.id,
-                        requestHankekayttajaId,
-                    )
-
-            val exception = assertFailure {
-                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-            }
-
-            exception.all {
-                hasClass(InvalidHakemusyhteyshenkiloException::class)
-                messageContains("id=${hakemus.id}")
-                messageContains("invalidHankeKayttajaIds=[$requestHankekayttajaId]")
             }
         }
 
@@ -915,84 +802,20 @@ class UpdateHakemusITest(
         }
 
         @Test
-        fun `sends email for new contacts`() {
-            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
-            val hakemus =
-                hakemusFactory
-                    .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
-                    .hakija()
-                    .save()
-            val yhteystieto = hakemusyhteystietoRepository.findAll().first()
-            val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
-            val request =
-                hakemus
-                    .toUpdateRequest()
-                    .withCustomer(CustomerType.COMPANY, yhteystieto.id, newKayttaja.id)
-                    .withContractor(CustomerType.COMPANY, null, newKayttaja.id)
-
-            hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-
-            val email = greenMail.firstReceivedMessage()
-            assertThat(email.allRecipients.single().toString()).isEqualTo(newKayttaja.sahkoposti)
-            assertThat(email.subject)
-                .isEqualTo(
-                    "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application")
-            assertThat(email.textBody())
-                .contains(
-                    "laatimassa kaivuilmoitusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})")
-        }
-
-        @Test
-        fun `doesn't send email when the caller adds themself as contact`() {
-            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
-            val hakemus =
-                hakemusFactory
-                    .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
-                    .save()
-            val founder = hankeKayttajaFactory.getFounderFromHakemus(hakemus.id)
-            assertThat(founder.permission?.userId).isNotNull().isEqualTo(USERNAME)
-            val request =
-                hakemus
-                    .toUpdateRequest()
-                    .withCustomer(CustomerType.COMPANY, null, founder.id)
-                    .withContractor(CustomerType.COMPANY, null, founder.id)
-
-            hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-
-            assertThat(greenMail.receivedMessages).isEmpty()
-        }
-
-        @Test
-        fun `updates project name when application name is changed`() {
-            val hakemus =
-                hakemusFactory
-                    .builderWithGeneratedHanke(tyyppi = ApplicationType.EXCAVATION_NOTIFICATION)
-                    .save()
-            val request = hakemus.toUpdateRequest().withName("New name")
-
-            hakemusService.updateHakemus(hakemus.id, request, USERNAME)
-
-            assertThat(hankeRepository.findAll().single()).all {
-                prop(HankeEntity::nimi).isEqualTo("New name")
-            }
-        }
-
-        @Test
         fun `calculates tormaystarkastelu for work areas`() {
             val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
             val hankeEntity = hankeRepository.findAll().single()
-            val entity =
+            val hakemus =
                 hakemusFactory
                     .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
-                    .saveEntity()
-            val hakemus = hakemusService.getById(entity.id)
+                    .save()
             val area = createExcavationNotificationArea(hankealueId = hanke.alueet.single().id!!)
             val request =
                 hakemus
                     .toUpdateRequest()
                     .withDates(ZonedDateTime.now(), ZonedDateTime.now().plusDays(1))
                     .withArea(area)
-            val exepectedTormaysTarkasteluTulos =
+            val expectedTormaystarkasteluTulos =
                 TormaystarkasteluTulos(
                     autoliikenne =
                         Autoliikenneluokittelu(
@@ -1020,7 +843,7 @@ class UpdateHakemusITest(
                 .single()
                 .prop(Tyoalue::tormaystarkasteluTulos)
                 .isNotNull()
-                .isEqualTo(exepectedTormaysTarkasteluTulos)
+                .isEqualTo(expectedTormaystarkasteluTulos)
 
             val persistedHakemus = hakemusService.getById(updatedHakemus.id)
             assertThat(persistedHakemus.applicationData)
@@ -1033,7 +856,7 @@ class UpdateHakemusITest(
                 .single()
                 .prop(Tyoalue::tormaystarkasteluTulos)
                 .isNotNull()
-                .isEqualTo(exepectedTormaysTarkasteluTulos)
+                .isEqualTo(expectedTormaystarkasteluTulos)
         }
     }
 }
