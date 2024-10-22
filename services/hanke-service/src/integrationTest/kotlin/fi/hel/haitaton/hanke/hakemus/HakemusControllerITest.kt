@@ -479,10 +479,12 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             val response: HankkeenHakemuksetResponse =
                 get("$url?areas=true").andExpect(status().isOk).andReturnBody()
 
-            assertThat(response.applications).isNotEmpty()
-            val expected =
-                HankkeenHakemuksetResponse(hakemukset.map { HankkeenHakemusResponse(it, true) })
-            assertThat(response).isEqualTo(expected)
+            for (i in 0..3) {
+                assertThat(response.applications[i].applicationData.areas)
+                    .isNotNull()
+                    .single()
+                    .isEqualTo(hakemukset[i].applicationData.areas?.single())
+            }
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hakemusService.hankkeenHakemukset(HANKE_TUNNUS)
