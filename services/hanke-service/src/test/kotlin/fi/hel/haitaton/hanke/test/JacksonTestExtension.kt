@@ -6,8 +6,8 @@ import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusDeserializer
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusResponseDeserializer
-import fi.hel.haitaton.hanke.hakemus.HankkeenHakemuksetResponse
-import fi.hel.haitaton.hanke.hakemus.HankkeenHakemuksetResponseDeserializer
+import fi.hel.haitaton.hanke.hakemus.HankkeenHakemusResponse
+import fi.hel.haitaton.hanke.hakemus.HankkeenHakemusResponseDeserializer
 import fi.hel.haitaton.hanke.taydennys.Taydennys
 import fi.hel.haitaton.hanke.taydennys.TaydennysDeserializer
 import fi.hel.haitaton.hanke.taydennys.TaydennysResponse
@@ -37,7 +37,7 @@ class JacksonTestExtension : BeforeAllCallback {
         module.addDeserializer(Taydennys::class.java, TaydennysDeserializer())
         module.addDeserializer(TaydennysResponse::class.java, TaydennysResponseDeserializer())
         module.addDeserializer(
-            HankkeenHakemuksetResponse::class.java, HankkeenHakemuksetResponseDeserializer())
+            HankkeenHakemusResponse::class.java, HankkeenHakemusResponseDeserializer())
         OBJECT_MAPPER.registerModule(module)
     }
 

@@ -9,29 +9,23 @@ import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import java.time.ZonedDateTime
 
-class HankkeenHakemuksetResponseDeserializer : JsonDeserializer<HankkeenHakemuksetResponse>() {
+class HankkeenHakemusResponseDeserializer : JsonDeserializer<HankkeenHakemusResponse>() {
     override fun deserialize(
         jsonParser: JsonParser,
         deserializationContext: DeserializationContext
-    ): HankkeenHakemuksetResponse {
+    ): HankkeenHakemusResponse {
         val root = jsonParser.readValueAsTree<ObjectNode>()
-        val applicationsNode = root.path("applications")
-        val applications =
-            applicationsNode.map { appNode ->
-                val basicApplication = OBJECT_MAPPER.treeToValue(appNode, BasicResponse::class.java)
-                val dataNode = appNode.path("applicationData") as ObjectNode
-                val basicApplicationData =
-                    OBJECT_MAPPER.treeToValue(dataNode, BasicDataResponse::class.java)
-                val areasNode = dataNode.path("areas")
-                val areas =
-                    areasNode.map { areaNode ->
-                        deserializeHakemusalue(
-                            areaNode as ObjectNode, basicApplication.applicationType)
-                    }
-                basicApplication.toHankkeenHakemusResponse(
-                    basicApplicationData.toHankkeenHakemusDataResponse(areas))
+        val basicApplication = OBJECT_MAPPER.treeToValue(root, BasicResponse::class.java)
+        val dataNode = root.path("applicationData") as ObjectNode
+        val basicApplicationData =
+            OBJECT_MAPPER.treeToValue(dataNode, BasicDataResponse::class.java)
+        val areasNode = dataNode.path("areas")
+        val areas =
+            areasNode.map { areaNode ->
+                deserializeHakemusalue(areaNode as ObjectNode, basicApplication.applicationType)
             }
-        return HankkeenHakemuksetResponse(applications)
+        return basicApplication.toHankkeenHakemusResponse(
+            basicApplicationData.toHankkeenHakemusDataResponse(areas))
     }
 
     private fun deserializeHakemusalue(
