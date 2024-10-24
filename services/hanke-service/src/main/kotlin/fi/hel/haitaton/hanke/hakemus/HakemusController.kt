@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -90,12 +91,26 @@ class HakemusController(
                 ),
             ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
-    fun getHankkeenHakemukset(@PathVariable hankeTunnus: String): HankkeenHakemuksetResponse {
-        logger.info { "Finding applications for hanke $hankeTunnus" }
+    fun getHankkeenHakemukset(
+        @PathVariable hankeTunnus: String,
+        @Parameter(
+            description =
+                """Boolean flag indicating whether endpoint should return application areas. 
+                    Areas field will be null if false.""",
+            schema = Schema(type = "boolean", defaultValue = "false"),
+            required = false,
+            example = "false",
+        )
+        @RequestParam
+        areas: Boolean = false,
+    ): HankkeenHakemuksetResponse {
+        logger.info {
+            "Finding applications for hanke $hankeTunnus with areas ${if (areas) "included" else "excluded"}"
+        }
         val hakemukset = hakemusService.hankkeenHakemukset(hankeTunnus)
         logger.info { "Found ${hakemukset.size} applications for hanke $hankeTunnus" }
         return HankkeenHakemuksetResponse(
-            hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus) })
+            hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus, areas) })
     }
 
     @PostMapping("/hakemukset")
