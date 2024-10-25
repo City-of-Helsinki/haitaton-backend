@@ -69,10 +69,13 @@ data class Laskutusyhteystieto(
             ovttunnus,
             valittajanTunnus,
             asiakkaanViite,
-            PostalAddress(StreetAddress(katuosoite), postinumero ?: "", postitoimipaikka ?: ""),
+            postalAddress(),
             sahkoposti,
             puhelinnumero,
         )
+
+    fun postalAddress(): PostalAddress =
+        PostalAddress(StreetAddress(katuosoite), postinumero ?: "", postitoimipaikka ?: "")
 
     private fun hideRegistryKey(): Boolean =
         registryKey != null && (tyyppi == CustomerType.PERSON || tyyppi == CustomerType.OTHER)

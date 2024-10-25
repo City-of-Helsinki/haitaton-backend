@@ -20,6 +20,8 @@ object HakemusyhteyshenkiloFactory {
     val DEFAULT_HANKEKAYTTAJA_ID = UUID.fromString("db92aa0e-5a32-4ffd-83b3-9bff28700cfc")
 
     fun create(
+        id: UUID = DEFAULT_ID,
+        hankekayttajaId: UUID = DEFAULT_HANKEKAYTTAJA_ID,
         etunimi: String = DEFAULT_ETUNIMI,
         sukunimi: String = DEFAULT_SUKUNIMI,
         sahkoposti: String = DEFAULT_SAHKOPOSTI,
@@ -27,13 +29,13 @@ object HakemusyhteyshenkiloFactory {
         tilaaja: Boolean = DEFAULT_TILAAJA,
     ) =
         Hakemusyhteyshenkilo(
-            DEFAULT_ID,
-            DEFAULT_HANKEKAYTTAJA_ID,
-            etunimi,
-            sukunimi,
-            sahkoposti,
-            puhelin,
-            tilaaja
+            id = id,
+            hankekayttajaId = hankekayttajaId,
+            etunimi = etunimi,
+            sukunimi = sukunimi,
+            sahkoposti = sahkoposti,
+            puhelin = puhelin,
+            tilaaja = tilaaja,
         )
 
     fun createEntity(
@@ -59,7 +61,7 @@ object HakemusyhteyshenkiloFactory {
                     puhelin = puhelin,
                     permission = permission,
                 ),
-            tilaaja = tilaaja
+            tilaaja = tilaaja,
         )
 
     fun createEntity(
@@ -70,7 +72,7 @@ object HakemusyhteyshenkiloFactory {
         HakemusyhteyshenkiloEntity(
             hakemusyhteystieto = hakemusyhteystieto,
             hankekayttaja = hankekayttaja,
-            tilaaja = tilaaja
+            tilaaja = tilaaja,
         )
 
     fun HakemusyhteystietoEntity.withYhteyshenkilo(
