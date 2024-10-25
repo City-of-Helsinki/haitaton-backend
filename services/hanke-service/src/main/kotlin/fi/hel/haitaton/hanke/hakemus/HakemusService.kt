@@ -181,7 +181,7 @@ class HakemusService(
         assertNotSent(applicationEntity)
         assertCompatibility(applicationEntity, request)
 
-        if (!request.hasChanges(applicationEntity)) {
+        if (!request.hasChanges(hakemus.applicationData)) {
             logger.info("Not updating unchanged hakemus data. ${applicationEntity.logString()}")
             return hakemus
         }

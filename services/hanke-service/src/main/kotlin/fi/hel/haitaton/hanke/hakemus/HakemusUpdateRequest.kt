@@ -30,9 +30,9 @@ sealed interface HakemusUpdateRequest {
 
     /**
      * Returns true if this application update request has changes compared to the given
-     * [hakemusEntity].
+     * [hakemusData].
      */
-    fun hasChanges(hakemusEntity: HakemusEntity): Boolean
+    fun hasChanges(hakemusData: HakemusData): Boolean
 
     /**
      * Converts this update request to an [HakemusEntityData] object using the given [hakemusEntity]
@@ -85,28 +85,25 @@ data class JohtoselvityshakemusUpdateRequest(
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusUpdateRequest {
 
-    override fun hasChanges(hakemusEntity: HakemusEntity): Boolean {
-        val applicationData = hakemusEntity.hakemusEntityData as JohtoselvityshakemusEntityData
-        return name != applicationData.name ||
+    override fun hasChanges(hakemusData: HakemusData): Boolean {
+        hakemusData as JohtoselvityshakemusData
+
+        return name != hakemusData.name ||
             (postalAddress?.streetAddress?.streetName ?: "") !=
-                (applicationData.postalAddress?.streetAddress?.streetName ?: "") ||
-            constructionWork != applicationData.constructionWork ||
-            maintenanceWork != applicationData.maintenanceWork ||
-            propertyConnectivity != applicationData.propertyConnectivity ||
-            emergencyWork != applicationData.emergencyWork ||
-            rockExcavation != applicationData.rockExcavation ||
-            workDescription != applicationData.workDescription ||
-            startTime != applicationData.startTime ||
-            endTime != applicationData.endTime ||
-            areas != applicationData.areas ||
-            customerWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]) ||
-            contractorWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]) ||
-            propertyDeveloperWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]) ||
-            representativeWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA])
+                (hakemusData.postalAddress?.streetAddress?.streetName ?: "") ||
+            constructionWork != hakemusData.constructionWork ||
+            maintenanceWork != hakemusData.maintenanceWork ||
+            propertyConnectivity != hakemusData.propertyConnectivity ||
+            emergencyWork != hakemusData.emergencyWork ||
+            rockExcavation != hakemusData.rockExcavation ||
+            workDescription != hakemusData.workDescription ||
+            startTime != hakemusData.startTime ||
+            endTime != hakemusData.endTime ||
+            areas != hakemusData.areas ||
+            customerWithContacts.hasChanges(hakemusData.customerWithContacts) ||
+            contractorWithContacts.hasChanges(hakemusData.contractorWithContacts) ||
+            propertyDeveloperWithContacts.hasChanges(hakemusData.propertyDeveloperWithContacts) ||
+            representativeWithContacts.hasChanges(hakemusData.propertyDeveloperWithContacts)
     }
 
     override fun toEntityData(hakemusEntity: HakemusEntity) =
@@ -186,34 +183,31 @@ data class KaivuilmoitusUpdateRequest(
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusUpdateRequest {
 
-    override fun hasChanges(hakemusEntity: HakemusEntity): Boolean {
-        val applicationData = hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData
+    override fun hasChanges(hakemusData: HakemusData): Boolean {
+        hakemusData as KaivuilmoitusData
+
         val areas = areas?.map { it.withoutTormaystarkastelut() }
-        val newAreas = applicationData.areas?.map { it.withoutTormaystarkastelut() }
-        return name != applicationData.name ||
-            workDescription != applicationData.workDescription ||
-            constructionWork != applicationData.constructionWork ||
-            maintenanceWork != applicationData.maintenanceWork ||
-            emergencyWork != applicationData.emergencyWork ||
-            cableReportDone != applicationData.cableReportDone ||
-            rockExcavation != applicationData.rockExcavation ||
-            cableReports != applicationData.cableReports ||
-            placementContracts != applicationData.placementContracts ||
-            requiredCompetence != applicationData.requiredCompetence ||
-            startTime != applicationData.startTime ||
-            endTime != applicationData.endTime ||
+        val newAreas = hakemusData.areas?.map { it.withoutTormaystarkastelut() }
+
+        return name != hakemusData.name ||
+            workDescription != hakemusData.workDescription ||
+            constructionWork != hakemusData.constructionWork ||
+            maintenanceWork != hakemusData.maintenanceWork ||
+            emergencyWork != hakemusData.emergencyWork ||
+            cableReportDone != hakemusData.cableReportDone ||
+            rockExcavation != hakemusData.rockExcavation ||
+            cableReports != hakemusData.cableReports ||
+            placementContracts != hakemusData.placementContracts ||
+            requiredCompetence != hakemusData.requiredCompetence ||
+            startTime != hakemusData.startTime ||
+            endTime != hakemusData.endTime ||
             areas != newAreas ||
-            customerWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.HAKIJA]) ||
-            contractorWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]) ||
-            propertyDeveloperWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]) ||
-            representativeWithContacts.hasChanges(
-                hakemusEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]) ||
-            invoicingCustomer.hasChanges(
-                applicationData.invoicingCustomer, applicationData.customerReference) ||
-            additionalInfo != applicationData.additionalInfo
+            customerWithContacts.hasChanges(hakemusData.customerWithContacts) ||
+            contractorWithContacts.hasChanges(hakemusData.contractorWithContacts) ||
+            propertyDeveloperWithContacts.hasChanges(hakemusData.propertyDeveloperWithContacts) ||
+            representativeWithContacts.hasChanges(hakemusData.representativeWithContacts) ||
+            invoicingCustomer.hasChanges(hakemusData.invoicingCustomer) ||
+            additionalInfo != hakemusData.additionalInfo
     }
 
     override fun toEntityData(hakemusEntity: HakemusEntity) =
@@ -269,15 +263,13 @@ data class CustomerRequest(
     /** Value is false when read from JSON with null or empty value. */
     val registryKeyHidden: Boolean = false,
 ) {
-    /**
-     * Returns true if this customer has changes compared to the given [hakemusyhteystietoEntity].
-     */
-    fun hasChanges(hakemusyhteystietoEntity: HakemusyhteystietoEntity): Boolean =
-        type != hakemusyhteystietoEntity.tyyppi ||
-            name != hakemusyhteystietoEntity.nimi ||
-            email != hakemusyhteystietoEntity.sahkoposti ||
-            phone != hakemusyhteystietoEntity.puhelinnumero ||
-            (!registryKeyHidden && registryKey != hakemusyhteystietoEntity.registryKey)
+    /** Returns true if this customer has changes compared to the given [hakemusyhteystieto]. */
+    fun hasChanges(hakemusyhteystieto: Hakemusyhteystieto): Boolean =
+        type != hakemusyhteystieto.tyyppi ||
+            name != hakemusyhteystieto.nimi ||
+            email != hakemusyhteystieto.sahkoposti ||
+            phone != hakemusyhteystieto.puhelinnumero ||
+            (!registryKeyHidden && registryKey != hakemusyhteystieto.registryKey)
 }
 
 /** For referencing [fi.hel.haitaton.hanke.permissions.HankeKayttaja] by its id. */
@@ -307,49 +299,42 @@ data class InvoicingPostalAddressRequest(
     val city: String?,
 )
 
-fun CustomerWithContactsRequest?.hasChanges(
-    hakemusyhteystietoEntity: HakemusyhteystietoEntity?
-): Boolean {
+fun CustomerWithContactsRequest?.hasChanges(hakemusyhteystieto: Hakemusyhteystieto?): Boolean {
     if (this == null) {
-        return hakemusyhteystietoEntity != null
+        return hakemusyhteystieto != null
     }
-    if (hakemusyhteystietoEntity == null) {
+    if (hakemusyhteystieto == null) {
         return true
     }
-    return this.customer.hasChanges(hakemusyhteystietoEntity) ||
-        this.contacts.hasChanges(hakemusyhteystietoEntity.yhteyshenkilot)
+    return customer.hasChanges(hakemusyhteystieto) ||
+        contacts.hasChanges(hakemusyhteystieto.yhteyshenkilot)
 }
 
-fun List<ContactRequest>?.hasChanges(
-    hakemusyhteyshenkilot: List<HakemusyhteyshenkiloEntity>
-): Boolean {
+fun List<ContactRequest>?.hasChanges(hakemusyhteyshenkilot: List<Hakemusyhteyshenkilo>): Boolean {
     if (this == null) {
         return hakemusyhteyshenkilot.isNotEmpty()
     }
     val requestIds = this.map { it.hankekayttajaId }.toSet()
-    val existingIds = hakemusyhteyshenkilot.map { it.hankekayttaja.id }.toSet()
+    val existingIds = hakemusyhteyshenkilot.map { it.hankekayttajaId }.toSet()
     return requestIds != existingIds
 }
 
-fun InvoicingCustomerRequest?.hasChanges(
-    invoicingCustomer: InvoicingCustomer?,
-    customerReference: String?
-): Boolean {
+fun InvoicingCustomerRequest?.hasChanges(laskutusyhteystieto: Laskutusyhteystieto?): Boolean {
     if (this == null) {
-        return invoicingCustomer != null
+        return laskutusyhteystieto != null
     }
-    if (invoicingCustomer == null) {
+    if (laskutusyhteystieto == null) {
         return true
     }
-    return type != invoicingCustomer.type ||
-        name != invoicingCustomer.name ||
-        registryKey != invoicingCustomer.registryKey ||
-        ovt != invoicingCustomer.ovt ||
-        invoicingOperator != invoicingCustomer.invoicingOperator ||
-        this.customerReference != customerReference ||
-        postalAddress.hasChanges(invoicingCustomer.postalAddress) ||
-        email != invoicingCustomer.email ||
-        phone != invoicingCustomer.phone
+    return type != laskutusyhteystieto.tyyppi ||
+        name != laskutusyhteystieto.nimi ||
+        registryKey != laskutusyhteystieto.registryKey ||
+        ovt != laskutusyhteystieto.ovttunnus ||
+        invoicingOperator != laskutusyhteystieto.valittajanTunnus ||
+        customerReference != laskutusyhteystieto.asiakkaanViite ||
+        postalAddress.hasChanges(laskutusyhteystieto.postalAddress()) ||
+        email != laskutusyhteystieto.sahkoposti ||
+        phone != laskutusyhteystieto.puhelinnumero
 }
 
 fun InvoicingPostalAddressRequest?.hasChanges(postalAddress: PostalAddress?): Boolean {
