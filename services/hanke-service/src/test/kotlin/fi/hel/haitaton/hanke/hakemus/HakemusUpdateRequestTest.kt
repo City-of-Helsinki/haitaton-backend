@@ -5,7 +5,6 @@ import assertk.assertions.isFalse
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createBlankExcavationNotificationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
@@ -13,9 +12,13 @@ import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import java.time.ZonedDateTime
 import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 
 class HakemusUpdateRequestTest {
     private val blankOriginal =
@@ -25,7 +28,11 @@ class HakemusUpdateRequestTest {
     private val blankRequest =
         HakemusUpdateRequestFactory.createBlankJohtoselvityshakemusUpdateRequest()
 
+    private val kaivuilmoitusRequest =
+        HakemusUpdateRequestFactory.createBlankKaivuilmoitusUpdateRequest()
+
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HasChanges {
 
         @Test
@@ -36,21 +43,53 @@ class HakemusUpdateRequestTest {
             assertThat(request.hasChanges(original)).isFalse()
         }
 
-        @Test
-        fun `returns true when name is changed`() {
-            val original = blankOriginal
-            val request = blankRequest.copy(name = "Testihakemus")
+        private fun johtoselvitysSimpleChanges(): List<JohtoselvityshakemusUpdateRequest> =
+            listOf(
+                blankRequest.copy(name = "Testihakemus"),
+                blankRequest.copy(postalAddress = PostalAddressRequest(StreetAddress("Katu"))),
+                blankRequest.copy(constructionWork = true),
+                blankRequest.copy(maintenanceWork = true),
+                blankRequest.copy(propertyConnectivity = true),
+                blankRequest.copy(emergencyWork = true),
+                blankRequest.copy(rockExcavation = true),
+                blankRequest.copy(workDescription = "Lorem ipsum dolor."),
+                blankRequest.copy(startTime = ZonedDateTime.parse("2024-08-30T14:00:00Z")),
+                blankRequest.copy(endTime = ZonedDateTime.parse("2024-08-30T14:00:00Z")),
+            )
 
-            assertThat(request.hasChanges(original)).isTrue()
+        @ParameterizedTest
+        @MethodSource("johtoselvitysSimpleChanges")
+        fun `returns true when johtoselvityshakemus info has changed`(
+            request: JohtoselvityshakemusUpdateRequest
+        ) {
+            assertThat(request.hasChanges(blankOriginal)).isTrue()
         }
 
-        @Test
-        fun `returns true when work description is changed`() {
-            val original = blankOriginal
-            val request =
-                blankRequest.copy(
-                    workDescription = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-                )
+        private fun kaivuilmoitusSimpleChanges(): List<KaivuilmoitusUpdateRequest> =
+            listOf(
+                kaivuilmoitusRequest.copy(name = "Testihakemus"),
+                kaivuilmoitusRequest.copy(workDescription = "Lorem ipsum dolor."),
+                kaivuilmoitusRequest.copy(constructionWork = true),
+                kaivuilmoitusRequest.copy(maintenanceWork = true),
+                kaivuilmoitusRequest.copy(emergencyWork = true),
+                kaivuilmoitusRequest.copy(cableReportDone = true),
+                kaivuilmoitusRequest.copy(rockExcavation = true),
+                kaivuilmoitusRequest.copy(cableReports = listOf("JS001")),
+                kaivuilmoitusRequest.copy(placementContracts = listOf("Tunnus")),
+                kaivuilmoitusRequest.copy(requiredCompetence = true),
+                kaivuilmoitusRequest.copy(startTime = ZonedDateTime.parse("2024-08-30T14:00:00Z")),
+                kaivuilmoitusRequest.copy(endTime = ZonedDateTime.parse("2024-08-30T14:00:00Z")),
+                kaivuilmoitusRequest.copy(additionalInfo = "Lisätietoja"),
+            )
+
+        @ParameterizedTest
+        @MethodSource("kaivuilmoitusSimpleChanges")
+        fun `returns true when kaivuilmoitus info has changed`(
+            request: KaivuilmoitusUpdateRequest
+        ) {
+            val original =
+                ApplicationFactory.createBlankExcavationNotificationData()
+                    .toHakemusData(yhteystiedot = mapOf())
 
             assertThat(request.hasChanges(original)).isTrue()
         }
@@ -60,8 +99,7 @@ class HakemusUpdateRequestTest {
             val original = blankOriginal
             val request =
                 createJohtoselvityshakemusUpdateRequestWithCustomerWithContacts(
-                    "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f",
-                )
+                    "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f")
 
             assertThat(request.hasChanges(original)).isTrue()
         }
@@ -70,8 +108,7 @@ class HakemusUpdateRequestTest {
         fun `returns true when new customer contact is added`() {
             val original =
                 createHakemusDataWithYhteystiedot(
-                    Pair("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f", true),
-                )
+                    Pair("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f", true))
             val request =
                 createJohtoselvityshakemusUpdateRequestWithCustomerWithContacts(
                     "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f",
@@ -123,7 +160,9 @@ class HakemusUpdateRequestTest {
         val yhteyshenkilot =
             hankekayttajat.map { (hankekayttajaId, tilaaja) ->
                 HakemusyhteyshenkiloFactory.create(
-                    hankekayttajaId = UUID.fromString(hankekayttajaId), tilaaja = tilaaja)
+                    hankekayttajaId = UUID.fromString(hankekayttajaId),
+                    tilaaja = tilaaja,
+                )
             }
 
         val yhteystieto =
@@ -166,7 +205,7 @@ class HakemusUpdateRequestTest {
             )
         val tyoalue = createTyoalue(tormaystarkasteluTulos = tormaystarkasteluTulos)
         val area = createExcavationNotificationArea(tyoalueet = listOf(tyoalue))
-        return createBlankExcavationNotificationData()
+        return ApplicationFactory.createBlankExcavationNotificationData()
             .copy(areas = listOf(area))
             .toHakemusData(mapOf())
     }
