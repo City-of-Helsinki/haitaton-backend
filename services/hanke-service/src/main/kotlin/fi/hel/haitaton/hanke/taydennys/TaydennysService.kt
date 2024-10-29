@@ -9,8 +9,11 @@ import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import fi.hel.haitaton.hanke.logging.TaydennysLoggingService
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+
+private val logger = KotlinLogging.logger {}
 
 @Service
 class TaydennysService(
@@ -54,7 +57,10 @@ class TaydennysService(
 
         if (hakemus.alluStatus != ApplicationStatus.WAITING_INFORMATION) {
             throw HakemusInWrongStatusException(
-                hakemus, hakemus.alluStatus, listOf(ApplicationStatus.WAITING_INFORMATION))
+                hakemus,
+                hakemus.alluStatus,
+                listOf(ApplicationStatus.WAITING_INFORMATION),
+            )
         }
 
         val saved = createFromHakemus(hakemus, taydennyspyynto).toDomain()
@@ -80,9 +86,29 @@ class TaydennysService(
         return taydennys
     }
 
+    @Transactional
+    fun removeTaydennyspyyntoIfItExists(application: HakemusEntity) {
+        logger.info {
+            "A hakemus has has entered handling. Checking if there's a täydennyspyyntö for the hakemus. ${application.logString()}"
+        }
+
+        taydennyspyyntoRepository.findByApplicationId(application.id)?.let {
+            logger.info { "A täydennyspyyntö was found. Removing it." }
+            taydennyspyyntoRepository.delete(it)
+
+            if (application.alluStatus != ApplicationStatus.WAITING_INFORMATION) {
+                logger.error {
+                    "A hakemus moved to handling and it had a täydennyspyyntö, " +
+                        "but the previous state was not 'HANDLING'. " +
+                        "status=${application.alluStatus} ${application.logString()}"
+                }
+            }
+        }
+    }
+
     private fun createYhteystieto(
         yhteystieto: HakemusyhteystietoEntity,
-        taydennys: TaydennysEntity
+        taydennys: TaydennysEntity,
     ): TaydennysyhteystietoEntity =
         TaydennysyhteystietoEntity(
                 tyyppi = yhteystieto.tyyppi,
@@ -91,7 +117,8 @@ class TaydennysService(
                 sahkoposti = yhteystieto.sahkoposti,
                 puhelinnumero = yhteystieto.puhelinnumero,
                 registryKey = yhteystieto.registryKey,
-                taydennys = taydennys)
+                taydennys = taydennys,
+            )
             .apply {
                 yhteyshenkilot.addAll(
                     yhteystieto.yhteyshenkilot.map { createYhteyshenkilo(it, this) })
@@ -99,7 +126,7 @@ class TaydennysService(
 
     private fun createYhteyshenkilo(
         yhteyshenkilo: HakemusyhteyshenkiloEntity,
-        yhteystieto: TaydennysyhteystietoEntity
+        yhteystieto: TaydennysyhteystietoEntity,
     ) =
         TaydennysyhteyshenkiloEntity(
             taydennysyhteystieto = yhteystieto,

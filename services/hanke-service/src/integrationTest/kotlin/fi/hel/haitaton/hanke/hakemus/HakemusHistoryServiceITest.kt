@@ -2,8 +2,10 @@ package fi.hel.haitaton.hanke.hakemus
 
 import assertk.all
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.containsOnly
+import assertk.assertions.doesNotContain
 import assertk.assertions.each
 import assertk.assertions.extracting
 import assertk.assertions.hasSize
@@ -31,8 +33,10 @@ import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
+import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -49,17 +53,23 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.boot.test.system.OutputCaptureExtension
 
+@ExtendWith(OutputCaptureExtension::class)
 class HakemusHistoryServiceITest(
     @Autowired private val historyService: HakemusHistoryService,
     @Autowired private val hakemusRepository: HakemusRepository,
     @Autowired private val alluStatusRepository: AlluStatusRepository,
     @Autowired private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
+    @Autowired private val taydennysRepository: TaydennysRepository,
     @Autowired private val hakemusFactory: HakemusFactory,
+    @Autowired private val taydennysFactory: TaydennysFactory,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val alluClient: AlluClient,
@@ -376,6 +386,85 @@ class HakemusHistoryServiceITest(
                             AlluFactory.DEFAULT_INFORMATION_REQUEST_DESCRIPTION)
             }
             verifySequence { alluClient.getInformationRequest(alluId) }
+        }
+
+        @Test
+        fun `removes any taydennyspyynto and taydennys when the new status is HANDLING`(
+            output: CapturedOutput
+        ) {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, 42)
+                    .save()
+            taydennysFactory.save(applicationId = hakemus.id)
+            val event =
+                ApplicationHistoryFactory.createEvent(
+                    applicationIdentifier = identifier,
+                    newStatus = ApplicationStatus.HANDLING,
+                )
+            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+
+            historyService.handleHakemusUpdates(histories, updateTime)
+
+            assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
+            assertThat(taydennysRepository.findAll()).isEmpty()
+            val updatedHakemus = hakemusRepository.getOneByAlluid(alluId)
+            assertThat(updatedHakemus)
+                .isNotNull()
+                .prop(HakemusEntity::alluStatus)
+                .isEqualTo(ApplicationStatus.HANDLING)
+            assertThat(output).doesNotContain("ERROR")
+        }
+
+        @Test
+        fun `updates the status when the new status is HANDLING and there is no taydennyspyynto`(
+            output: CapturedOutput
+        ) {
+            hakemusFactory.builder().withStatus(ApplicationStatus.WAITING_INFORMATION, 42).save()
+            val event =
+                ApplicationHistoryFactory.createEvent(
+                    applicationIdentifier = identifier,
+                    newStatus = ApplicationStatus.HANDLING,
+                )
+            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+
+            historyService.handleHakemusUpdates(histories, updateTime)
+
+            val updatedHakemus = hakemusRepository.getOneByAlluid(alluId)
+            assertThat(updatedHakemus)
+                .isNotNull()
+                .prop(HakemusEntity::alluStatus)
+                .isEqualTo(ApplicationStatus.HANDLING)
+            assertThat(output).doesNotContain("ERROR")
+        }
+
+        @Test
+        fun `logs an error when the new status is HANDLING, the previous status is not WAITING_INFORMATION and the hakemus has a taydennyspyynto`(
+            output: CapturedOutput
+        ) {
+            val hakemus = hakemusFactory.builder().withStatus(ApplicationStatus.DECISION, 42).save()
+            taydennysFactory.save(applicationId = hakemus.id)
+            val event =
+                ApplicationHistoryFactory.createEvent(
+                    applicationIdentifier = identifier,
+                    newStatus = ApplicationStatus.HANDLING,
+                )
+            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+
+            historyService.handleHakemusUpdates(histories, updateTime)
+
+            assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
+            assertThat(taydennysRepository.findAll()).isEmpty()
+            val updatedHakemus = hakemusRepository.getOneByAlluid(alluId)
+            assertThat(updatedHakemus)
+                .isNotNull()
+                .prop(HakemusEntity::alluStatus)
+                .isEqualTo(ApplicationStatus.HANDLING)
+            assertThat(output).contains("ERROR")
+            assertThat(output)
+                .contains(
+                    "A hakemus moved to handling and it had a täydennyspyyntö, but the previous state was not 'HANDLING'. status=DECISION")
         }
 
         private fun mockAlluDownload(status: ApplicationStatus) =

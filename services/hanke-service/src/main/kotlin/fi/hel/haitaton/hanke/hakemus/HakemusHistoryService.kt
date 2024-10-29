@@ -118,6 +118,13 @@ class HakemusHistoryService(
                 taydennysService.saveTaydennyspyyntoFromAllu(application)
                 sendInformationRequestEmails(application, event.applicationIdentifier)
             }
+            ApplicationStatus.HANDLING -> {
+                logger.info {
+                    "A hakemus has has entered handling. Checking if there's a täydennyspyyntö for the hakemus."
+                }
+                taydennysService.removeTaydennyspyyntoIfItExists(application)
+                updateStatus()
+            }
             else -> updateStatus()
         }
     }
