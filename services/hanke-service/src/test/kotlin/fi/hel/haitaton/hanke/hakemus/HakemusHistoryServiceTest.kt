@@ -155,7 +155,7 @@ class HakemusHistoryServiceTest {
                         alluid,
                         ApplicationHistoryFactory.createEvent(
                             applicationIdentifier = identifier,
-                            newStatus = ApplicationStatus.HANDLING)),
+                            newStatus = ApplicationStatus.DECISIONMAKING)),
                 )
 
             historyService.handleHakemusUpdates(histories, updateTime)
