@@ -782,8 +782,7 @@ class HakemusServiceITest(
 
             failure.all {
                 hasClass(HakemusGeometryNotInsideHankeException::class)
-                messageContains(hakemus.logString())
-                messageContains(hanke.logString())
+                messageContains("Hakemus geometry doesn't match any hankealue")
                 messageContains(
                     "hakemus geometry=${areaOutsideDefaultHanke.geometry.toJsonString()}")
             }

@@ -9,8 +9,8 @@ class HankeErrorTest {
     @Test
     fun testJacksonSerialization() {
         val err = HankeError.HAI0002
-        val expected = """{"errorMessage":"${err.errorMessage}","errorCode":"${err.errorCode}"}"""
+        val expected =
+            """{"errorMessage":"${err.errorMessage}","errorCode":"${err.getErrorCode()}"}"""
         assertThat(err.toJsonString()).isEqualTo(expected)
     }
-
 }

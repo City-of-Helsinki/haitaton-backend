@@ -36,12 +36,6 @@ object HakemusUpdateRequestFactory {
         InvoicingPostalAddressRequest(StreetAddress("Testikatu 1"), "00100", "Helsinki")
     internal const val DEFAULT_OVT = "003734741376"
 
-    fun createBlankUpdateRequest(type: ApplicationType): HakemusUpdateRequest =
-        when (type) {
-            ApplicationType.CABLE_REPORT -> createBlankJohtoselvityshakemusUpdateRequest()
-            ApplicationType.EXCAVATION_NOTIFICATION -> createBlankKaivuilmoitusUpdateRequest()
-        }
-
     fun createBlankJohtoselvityshakemusUpdateRequest(): JohtoselvityshakemusUpdateRequest =
         JohtoselvityshakemusUpdateRequest(
             name = "",
@@ -317,33 +311,6 @@ object HakemusUpdateRequestFactory {
                 this.copy(areas = areas?.map { it as JohtoselvitysHakemusalue })
             is KaivuilmoitusUpdateRequest ->
                 this.copy(areas = areas?.map { it as KaivuilmoitusAlue })
-        }
-
-    fun HakemusUpdateRequest.withTimes(startTime: ZonedDateTime?, endTime: ZonedDateTime?) =
-        when (this) {
-            is JohtoselvityshakemusUpdateRequest ->
-                this.copy(startTime = startTime, endTime = endTime)
-            is KaivuilmoitusUpdateRequest -> this.copy(startTime = startTime, endTime = endTime)
-        }
-
-    fun HakemusUpdateRequest.withRegistryKey(registryKey: String) =
-        when (this) {
-            is JohtoselvityshakemusUpdateRequest ->
-                this.copy(
-                    customerWithContacts =
-                        this.customerWithContacts?.copy(
-                            customer =
-                                this.customerWithContacts!!
-                                    .customer
-                                    .copy(registryKey = registryKey)))
-            is KaivuilmoitusUpdateRequest ->
-                this.copy(
-                    customerWithContacts =
-                        this.customerWithContacts?.copy(
-                            customer =
-                                this.customerWithContacts!!
-                                    .customer
-                                    .copy(registryKey = registryKey)))
         }
 
     fun KaivuilmoitusUpdateRequest.withInvoicingCustomer(

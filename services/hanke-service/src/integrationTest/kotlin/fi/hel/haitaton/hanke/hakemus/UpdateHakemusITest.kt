@@ -51,7 +51,6 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
-import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.HAKIJA
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -169,8 +168,7 @@ class UpdateHakemusITest(
 
         exception.all {
             hasClass(InvalidHakemusyhteystietoException::class)
-            messageContains("id=${hakemus.id}")
-            messageContains("role=${HAKIJA}")
+            messageContains("Invalid hakemusyhteystieto received when updating hakemus")
             messageContains("yhteystietoId=null")
             messageContains("newId=$requestYhteystietoId")
         }
@@ -193,8 +191,7 @@ class UpdateHakemusITest(
 
         exception.all {
             hasClass(InvalidHakemusyhteystietoException::class)
-            messageContains("id=${hakemus.id}")
-            messageContains("role=$HAKIJA")
+            messageContains("Invalid hakemusyhteystieto received when updating hakemus")
             messageContains("yhteystietoId=$originalYhteystietoId")
             messageContains("newId=$requestYhteystietoId")
         }
@@ -219,7 +216,7 @@ class UpdateHakemusITest(
 
         exception.all {
             hasClass(InvalidHakemusyhteyshenkiloException::class)
-            messageContains("id=${hakemus.id}")
+            messageContains("Invalid hanke user/users received when updating hakemus")
             messageContains("invalidHankeKayttajaIds=[$requestHankekayttajaId]")
         }
     }
@@ -295,7 +292,7 @@ class UpdateHakemusITest(
 
             exception.all {
                 hasClass(HakemusGeometryException::class)
-                messageContains("id=${hakemus.id}")
+                messageContains("Invalid geometry received when updating hakemus")
                 messageContains("reason=Self-intersection")
                 messageContains(
                     "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}")
@@ -314,8 +311,7 @@ class UpdateHakemusITest(
 
             exception.all {
                 hasClass(HakemusGeometryNotInsideHankeException::class)
-                messageContains("id=${hakemus.id}")
-                messageContains(hanke.logString())
+                messageContains("Hakemus geometry doesn't match any hankealue")
                 messageContains("geometry=${notInHankeArea.geometry.toJsonString()}")
             }
         }
@@ -497,7 +493,7 @@ class UpdateHakemusITest(
 
             exception.all {
                 hasClass(HakemusGeometryException::class)
-                messageContains("id=${hakemus.id}")
+                messageContains("Invalid geometry received when updating hakemus")
                 messageContains("reason=Self-intersection")
                 messageContains(
                     "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}")
@@ -506,12 +502,15 @@ class UpdateHakemusITest(
 
         @Test
         fun `throws exception when area is not inside hanke area`() {
-            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+            val hankeEntity = hankeRepository.findAll().single()
             val hakemus =
                 hakemusFactory
-                    .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
                     .save()
-            val request = hakemus.toUpdateRequest().withAreas(listOf(notInHankeArea))
+            val hankealueId = hanke.alueet.single().id!!
+            val area = notInHankeArea.copy(hankealueId = hankealueId)
+            val request = hakemus.toUpdateRequest().withArea(area)
 
             val exception = assertFailure {
                 hakemusService.updateHakemus(hakemus.id, request, USERNAME)
@@ -519,10 +518,34 @@ class UpdateHakemusITest(
 
             exception.all {
                 hasClass(HakemusGeometryNotInsideHankeException::class)
-                messageContains("id=${hakemus.id}")
-                messageContains(hanke.logString())
+                messageContains("Hakemus geometry is outside the associated hankealue")
+                messageContains("hankealue=$hankealueId")
                 messageContains(
                     "geometry=${notInHankeArea.tyoalueet.single().geometry.toJsonString()}")
+            }
+        }
+
+        @Test
+        fun `throws exception when area references non-existent hankealue`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+            val hankeEntity = hankeRepository.findAll().single()
+            val hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .save()
+            val hankealueId = hanke.alueet.single().id!! + 1000
+            val area = createExcavationNotificationArea(hankealueId = hankealueId)
+            val request = hakemus.toUpdateRequest().withArea(area)
+
+            val exception = assertFailure {
+                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+            }
+
+            exception.all {
+                hasClass(HakemusGeometryNotInsideHankeException::class)
+                messageContains("Hakemus geometry is outside the associated hankealue")
+                messageContains("hankealue=$hankealueId")
+                messageContains("geometry=${area.tyoalueet.single().geometry.toJsonString()}")
             }
         }
 
@@ -689,9 +712,10 @@ class UpdateHakemusITest(
 
             failure.all {
                 hasClass(InvalidHiddenRegistryKey::class)
-                messageContains("id=${hakemus.id}")
                 messageContains("RegistryKeyHidden used in an incompatible way")
                 messageContains("New customer type doesn't match the old")
+                messageContains("New=PERSON")
+                messageContains("Old=COMPANY")
             }
         }
 
@@ -759,9 +783,10 @@ class UpdateHakemusITest(
 
             failure.all {
                 hasClass(InvalidHiddenRegistryKey::class)
-                messageContains("id=${hakemus.id}")
                 messageContains("RegistryKeyHidden used in an incompatible way")
                 messageContains("New invoicing customer type doesn't match the old")
+                messageContains("New=PERSON")
+                messageContains("Old=COMPANY")
             }
         }
 

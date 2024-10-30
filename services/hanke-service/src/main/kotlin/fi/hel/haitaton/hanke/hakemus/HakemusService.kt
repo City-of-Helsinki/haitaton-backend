@@ -31,7 +31,9 @@ import fi.hel.haitaton.hanke.pdf.JohtoselvityshakemusPdfEncoder
 import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.taydennys.TaydennysService
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
+import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
+import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
 import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
@@ -62,6 +64,8 @@ private const val PAPER_DECISION_MSG =
 class HakemusService(
     private val hakemusRepository: HakemusRepository,
     private val hankeRepository: HankeRepository,
+    private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
+    private val taydennysRepository: TaydennysRepository,
     private val geometriatDao: GeometriatDao,
     private val hankealueService: HankealueService,
     private val hakemusLoggingService: HakemusLoggingService,
@@ -73,7 +77,6 @@ class HakemusService(
     private val paatosService: PaatosService,
     private val applicationEventPublisher: ApplicationEventPublisher,
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
-    private val taydennysService: TaydennysService,
 ) {
 
     @Transactional(readOnly = true)
@@ -83,8 +86,8 @@ class HakemusService(
     fun getWithExtras(hakemusId: Long): HakemusWithExtras {
         val hakemus = getById(hakemusId)
         val paatokset = paatosService.findByHakemusId(hakemusId)
-        val taydennyspyynto = taydennysService.findTaydennyspyynto(hakemusId)
-        val taydennys = taydennysService.findTaydennys(hakemusId)
+        val taydennyspyynto = taydennyspyyntoRepository.findByApplicationId(hakemusId)?.toDomain()
+        val taydennys = taydennysRepository.findByApplicationId(hakemusId)?.toDomain()
         return HakemusWithExtras(hakemus, paatokset, taydennyspyynto, taydennys)
     }
 
@@ -168,15 +171,10 @@ class HakemusService(
     }
 
     @Transactional
-    fun updateHakemus(
-        applicationId: Long,
-        request: HakemusUpdateRequest,
-        userId: String,
-    ): Hakemus {
-        logger.info("Updating hakemus id=$applicationId")
-
+    fun updateHakemus(applicationId: Long, request: HakemusUpdateRequest, userId: String): Hakemus {
         val applicationEntity = getEntityById(applicationId)
         val hakemus = applicationEntity.toHakemus() // the original state for audit logging
+        logger.info("Updating hakemus ${hakemus.logString()}")
 
         assertNotSent(applicationEntity)
         assertCompatibility(applicationEntity, request)
@@ -186,27 +184,15 @@ class HakemusService(
             return hakemus
         }
 
-        assertGeometryValidity(request.areas) { validationError ->
-            "Invalid geometry received when updating hakemus. ${applicationEntity.logString()}, reason=${validationError.reason}, location=${validationError.location}"
-        }
+        assertGeometryValidity(request.areas)
+        assertYhteystiedotValidity(applicationEntity.hanke, applicationEntity.yhteystiedot, request)
+        assertOrUpdateHankealueet(applicationEntity.hanke, request)
 
-        assertYhteystiedotValidity(applicationEntity, request)
+        val originalContactUserIds = applicationEntity.allContactUsers().map { it.id }.toSet()
+        val updatedHakemusEntity = saveWithUpdate(applicationEntity, request)
+        sendHakemusNotifications(updatedHakemusEntity, originalContactUserIds, userId)
 
-        val hankeEntity = applicationEntity.hanke
-        if (!hankeEntity.generated) {
-            request.areas?.let { areas ->
-                assertGeometryCompatibility(hankeEntity.id, areas) { geometry ->
-                    "Hakemus geometry doesn't match any hankealue when updating hakemus. " +
-                        "${applicationEntity.logString()}, ${hankeEntity.logString()}, " +
-                        "hakemus geometry=${geometry.toJsonString()}"
-                }
-            }
-        } else if (request is JohtoselvityshakemusUpdateRequest) {
-            updateHankealueet(hankeEntity, request)
-        }
-
-        val updatedHakemus = saveWithUpdate(applicationEntity, request, userId).toHakemus()
-
+        val updatedHakemus = updatedHakemusEntity.toHakemus()
         logger.info("Updated hakemus. ${updatedHakemus.logString()}")
         hakemusLoggingService.logUpdate(hakemus, updatedHakemus, userId)
 
@@ -220,6 +206,8 @@ class HakemusService(
         currentUserId: String,
     ): Hakemus {
         val hakemus = getEntityById(id)
+        val hanke = hakemus.hanke
+        logger.info { "Sending hakemus to Allu. ${hakemus.logString()} ${hanke.logString()}" }
 
         if (paperDecisionReceiver != null) {
             val hakemusBefore = hakemus.toHakemus()
@@ -232,14 +220,9 @@ class HakemusService(
 
         setOrdererOnSend(hakemus, currentUserId)
 
-        val hanke = hakemus.hanke
         if (!hanke.generated) {
             hakemus.hakemusEntityData.areas?.let { areas ->
-                assertGeometryCompatibility(hanke.id, areas) { geometry ->
-                    "Hakemus geometry doesn't match any hankealue when sending hakemus, " +
-                        "${hanke.logString()}, ${hakemus.logString()}, " +
-                        "hakemus geometry=${geometry.toJsonString()}"
-                }
+                assertGeometryCompatibility(hanke.id, areas)
             }
         }
 
@@ -710,13 +693,10 @@ class HakemusService(
     }
 
     /** Assert that the geometries are valid. */
-    private fun assertGeometryValidity(
-        areas: List<Hakemusalue>?,
-        customMessageOnFailure: (GeometriatDao.InvalidDetail) -> String
-    ) {
+    fun assertGeometryValidity(areas: List<Hakemusalue>?) {
         if (areas != null) {
             geometriatDao.validateGeometriat(areas.flatMap { it.geometries() })?.let {
-                throw HakemusGeometryException(customMessageOnFailure(it))
+                throw HakemusGeometryException(it)
             }
         }
     }
@@ -725,24 +705,18 @@ class HakemusService(
      * Assert that the customers match and that the contacts in the update request are hanke users
      * of the application hanke.
      */
-    private fun assertYhteystiedotValidity(
-        hakemusEntity: HakemusEntity,
-        updateRequest: HakemusUpdateRequest
+    fun <H : YhteyshenkiloEntity> assertYhteystiedotValidity(
+        hanke: HankeEntity,
+        yhteystiedot: Map<ApplicationContactType, YhteystietoEntity<H>>,
+        updateRequest: HakemusUpdateRequest,
     ) {
         val customersWithContacts = updateRequest.customersByRole()
-        ApplicationContactType.entries.forEach {
-            assertYhteystietoValidity(
-                hakemusEntity, it, hakemusEntity.yhteystiedot[it], customersWithContacts[it])
+        ApplicationContactType.entries.forEach { rooli ->
+            val yhteystietoId = yhteystiedot[rooli]?.id
+            assertYhteystietoValidity(yhteystietoId, customersWithContacts[rooli])
         }
 
-        assertYhteyshenkilotValidity(
-            hakemusEntity.hanke,
-            customersWithContacts.values
-                .filterNotNull()
-                .flatMap { it.contacts.map { contact -> contact.hankekayttajaId } }
-                .toSet()) {
-                "Invalid hanke user/users received when updating hakemus ${hakemusEntity.logString()}, invalidHankeKayttajaIds=$it"
-            }
+        assertYhteyshenkilotValidity(hanke, customersWithContacts)
     }
 
     /**
@@ -753,51 +727,57 @@ class HakemusService(
      * Otherwise, the request is invalid.
      */
     private fun assertYhteystietoValidity(
-        application: HakemusIdentifier,
-        rooli: ApplicationContactType,
-        hakemusyhteystietoEntity: HakemusyhteystietoEntity?,
-        customerWithContacts: CustomerWithContactsRequest?
+        yhteystietoEntityId: UUID?,
+        customerWithContacts: CustomerWithContactsRequest?,
     ) {
-        if (customerWithContacts == null ||
-            customerWithContacts.customer.yhteystietoId == null ||
-            customerWithContacts.customer.yhteystietoId == hakemusyhteystietoEntity?.id) {
+        val newId = customerWithContacts?.customer?.yhteystietoId
+        if (newId == null || customerWithContacts.customer.yhteystietoId == yhteystietoEntityId) {
             return
         }
         throw InvalidHakemusyhteystietoException(
-            application,
-            rooli,
-            hakemusyhteystietoEntity?.id,
-            customerWithContacts.customer.yhteystietoId)
+            yhteystietoEntityId,
+            customerWithContacts.customer.yhteystietoId,
+        )
     }
 
     /** Assert that the contacts are users of the hanke. */
     private fun assertYhteyshenkilotValidity(
         hanke: HankeEntity,
-        newHankekayttajaIds: Set<UUID>,
-        customMessageOnFailure: (Set<UUID>) -> String
+        customersWithContacts: Map<ApplicationContactType, CustomerWithContactsRequest?>,
     ) {
+        val newHankekayttajaIds =
+            customersWithContacts.values
+                .filterNotNull()
+                .flatMap { it.contacts.map { contact -> contact.hankekayttajaId } }
+                .toSet()
         val currentHankekayttajaIds =
             hankeKayttajaService.getKayttajatByHankeId(hanke.id).map { it.id }.toSet()
         val newInvalidHankekayttajaIds = newHankekayttajaIds.minus(currentHankekayttajaIds)
         if (newInvalidHankekayttajaIds.isNotEmpty()) {
-            throw InvalidHakemusyhteyshenkiloException(
-                customMessageOnFailure(newInvalidHankekayttajaIds))
+            throw InvalidHakemusyhteyshenkiloException(newInvalidHankekayttajaIds)
+        }
+    }
+
+    /**
+     * Assert that the geometries are compatible with the hanke area geometries or update the hanke
+     * geometries if this is in a generated hanke.
+     */
+    fun assertOrUpdateHankealueet(hankeEntity: HankeEntity, request: HakemusUpdateRequest) {
+        if (!hankeEntity.generated) {
+            request.areas?.let { areas -> assertGeometryCompatibility(hankeEntity.id, areas) }
+        } else if (request is JohtoselvityshakemusUpdateRequest) {
+            updateHankealueet(hankeEntity, request)
         }
     }
 
     /** Assert that the geometries are compatible with the hanke area geometries. */
-    private fun assertGeometryCompatibility(
-        hankeId: Int,
-        areas: List<Hakemusalue>,
-        customMessageOnFailure: (Polygon) -> String
-    ) {
+    private fun assertGeometryCompatibility(hankeId: Int, areas: List<Hakemusalue>) {
         areas.forEach { area ->
             when (area) {
                 // for cable report we check that the geometry is inside any of the hanke areas
                 is JohtoselvitysHakemusalue -> {
                     if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
-                        throw HakemusGeometryNotInsideHankeException(
-                            customMessageOnFailure(area.geometry))
+                        throw HakemusGeometryNotInsideHankeException(area.geometry)
                 }
                 // for excavation notification we check that all the tyoalue geometries are inside
                 // the same hanke area
@@ -805,7 +785,7 @@ class HakemusService(
                     area.tyoalueet.forEach { tyoalue ->
                         if (!geometriatDao.isInsideHankeAlue(area.hankealueId, tyoalue.geometry))
                             throw HakemusGeometryNotInsideHankeException(
-                                customMessageOnFailure(tyoalue.geometry))
+                                area.hankealueId, tyoalue.geometry)
                     }
                 }
             }
@@ -829,40 +809,40 @@ class HakemusService(
     private fun saveWithUpdate(
         hakemusEntity: HakemusEntity,
         request: HakemusUpdateRequest,
-        userId: String,
     ): HakemusEntity {
-        val originalContactUserIds = hakemusEntity.allContactUsers().map { it.id }.toSet()
+        logger.info { "Creating and saving new hakemus data. ${hakemusEntity.logString()}" }
         val updatedApplicationEntity =
             hakemusEntity.copy(
-                hakemusEntityData = request.toEntityData(hakemusEntity),
+                hakemusEntityData = request.toEntityData(hakemusEntity.hakemusEntityData),
                 yhteystiedot = updateYhteystiedot(hakemusEntity, request.customersByRole()))
         if (updatedApplicationEntity.hanke.generated) {
             updatedApplicationEntity.hanke.nimi = request.name
         }
-        updateTormaystarkastelut(updatedApplicationEntity)
-        sendApplicationNotifications(updatedApplicationEntity, originalContactUserIds, userId)
+        updateTormaystarkastelut(updatedApplicationEntity.hakemusEntityData)?.let {
+            updatedApplicationEntity.hakemusEntityData = it
+        }
         return hakemusRepository.save(updatedApplicationEntity)
     }
 
     /** Calculate the traffic nuisance indexes for each work area of an application. */
-    private fun updateTormaystarkastelut(hakemusEntity: HakemusEntity) {
-        val hakemusEntityData =
-            when (val data = hakemusEntity.hakemusEntityData) {
-                is JohtoselvityshakemusEntityData -> return
-                is KaivuilmoitusEntityData -> data
+    fun updateTormaystarkastelut(hakemusData: HakemusEntityData): KaivuilmoitusEntityData? {
+        val kaivuilmoitusData =
+            when (hakemusData) {
+                is JohtoselvityshakemusEntityData -> return null
+                is KaivuilmoitusEntityData -> hakemusData
             }
-        if (hakemusEntityData.startTime == null || hakemusEntityData.endTime == null) {
-            return
+        if (kaivuilmoitusData.startTime == null || kaivuilmoitusData.endTime == null) {
+            return null
         }
         val areas =
-            hakemusEntityData.areas?.map { area ->
+            kaivuilmoitusData.areas?.map { area ->
                 updateTormaystarkastelutForArea(
                     area,
-                    hakemusEntityData.startTime.toLocalDate(),
-                    hakemusEntityData.endTime.toLocalDate(),
+                    kaivuilmoitusData.startTime.toLocalDate(),
+                    kaivuilmoitusData.endTime.toLocalDate(),
                 )
             }
-        hakemusEntity.hakemusEntityData = hakemusEntityData.copy(areas = areas)
+        return kaivuilmoitusData.copy(areas = areas)
     }
 
     private fun updateTormaystarkastelutForArea(
@@ -907,7 +887,11 @@ class HakemusService(
             return null
         }
         return hakemusEntity.yhteystiedot[rooli]?.let {
-            customerWithContactsRequest.toExistingHakemusyhteystietoEntity(it, hakemusEntity)
+            val newHenkilot = customerWithContactsRequest.toExistingYhteystietoEntity(it)
+            newHenkilot.map { hankekayttajaId ->
+                it.yhteyshenkilot.add(newHakemusyhteyshenkiloEntity(hankekayttajaId, it))
+            }
+            it
         } ?: customerWithContactsRequest.toNewHakemusyhteystietoEntity(rooli, hakemusEntity)
     }
 
@@ -925,10 +909,12 @@ class HakemusService(
                 application = hakemusEntity,
             )
             .apply {
-                yhteyshenkilot.addAll(contacts.map { it.toNewHakemusyhteyshenkiloEntity(this) })
+                yhteyshenkilot.addAll(
+                    contacts.map { newHakemusyhteyshenkiloEntity(it.hankekayttajaId, this) })
             }
 
-    private fun ContactRequest.toNewHakemusyhteyshenkiloEntity(
+    private fun newHakemusyhteyshenkiloEntity(
+        hankekayttajaId: UUID,
         hakemusyhteystietoEntity: HakemusyhteystietoEntity
     ) =
         HakemusyhteyshenkiloEntity(
@@ -938,53 +924,23 @@ class HakemusService(
                     hankekayttajaId, hakemusyhteystietoEntity.application.hanke.id),
             tilaaja = false)
 
-    private fun CustomerWithContactsRequest.toExistingHakemusyhteystietoEntity(
-        hakemusyhteystietoEntity: HakemusyhteystietoEntity,
-        hakemus: HakemusIdentifier,
-    ): HakemusyhteystietoEntity {
-        if (customer.type != hakemusyhteystietoEntity.tyyppi && customer.registryKeyHidden) {
-            // If new customer type doesn't match the old one, the type of registry key will be
-            // wrong, but it will be retained if the key is hidden.
-            // Validation only checks the new type.
-            throw InvalidHiddenRegistryKey(hakemus, "New customer type doesn't match the old.")
-        }
-        hakemusyhteystietoEntity.tyyppi = customer.type
-        hakemusyhteystietoEntity.nimi = customer.name
-        hakemusyhteystietoEntity.sahkoposti = customer.email
-        hakemusyhteystietoEntity.puhelinnumero = customer.phone
-        if (!customer.registryKeyHidden) {
-            hakemusyhteystietoEntity.registryKey = customer.registryKey
-        }
-        hakemusyhteystietoEntity.yhteyshenkilot.update(hakemusyhteystietoEntity, this.contacts)
-        return hakemusyhteystietoEntity
-    }
-
-    private fun MutableList<HakemusyhteyshenkiloEntity>.update(
-        hakemusyhteystietoEntity: HakemusyhteystietoEntity,
-        contacts: List<ContactRequest>
-    ) {
-        val existingIds = this.map { it.hankekayttaja.id }.toSet()
-        val newIds = contacts.map { it.hankekayttajaId }.toSet()
-        val toRemove = existingIds.minus(newIds)
-        val toAdd = newIds.minus(existingIds)
-        this.removeIf { toRemove.contains(it.hankekayttaja.id) }
-        this.addAll(
-            toAdd.map {
-                ContactRequest(it).toNewHakemusyhteyshenkiloEntity(hakemusyhteystietoEntity)
-            })
-    }
-
-    private fun sendApplicationNotifications(
+    private fun sendHakemusNotifications(
         hakemusEntity: HakemusEntity,
         excludedUserIds: Set<UUID>,
         userId: String,
     ) {
         val newContacts =
             hakemusEntity.allContactUsers().filterNot { excludedUserIds.contains(it.id) }
-        if (newContacts.isEmpty()) {
-            return
+        if (newContacts.isNotEmpty()) {
+            sendHakemusNotifications(newContacts, hakemusEntity, userId)
         }
+    }
 
+    fun sendHakemusNotifications(
+        newContacts: List<HankekayttajaEntity>,
+        hakemusEntity: HakemusEntity,
+        userId: String,
+    ) {
         val inviter =
             hankeKayttajaService.getKayttajaByUserId(hakemusEntity.hanke.id, userId)
                 ?: throw CurrentUserWithoutKayttajaException(userId)
@@ -1066,6 +1022,44 @@ class HakemusService(
     }
 
     fun isCancelled(alluStatus: ApplicationStatus?) = alluStatus == ApplicationStatus.CANCELLED
+
+    companion object {
+        /** @return HankekayttajaIDs of new yhteyshenkilot that need to be added. */
+        fun <H : YhteyshenkiloEntity> CustomerWithContactsRequest.toExistingYhteystietoEntity(
+            yhteystietoEntity: YhteystietoEntity<H>,
+        ): Set<UUID> {
+            if (customer.type != yhteystietoEntity.tyyppi && customer.registryKeyHidden) {
+                // If new customer type doesn't match the old one, the type of registry key will be
+                // wrong, but it will be retained if the key is hidden.
+                // Validation only checks the new type.
+                throw InvalidHiddenRegistryKey(
+                    "New customer type doesn't match the old.",
+                    customer.type,
+                    yhteystietoEntity.tyyppi)
+            }
+            yhteystietoEntity.tyyppi = customer.type
+            yhteystietoEntity.nimi = customer.name
+            yhteystietoEntity.sahkoposti = customer.email
+            yhteystietoEntity.puhelinnumero = customer.phone
+            if (!customer.registryKeyHidden) {
+                yhteystietoEntity.registryKey = customer.registryKey
+            }
+            val newHenkilot = yhteystietoEntity.yhteyshenkilot.update(this.contacts)
+            return newHenkilot
+        }
+
+        /** @return HankekayttajaIDs of new yhteyshenkilot that need to be added. */
+        private fun <H : YhteyshenkiloEntity> MutableList<H>.update(
+            contacts: List<ContactRequest>
+        ): Set<UUID> {
+            val existingIds = this.map { it.hankekayttaja.id }.toSet()
+            val newIds = contacts.map { it.hankekayttajaId }.toSet()
+            val toRemove = existingIds.minus(newIds)
+            val toAdd = newIds.minus(existingIds)
+            this.removeIf { toRemove.contains(it.hankekayttaja.id) }
+            return toAdd
+        }
+    }
 }
 
 class IncompatibleHakemusUpdateRequestException(
@@ -1076,20 +1070,19 @@ class IncompatibleHakemusUpdateRequestException(
     RuntimeException(
         "Invalid update request for hakemus. ${application.logString()}, type=$oldApplicationClass, requestType=$requestClass")
 
-class InvalidHakemusyhteystietoException(
-    application: HakemusIdentifier,
-    rooli: ApplicationContactType,
-    yhteystietoId: UUID?,
-    newId: UUID?,
-) :
+class InvalidHakemusyhteystietoException(entityId: UUID?, newId: UUID?) :
     RuntimeException(
-        "Invalid hakemusyhteystieto received when updating hakemus. ${application.logString()}, role=$rooli, yhteystietoId=$yhteystietoId, newId=$newId")
+        "Invalid hakemusyhteystieto received when updating hakemus. " +
+            "yhteystietoId=${entityId}, newId=$newId")
 
-class InvalidHiddenRegistryKey(hakemus: HakemusIdentifier, message: String) :
+class InvalidHiddenRegistryKey(message: String, newType: CustomerType, oldType: CustomerType?) :
     RuntimeException(
-        "RegistryKeyHidden used in an incompatible way: $message ${hakemus.logString()}")
+        "RegistryKeyHidden used in an incompatible way: $message New=$newType Old=$oldType")
 
-class InvalidHakemusyhteyshenkiloException(message: String) : RuntimeException(message)
+class InvalidHakemusyhteyshenkiloException(invalidHankeKayttajaIds: Set<UUID>) :
+    RuntimeException(
+        "Invalid hanke user/users received when updating hakemus. " +
+            "invalidHankeKayttajaIds=$invalidHankeKayttajaIds")
 
 class UserNotInContactsException(application: HakemusIdentifier) :
     RuntimeException("Sending user is not a contact on the hakemus. ${application.logString()}")
@@ -1102,9 +1095,27 @@ class HakemusAlreadySentException(id: Long?, alluid: Int?, status: ApplicationSt
 class HakemusAlreadyProcessingException(id: Long?, alluid: Int?) :
     RuntimeException("Hakemus is no longer pending in Allu, id=$id, alluId=$alluid")
 
-class HakemusGeometryException(message: String) : RuntimeException(message)
+class HakemusGeometryException(
+    validationError: GeometriatDao.InvalidDetail,
+) :
+    RuntimeException(
+        "Invalid geometry received when updating hakemus. " +
+            "reason=${validationError.reason}, location=${validationError.location}")
 
-class HakemusGeometryNotInsideHankeException(message: String) : RuntimeException(message)
+class HakemusGeometryNotInsideHankeException(message: String) : RuntimeException(message) {
+    constructor(
+        geometry: Polygon
+    ) : this(
+        "Hakemus geometry doesn't match any hankealue. " +
+            "hakemus geometry=${geometry.toJsonString()}")
+
+    constructor(
+        hankealueId: Int,
+        geometry: Polygon,
+    ) : this(
+        "Hakemus geometry is outside the associated hankealue. " +
+            "hankealue=$hankealueId, hakemus geometry=${geometry.toJsonString()}")
+}
 
 class HakemusDecisionNotFoundException(message: String) : RuntimeException(message)
 

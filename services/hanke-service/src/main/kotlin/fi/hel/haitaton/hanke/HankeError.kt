@@ -57,10 +57,10 @@ enum class HankeError(val errorMessage: String) {
     HAI4006("Duplicate hankekayttaja"),
     HAI4007("Verified name not found in Profiili"),
     HAI5001("Decision not found"),
+    HAI6001("Taydennys not found"),
     ;
 
-    val errorCode: String
-        get() = name
+    fun getErrorCode(): String = name
 
     companion object {
         fun valueOf(violation: ConstraintViolation<*>): HankeError {
@@ -77,7 +77,7 @@ enum class HankeError(val errorMessage: String) {
 
 data class HankeErrorDetail(
     @JsonUnwrapped val hankeError: HankeError,
-    val errorPaths: List<String>
+    val errorPaths: List<String>,
 )
 
 class HankeNotFoundException(val hankeTunnus: String?) :
