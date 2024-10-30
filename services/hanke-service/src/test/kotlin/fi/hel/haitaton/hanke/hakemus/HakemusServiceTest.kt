@@ -36,7 +36,8 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.taydennys.TaydennysService
+import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
+import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
@@ -71,6 +72,8 @@ import org.springframework.context.ApplicationEventPublisher
 class HakemusServiceTest {
     private val hakemusRepository: HakemusRepository = mockk()
     private val hankeRepository: HankeRepository = mockk()
+    private val taydennysRepository: TaydennysRepository = mockk()
+    private val taydennyspyyntoRepository: TaydennyspyyntoRepository = mockk()
     private val geometriatDao: GeometriatDao = mockk()
     private val hankealueService: HankealueService = mockk()
     private val loggingService: HakemusLoggingService = mockk(relaxUnitFun = true)
@@ -82,12 +85,13 @@ class HakemusServiceTest {
     private val paatosService: PaatosService = mockk()
     private val publisher: ApplicationEventPublisher = mockk()
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService = mockk()
-    private val taydennysService: TaydennysService = mockk()
 
     private val hakemusService =
         HakemusService(
             hakemusRepository,
             hankeRepository,
+            taydennyspyyntoRepository,
+            taydennysRepository,
             geometriatDao,
             hankealueService,
             loggingService,
@@ -99,7 +103,6 @@ class HakemusServiceTest {
             paatosService,
             publisher,
             tormaystarkasteluLaskentaService,
-            taydennysService,
         )
 
     @BeforeEach

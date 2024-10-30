@@ -634,7 +634,7 @@ class KaivuilmoitusSendValidationTest {
     companion object {
         private const val BLANK = "   \t\n\t   "
 
-        val hakemus =
+        private val hakemus =
             HakemusFactory.createKaivuilmoitusData(
                 constructionWork = true,
                 requiredCompetence = true,
