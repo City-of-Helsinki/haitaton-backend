@@ -23,7 +23,6 @@ data class HakemusResponse(
 
 sealed interface HakemusDataResponse {
     val applicationType: ApplicationType
-    val pendingOnClient: Boolean
     val name: String
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
@@ -36,7 +35,6 @@ sealed interface HakemusDataResponse {
 
 data class JohtoselvitysHakemusDataResponse(
     override val applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-    override val pendingOnClient: Boolean,
     /** Työn nimi */
     override val name: String,
     /** Katuosoite */
@@ -84,7 +82,6 @@ data class JohtoselvitysHakemusDataResponse(
 
 data class KaivuilmoitusDataResponse(
     override val applicationType: ApplicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-    override val pendingOnClient: Boolean,
     /** Työn nimi */
     override val name: String,
     /** Työn kuvaus */
