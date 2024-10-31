@@ -12,7 +12,7 @@ import java.time.ZonedDateTime
 class HankkeenHakemusResponseDeserializer : JsonDeserializer<HankkeenHakemusResponse>() {
     override fun deserialize(
         jsonParser: JsonParser,
-        deserializationContext: DeserializationContext
+        deserializationContext: DeserializationContext,
     ): HankkeenHakemusResponse {
         val root = jsonParser.readValueAsTree<ObjectNode>()
         val basicApplication = OBJECT_MAPPER.treeToValue(root, BasicResponse::class.java)
@@ -25,12 +25,13 @@ class HankkeenHakemusResponseDeserializer : JsonDeserializer<HankkeenHakemusResp
                 deserializeHakemusalue(areaNode as ObjectNode, basicApplication.applicationType)
             }
         return basicApplication.toHankkeenHakemusResponse(
-            basicApplicationData.toHankkeenHakemusDataResponse(areas))
+            basicApplicationData.toHankkeenHakemusDataResponse(areas)
+        )
     }
 
     private fun deserializeHakemusalue(
         areaNode: ObjectNode,
-        applicationType: ApplicationType
+        applicationType: ApplicationType,
     ): Hakemusalue {
         return when (applicationType) {
             ApplicationType.CABLE_REPORT ->
@@ -71,7 +72,6 @@ class HankkeenHakemusResponseDeserializer : JsonDeserializer<HankkeenHakemusResp
                 name,
                 startTime,
                 endTime,
-                pendingOnClient,
                 if (areas.isNotEmpty()) areas else null,
             )
     }

@@ -95,13 +95,13 @@ class HakemusDataMapperTest {
             val expected =
                 AlluCableReportApplicationData(
                     identificationNumber = "HAI23-9",
-                    pendingOnClient = hakemus.pendingOnClient,
+                    pendingOnClient = false,
                     name = hakemus.name,
                     postalAddress =
                         AlluPostalAddress(
                             AlluStreetAddress(hakemus.postalAddress!!.streetAddress.streetName),
-                            hakemus.postalAddress!!.postalCode,
-                            hakemus.postalAddress!!.city,
+                            hakemus.postalAddress.postalCode,
+                            hakemus.postalAddress.city,
                         ),
                     constructionWork = hakemus.constructionWork,
                     maintenanceWork = hakemus.maintenanceWork,
@@ -180,7 +180,7 @@ class HakemusDataMapperTest {
         private val expectedResult =
             AlluExcavationNotificationData(
                 identificationNumber = "HAI23-0045",
-                pendingOnClient = hakemus.pendingOnClient,
+                pendingOnClient = false,
                 name = hakemus.name,
                 workPurpose = hakemus.workDescription,
                 clientApplicationKind = hakemus.workDescription,
@@ -245,21 +245,9 @@ class HakemusDataMapperTest {
                     "contractorWithContacts",
                     AlluDataError.NULL,
                 ),
-                Arguments.of(
-                    hakemus.copy(startTime = null),
-                    "startTime",
-                    AlluDataError.NULL,
-                ),
-                Arguments.of(
-                    hakemus.copy(endTime = null),
-                    "endTime",
-                    AlluDataError.NULL,
-                ),
-                Arguments.of(
-                    hakemus.copy(areas = null),
-                    "areas",
-                    AlluDataError.EMPTY_OR_NULL,
-                ),
+                Arguments.of(hakemus.copy(startTime = null), "startTime", AlluDataError.NULL),
+                Arguments.of(hakemus.copy(endTime = null), "endTime", AlluDataError.NULL),
+                Arguments.of(hakemus.copy(areas = null), "areas", AlluDataError.EMPTY_OR_NULL),
             )
 
         @ParameterizedTest
@@ -300,7 +288,8 @@ class HakemusDataMapperTest {
                                 katuosoite = null,
                                 postinumero = null,
                                 postitoimipaikka = null,
-                            )),
+                            )
+                    ),
                     expectedResult.copy(
                         invoicingCustomer =
                             Customer(
@@ -316,7 +305,8 @@ class HakemusDataMapperTest {
                                 sapCustomerNumber = null,
                             ),
                         customerReference = null,
-                    )),
+                    ),
+                ),
                 Arguments.of(
                     hakemus.copy(
                         invoicingCustomer =
@@ -324,14 +314,17 @@ class HakemusDataMapperTest {
                                 katuosoite = "Katu 1",
                                 postinumero = null,
                                 postitoimipaikka = null,
-                            )),
+                            )
+                    ),
                     expectedResult.copy(
                         invoicingCustomer =
                             expectedResult.invoicingCustomer!!.copy(
                                 postalAddress =
-                                    AlluPostalAddress(AlluStreetAddress("Katu 1"), "", "")),
+                                    AlluPostalAddress(AlluStreetAddress("Katu 1"), "", "")
+                            ),
                         customerReference = null,
-                    )),
+                    ),
+                ),
                 Arguments.of(
                     hakemus.copy(
                         invoicingCustomer =
@@ -339,10 +332,11 @@ class HakemusDataMapperTest {
                                 katuosoite = null,
                                 postinumero = "00410",
                                 postitoimipaikka = "Helsinki",
-                            )),
+                            )
+                    ),
                     expectedResult.copy(
                         invoicingCustomer =
-                            expectedResult.invoicingCustomer!!.copy(postalAddress = null),
+                            expectedResult.invoicingCustomer.copy(postalAddress = null),
                         customerReference = null,
                     ),
                 ),
@@ -382,7 +376,8 @@ class HakemusDataMapperTest {
             area.geometry.crs.properties["name"] = "Wrong geometry"
             val hakemus =
                 hakemus.copy(
-                    areas = listOf(area, ApplicationFactory.createCableReportApplicationArea()))
+                    areas = listOf(area, ApplicationFactory.createCableReportApplicationArea())
+                )
 
             val failure = assertFailure { hakemus.getGeometries() }
 
@@ -398,9 +393,11 @@ class HakemusDataMapperTest {
             val areas =
                 listOf(
                     ApplicationFactory.createCableReportApplicationArea(
-                        geometry = GeometriaFactory.secondPolygon()),
+                        geometry = GeometriaFactory.secondPolygon()
+                    ),
                     ApplicationFactory.createCableReportApplicationArea(
-                        geometry = GeometriaFactory.thirdPolygon()),
+                        geometry = GeometriaFactory.thirdPolygon()
+                    ),
                 )
             val hakemus = hakemus.copy(areas = areas)
 
@@ -416,9 +413,11 @@ class HakemusDataMapperTest {
             val areas =
                 listOf(
                     ApplicationFactory.createCableReportApplicationArea(
-                        geometry = GeometriaFactory.secondPolygon()),
+                        geometry = GeometriaFactory.secondPolygon()
+                    ),
                     ApplicationFactory.createCableReportApplicationArea(
-                        geometry = GeometriaFactory.thirdPolygon()),
+                        geometry = GeometriaFactory.thirdPolygon()
+                    ),
                 )
             val hakemus = hakemus.copy(areas = areas)
 

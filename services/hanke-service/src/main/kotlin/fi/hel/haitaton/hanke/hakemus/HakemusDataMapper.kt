@@ -29,7 +29,8 @@ object HakemusDataMapper {
         val description = workDescription()
         return AlluCableReportApplicationData(
             identificationNumber = hankeTunnus,
-            pendingOnClient = pendingOnClient,
+            // We don't send drafts to Allu
+            pendingOnClient = false,
             name = name,
             postalAddress = postalAddress?.toAlluData(),
             constructionWork = constructionWork,
@@ -61,7 +62,8 @@ object HakemusDataMapper {
     ): AlluExcavationNotificationData =
         AlluExcavationNotificationData(
             identificationNumber = hankeTunnus,
-            pendingOnClient = pendingOnClient,
+            // We don't send drafts to Allu
+            pendingOnClient = false,
             name = name,
             workPurpose = workDescription,
             clientApplicationKind = workDescription,
@@ -136,7 +138,8 @@ object HakemusDataMapper {
                 invoicingOperator = null,
                 sapCustomerNumber = null,
             ),
-            yhteyshenkilot.map { it.toAlluContact() })
+            yhteyshenkilot.map { it.toAlluContact() },
+        )
 
     fun Hakemusyhteyshenkilo.toAlluContact() =
         Contact("$etunimi $sukunimi".trim(), sahkoposti, puhelin, tilaaja)

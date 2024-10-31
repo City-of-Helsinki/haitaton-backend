@@ -51,7 +51,6 @@ object HakemusResponseFactory {
         }
 
     fun createJohtoselvitysHakemusDataResponse(
-        pendingOnClient: Boolean = false,
         name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
         postalAddress: PostalAddress = PostalAddress(StreetAddress(DEFAULT_STREET_NAME), "", ""),
         rockExcavation: Boolean = false,
@@ -61,20 +60,13 @@ object HakemusResponseFactory {
         areas: List<JohtoselvitysHakemusalue> =
             listOf(ApplicationFactory.createCableReportApplicationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
-            CustomerWithContactsResponse(
-                companyCustomer(),
-                listOf(createContactResponse()),
-            ),
+            CustomerWithContactsResponse(companyCustomer(), listOf(createContactResponse())),
         contractorWithContacts: CustomerWithContactsResponse? =
-            CustomerWithContactsResponse(
-                personCustomer(),
-                listOf(createContactResponse()),
-            ),
+            CustomerWithContactsResponse(personCustomer(), listOf(createContactResponse())),
         representativeWithContacts: CustomerWithContactsResponse? = null,
         propertyDeveloperWithContacts: CustomerWithContactsResponse? = null,
     ): JohtoselvitysHakemusDataResponse =
         JohtoselvitysHakemusDataResponse(
-            pendingOnClient = pendingOnClient,
             name = name,
             postalAddress = postalAddress,
             constructionWork = true,
@@ -94,7 +86,6 @@ object HakemusResponseFactory {
         )
 
     private fun createKaivuilmoitusDataResponse(
-        pendingOnClient: Boolean = false,
         name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
         workDescription: String = "Work description.",
         cableReportDone: Boolean = false,
@@ -107,22 +98,15 @@ object HakemusResponseFactory {
         areas: List<KaivuilmoitusAlue> =
             listOf(ApplicationFactory.createExcavationNotificationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
-            CustomerWithContactsResponse(
-                companyCustomer(),
-                listOf(createContactResponse()),
-            ),
+            CustomerWithContactsResponse(companyCustomer(), listOf(createContactResponse())),
         contractorWithContacts: CustomerWithContactsResponse? =
-            CustomerWithContactsResponse(
-                personCustomer(),
-                listOf(createContactResponse()),
-            ),
+            CustomerWithContactsResponse(personCustomer(), listOf(createContactResponse())),
         representativeWithContacts: CustomerWithContactsResponse? = null,
         propertyDeveloperWithContacts: CustomerWithContactsResponse? = null,
         invoicingCustomer: InvoicingCustomerResponse? = createInvoicingCustomerResponse(),
         additionalInfo: String? = null,
     ): KaivuilmoitusDataResponse =
         KaivuilmoitusDataResponse(
-            pendingOnClient = pendingOnClient,
             name = name,
             workDescription = workDescription,
             constructionWork = true,
@@ -190,7 +174,7 @@ object HakemusResponseFactory {
         lastName: String = "Testihenkilö",
         email: String = ApplicationFactory.TEPPO_EMAIL,
         phone: String = "04012345678",
-        orderer: Boolean = false
+        orderer: Boolean = false,
     ) = ContactResponse(hankekayttajaId, firstName, lastName, email, phone, orderer)
 
     private fun createInvoicingCustomerResponse(

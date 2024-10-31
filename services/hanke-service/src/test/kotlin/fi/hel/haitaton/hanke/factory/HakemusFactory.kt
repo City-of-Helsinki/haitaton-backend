@@ -60,7 +60,10 @@ class HakemusFactory(
 
     fun builder(applicationType: ApplicationType) =
         builder(
-            USERNAME, hankeFactory.builder(USERNAME).withHankealue().saveEntity(), applicationType)
+            USERNAME,
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity(),
+            applicationType,
+        )
 
     private fun builder(
         userId: String,
@@ -138,7 +141,6 @@ class HakemusFactory(
             workDescription: String = ApplicationFactory.DEFAULT_WORK_DESCRIPTION,
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-            pendingOnClient: Boolean = false,
             areas: List<JohtoselvitysHakemusalue>? =
                 listOf(ApplicationFactory.createCableReportApplicationArea()),
             paperDecisionReceiver: PaperDecisionReceiver? = null,
@@ -162,7 +164,6 @@ class HakemusFactory(
                 workDescription = workDescription,
                 startTime = startTime,
                 endTime = endTime,
-                pendingOnClient = pendingOnClient,
                 areas = areas,
                 paperDecisionReceiver = paperDecisionReceiver,
                 customerWithContacts = customerWithContacts,
@@ -172,7 +173,6 @@ class HakemusFactory(
             )
 
         fun createKaivuilmoitusData(
-            pendingOnClient: Boolean = false,
             name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
             workDescription: String = ApplicationFactory.DEFAULT_WORK_DESCRIPTION,
             constructionWork: Boolean = false,
@@ -196,7 +196,6 @@ class HakemusFactory(
             additionalInfo: String? = null,
         ): KaivuilmoitusData =
             KaivuilmoitusData(
-                pendingOnClient = pendingOnClient,
                 name = name,
                 workDescription = workDescription,
                 constructionWork = constructionWork,
@@ -256,7 +255,9 @@ class HakemusFactory(
             val asianhoitaja = HakemusyhteystietoFactory.create(registryKey = null)
             val laskutusyhteystieto =
                 HakemusyhteystietoFactory.createLaskutusyhteystieto(
-                    tyyppi = tyyppi, registryKey = "280341-912F")
+                    tyyppi = tyyppi,
+                    registryKey = "280341-912F",
+                )
             val hakemusdata =
                 createKaivuilmoitusData(
                     customerWithContacts = hakija,

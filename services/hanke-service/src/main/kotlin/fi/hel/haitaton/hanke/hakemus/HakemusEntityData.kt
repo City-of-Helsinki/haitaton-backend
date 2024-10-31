@@ -20,21 +20,19 @@ enum class ApplicationContactType {
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "applicationType",
-    visible = true)
+    visible = true,
+)
 @JsonSubTypes(
     JsonSubTypes.Type(value = JohtoselvityshakemusEntityData::class, name = "CABLE_REPORT"),
     JsonSubTypes.Type(value = KaivuilmoitusEntityData::class, name = "EXCAVATION_NOTIFICATION"),
 )
 sealed interface HakemusEntityData {
     val applicationType: ApplicationType
-    val pendingOnClient: Boolean
     val name: String
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<Hakemusalue>?
     val paperDecisionReceiver: PaperDecisionReceiver?
-
-    fun copy(pendingOnClient: Boolean): HakemusEntityData
 
     fun copy(paperDecisionReceiver: PaperDecisionReceiver?): HakemusEntityData
 }
@@ -42,7 +40,6 @@ sealed interface HakemusEntityData {
 @JsonView(ChangeLogView::class)
 data class JohtoselvityshakemusEntityData(
     @JsonView(NotInChangeLogView::class) override val applicationType: ApplicationType,
-    override val pendingOnClient: Boolean,
     override val name: String,
     val postalAddress: PostalAddress? = null,
     val constructionWork: Boolean = false,
@@ -56,9 +53,6 @@ data class JohtoselvityshakemusEntityData(
     override val areas: List<JohtoselvitysHakemusalue>?,
     override val paperDecisionReceiver: PaperDecisionReceiver?,
 ) : HakemusEntityData {
-    override fun copy(pendingOnClient: Boolean): JohtoselvityshakemusEntityData =
-        copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
-
     override fun copy(
         paperDecisionReceiver: PaperDecisionReceiver?
     ): JohtoselvityshakemusEntityData =
@@ -78,7 +72,6 @@ data class JohtoselvityshakemusEntityData(
             workDescription = workDescription,
             startTime = startTime,
             endTime = endTime,
-            pendingOnClient = pendingOnClient,
             areas = areas,
             paperDecisionReceiver = paperDecisionReceiver,
             customerWithContacts = yhteystiedot[ApplicationContactType.HAKIJA],
@@ -91,7 +84,6 @@ data class JohtoselvityshakemusEntityData(
 @JsonView(ChangeLogView::class)
 data class KaivuilmoitusEntityData(
     @JsonView(NotInChangeLogView::class) override val applicationType: ApplicationType,
-    override val pendingOnClient: Boolean,
     override val name: String,
     val workDescription: String,
     val constructionWork: Boolean = false,
@@ -110,15 +102,11 @@ data class KaivuilmoitusEntityData(
     val customerReference: String? = null,
     val additionalInfo: String? = null,
 ) : HakemusEntityData {
-    override fun copy(pendingOnClient: Boolean): KaivuilmoitusEntityData =
-        copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
-
     override fun copy(paperDecisionReceiver: PaperDecisionReceiver?): KaivuilmoitusEntityData =
         copy(applicationType = applicationType, paperDecisionReceiver = paperDecisionReceiver)
 
     fun toHakemusData(yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>): HakemusData =
         KaivuilmoitusData(
-            pendingOnClient = pendingOnClient,
             name = name,
             workDescription = workDescription,
             constructionWork = constructionWork,
@@ -144,7 +132,6 @@ data class KaivuilmoitusEntityData(
     fun createAccompanyingJohtoselvityshakemusData(): JohtoselvityshakemusEntityData =
         JohtoselvityshakemusEntityData(
             applicationType = ApplicationType.CABLE_REPORT,
-            pendingOnClient = pendingOnClient,
             name = name,
             postalAddress = areas.combinedAddress(),
             constructionWork = constructionWork,
@@ -173,7 +160,8 @@ fun InvoicingCustomer?.toLaskutusyhteystieto(customerReference: String?): Laskut
             it.postalAddress?.postalCode,
             it.postalAddress?.city,
             it.email,
-            it.phone)
+            it.phone,
+        )
     }
 
 class AlluDataException(path: String, error: AlluDataError) :
@@ -181,8 +169,7 @@ class AlluDataException(path: String, error: AlluDataError) :
 
 enum class AlluDataError(private val errorDescription: String) {
     NULL("Can't be null"),
-    EMPTY_OR_NULL("Can't be empty or null"),
-    ;
+    EMPTY_OR_NULL("Can't be empty or null");
 
     override fun toString(): String = errorDescription
 }

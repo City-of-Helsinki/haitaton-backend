@@ -72,21 +72,12 @@ data class HakemusBuilder(
     fun inHandling(alluId: Int = 1) = withStatus(ApplicationStatus.HANDLING, alluId)
 
     fun withName(name: String): HakemusBuilder =
-        updateApplicationData(
-            { copy(name = name) },
-            { copy(name = name) },
-        )
+        updateApplicationData({ copy(name = name) }, { copy(name = name) })
 
     fun withWorkDescription(workDescription: String): HakemusBuilder =
         updateApplicationData(
             { copy(workDescription = workDescription) },
             { copy(workDescription = workDescription) },
-        )
-
-    fun withPendingOnClient(pendingOnClient: Boolean) =
-        updateApplicationData(
-            { copy(pendingOnClient = pendingOnClient) },
-            { copy(pendingOnClient = pendingOnClient) },
         )
 
     fun withArea(area: JohtoselvitysHakemusalue): HakemusBuilder {
@@ -112,21 +103,17 @@ data class HakemusBuilder(
                 copy(
                     areas =
                         (areas ?: listOf()).plus(
-                            createExcavationNotificationArea(hankealueId = hankealueId ?: 0)))
+                            createExcavationNotificationArea(hankealueId = hankealueId ?: 0)
+                        )
+                )
             },
         )
 
     fun withStartTime(time: ZonedDateTime? = DateFactory.getStartDatetime()) =
-        updateApplicationData(
-            { copy(startTime = time) },
-            { copy(startTime = time) },
-        )
+        updateApplicationData({ copy(startTime = time) }, { copy(startTime = time) })
 
     fun withEndTime(time: ZonedDateTime? = DateFactory.getEndDatetime()) =
-        updateApplicationData(
-            { copy(endTime = time) },
-            { copy(endTime = time) },
-        )
+        updateApplicationData({ copy(endTime = time) }, { copy(endTime = time) })
 
     fun withoutCableReports() =
         updateApplicationData(
@@ -149,7 +136,7 @@ data class HakemusBuilder(
     fun withWorkInvolves(
         constructionWork: Boolean = true,
         maintenanceWork: Boolean = false,
-        emergencyWork: Boolean = false
+        emergencyWork: Boolean = false,
     ): HakemusBuilder =
         updateApplicationData(
             { throw InvalidParameterException("Not available for cable reports.") },
@@ -212,7 +199,8 @@ data class HakemusBuilder(
                     .withEndTime()
                     .withArea(hankealue?.id)
                     .withCableReports(
-                        listOf(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER))
+                        listOf(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                    )
                     .withWorkInvolves()
                     .withRequiredCompetence()
                     .hakija()
@@ -228,7 +216,7 @@ data class HakemusBuilder(
         status: ApplicationStatus? = ApplicationStatus.PENDING,
         alluId: Int? = 1,
         identifier: String? = defaultIdentifier(alluId),
-        hankealue: SavedHankealue? = null
+        hankealue: SavedHankealue? = null,
     ) = this.withMandatoryFields(hankealue).withStatus(status, alluId, identifier)
 
     private fun founder(): HankekayttajaEntity =
@@ -237,13 +225,10 @@ data class HakemusBuilder(
     fun hakija(
         yhteystieto: Hakemusyhteystieto = HakemusyhteystietoFactory.create(),
         vararg yhteyshenkilot: HankekayttajaEntity =
-            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_HAKIJA))
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_HAKIJA)),
     ): HakemusBuilder = yhteystieto(ApplicationContactType.HAKIJA, yhteystieto, *yhteyshenkilot)
 
-    fun hakija(
-        kayttooikeustaso: Kayttooikeustaso,
-        tilaaja: Boolean = true,
-    ): HakemusBuilder =
+    fun hakija(kayttooikeustaso: Kayttooikeustaso, tilaaja: Boolean = true): HakemusBuilder =
         yhteystieto(
             kayttooikeustaso,
             tilaaja,
@@ -253,13 +238,13 @@ data class HakemusBuilder(
 
     fun hakija(
         first: HankekayttajaEntity,
-        vararg yhteyshenkilot: HankekayttajaEntity
+        vararg yhteyshenkilot: HankekayttajaEntity,
     ): HakemusBuilder = hakija(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
 
     fun tyonSuorittaja(
         yhteystieto: Hakemusyhteystieto = HakemusyhteystietoFactory.create(),
         vararg yhteyshenkilot: HankekayttajaEntity =
-            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA))
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA)),
     ): HakemusBuilder =
         yhteystieto(ApplicationContactType.TYON_SUORITTAJA, yhteystieto, *yhteyshenkilot)
 
@@ -276,20 +261,17 @@ data class HakemusBuilder(
 
     fun tyonSuorittaja(
         first: HankekayttajaEntity,
-        vararg yhteyshenkilot: HankekayttajaEntity
+        vararg yhteyshenkilot: HankekayttajaEntity,
     ): HakemusBuilder = tyonSuorittaja(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
 
     fun rakennuttaja(
         yhteystieto: Hakemusyhteystieto = HakemusyhteystietoFactory.create(),
         vararg yhteyshenkilot: HankekayttajaEntity =
-            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_RAKENNUTTAJA))
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_RAKENNUTTAJA)),
     ): HakemusBuilder =
         yhteystieto(ApplicationContactType.RAKENNUTTAJA, yhteystieto, *yhteyshenkilot)
 
-    fun rakennuttaja(
-        kayttooikeustaso: Kayttooikeustaso,
-        tilaaja: Boolean = false,
-    ): HakemusBuilder =
+    fun rakennuttaja(kayttooikeustaso: Kayttooikeustaso, tilaaja: Boolean = false): HakemusBuilder =
         yhteystieto(
             kayttooikeustaso,
             tilaaja,
@@ -299,20 +281,17 @@ data class HakemusBuilder(
 
     fun rakennuttaja(
         first: HankekayttajaEntity,
-        vararg yhteyshenkilot: HankekayttajaEntity
+        vararg yhteyshenkilot: HankekayttajaEntity,
     ): HakemusBuilder = rakennuttaja(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
 
     fun asianhoitaja(
         yhteystieto: Hakemusyhteystieto = HakemusyhteystietoFactory.create(),
         vararg yhteyshenkilot: HankekayttajaEntity =
-            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA))
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA)),
     ): HakemusBuilder =
         yhteystieto(ApplicationContactType.ASIANHOITAJA, yhteystieto, *yhteyshenkilot)
 
-    fun asianhoitaja(
-        kayttooikeustaso: Kayttooikeustaso,
-        tilaaja: Boolean = false,
-    ): HakemusBuilder =
+    fun asianhoitaja(kayttooikeustaso: Kayttooikeustaso, tilaaja: Boolean = false): HakemusBuilder =
         yhteystieto(
             kayttooikeustaso,
             tilaaja,
@@ -322,13 +301,13 @@ data class HakemusBuilder(
 
     fun asianhoitaja(
         first: HankekayttajaEntity,
-        vararg yhteyshenkilot: HankekayttajaEntity
+        vararg yhteyshenkilot: HankekayttajaEntity,
     ): HakemusBuilder = asianhoitaja(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
 
     /** Creates each customer and saves the given hankekayttaja as contacts to all of them. */
     fun withEachCustomer(
         first: HankekayttajaEntity,
-        vararg yhteyshenkilot: HankekayttajaEntity
+        vararg yhteyshenkilot: HankekayttajaEntity,
     ): HakemusBuilder =
         hakija(first, *yhteyshenkilot)
             .tyonSuorittaja(first, *yhteyshenkilot)
@@ -338,7 +317,7 @@ data class HakemusBuilder(
     private fun yhteystieto(
         rooli: ApplicationContactType,
         yhteystieto: Hakemusyhteystieto = HakemusyhteystietoFactory.create(),
-        vararg yhteyshenkilot: HankekayttajaEntity
+        vararg yhteyshenkilot: HankekayttajaEntity,
     ): HakemusBuilder {
         val yhteystietoEntity = createYhteystietoEntity(rooli, yhteystieto)
         val yhteyshenkiloEntities =
@@ -353,7 +332,7 @@ data class HakemusBuilder(
         kayttooikeustaso: Kayttooikeustaso,
         tilaaja: Boolean,
         rooli: ApplicationContactType,
-        kayttajaInput: HankekayttajaInput
+        kayttajaInput: HankekayttajaInput,
     ): HakemusBuilder {
         val yhteystietoEntity = createYhteystietoEntity(rooli, HakemusyhteystietoFactory.create())
         val kayttaja = kayttaja(kayttajaInput, kayttooikeustaso)
@@ -376,7 +355,7 @@ data class HakemusBuilder(
 
     private fun createYhteystietoEntity(
         rooli: ApplicationContactType,
-        yhteystieto: Hakemusyhteystieto
+        yhteystieto: Hakemusyhteystieto,
     ): HakemusyhteystietoEntity =
         HakemusyhteystietoEntity(
             tyyppi = yhteystieto.tyyppi,
@@ -391,10 +370,13 @@ data class HakemusBuilder(
     private fun createYhteyshenkiloEntity(
         yhteystietoEntity: HakemusyhteystietoEntity,
         kayttaja: HankekayttajaEntity,
-        tilaaja: Boolean = false
+        tilaaja: Boolean = false,
     ) =
         HakemusyhteyshenkiloEntity(
-            hankekayttaja = kayttaja, hakemusyhteystieto = yhteystietoEntity, tilaaja = tilaaja)
+            hankekayttaja = kayttaja,
+            hakemusyhteystieto = yhteystietoEntity,
+            tilaaja = tilaaja,
+        )
 
     private fun defaultIdentifier(alluId: Int?) =
         when (hakemusEntity.applicationType) {
