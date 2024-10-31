@@ -2,14 +2,23 @@ package fi.hel.haitaton.hanke.taydennys
 
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
+import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
+import fi.hel.haitaton.hanke.hakemus.HakemusService
+import fi.hel.haitaton.hanke.hakemus.HakemusService.Companion.toExistingYhteystietoEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import fi.hel.haitaton.hanke.logging.TaydennysLoggingService
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -18,10 +27,13 @@ private val logger = KotlinLogging.logger {}
 @Service
 class TaydennysService(
     private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
+    private val hakemusService: HakemusService,
     private val taydennysRepository: TaydennysRepository,
     private val hakemusRepository: HakemusRepository,
     private val alluClient: AlluClient,
     private val loggingService: TaydennysLoggingService,
+    private val hankeKayttajaService: HankeKayttajaService,
+    private val taydennysLoggingService: TaydennysLoggingService
 ) {
     @Transactional(readOnly = true)
     fun findTaydennyspyynto(hakemusId: Long): Taydennyspyynto? =
@@ -57,10 +69,7 @@ class TaydennysService(
 
         if (hakemus.alluStatus != ApplicationStatus.WAITING_INFORMATION) {
             throw HakemusInWrongStatusException(
-                hakemus,
-                hakemus.alluStatus,
-                listOf(ApplicationStatus.WAITING_INFORMATION),
-            )
+                hakemus, hakemus.alluStatus, listOf(ApplicationStatus.WAITING_INFORMATION))
         }
 
         val saved = createFromHakemus(hakemus, taydennyspyynto).toDomain()
@@ -68,8 +77,7 @@ class TaydennysService(
         return saved
     }
 
-    @Transactional
-    fun createFromHakemus(
+    private fun createFromHakemus(
         hakemus: HakemusEntity,
         taydennyspyynto: TaydennyspyyntoEntity,
     ): TaydennysEntity {
@@ -106,6 +114,150 @@ class TaydennysService(
         }
     }
 
+    @Transactional
+    fun updateTaydennys(id: UUID, request: HakemusUpdateRequest, currentUserId: String): Taydennys {
+        logger.info("Updating taydennys id=$id")
+
+        val taydennysEntity =
+            taydennysRepository.findByIdOrNull(id) ?: throw TaydennysNotFoundException(id)
+        val originalTaydennys = taydennysEntity.toDomain()
+
+        logger.info { "The taydennys to update is ${taydennysEntity.logString()}" }
+
+        assertUpdateCompatible(taydennysEntity, request)
+
+        if (!request.hasChanges(originalTaydennys.hakemusData)) {
+            logger.info("Not updating unchanged hakemus data. ${taydennysEntity.id}")
+            return originalTaydennys
+        }
+
+        hakemusService.assertGeometryValidity(request.areas)
+
+        val hakemusEntity = hakemusRepository.getReferenceById(taydennysEntity.hakemusId())
+        val hanke = hakemusEntity.hanke
+        val yhteystiedot = taydennysEntity.yhteystiedot
+        hakemusService.assertYhteystiedotValidity(hanke, yhteystiedot, request)
+        hakemusService.assertOrUpdateHankealueet(hanke, request)
+
+        val originalContactUserIds = taydennysEntity.allContactUsers().map { it.id }.toSet()
+        val updatedTaydennysEntity = saveWithUpdate(taydennysEntity, request, hanke.id)
+        sendHakemusNotifications(
+            updatedTaydennysEntity, hakemusEntity, originalContactUserIds, currentUserId)
+
+        logger.info("Updated täydennys. ${updatedTaydennysEntity.logString()}")
+        val updatedTaydennys = updatedTaydennysEntity.toDomain()
+        taydennysLoggingService.logUpdate(originalTaydennys, updatedTaydennys, currentUserId)
+
+        return updatedTaydennys
+    }
+
+    private fun assertUpdateCompatible(
+        taydennysEntity: TaydennysEntity,
+        request: HakemusUpdateRequest
+    ) {
+        if (taydennysEntity.hakemusData.applicationType != request.applicationType) {
+            throw IncompatibleTaydennysUpdateException(
+                taydennysEntity,
+                taydennysEntity.hakemusData.applicationType,
+                request.applicationType)
+        }
+    }
+
+    /** Creates a new [TaydennysEntity] based on the given [request] and saves it. */
+    private fun saveWithUpdate(
+        taydennysEntity: TaydennysEntity,
+        request: HakemusUpdateRequest,
+        hankeId: Int,
+    ): TaydennysEntity {
+        logger.info { "Creating and saving new taydennys data. ${taydennysEntity.logString()}" }
+        taydennysEntity.hakemusData = request.toEntityData(taydennysEntity.hakemusData)
+        updateYhteystiedot(taydennysEntity, request.customersByRole(), hankeId)
+
+        hakemusService.updateTormaystarkastelut(taydennysEntity.hakemusData)?.let {
+            taydennysEntity.hakemusData = it
+        }
+        return taydennysRepository.save(taydennysEntity)
+    }
+
+    private fun updateYhteystiedot(
+        taydennysEntity: TaydennysEntity,
+        newYhteystiedot: Map<ApplicationContactType, CustomerWithContactsRequest?>,
+        hankeId: Int,
+    ) {
+        ApplicationContactType.entries.forEach { rooli ->
+            updateYhteystieto(rooli, taydennysEntity, newYhteystiedot[rooli], hankeId)?.let {
+                taydennysEntity.yhteystiedot[rooli] = it
+            } ?: taydennysEntity.yhteystiedot.remove(rooli)
+        }
+    }
+
+    private fun updateYhteystieto(
+        rooli: ApplicationContactType,
+        taydennysEntity: TaydennysEntity,
+        customerWithContactsRequest: CustomerWithContactsRequest?,
+        hankeId: Int,
+    ): TaydennysyhteystietoEntity? {
+        if (customerWithContactsRequest == null) {
+            // customer was deleted
+            return null
+        }
+        return taydennysEntity.yhteystiedot[rooli]?.let {
+            val newHenkilot = customerWithContactsRequest.toExistingYhteystietoEntity(it)
+            newHenkilot.map { hankekayttajaId ->
+                it.yhteyshenkilot.add(newTaydennysyhteyshenkiloEntity(hankekayttajaId, it, hankeId))
+            }
+            it
+        }
+            ?: customerWithContactsRequest.toNewTaydennysyhteystietoEntity(
+                rooli, taydennysEntity, hankeId)
+    }
+
+    private fun CustomerWithContactsRequest.toNewTaydennysyhteystietoEntity(
+        rooli: ApplicationContactType,
+        taydennysEntity: TaydennysEntity,
+        hankeId: Int,
+    ) =
+        TaydennysyhteystietoEntity(
+                tyyppi = customer.type,
+                rooli = rooli,
+                nimi = customer.name,
+                sahkoposti = customer.email,
+                puhelinnumero = customer.phone,
+                registryKey = customer.registryKey,
+                taydennys = taydennysEntity,
+            )
+            .apply {
+                yhteyshenkilot.addAll(
+                    contacts.map {
+                        newTaydennysyhteyshenkiloEntity(it.hankekayttajaId, this, hankeId)
+                    })
+            }
+
+    private fun newTaydennysyhteyshenkiloEntity(
+        hankekayttajaId: UUID,
+        taydennysyhteystietoEntity: TaydennysyhteystietoEntity,
+        hankeId: Int,
+    ): TaydennysyhteyshenkiloEntity {
+        return TaydennysyhteyshenkiloEntity(
+            taydennysyhteystieto = taydennysyhteystietoEntity,
+            hankekayttaja = hankeKayttajaService.getKayttajaForHanke(hankekayttajaId, hankeId),
+            tilaaja = false,
+        )
+    }
+
+    private fun sendHakemusNotifications(
+        taydennysEntity: TaydennysEntity,
+        hakemusEntity: HakemusEntity,
+        excludedUserIds: Set<UUID>,
+        userId: String,
+    ) {
+        val newContacts =
+            taydennysEntity.allContactUsers().filterNot { excludedUserIds.contains(it.id) }
+        if (newContacts.isNotEmpty()) {
+            hakemusService.sendHakemusNotifications(newContacts, hakemusEntity, userId)
+        }
+    }
+
     private fun createYhteystieto(
         yhteystieto: HakemusyhteystietoEntity,
         taydennys: TaydennysEntity,
@@ -137,3 +289,13 @@ class TaydennysService(
 
 class NoTaydennyspyyntoException(hakemusId: Long) :
     RuntimeException("Application doesn't have an open taydennyspyynto. hakemusId=$hakemusId")
+
+class TaydennysNotFoundException(id: UUID) : RuntimeException("Taydennys not found. Id=$id")
+
+class IncompatibleTaydennysUpdateException(
+    taydennysEntity: TaydennysEntity,
+    existingType: ApplicationType,
+    requestedType: ApplicationType
+) :
+    RuntimeException(
+        "Invalid update request for taydennys. ${taydennysEntity.id}, existing type=$existingType, requested type=$requestedType")

@@ -53,5 +53,12 @@ class TaydennyspyyntoFactory(private val taydennyspyyntoRepository: Taydennyspyy
         fun TaydennyspyyntoEntity.clearKentat() {
             kentat.clear()
         }
+
+        fun createEntity(
+            id: UUID = DEFAULT_ID,
+            applicationId: Long = ApplicationFactory.DEFAULT_APPLICATION_ID,
+            alluId: Int = DEFAULT_ALLU_ID,
+            kentat: Map<InformationRequestFieldKey, String> = DEFAULT_KENTAT,
+        ) = TaydennyspyyntoEntity(id, applicationId, alluId, kentat.toMutableMap())
     }
 }

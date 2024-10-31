@@ -1,10 +1,12 @@
 package fi.hel.haitaton.hanke.taydennys
 
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusEntityData
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
@@ -25,7 +27,7 @@ import org.hibernate.annotations.Type
 @Entity
 @Table(name = "taydennys")
 class TaydennysEntity(
-    @Id var id: UUID = UUID.randomUUID(),
+    @Id override var id: UUID = UUID.randomUUID(),
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "taydennyspyynto_id", nullable = false)
@@ -43,7 +45,7 @@ class TaydennysEntity(
     @BatchSize(size = 100)
     var yhteystiedot: MutableMap<ApplicationContactType, TaydennysyhteystietoEntity> =
         mutableMapOf(),
-) {
+) : TaydennysIdentifier {
     fun toDomain(): Taydennys {
         val yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto> =
             yhteystiedot.mapValues { it.value.toDomain() }
@@ -60,4 +62,19 @@ class TaydennysEntity(
             hakemusData = applicationData,
         )
     }
+
+    override fun taydennyspyyntoId(): UUID = taydennyspyynto.id
+
+    override fun taydennyspyyntoAlluId(): Int = taydennyspyynto.alluId
+
+    override fun hakemusId(): Long = taydennyspyynto.applicationId
+
+    override fun hakemustyyppi(): ApplicationType = hakemusData.applicationType
+
+    /** Returns all distinct contact users for this täydennys. */
+    fun allContactUsers(): List<HankekayttajaEntity> =
+        yhteystiedot.values
+            .flatMap { it.yhteyshenkilot }
+            .map { it.hankekayttaja }
+            .distinctBy { it.id }
 }
