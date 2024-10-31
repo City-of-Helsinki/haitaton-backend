@@ -43,7 +43,7 @@ spotless {
     ratchetFrom("origin/dev") // only format files which have changed since origin/dev
 
     kotlin {
-        ktfmt("0.51").kotlinlangStyle()
+        ktfmt("0.53").kotlinlangStyle()
         toggleOffOn()
     }
 }

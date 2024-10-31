@@ -38,7 +38,8 @@ data class Hakemus(
                     }
                 } else {
                     null
-                })
+                },
+        )
 
     fun toMetadata(): HakemusMetaData =
         HakemusMetaData(
@@ -54,7 +55,6 @@ data class Hakemus(
 sealed interface HakemusData {
     val applicationType: ApplicationType
     val name: String
-    val pendingOnClient: Boolean
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<Hakemusalue>?
@@ -78,7 +78,6 @@ data class JohtoselvityshakemusData(
     val workDescription: String? = null,
     override val startTime: ZonedDateTime? = null,
     override val endTime: ZonedDateTime? = null,
-    override val pendingOnClient: Boolean,
     override val areas: List<JohtoselvitysHakemusalue>? = null,
     override val paperDecisionReceiver: PaperDecisionReceiver?,
     override val customerWithContacts: Hakemusyhteystieto? = null,
@@ -89,7 +88,6 @@ data class JohtoselvityshakemusData(
     override fun toResponse(): JohtoselvitysHakemusDataResponse =
         JohtoselvitysHakemusDataResponse(
             applicationType = ApplicationType.CABLE_REPORT,
-            pendingOnClient = pendingOnClient,
             name = name,
             postalAddress = postalAddress,
             constructionWork = constructionWork,
@@ -119,7 +117,6 @@ data class JohtoselvityshakemusData(
 
 data class KaivuilmoitusData(
     override val applicationType: ApplicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-    override val pendingOnClient: Boolean,
     override val name: String,
     val workDescription: String,
     val constructionWork: Boolean,
@@ -144,7 +141,6 @@ data class KaivuilmoitusData(
     override fun toResponse(): KaivuilmoitusDataResponse =
         KaivuilmoitusDataResponse(
             applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-            pendingOnClient = pendingOnClient,
             name = name,
             workDescription = workDescription,
             constructionWork = constructionWork,

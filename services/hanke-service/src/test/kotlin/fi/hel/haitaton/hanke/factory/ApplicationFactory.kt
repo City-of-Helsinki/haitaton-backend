@@ -133,14 +133,12 @@ class ApplicationFactory(
             areas: List<JohtoselvitysHakemusalue>? = listOf(createCableReportApplicationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-            pendingOnClient: Boolean = false,
             workDescription: String = DEFAULT_WORK_DESCRIPTION,
             rockExcavation: Boolean = false,
             postalAddress: PostalAddress? = null,
         ): JohtoselvityshakemusEntityData =
             JohtoselvityshakemusEntityData(
                 applicationType = ApplicationType.CABLE_REPORT,
-                pendingOnClient = pendingOnClient,
                 name = name,
                 postalAddress = postalAddress,
                 rockExcavation = rockExcavation,
@@ -157,13 +155,12 @@ class ApplicationFactory(
                 areas = null,
                 startTime = null,
                 endTime = null,
-                pendingOnClient = false,
                 workDescription = "",
                 rockExcavation = false,
-                postalAddress = PostalAddress(StreetAddress(""), "", ""))
+                postalAddress = PostalAddress(StreetAddress(""), "", ""),
+            )
 
         fun createExcavationNotificationData(
-            pendingOnClient: Boolean = false,
             name: String = DEFAULT_APPLICATION_NAME,
             workDescription: String = "Työn kuvaus.",
             maintenanceWork: Boolean = false,
@@ -182,7 +179,6 @@ class ApplicationFactory(
         ): KaivuilmoitusEntityData =
             KaivuilmoitusEntityData(
                 applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                pendingOnClient = pendingOnClient,
                 name = name,
                 workDescription = workDescription,
                 maintenanceWork = maintenanceWork,

@@ -35,7 +35,6 @@ data class HankkeenHakemusDataResponse(
     val name: String,
     val startTime: ZonedDateTime?,
     val endTime: ZonedDateTime?,
-    val pendingOnClient: Boolean,
     val areas: List<Hakemusalue>?,
 ) {
     constructor(
@@ -45,7 +44,6 @@ data class HankkeenHakemusDataResponse(
         cableReportApplicationData.name,
         cableReportApplicationData.startTime,
         cableReportApplicationData.endTime,
-        cableReportApplicationData.pendingOnClient,
         if (includeAreas) cableReportApplicationData.areas else null,
     )
 
@@ -56,7 +54,6 @@ data class HankkeenHakemusDataResponse(
         kaivuilmoitusEntityData.name,
         kaivuilmoitusEntityData.startTime,
         kaivuilmoitusEntityData.endTime,
-        kaivuilmoitusEntityData.pendingOnClient,
         if (includeAreas) kaivuilmoitusEntityData.areas else null,
     )
 }
