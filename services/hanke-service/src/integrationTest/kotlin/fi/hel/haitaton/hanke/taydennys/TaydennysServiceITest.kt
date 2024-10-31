@@ -144,7 +144,7 @@ class TaydennysServiceITest(
     }
 
     @Nested
-    inner class CreateFromHakemus {
+    inner class Create {
         private val fixedUUID = UUID.fromString("789b38cf-5345-4889-a5b8-2711c47559c8")
 
         private fun builder() =
