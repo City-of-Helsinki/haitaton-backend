@@ -57,10 +57,10 @@ enum class HankeError(val errorMessage: String) {
     HAI4006("Duplicate hankekayttaja"),
     HAI4007("Verified name not found in Profiili"),
     HAI5001("Decision not found"),
-    HAI6001("Taydennys not found"),
-    ;
+    HAI6001("Taydennys not found");
 
-    fun getErrorCode(): String = name
+    val errorCode: String
+        get() = name
 
     companion object {
         fun valueOf(violation: ConstraintViolation<*>): HankeError {
@@ -87,7 +87,8 @@ class HankeArgumentException(message: String) : RuntimeException(message)
 
 class HankeYhteystietoNotFoundException(val hanke: HankeIdentifier, ytId: Int) :
     RuntimeException(
-        "HankeYhteystieto not found for Hanke, yhteystieto: $ytId, ${hanke.logString()}")
+        "HankeYhteystieto not found for Hanke, yhteystieto: $ytId, ${hanke.logString()}"
+    )
 
 class HankeAlluConflictException(message: String) : RuntimeException(message)
 

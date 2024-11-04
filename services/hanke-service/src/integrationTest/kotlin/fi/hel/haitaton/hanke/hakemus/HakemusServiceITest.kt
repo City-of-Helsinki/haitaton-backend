@@ -16,6 +16,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isGreaterThan
 import assertk.assertions.isInstanceOf
+import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
@@ -78,7 +79,7 @@ import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.paatos.PaatosTila
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
-import fi.hel.haitaton.hanke.taydennys.Taydennys
+import fi.hel.haitaton.hanke.taydennys.TaydennysWithMuutokset
 import fi.hel.haitaton.hanke.taydennys.Taydennyspyynto
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasStreetName
@@ -277,17 +278,41 @@ class HakemusServiceITest(
                     .builder()
                     .withMandatoryFields()
                     .withStatus(ApplicationStatus.WAITING_INFORMATION)
-                    .save()
-            val taydennys = taydennysFactory.save(applicationId = hakemus.id)
+                    .saveEntity()
+            val taydennys = taydennysFactory.saveForHakemus(hakemus)
 
             val response = hakemusService.getWithExtras(hakemus.id)
 
             assertThat(response.taydennys).isNotNull().all {
-                prop(Taydennys::id).isEqualTo(taydennys.id)
-                prop(Taydennys::hakemusData).all {
+                prop(TaydennysWithMuutokset::id).isEqualTo(taydennys.id)
+                prop(TaydennysWithMuutokset::hakemusData).all {
                     prop(HakemusData::name).isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_NAME)
                     prop(HakemusData::startTime).isEqualTo(DateFactory.getStartDatetime())
                 }
+                prop(TaydennysWithMuutokset::muutokset).isEmpty()
+            }
+        }
+
+        @Test
+        fun `returns muutokset with taydennys when it differs from hakemus`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                    .saveEntity()
+            taydennysFactory.saveForHakemus(hakemus) {
+                this as JohtoselvityshakemusEntityData
+                copy(
+                    emergencyWork = true,
+                    postalAddress = postalAddress?.copy(streetAddress = StreetAddress("Tie 3")),
+                )
+            }
+
+            val response = hakemusService.getWithExtras(hakemus.id)
+
+            assertThat(response.taydennys).isNotNull().all {
+                prop(TaydennysWithMuutokset::muutokset).isNotEmpty()
             }
         }
     }

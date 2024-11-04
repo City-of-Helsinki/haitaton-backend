@@ -15,6 +15,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
  * ```
  */
 fun hankeError(error: HankeError) = ResultMatcher { result: MvcResult ->
-    jsonPath("$.errorCode").value(error.getErrorCode()).match(result)
+    jsonPath("$.errorCode").value(error.errorCode).match(result)
     jsonPath("$.errorMessage").value(error.errorMessage).match(result)
 }

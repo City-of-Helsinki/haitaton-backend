@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.parseJson
 import fi.hel.haitaton.hanke.taydennys.Taydennys
 import fi.hel.haitaton.hanke.taydennys.TaydennysEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
+import fi.hel.haitaton.hanke.taydennys.TaydennysWithMuutokset
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteystietoEntity
@@ -31,17 +32,22 @@ class TaydennysFactory(
         taydennyspyynto: TaydennyspyyntoEntity =
             applicationId?.let { taydennyspyyntoFactory.saveEntity(it) }
                 ?: throw RuntimeException(),
-        hakemusData: HakemusEntityData = ApplicationFactory.createCableReportApplicationData()
+        hakemusData: HakemusEntityData = ApplicationFactory.createCableReportApplicationData(),
     ): Taydennys =
         TaydennysEntity(taydennyspyynto = taydennyspyynto, hakemusData = hakemusData)
             .let { taydennysRepository.save(it) }
             .toDomain()
 
-    fun saveForHakemus(hakemus: HakemusEntity): Taydennys {
+    fun saveForHakemus(
+        hakemus: HakemusEntity,
+        mutator: HakemusEntityData.() -> HakemusEntityData = { this },
+    ): Taydennys {
         val taydennyspyynto = taydennyspyyntoFactory.saveEntity(hakemus.id)
         val entity =
             TaydennysEntity(
-                taydennyspyynto = taydennyspyynto, hakemusData = hakemus.hakemusEntityData)
+                taydennyspyynto = taydennyspyynto,
+                hakemusData = mutator(hakemus.hakemusEntityData),
+            )
         entity.yhteystiedot =
             hakemus.yhteystiedot
                 .mapValues { (_, hakemusyhteystieto) ->
@@ -62,7 +68,8 @@ class TaydennysFactory(
                                 TaydennysyhteyshenkiloEntity(
                                     taydennysyhteystieto = taydennysyhteystieto,
                                     hankekayttaja = it.hankekayttaja,
-                                    tilaaja = it.tilaaja)
+                                    tilaaja = it.tilaaja,
+                                )
                             }
                             .toMutableList()
                     taydennysyhteystieto
@@ -74,7 +81,7 @@ class TaydennysFactory(
     fun saveWithHakemus(
         type: ApplicationType = ApplicationType.CABLE_REPORT,
         hanke: HankeEntity? = null,
-        f: (HakemusBuilder) -> HakemusBuilder = { it }
+        f: (HakemusBuilder) -> HakemusBuilder = { it },
     ): Taydennys {
         val hakemusBuilder =
             if (hanke != null) hakemusFactory.builder(USERNAME, hanke, type)
@@ -106,5 +113,8 @@ class TaydennysFactory(
 
         fun Taydennys.toUpdateRequest(): HakemusUpdateRequest =
             this.toResponse().applicationData.toJsonString().parseJson()
+
+        fun Taydennys.withMuutokset(muutokset: List<String>) =
+            TaydennysWithMuutokset(id, taydennyspyyntoId, hakemusData, muutokset)
     }
 }

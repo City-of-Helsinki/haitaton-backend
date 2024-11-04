@@ -5,11 +5,16 @@ import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.ZonedDateTime
+import java.util.UUID
+import kotlin.reflect.KClass
+import kotlin.reflect.KProperty1
 
 enum class ApplicationType {
     CABLE_REPORT,
     EXCAVATION_NOTIFICATION,
 }
+
+private val ZERO_UUID = UUID(0, 0)
 
 data class Hakemus(
     override val id: Long,
@@ -52,6 +57,33 @@ data class Hakemus(
         )
 }
 
+private fun <D : HakemusData> D.checkChange(property: KProperty1<D, Any?>, second: D): String? =
+    checkChange(property.get(this), property.get(second)) { property.name }
+
+private fun <D : HakemusData> D.checkChangeInYhteystieto(
+    property: KProperty1<D, Hakemusyhteystieto?>,
+    second: D,
+): String? =
+    if (hasChanges(property.get(this), property.get(second))) {
+        property.name
+    } else null
+
+/** Compare two yhteystieto ignoring differences IDs and yhteyshenkilo IDs. */
+private fun hasChanges(first: Hakemusyhteystieto?, second: Hakemusyhteystieto?): Boolean {
+    fun Hakemusyhteystieto.resetIds() =
+        copy(id = ZERO_UUID, yhteyshenkilot = yhteyshenkilot.map { it.copy(id = ZERO_UUID) })
+
+    if (first == null && second == null) return false
+    if (first == null || second == null) return true
+
+    return first.resetIds() != second.resetIds()
+}
+
+private fun checkChange(first: Any?, second: Any?, name: () -> String): String? =
+    if (first != second) {
+        name()
+    } else null
+
 sealed interface HakemusData {
     val applicationType: ApplicationType
     val name: String
@@ -64,12 +96,43 @@ sealed interface HakemusData {
     fun toResponse(): HakemusDataResponse
 
     fun yhteystiedot(): List<Hakemusyhteystieto>
+
+    fun listChanges(other: HakemusData): List<String> {
+        if (this::class != other::class) {
+            throw IncompatibleHakemusDataException(this::class, other::class)
+        }
+
+        val changes = mutableListOf<String>()
+        checkChange(HakemusData::applicationType, other)?.let { changes.add(it) }
+        checkChange(HakemusData::name, other)?.let { changes.add(it) }
+        checkChange(HakemusData::startTime, other)?.let { changes.add(it) }
+        checkChange(HakemusData::endTime, other)?.let { changes.add(it) }
+        checkChange(HakemusData::paperDecisionReceiver, other)?.let { changes.add(it) }
+        checkChangeInYhteystieto(HakemusData::customerWithContacts, other)?.let { changes.add(it) }
+
+        val areas = areas
+        val otherAreas = other.areas
+        areas?.withIndex()?.forEach { (i, area) ->
+            checkChange(area, otherAreas?.getOrNull(i)) { "areas[$i]" }?.let { changes.add(it) }
+        }
+        if (otherAreas != null) {
+            if (areas == null) {
+                changes.addAll(otherAreas.withIndex().map { (i, _) -> "areas[$i]" })
+            } else {
+                otherAreas.withIndex().drop(areas.size).forEach { (i, area) ->
+                    checkChange(area, areas.getOrNull(i)) { "areas[$i]" }?.let { changes.add(it) }
+                }
+            }
+        }
+
+        return changes
+    }
 }
 
 data class JohtoselvityshakemusData(
     override val applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
     override val name: String,
-    val postalAddress: PostalAddress? = null,
+    val postalAddress: PostalAddress?,
     val constructionWork: Boolean = false,
     val maintenanceWork: Boolean = false,
     val propertyConnectivity: Boolean = false,
@@ -113,6 +176,29 @@ data class JohtoselvityshakemusData(
             propertyDeveloperWithContacts,
             representativeWithContacts,
         )
+
+    override fun listChanges(other: HakemusData): List<String> {
+        val changes = super.listChanges(other).toMutableList()
+
+        other as JohtoselvityshakemusData
+        checkChange(JohtoselvityshakemusData::postalAddress, other)?.let { changes.add(it) }
+        checkChange(JohtoselvityshakemusData::constructionWork, other)?.let { changes.add(it) }
+        checkChange(JohtoselvityshakemusData::maintenanceWork, other)?.let { changes.add(it) }
+        checkChange(JohtoselvityshakemusData::propertyConnectivity, other)?.let { changes.add(it) }
+        checkChange(JohtoselvityshakemusData::emergencyWork, other)?.let { changes.add(it) }
+        checkChange(JohtoselvityshakemusData::rockExcavation, other)?.let { changes.add(it) }
+        checkChange(JohtoselvityshakemusData::workDescription, other)?.let { changes.add(it) }
+        checkChangeInYhteystieto(JohtoselvityshakemusData::contractorWithContacts, other)?.let {
+            changes.add(it)
+        }
+        checkChangeInYhteystieto(JohtoselvityshakemusData::propertyDeveloperWithContacts, other)
+            ?.let { changes.add(it) }
+        checkChangeInYhteystieto(JohtoselvityshakemusData::representativeWithContacts, other)?.let {
+            changes.add(it)
+        }
+
+        return changes
+    }
 }
 
 data class KaivuilmoitusData(
@@ -170,6 +256,30 @@ data class KaivuilmoitusData(
             propertyDeveloperWithContacts,
             representativeWithContacts,
         )
+
+    override fun listChanges(other: HakemusData): List<String> {
+        val changes = mutableListOf<String>()
+
+        other as KaivuilmoitusData
+        checkChange(KaivuilmoitusData::workDescription, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::constructionWork, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::maintenanceWork, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::emergencyWork, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::cableReportDone, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::rockExcavation, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::cableReports, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::placementContracts, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::requiredCompetence, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::contractorWithContacts, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::propertyDeveloperWithContacts, other)?.let {
+            changes.add(it)
+        }
+        checkChange(KaivuilmoitusData::representativeWithContacts, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::invoicingCustomer, other)?.let { changes.add(it) }
+        checkChange(KaivuilmoitusData::additionalInfo, other)?.let { changes.add(it) }
+
+        return changes
+    }
 }
 
 interface HakemusIdentifier : HasId<Long> {
@@ -191,3 +301,8 @@ data class HakemusMetaData(
     override val applicationType: ApplicationType,
     val hankeTunnus: String,
 ) : HakemusIdentifier
+
+class IncompatibleHakemusDataException(firstClass: KClass<*>, secondClass: KClass<*>) :
+    RuntimeException(
+        "Incompatible hakemus data when retrieving changes. firstClass=${firstClass.simpleName}, secondClass=${secondClass.simpleName}"
+    )
