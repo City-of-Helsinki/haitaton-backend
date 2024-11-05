@@ -58,7 +58,9 @@ data class Hakemus(
 }
 
 private fun <D : HakemusData> D.checkChange(property: KProperty1<D, Any?>, second: D): String? =
-    checkChange(property.get(this), property.get(second)) { property.name }
+    if (property.get(this) != property.get(second)) {
+        property.name
+    } else null
 
 private fun <D : HakemusData> D.checkChangeInYhteystieto(
     property: KProperty1<D, Hakemusyhteystieto?>,
@@ -68,7 +70,7 @@ private fun <D : HakemusData> D.checkChangeInYhteystieto(
         property.name
     } else null
 
-/** Compare two yhteystieto ignoring differences IDs and yhteyshenkilo IDs. */
+/** Compare two yhteystieto ignoring differences in IDs and yhteyshenkilo IDs. */
 private fun hasChanges(first: Hakemusyhteystieto?, second: Hakemusyhteystieto?): Boolean {
     fun Hakemusyhteystieto.resetIds() =
         copy(id = ZERO_UUID, yhteyshenkilot = yhteyshenkilot.map { it.copy(id = ZERO_UUID) })
@@ -79,10 +81,18 @@ private fun hasChanges(first: Hakemusyhteystieto?, second: Hakemusyhteystieto?):
     return first.resetIds() != second.resetIds()
 }
 
-private fun checkChange(first: Any?, second: Any?, name: () -> String): String? =
-    if (first != second) {
-        name()
-    } else null
+private fun checkChangesInAreas(
+    firstAreas: List<Hakemusalue>,
+    secondAreas: List<Hakemusalue>,
+): List<String> {
+    val changedElementsInFirst =
+        firstAreas
+            .withIndex()
+            .filter { (i, area) -> area != secondAreas.getOrNull(i) }
+            .map { it.index }
+    val elementsInSecondButNotFirst = secondAreas.indices.drop(firstAreas.size)
+    return (changedElementsInFirst + elementsInSecondButNotFirst).map { "areas[$it]" }
+}
 
 sealed interface HakemusData {
     val applicationType: ApplicationType
@@ -109,21 +119,7 @@ sealed interface HakemusData {
         checkChange(HakemusData::endTime, other)?.let { changes.add(it) }
         checkChange(HakemusData::paperDecisionReceiver, other)?.let { changes.add(it) }
         checkChangeInYhteystieto(HakemusData::customerWithContacts, other)?.let { changes.add(it) }
-
-        val areas = areas
-        val otherAreas = other.areas
-        areas?.withIndex()?.forEach { (i, area) ->
-            checkChange(area, otherAreas?.getOrNull(i)) { "areas[$i]" }?.let { changes.add(it) }
-        }
-        if (otherAreas != null) {
-            if (areas == null) {
-                changes.addAll(otherAreas.withIndex().map { (i, _) -> "areas[$i]" })
-            } else {
-                otherAreas.withIndex().drop(areas.size).forEach { (i, area) ->
-                    checkChange(area, areas.getOrNull(i)) { "areas[$i]" }?.let { changes.add(it) }
-                }
-            }
-        }
+        changes.addAll(checkChangesInAreas(areas ?: listOf(), other.areas ?: listOf()))
 
         return changes
     }
