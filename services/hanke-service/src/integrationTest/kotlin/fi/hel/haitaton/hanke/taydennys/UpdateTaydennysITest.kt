@@ -256,7 +256,9 @@ class UpdateTaydennysITest(
 
         private val notInHankeArea =
             ApplicationFactory.createCableReportApplicationArea(
-                name = "area", geometry = GeometriaFactory.polygon())
+                name = "area",
+                geometry = GeometriaFactory.polygon(),
+            )
 
         @Test
         fun `throws exception when there are invalid geometry in areas`() {
@@ -272,7 +274,8 @@ class UpdateTaydennysITest(
                 messageContains("Invalid geometry received when updating hakemus")
                 messageContains("reason=Self-intersection")
                 messageContains(
-                    "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}")
+                    "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}"
+                )
             }
         }
 
@@ -355,7 +358,10 @@ class UpdateTaydennysITest(
                 taydennys
                     .toUpdateRequest()
                     .withContractor(
-                        CustomerType.COMPANY, tyonSuorittajaId, hankekayttajaIds = arrayOf())
+                        CustomerType.COMPANY,
+                        tyonSuorittajaId,
+                        hankekayttajaIds = arrayOf(),
+                    )
 
             val updatedTaydennys = taydennysService.updateTaydennys(taydennys.id, request, USERNAME)
 
@@ -391,7 +397,8 @@ class UpdateTaydennysITest(
                     .withCustomer(
                         CustomerType.COMPANY,
                         yhteystietoId = null,
-                        hankekayttajaIds = arrayOf(newKayttaja.id))
+                        hankekayttajaIds = arrayOf(newKayttaja.id),
+                    )
 
             val updatedTaydennys = taydennysService.updateTaydennys(taydennys.id, request, USERNAME)
 
@@ -432,10 +439,12 @@ class UpdateTaydennysITest(
             assertThat(email.allRecipients.single().toString()).isEqualTo(newKayttaja.sahkoposti)
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application")
+                    "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application"
+                )
             assertThat(email.textBody())
                 .contains(
-                    "laatimassa johtoselvityshakemusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})")
+                    "laatimassa johtoselvityshakemusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})"
+                )
         }
 
         @Test
@@ -468,7 +477,9 @@ class UpdateTaydennysITest(
             val hankeEntity = hankeRepository.findAll().single()
             val taydennys =
                 taydennysFactory.saveWithHakemus(
-                    ApplicationType.EXCAVATION_NOTIFICATION, hankeEntity)
+                    ApplicationType.EXCAVATION_NOTIFICATION,
+                    hankeEntity,
+                )
             val hankealueId = hanke.alueet.single().id!!
             val area = notInHankeArea.copy(hankealueId = hankealueId)
             val request = taydennys.toUpdateRequest().withArea(area)
@@ -481,7 +492,8 @@ class UpdateTaydennysITest(
                 hasClass(HakemusGeometryNotInsideHankeException::class)
                 messageContains("Hakemus geometry is outside the associated hankealue")
                 messageContains(
-                    "geometry=${notInHankeArea.tyoalueet.single().geometry.toJsonString()}")
+                    "geometry=${notInHankeArea.tyoalueet.single().geometry.toJsonString()}"
+                )
             }
         }
 
@@ -491,7 +503,9 @@ class UpdateTaydennysITest(
             val hankeEntity = hankeRepository.findAll().single()
             val taydennys =
                 taydennysFactory.saveWithHakemus(
-                    ApplicationType.EXCAVATION_NOTIFICATION, hankeEntity)
+                    ApplicationType.EXCAVATION_NOTIFICATION,
+                    hankeEntity,
+                )
             val hankealueId = hanke.alueet.single().id!! + 1000
             val area = createExcavationNotificationArea(hankealueId = hankealueId)
             val request = taydennys.toUpdateRequest().withArea(area)
@@ -514,9 +528,11 @@ class UpdateTaydennysITest(
             val hankeEntity = hankeRepository.findAll().single()
             val taydennys =
                 taydennysFactory.saveWithHakemus(
-                    ApplicationType.EXCAVATION_NOTIFICATION, hankeEntity) {
-                        it.hakija().withWorkDescription("Old work description")
-                    }
+                    ApplicationType.EXCAVATION_NOTIFICATION,
+                    hankeEntity,
+                ) {
+                    it.hakija().withWorkDescription("Old work description")
+                }
             val yhteystieto = taydennys.hakemusData.yhteystiedot().single()
             val kayttajaId = yhteystieto.yhteyshenkilot.single().hankekayttajaId
             val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
@@ -525,7 +541,11 @@ class UpdateTaydennysITest(
                 taydennys
                     .toUpdateRequest()
                     .withCustomerWithContactsRequest(
-                        CustomerType.COMPANY, yhteystieto.id, kayttajaId, newKayttaja.id)
+                        CustomerType.COMPANY,
+                        yhteystieto.id,
+                        kayttajaId,
+                        newKayttaja.id,
+                    )
                     .withWorkDescription("New work description")
                     .withRequiredCompetence(true)
                     .withDates(ZonedDateTime.now(), ZonedDateTime.now().plusDays(1))
@@ -584,7 +604,10 @@ class UpdateTaydennysITest(
                 taydennys
                     .toUpdateRequest()
                     .withContractor(
-                        CustomerType.COMPANY, tyonSuorittajaId, hankekayttajaIds = arrayOf())
+                        CustomerType.COMPANY,
+                        tyonSuorittajaId,
+                        hankekayttajaIds = arrayOf(),
+                    )
 
             val updatedTaydennys = taydennysService.updateTaydennys(taydennys.id, request, USERNAME)
 
@@ -611,7 +634,8 @@ class UpdateTaydennysITest(
                     .withCustomer(
                         CustomerType.COMPANY,
                         yhteystietoId = null,
-                        hankekayttajaIds = arrayOf(newKayttaja.id))
+                        hankekayttajaIds = arrayOf(newKayttaja.id),
+                    )
 
             val updatedTaydennys = taydennysService.updateTaydennys(taydennys.id, request, USERNAME)
 
@@ -675,7 +699,10 @@ class UpdateTaydennysITest(
                 taydennysFactory.saveWithHakemus(ApplicationType.EXCAVATION_NOTIFICATION) {
                     it.hakija(
                         HakemusyhteystietoFactory.create(
-                            tyyppi = CustomerType.PERSON, registryKey = henkilotunnus))
+                            tyyppi = CustomerType.PERSON,
+                            registryKey = henkilotunnus,
+                        )
+                    )
                 }
             val yhteystietoId = taydennys.hakemusData.customerWithContacts!!.id
             val request =
@@ -790,10 +817,12 @@ class UpdateTaydennysITest(
             assertThat(email.allRecipients.single().toString()).isEqualTo(newKayttaja.sahkoposti)
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application")
+                    "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application"
+                )
             assertThat(email.textBody())
                 .contains(
-                    "laatimassa kaivuilmoitusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})")
+                    "laatimassa kaivuilmoitusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})"
+                )
         }
 
         @Test
@@ -802,7 +831,9 @@ class UpdateTaydennysITest(
             val hankeEntity = hankeRepository.findAll().single()
             val taydennys =
                 taydennysFactory.saveWithHakemus(
-                    ApplicationType.EXCAVATION_NOTIFICATION, hankeEntity)
+                    ApplicationType.EXCAVATION_NOTIFICATION,
+                    hankeEntity,
+                )
             val area = createExcavationNotificationArea(hankealueId = hanke.alueet.single().id!!)
             val request =
                 taydennys
