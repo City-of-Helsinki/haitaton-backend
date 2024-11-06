@@ -29,7 +29,9 @@ import org.springframework.stereotype.Component
 @Component
 class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogService) {
     @AfterReturning(
-        pointcut = "@annotation(io.swagger.v3.oas.annotations.Operation)", returning = "result")
+        pointcut = "@annotation(io.swagger.v3.oas.annotations.Operation)",
+        returning = "result",
+    )
     fun logResponse(result: Any?) {
         if (result == null) {
             return
@@ -45,7 +47,9 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
                 disclosureLogService.saveForHakemusResponse(result, currentUserId())
             is HakemusWithExtrasResponse -> {
                 disclosureLogService.saveForHakemusResponse(result.hakemus, currentUserId())
-                result.taydennys?.let { disclosureLogService.saveForTaydennys(it, currentUserId()) }
+                result.taydennys?.let {
+                    disclosureLogService.saveForTaydennys(it.taydennys, currentUserId())
+                }
             }
             is Hanke -> disclosureLogService.saveForHanke(result, currentUserId())
             is HankeKayttajaDto ->
@@ -116,4 +120,5 @@ class UnknownResponseListTypeException(kclass: KClass<*>) :
 
 class MixedElementsInResponseException(expected: KClass<*>, actual: Set<KClass<*>>) :
     RuntimeException(
-        "Mixed types inside a list. Expected type: ${expected.qualifiedName} Actual types: ${actual.map { it.qualifiedName }.joinToString ()}")
+        "Mixed types inside a list. Expected type: ${expected.qualifiedName} Actual types: ${actual.map { it.qualifiedName }.joinToString ()}"
+    )

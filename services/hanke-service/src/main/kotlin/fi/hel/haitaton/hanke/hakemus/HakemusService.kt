@@ -87,7 +87,12 @@ class HakemusService(
         val hakemus = getById(hakemusId)
         val paatokset = paatosService.findByHakemusId(hakemusId)
         val taydennyspyynto = taydennyspyyntoRepository.findByApplicationId(hakemusId)?.toDomain()
-        val taydennys = taydennysRepository.findByApplicationId(hakemusId)?.toDomain()
+        val taydennys =
+            taydennysRepository
+                .findByApplicationId(hakemusId)
+                ?.toDomain()
+                ?.withMuutokset(hakemus.applicationData)
+
         return HakemusWithExtras(hakemus, paatokset, taydennyspyynto, taydennys)
     }
 
