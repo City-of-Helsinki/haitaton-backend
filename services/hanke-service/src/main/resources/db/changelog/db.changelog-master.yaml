@@ -199,3 +199,5 @@ databaseChangeLog:
       file: db/changelog/changesets/084-remove-datalock-from-hankeyhteystieto.sql
   - include:
       file: db/changelog/changesets/085-create-tables-for-taydennys.sql
+  - include:
+      file: db/changelog/changesets/086-change-car-lane-nuisance-enum.sql

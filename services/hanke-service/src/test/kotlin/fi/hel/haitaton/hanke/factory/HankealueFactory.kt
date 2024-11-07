@@ -27,8 +27,8 @@ object HankealueFactory {
             HaittaAjanKestoLuokittelu.YLI_KOLME_KUUKAUTTA.value,
             TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS.value,
             Liikennemaaraluokittelu.LIIKENNEMAARA_ALLE_500.value,
-            VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA.value,
-            AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA.value
+            VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE.value,
+            AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA.value,
         )
 
     val TORMAYSTARKASTELU_ZERO_AUTOLIIKENNELUOKITTELU =
@@ -37,7 +37,7 @@ object HankealueFactory {
             0, // if both 'katuluokka' and 'liikennemaara' is 0, the index is 0.0
             0, // if both 'katuluokka' and 'liikennemaara' is 0, the index is 0.0
             1,
-            1
+            1,
         )
 
     fun create(
@@ -47,7 +47,7 @@ object HankealueFactory {
         haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
         geometriat: Geometriat? = GeometriaFactory.create(),
         kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? =
-            VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+            VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
         kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? =
             AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA,
         meluHaitta: Meluhaitta? = Meluhaitta.SATUNNAINEN_MELUHAITTA,
@@ -98,7 +98,7 @@ object HankealueFactory {
                     "Linja-autoliikenteelle koituvien haittojen hallintasuunnitelma",
                 Haittojenhallintatyyppi.RAITIOLIIKENNE to
                     "Raitioliikenteelle koituvien haittojen hallintasuunnitelma",
-                Haittojenhallintatyyppi.MUUT to "Muiden haittojen hallintasuunnitelma"
+                Haittojenhallintatyyppi.MUUT to "Muiden haittojen hallintasuunnitelma",
             )
         overrides.forEach { (haittojenhallintatyyppi, suunnitelma) ->
             if (suunnitelma == null) {
@@ -135,7 +135,7 @@ object HankealueFactory {
             polyHaitta,
             tarinaHaitta,
             nimi,
-            null
+            null,
         )
     }
 

@@ -131,7 +131,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         )
         fun `returns matching classification when there is traffic`(
             volume: Int,
-            expectedResult: Int
+            expectedResult: Int,
         ) {
             every { tormaysService.maxLiikennemaara(geometriat, RADIUS_15) } returns volume
 
@@ -247,15 +247,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         }
 
         @ParameterizedTest
-        @CsvSource(
-            "0,2",
-            "1,3",
-            "10,3",
-            "11,4",
-            "20,4",
-            "21,5",
-            "100,5",
-        )
+        @CsvSource("0,2", "1,3", "10,3", "11,4", "20,4", "21,5", "100,5")
         fun `returns classification based on rush hour buses when there's no trunk line`(
             rushHourBuses: Int,
             expectedResult: Int,
@@ -267,7 +259,8 @@ internal class TormaystarkasteluLaskentaServiceTest {
                         0,
                         rushHourBuses,
                         TormaystarkasteluBussiRunkolinja.EI,
-                    ))
+                    )
+                )
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometriat) } returns busLines
 
@@ -281,13 +274,10 @@ internal class TormaystarkasteluLaskentaServiceTest {
         }
 
         @ParameterizedTest
-        @CsvSource(
-            "ON,4",
-            "EI,2",
-        )
+        @CsvSource("ON,4", "EI,2")
         fun `returns classification based on trunk lines when there are zero rush hour buses`(
             runkolinja: TormaystarkasteluBussiRunkolinja,
-            expectedResult: Int
+            expectedResult: Int,
         ) {
             val busLines = setOf(TormaystarkasteluBussireitti("", 0, 0, runkolinja))
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
@@ -317,9 +307,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
         assertThat(tulos.autoliikenne.haitanKesto).isEqualTo(1)
         assertThat(tulos.autoliikenne.katuluokka).isEqualTo(4)
         assertThat(tulos.autoliikenne.liikennemaara).isEqualTo(2)
-        assertThat(tulos.autoliikenne.kaistahaitta).isEqualTo(2)
+        assertThat(tulos.autoliikenne.kaistahaitta).isEqualTo(1)
         assertThat(tulos.autoliikenne.kaistapituushaitta).isEqualTo(2)
-        assertThat(tulos.autoliikenne.indeksi).isEqualTo(2.3f)
+        assertThat(tulos.autoliikenne.indeksi).isEqualTo(2.1f)
         assertThat(tulos.linjaautoliikenneindeksi).isEqualTo(5.0f)
         assertThat(tulos.raitioliikenneindeksi).isEqualTo(3.0f)
         assertThat(tulos.pyoraliikenneindeksi).isEqualTo(3.0f)
@@ -379,20 +369,14 @@ internal class TormaystarkasteluLaskentaServiceTest {
                         liikennemaara,
                         kaistahaitta,
                         kaistapituushaitta,
-                    ))
+                    )
+                )
                 .isEqualTo(indeksi)
         }
 
         @Test
         fun `index should be 0 when there is no street class nor traffic`() {
-            assertThat(
-                    TormaystarkasteluLaskentaService.calculateAutoliikenneindeksi(
-                        5,
-                        0,
-                        0,
-                        5,
-                        5,
-                    ))
+            assertThat(TormaystarkasteluLaskentaService.calculateAutoliikenneindeksi(5, 0, 0, 5, 5))
                 .isEqualTo(0.0f)
         }
     }

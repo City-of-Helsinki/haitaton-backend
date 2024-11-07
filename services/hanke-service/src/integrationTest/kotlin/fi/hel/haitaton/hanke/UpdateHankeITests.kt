@@ -67,7 +67,6 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
-import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin.VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -513,7 +512,7 @@ class UpdateHankeITests(
                     omistajat = listOf(omistaja),
                     rakennuttajat = listOf(rakennuttaja1, rakennuttaja2),
                     toteuttajat = listOf(toteuttaja),
-                    muut = listOf(muu)
+                    muut = listOf(muu),
                 )
 
         val result = hankeService.updateHanke(hanke.hankeTunnus, request)
@@ -566,8 +565,7 @@ class UpdateHankeITests(
                 haittaAlkuPvm = alkuPvm,
                 haittaLoppuPvm = loppuPvm,
                 kaistaHaitta =
-                    VaikutusAutoliikenteenKaistamaariin
-                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
+                    VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE_KAHDELLA_AJOSUUNNALLA,
                 kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
                 meluHaitta = Meluhaitta.JATKUVA_MELUHAITTA,
                 polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
@@ -586,8 +584,7 @@ class UpdateHankeITests(
             .isEqualTo(loppuPvm.format(DateTimeFormatter.BASIC_ISO_DATE))
         assertThat(alue.kaistaHaitta)
             .isEqualTo(
-                VaikutusAutoliikenteenKaistamaariin
-                    .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA
+                VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE_KAHDELLA_AJOSUUNNALLA
             )
         assertThat(alue.kaistaPituusHaitta)
             .isEqualTo(AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA)
@@ -604,14 +601,7 @@ class UpdateHankeITests(
         assertThat(hankealue.nimi).isEqualTo("Hankealue 1")
         val request = createdHanke.toModifyRequest()
         val updatedRequest =
-            request.copy(
-                alueet =
-                    listOf(
-                        request.alueet[0].copy(
-                            nimi = "Changed Name",
-                        )
-                    )
-            )
+            request.copy(alueet = listOf(request.alueet[0].copy(nimi = "Changed Name")))
 
         val updateHankeResult = hankeService.updateHanke(createdHanke.hankeTunnus, updatedRequest)
 
@@ -620,12 +610,7 @@ class UpdateHankeITests(
             .isEqualTo(createdHanke.copy(version = 2, modifiedAt = null))
         assertThat(updateHankeResult.alueet).single().all {
             transform { it.copy(geometriat = null) }
-                .isEqualTo(
-                    hankealue.copy(
-                        geometriat = null,
-                        nimi = "Changed Name",
-                    )
-                )
+                .isEqualTo(hankealue.copy(geometriat = null, nimi = "Changed Name"))
             prop(SavedHankealue::geometriat)
                 .isNotNull()
                 .prop(Geometriat::featureCollection)
@@ -711,8 +696,7 @@ class UpdateHankeITests(
                 haittaAlkuPvm = alkuPvm,
                 haittaLoppuPvm = loppuPvm,
                 kaistaHaitta =
-                    VaikutusAutoliikenteenKaistamaariin
-                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
+                    VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE_KAHDELLA_AJOSUUNNALLA,
                 kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
                 meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
                 polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
@@ -735,8 +719,7 @@ class UpdateHankeITests(
             prop(SavedHankealue::haittaLoppuPvm).isEqualTo(loppuPvm.truncatedTo(ChronoUnit.DAYS))
             prop(SavedHankealue::kaistaHaitta)
                 .isEqualTo(
-                    VaikutusAutoliikenteenKaistamaariin
-                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA
+                    VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE_KAHDELLA_AJOSUUNNALLA
                 )
             prop(SavedHankealue::kaistaPituusHaitta)
                 .isEqualTo(AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA)
@@ -770,9 +753,9 @@ class UpdateHankeITests(
                     prop(Autoliikenneluokittelu::haitanKesto).isEqualTo(1)
                     prop(Autoliikenneluokittelu::katuluokka).isEqualTo(4)
                     prop(Autoliikenneluokittelu::liikennemaara).isEqualTo(5)
-                    prop(Autoliikenneluokittelu::kaistahaitta).isEqualTo(2)
+                    prop(Autoliikenneluokittelu::kaistahaitta).isEqualTo(1)
                     prop(Autoliikenneluokittelu::kaistapituushaitta).isEqualTo(2)
-                    prop(Autoliikenneluokittelu::indeksi).isEqualTo(3.1f)
+                    prop(Autoliikenneluokittelu::indeksi).isEqualTo(2.8f)
                 }
                 prop(TormaystarkasteluTulos::pyoraliikenneindeksi).isEqualTo(3.0f)
                 prop(TormaystarkasteluTulos::linjaautoliikenneindeksi).isEqualTo(3.0f)
@@ -791,11 +774,12 @@ class UpdateHankeITests(
         val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
         val originalTormaystarkasteluTulos = hanke.alueet[0].tormaystarkasteluTulos!!
         val originalAutoliikenteenIndeksi = originalTormaystarkasteluTulos.autoliikenne.indeksi
-        assertThat(originalTormaystarkasteluTulos.autoliikenne.kaistahaitta).isEqualTo(2)
+        assertThat(originalTormaystarkasteluTulos.autoliikenne.kaistahaitta).isEqualTo(1)
         assertThat(originalTormaystarkasteluTulos.autoliikenne.kaistapituushaitta).isEqualTo(2)
         hanke.alueet[0] =
             HankealueFactory.create(
-                kaistaHaitta = VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA,
+                kaistaHaitta =
+                    VaikutusAutoliikenteenKaistamaariin.USEITA_AJOSUUNTIA_POISTUU_KAYTOSTA,
                 kaistaPituusHaitta = PITUUS_500_METRIA_TAI_ENEMMAN,
             )
         val request = hanke.toModifyRequest()
@@ -879,7 +863,7 @@ class UpdateHankeITests(
                 hanke,
                 hanke.alueet[0],
                 hankeVersion = 1,
-                tormaystarkasteluTulos = true
+                tormaystarkasteluTulos = true,
             )
         val expectedLogAfter =
             expectedHankeLogObject(
@@ -999,6 +983,6 @@ class UpdateHankeITests(
     private fun haittojenhallintasuunnitelmaCount(): Int? =
         jdbcTemplate.queryForObject(
             "SELECT count(*) from hankkeen_haittojenhallintasuunnitelma",
-            Int::class.java
+            Int::class.java,
         )
 }
