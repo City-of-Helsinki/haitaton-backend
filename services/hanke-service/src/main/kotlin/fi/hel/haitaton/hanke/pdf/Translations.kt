@@ -33,7 +33,7 @@ fun Tarinahaitta.format(): String =
 
 fun VaikutusAutoliikenteenKaistamaariin.format(): String =
     when (this) {
-        VaikutusAutoliikenteenKaistamaariin.EI_VAIKUTA -> "Ei vaikuta autoliikenteen kaistamääriin"
+        VaikutusAutoliikenteenKaistamaariin.EI_VAIKUTA -> "Ei vaikuta"
         VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE ->
             "Yksi autokaista vähenee - ajosuunta vielä käytössä"
         VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE_KAHDELLA_AJOSUUNNALLA ->
@@ -48,16 +48,11 @@ fun VaikutusAutoliikenteenKaistamaariin.format(): String =
 
 fun AutoliikenteenKaistavaikutustenPituus.format(): String =
     when (this) {
-        AutoliikenteenKaistavaikutustenPituus.EI_VAIKUTA_KAISTAJARJESTELYIHIN ->
-            "Ei vaikuta autoliikenteen kaistajärjestelyihin"
-        AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA ->
-            "Kaistavaikutusten pituus alle 10 m"
-        AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA ->
-            "Kaistavaikutusten pituus 10-99 m"
-        AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA ->
-            "Kaistavaikutusten pituus 100-499 m"
-        AutoliikenteenKaistavaikutustenPituus.PITUUS_500_METRIA_TAI_ENEMMAN ->
-            "Kaistavaikutusten pituus 500 m tai enemmän"
+        AutoliikenteenKaistavaikutustenPituus.EI_VAIKUTA_KAISTAJARJESTELYIHIN -> "Ei vaikuta"
+        AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA -> "Alle 10 m"
+        AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA -> "10-99 m"
+        AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA -> "100-499 m"
+        AutoliikenteenKaistavaikutustenPituus.PITUUS_500_METRIA_TAI_ENEMMAN -> "500 m tai enemmän"
     }
 
 fun TyomaaTyyppi.format(): String =
