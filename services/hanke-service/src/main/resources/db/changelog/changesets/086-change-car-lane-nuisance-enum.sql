@@ -3,23 +3,15 @@
 --comment: Change 'hankealue.kaistahaitta' enum values and 'tormaystarkastelutulos.kaistapituushaitta' and 'applications.applicationData.areas[n].tyoalueet[m].tormaystarkastelutulos.kaistapituushaitta' index values
 
 -- update hankealue.kaistahaitta enum values
-ALTER TABLE hankealue
-    ADD COLUMN kaistahaitta_temp VARCHAR;
-
 UPDATE hankealue
-    SET kaistahaitta_temp =
+    SET kaistahaitta =
         CASE
             WHEN kaistahaitta = 'VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA' THEN 'YKSI_KAISTA_VAHENEE'
             WHEN kaistahaitta = 'VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA' THEN 'YKSI_KAISTA_VAHENEE_KAHDELLA_AJOSUUNNALLA'
             WHEN kaistahaitta = 'VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_KAHDELLA_AJOSUUNNALLA' THEN 'USEITA_KAISTOJA_VAHENEE_AJOSUUNNILLA'
             WHEN kaistahaitta = 'VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA' THEN 'USEITA_AJOSUUNTIA_POISTUU_KAYTOSTA'
+            ELSE kaistahaitta
         END;
-
-ALTER TABLE hankealue
-    DROP COLUMN kaistahaitta;
-
-ALTER TABLE hankealue
-    RENAME COLUMN kaistahaitta_temp TO kaistahaitta;
 
 -- update tormaystarkastelutulos.kaistapituushaitta
 UPDATE tormaystarkastelutulos
@@ -38,7 +30,7 @@ UPDATE tormaystarkastelutulos
         END;
 
 -- update applications.applicationData.areas
-WITH RECURSIVE areas_array AS (
+WITH areas_array AS (
     SELECT id,
         CASE
             WHEN (applicationData #>> '{areas}') IS NOT NULL AND jsonb_typeof(applicationData->'areas') = 'array' THEN
