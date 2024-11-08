@@ -13,12 +13,12 @@ data class Taydennys(
 ) : HasId<UUID> {
     fun toResponse() = TaydennysResponse(id, hakemusData.toResponse())
 
-    fun withMuutokset(hakemusData: HakemusData): TaydennysWithMuutokset {
+    fun withMuutokset(otherData: HakemusData): TaydennysWithMuutokset {
         return TaydennysWithMuutokset(
             id = id,
             taydennyspyyntoId = taydennyspyyntoId,
             hakemusData = hakemusData,
-            muutokset = hakemusData.listChanges(this.hakemusData),
+            muutokset = hakemusData.listChanges(otherData),
         )
     }
 }
