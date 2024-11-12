@@ -131,7 +131,7 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
         )
         fun `returns matching classification when there is traffic`(
             volume: Int,
-            expectedResult: Int
+            expectedResult: Int,
         ) {
             every { tormaysService.maxLiikennemaara(geometry, RADIUS_15) } returns volume
 
@@ -238,15 +238,7 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
         }
 
         @ParameterizedTest
-        @CsvSource(
-            "0,2",
-            "1,3",
-            "10,3",
-            "11,4",
-            "20,4",
-            "21,5",
-            "100,5",
-        )
+        @CsvSource("0,2", "1,3", "10,3", "11,4", "20,4", "21,5", "100,5")
         fun `returns classification based on rush hour buses when there's no trunk line`(
             rushHourBuses: Int,
             expectedResult: Int,
@@ -258,7 +250,8 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
                         0,
                         rushHourBuses,
                         TormaystarkasteluBussiRunkolinja.EI,
-                    ))
+                    )
+                )
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometry) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometry) } returns busLines
 
@@ -272,13 +265,10 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
         }
 
         @ParameterizedTest
-        @CsvSource(
-            "ON,4",
-            "EI,2",
-        )
+        @CsvSource("ON,4", "EI,2")
         fun `returns classification based on trunk lines when there are zero rush hour buses`(
             runkolinja: TormaystarkasteluBussiRunkolinja,
-            expectedResult: Int
+            expectedResult: Int,
         ) {
             val busLines = setOf(TormaystarkasteluBussireitti("", 0, 0, runkolinja))
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometry) } returns false
@@ -303,7 +293,7 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
             laskentaService.calculateTormaystarkastelu(
                 featureCollection,
                 5,
-                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+                VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
                 AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA,
             )
 
@@ -313,9 +303,9 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
         assertThat(tulos.autoliikenne.haitanKesto).isEqualTo(1)
         assertThat(tulos.autoliikenne.katuluokka).isEqualTo(4)
         assertThat(tulos.autoliikenne.liikennemaara).isEqualTo(2)
-        assertThat(tulos.autoliikenne.kaistahaitta).isEqualTo(2)
+        assertThat(tulos.autoliikenne.kaistahaitta).isEqualTo(1)
         assertThat(tulos.autoliikenne.kaistapituushaitta).isEqualTo(4)
-        assertThat(tulos.autoliikenne.indeksi).isEqualTo(2.7f)
+        assertThat(tulos.autoliikenne.indeksi).isEqualTo(2.5f)
         assertThat(tulos.linjaautoliikenneindeksi).isEqualTo(5.0f)
         assertThat(tulos.raitioliikenneindeksi).isEqualTo(3.0f)
         assertThat(tulos.pyoraliikenneindeksi).isEqualTo(3.0f)

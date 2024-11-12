@@ -844,11 +844,11 @@ class UpdateTaydennysITest(
                 TormaystarkasteluTulos(
                     autoliikenne =
                         Autoliikenneluokittelu(
-                            indeksi = 3.1f,
+                            indeksi = 2.8f,
                             haitanKesto = 1,
                             katuluokka = 4,
                             liikennemaara = 5,
-                            kaistahaitta = 2,
+                            kaistahaitta = 1,
                             kaistapituushaitta = 2,
                         ),
                     pyoraliikenneindeksi = 3.0f,

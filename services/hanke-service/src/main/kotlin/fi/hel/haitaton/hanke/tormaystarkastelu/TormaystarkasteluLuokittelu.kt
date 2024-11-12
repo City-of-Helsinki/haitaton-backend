@@ -6,20 +6,21 @@ interface Luokittelu {
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
 enum class VaikutusAutoliikenteenKaistamaariin(override val value: Int) : Luokittelu {
-    EI_VAIKUTA(1),
-    VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA(2),
-    VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA(3),
-    VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_KAHDELLA_AJOSUUNNALLA(4),
-    VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA(5)
+    EI_VAIKUTA(0),
+    YKSI_KAISTA_VAHENEE(1),
+    YKSI_KAISTA_VAHENEE_KAHDELLA_AJOSUUNNALLA(2),
+    USEITA_KAISTOJA_VAHENEE_AJOSUUNNILLA(3),
+    YKSI_AJOSUUNTA_POISTUU_KAYTOSTA(4),
+    USEITA_AJOSUUNTIA_POISTUU_KAYTOSTA(5),
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
 enum class AutoliikenteenKaistavaikutustenPituus(override val value: Int) : Luokittelu {
-    EI_VAIKUTA_KAISTAJARJESTELYIHIN(1),
+    EI_VAIKUTA_KAISTAJARJESTELYIHIN(0),
     PITUUS_ALLE_10_METRIA(2),
     PITUUS_10_99_METRIA(3),
     PITUUS_100_499_METRIA(4),
-    PITUUS_500_METRIA_TAI_ENEMMAN(5)
+    PITUUS_500_METRIA_TAI_ENEMMAN(5),
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
@@ -49,7 +50,7 @@ enum class Tarinahaitta(override val value: Int) : Luokittelu {
 enum class HaittaAjanKestoLuokittelu(override val value: Int) : Luokittelu {
     YLI_KOLME_KUUKAUTTA(5),
     KAKSI_VIIKKOA_VIIVA_KOLME_KUUKAUTTA(3),
-    ALLE_KAKSI_VIIKKOA(1)
+    ALLE_KAKSI_VIIKKOA(1),
 }
 
 enum class Liikennemaaraluokittelu(override val value: Int) : Luokittelu {
@@ -58,7 +59,7 @@ enum class Liikennemaaraluokittelu(override val value: Int) : Luokittelu {
     LIIKENNEMAARA_1500_4999(3),
     LIIKENNEMAARA_500_1499(2),
     LIIKENNEMAARA_ALLE_500(1),
-    EI_LIIKENNETTA(0)
+    EI_LIIKENNETTA(0),
 }
 
 enum class Linjaautoliikenneluokittelu(override val value: Int) : Luokittelu {
@@ -81,7 +82,7 @@ enum class Linjaautoliikenneluokittelu(override val value: Int) : Luokittelu {
     MAHDOLLINEN_POIKKEUSREITTI(1),
 
     /** No regular bus traffic */
-    EI_VAIKUTA_LINJAAUTOLIIKENTEESEEN(0)
+    EI_VAIKUTA_LINJAAUTOLIIKENTEESEEN(0),
 }
 
 enum class Raitioliikenneluokittelu(override val value: Int) : Luokittelu {

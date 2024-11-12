@@ -97,7 +97,7 @@ class ApplicationFactory(
             polyhaitta: Polyhaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
             tarinahaitta: Tarinahaitta = Tarinahaitta.SATUNNAINEN_TARINAHAITTA,
             kaistahaitta: VaikutusAutoliikenteenKaistamaariin =
-                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+                VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
             kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus =
                 AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA,
             lisatiedot: String = "Lisätiedot",

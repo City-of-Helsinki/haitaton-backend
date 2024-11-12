@@ -142,7 +142,8 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                         autoliikenne = autoliikenne,
                         pyoraliikenneindeksi = pyoraliikenneindeksi,
                         linjaautoliikenneindeksi = linjaautoliikenneindeksi,
-                        raitioliikenneindeksi = raitioliikenneindeksi)
+                        raitioliikenneindeksi = raitioliikenneindeksi,
+                    )
             every { hankeService.loadHanke(HANKE_TUNNUS) }.returns(hanke)
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
@@ -152,38 +153,49 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(status().isOk)
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.autoliikenne.haitanKesto")
-                        .value(autoliikenne.haitanKesto))
+                        .value(autoliikenne.haitanKesto)
+                )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.autoliikenne.katuluokka")
-                        .value(autoliikenne.katuluokka))
+                        .value(autoliikenne.katuluokka)
+                )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.autoliikenne.liikennemaara")
-                        .value(autoliikenne.liikennemaara))
+                        .value(autoliikenne.liikennemaara)
+                )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.autoliikenne.kaistahaitta")
-                        .value(autoliikenne.kaistahaitta))
+                        .value(autoliikenne.kaistahaitta)
+                )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.autoliikenne.kaistapituushaitta")
-                        .value(autoliikenne.kaistapituushaitta))
+                        .value(autoliikenne.kaistapituushaitta)
+                )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.autoliikenne.indeksi")
-                        .value(autoliikenne.indeksi))
+                        .value(autoliikenne.indeksi)
+                )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.pyoraliikenneindeksi")
-                        .value(pyoraliikenneindeksi))
+                        .value(pyoraliikenneindeksi)
+                )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.linjaautoliikenneindeksi")
-                        .value(linjaautoliikenneindeksi))
+                        .value(linjaautoliikenneindeksi)
+                )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.raitioliikenneindeksi")
-                        .value(raitioliikenneindeksi))
+                        .value(raitioliikenneindeksi)
+                )
                 // In this case, raitioliikenneindeksi has the highest value
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.liikennehaittaindeksi.indeksi")
-                        .value(raitioliikenneindeksi))
+                        .value(raitioliikenneindeksi)
+                )
                 .andExpect(
                     jsonPath("tormaystarkasteluTulos.liikennehaittaindeksi.tyyppi")
-                        .value(IndeksiType.RAITIOLIIKENNEINDEKSI.name))
+                        .value(IndeksiType.RAITIOLIIKENNEINDEKSI.name)
+                )
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
@@ -227,7 +239,8 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     jsonPath(
                         "toteuttajat[0].yhteyshenkilot[*].etunimi",
                         containsInAnyOrder("Etu3", "Etu5", "Etu6"),
-                    ))
+                    )
+                )
                 .andExpect(jsonPath("muut.length()").value(1))
                 .andExpect(jsonPath("muut[0].yhteyshenkilot.length()").value(1))
                 .andExpect(jsonPath("muut[0].yhteyshenkilot[0].etunimi").value("Etu4"))
@@ -274,14 +287,13 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             val hankeIds = listOf(123, 444)
             val hankkeet =
                 listOf(
-                    HankeFactory.create(
-                        id = hankeIds[0],
-                    ),
+                    HankeFactory.create(id = hankeIds[0]),
                     HankeFactory.create(
                         id = hankeIds[1],
                         hankeTunnus = "hanketunnus2",
                         nimi = "Esplanadin viemäröinti",
-                    ))
+                    ),
+                )
             every { hankeService.loadHankkeetByIds(hankeIds) }.returns(hankkeet)
             every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
                 .returns(hankeIds)
@@ -367,12 +379,14 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(jsonPath("\$.[0].omistajat.length()").value(1))
                 .andExpect(jsonPath("\$.[0].omistajat[0].yhteyshenkilot.length()").value(1))
                 .andExpect(
-                    jsonPath("\$.[0].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu122"))
+                    jsonPath("\$.[0].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu122")
+                )
                 .andExpect(jsonPath("\$.[0].omistajat[0].yhteyshenkilot[0].id").isString)
                 .andExpect(jsonPath("\$.[1].omistajat.length()").value(1))
                 .andExpect(jsonPath("\$.[1].omistajat[0].yhteyshenkilot.length()").value(1))
                 .andExpect(
-                    jsonPath("\$.[1].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu144"))
+                    jsonPath("\$.[1].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu144")
+                )
                 .andExpect(jsonPath("\$.[1].omistajat[0].yhteyshenkilot[0].id").isString)
 
             verifySequence {
@@ -532,8 +546,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     nimi = "$HANKEALUE_DEFAULT_NAME 1",
                     haittaAlkuPvm = DateFactory.getStartDatetime(),
                     haittaLoppuPvm = DateFactory.getEndDatetime(),
-                    kaistaHaitta =
-                        VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+                    kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
                     kaistaPituusHaitta =
                         AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA,
                     meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
@@ -571,15 +584,15 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(jsonPath("$.tyomaaKatuosoite").value("Testikatu 1"))
                 .andExpect(
                     jsonPath("$.alueet[0].kaistaHaitta")
-                        .value(
-                            VaikutusAutoliikenteenKaistamaariin
-                                .VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-                                .name)) // Note, here as string, not the enum.
+                        .value(VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE.name)
+                ) // Note, here as string, not the enum.
                 .andExpect(
                     jsonPath("$.alueet[0].haittojenhallintasuunnitelma.YLEINEN")
                         .value(
                             hankeToBeUpdated.alueet[0].haittojenhallintasuunnitelma!![
-                                Haittojenhallintatyyppi.YLEINEN]))
+                                Haittojenhallintatyyppi.YLEINEN]
+                        )
+                )
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
