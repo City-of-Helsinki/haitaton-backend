@@ -104,11 +104,11 @@ class TormaystarkasteluControllerITest(
                 [
                     "2025-02-20T23:45:56Z,2025-02-20T23:45:55Z",
                     "2025-02-20T23:45:56Z,2025-02-19T23:47:56Z",
-                ],
+                ]
         )
         fun `returns 400 when start time is after end time`(
             startDate: ZonedDateTime,
-            endDate: ZonedDateTime
+            endDate: ZonedDateTime,
         ) {
             val request = createRequest(startDate, endDate)
 
@@ -125,7 +125,7 @@ class TormaystarkasteluControllerITest(
                     "2025-02-20T23:45:56Z,2025-02-20T23:45:56Z,1",
                     "2025-02-20T00:45:56Z,2025-02-20T23:12:34Z,1",
                     "2025-02-20T23:45:56Z,2025-02-21T23:45:56Z,2",
-                ],
+                ]
         )
         fun `calls the service with the right length in days`(
             startDate: ZonedDateTime,
@@ -137,7 +137,7 @@ class TormaystarkasteluControllerITest(
                 laskentaService.calculateTormaystarkastelu(
                     any<FeatureCollection>(),
                     days,
-                    VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+                    VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
                     AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
                 )
             } returns createTulos()
@@ -148,7 +148,7 @@ class TormaystarkasteluControllerITest(
                 laskentaService.calculateTormaystarkastelu(
                     any<FeatureCollection>(),
                     days,
-                    VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+                    VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
                     AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
                 )
             }
@@ -184,7 +184,7 @@ class TormaystarkasteluControllerITest(
             haittaAlkuPvm: ZonedDateTime = DateFactory.getStartDatetime(),
             haittaLoppuPvm: ZonedDateTime = DateFactory.getEndDatetime(),
             kaistaHaitta: VaikutusAutoliikenteenKaistamaariin =
-                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+                VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
             kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus =
                 AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
         ): TormaystarkasteluRequest {

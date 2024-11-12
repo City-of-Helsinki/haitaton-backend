@@ -258,11 +258,13 @@ class UpdateHakemusITest(
         assertThat(email.allRecipients.single().toString()).isEqualTo(newKayttaja.sahkoposti)
         assertThat(email.subject)
             .isEqualTo(
-                "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application")
+                "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application"
+            )
         val typeTranslation = type.translations().fi
         assertThat(email.textBody())
             .contains(
-                "laatimassa $typeTranslation hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})")
+                "laatimassa $typeTranslation hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})"
+            )
     }
 
     @Nested
@@ -295,7 +297,8 @@ class UpdateHakemusITest(
                 messageContains("Invalid geometry received when updating hakemus")
                 messageContains("reason=Self-intersection")
                 messageContains(
-                    "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}")
+                    "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}"
+                )
             }
         }
 
@@ -467,7 +470,9 @@ class UpdateHakemusITest(
                     listOf(
                         createTyoalue(
                             "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json"
-                                .asJsonResource())),
+                                .asJsonResource()
+                        )
+                    ),
             )
 
         private val notInHankeArea =
@@ -496,7 +501,8 @@ class UpdateHakemusITest(
                 messageContains("Invalid geometry received when updating hakemus")
                 messageContains("reason=Self-intersection")
                 messageContains(
-                    "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}")
+                    "location={\"type\":\"Point\",\"coordinates\":[25494009.65639264,6679886.142116806]}"
+                )
             }
         }
 
@@ -521,7 +527,8 @@ class UpdateHakemusITest(
                 messageContains("Hakemus geometry is outside the associated hankealue")
                 messageContains("hankealue=$hankealueId")
                 messageContains(
-                    "geometry=${notInHankeArea.tyoalueet.single().geometry.toJsonString()}")
+                    "geometry=${notInHankeArea.tyoalueet.single().geometry.toJsonString()}"
+                )
             }
         }
 
@@ -733,7 +740,8 @@ class UpdateHakemusITest(
                         HakemusyhteystietoFactory.create(
                             tyyppi = CustomerType.PERSON,
                             registryKey = henkilotunnus,
-                        ))
+                        )
+                    )
                     .save()
             val yhteystietoId = hakemus.applicationData.customerWithContacts!!.id
             val request =
@@ -844,11 +852,11 @@ class UpdateHakemusITest(
                 TormaystarkasteluTulos(
                     autoliikenne =
                         Autoliikenneluokittelu(
-                            indeksi = 3.1f,
+                            indeksi = 2.8f,
                             haitanKesto = 1,
                             katuluokka = 4,
                             liikennemaara = 5,
-                            kaistahaitta = 2,
+                            kaistahaitta = 1,
                             kaistapituushaitta = 2,
                         ),
                     pyoraliikenneindeksi = 3.0f,

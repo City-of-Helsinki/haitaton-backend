@@ -34,20 +34,16 @@ fun Tarinahaitta.format(): String =
 fun VaikutusAutoliikenteenKaistamaariin.format(): String =
     when (this) {
         VaikutusAutoliikenteenKaistamaariin.EI_VAIKUTA -> "Ei vaikuta"
-        VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA ->
-            "Vähentää kaistan yhdellä ajosuunnalla"
-
-        VaikutusAutoliikenteenKaistamaariin
-            .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA ->
-            "Vähentää samanaikaisesti kaistan kahdella ajosuunnalla"
-
-        VaikutusAutoliikenteenKaistamaariin
-            .VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_KAHDELLA_AJOSUUNNALLA ->
-            "Vähentää samanaikaisesti useita kaistoja kahdella ajosuunnalla"
-
-        VaikutusAutoliikenteenKaistamaariin
-            .VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA ->
-            "Vähentää samanaikaisesti useita kaistoja liittymän eri suunnilla"
+        VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE ->
+            "Yksi autokaista vähenee - ajosuunta vielä käytössä"
+        VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE_KAHDELLA_AJOSUUNNALLA ->
+            "Yksi autokaista vähenee kahdella ajosuunnalla - ajosuunnat vielä käytössä"
+        VaikutusAutoliikenteenKaistamaariin.USEITA_KAISTOJA_VAHENEE_AJOSUUNNILLA ->
+            "Useita autokaistoja vähenee ajosuunnilla - ajosuunnat vielä käytössä"
+        VaikutusAutoliikenteenKaistamaariin.YKSI_AJOSUUNTA_POISTUU_KAYTOSTA ->
+            "Yksi autoliikenteen ajosuunta poistuu käytöstä"
+        VaikutusAutoliikenteenKaistamaariin.USEITA_AJOSUUNTIA_POISTUU_KAYTOSTA ->
+            "Useita autoliikenteen ajosuuntia poistuu käytöstä"
     }
 
 fun AutoliikenteenKaistavaikutustenPituus.format(): String =
