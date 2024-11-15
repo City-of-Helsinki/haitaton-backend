@@ -2,12 +2,14 @@ package fi.hel.haitaton.hanke.logging
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
+import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.Contact as AlluContact
 import fi.hel.haitaton.hanke.allu.Customer as AlluCustomer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
+import fi.hel.haitaton.hanke.hakemus.ALLU_APPLICATION_ERROR_MSG
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
@@ -60,7 +62,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         applicationId: Long,
         applicationData: AlluApplicationData,
         status: Status,
-        failureDescription: String? = null
+        failureDescription: String? = null,
     ) {
         val customerEntries =
             auditLogEntriesForCustomers(applicationId, applicationData, status, failureDescription)
@@ -68,7 +70,11 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             auditLogEntriesForContacts(applicationId, applicationData, status, failureDescription)
         val invoicingEntry =
             auditLogEntryForInvoicingCustomer(
-                applicationId, applicationData, status, failureDescription)
+                applicationId,
+                applicationData,
+                status,
+                failureDescription,
+            )
         val entries = (customerEntries + contactEntries + invoicingEntry).filterNotNull()
 
         saveDisclosureLogs(ALLU_AUDIT_LOG_USERID, UserRole.SERVICE, entries)
@@ -107,11 +113,13 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             auditLogEntriesForHakemusDataResponseCustomers(
                 hakemusResponse.id,
                 hakemusResponse.applicationData,
-                ObjectType.APPLICATION_CUSTOMER) +
+                ObjectType.APPLICATION_CUSTOMER,
+            ) +
                 auditLogEntriesForHakemusDataResponseContacts(
                     hakemusResponse.id,
                     hakemusResponse.applicationData,
-                    ObjectType.APPLICATION_CONTACT)
+                    ObjectType.APPLICATION_CONTACT,
+                )
 
         saveDisclosureLogs(userId, UserRole.USER, entries)
     }
@@ -125,11 +133,13 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             auditLogEntriesForHakemusDataResponseCustomers(
                 taydennysResponse.id,
                 taydennysResponse.applicationData,
-                ObjectType.TAYDENNYS_CUSTOMER) +
+                ObjectType.TAYDENNYS_CUSTOMER,
+            ) +
                 auditLogEntriesForHakemusDataResponseContacts(
                     taydennysResponse.id,
                     taydennysResponse.applicationData,
-                    ObjectType.TAYDENNYS_CONTACT)
+                    ObjectType.TAYDENNYS_CONTACT,
+                )
         saveDisclosureLogs(currentUserId, UserRole.USER, entries)
     }
 
@@ -170,6 +180,40 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         saveDisclosureLogs(userId, UserRole.USER, entries)
     }
 
+    /**
+     * Save disclosure logs for the personal information inside the application. Determine the
+     * status of the operation from whether there were exceptions or not. Don't save logging
+     * failures, since personal data was not yet disclosed.
+     */
+    fun <T> withDisclosureLogging(
+        applicationId: Long,
+        alluApplicationData: AlluApplicationData,
+        f: () -> T,
+    ): T {
+        try {
+            val result = f()
+            saveForAllu(applicationId, alluApplicationData, Status.SUCCESS)
+            return result
+        } catch (e: AlluLoginException) {
+            // Since the login failed we didn't send the application itself, so logging not
+            // needed.
+            throw e
+        } catch (e: Throwable) {
+            // There was an exception outside login, so there was at least an attempt to send
+            // the
+            // application to Allu. Allu might have read it and rejected it, so we should log
+            // this
+            // as a disclosure event.
+            saveForAllu(
+                applicationId,
+                alluApplicationData,
+                Status.FAILED,
+                ALLU_APPLICATION_ERROR_MSG,
+            )
+            throw e
+        }
+    }
+
     private fun auditLogEntriesForCustomers(
         applicationId: Long,
         applicationData: AlluApplicationData,
@@ -178,7 +222,12 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     ): List<AuditLogEntry> =
         extractCustomers(applicationData).toSet().map { customer ->
             disclosureLogEntry(
-                ObjectType.ALLU_CUSTOMER, applicationId, customer, status, failureDescription)
+                ObjectType.ALLU_CUSTOMER,
+                applicationId,
+                customer,
+                status,
+                failureDescription,
+            )
         }
 
     private fun auditLogEntryForInvoicingCustomer(
@@ -193,7 +242,12 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         val customer = AlluMetaCustomerWithRole(MetaCustomerType.INVOICING, invoicingCustomer)
 
         return disclosureLogEntry(
-            ObjectType.ALLU_CUSTOMER, applicationId, customer, status, failureDescription)
+            ObjectType.ALLU_CUSTOMER,
+            applicationId,
+            customer,
+            status,
+            failureDescription,
+        )
     }
 
     private fun <T : Any> auditLogEntriesForHakemusDataResponseCustomers(
@@ -201,7 +255,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         hakemusDataResponse: HakemusDataResponse,
         objectType: ObjectType,
         status: Status = Status.SUCCESS,
-        failureDescription: String? = null
+        failureDescription: String? = null,
     ): List<AuditLogEntry> =
         extractHakemusDataResponseCustomers(hakemusDataResponse).toSet().map { customer ->
             disclosureLogEntry(objectType, objectId, customer, status, failureDescription)
@@ -218,7 +272,12 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     ): List<AuditLogEntry> =
         extractContacts(applicationData).toSet().map { contact ->
             disclosureLogEntry(
-                ObjectType.ALLU_CONTACT, applicationId, contact, status, failureDescription)
+                ObjectType.ALLU_CONTACT,
+                applicationId,
+                contact,
+                status,
+                failureDescription,
+            )
         }
 
     private fun <T : Any> auditLogEntriesForHakemusDataResponseContacts(
@@ -303,7 +362,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     private fun saveDisclosureLogs(
         userId: String,
         userRole: UserRole,
-        entries: Collection<AuditLogEntry>
+        entries: Collection<AuditLogEntry>,
     ) {
         if (entries.isEmpty()) {
             return

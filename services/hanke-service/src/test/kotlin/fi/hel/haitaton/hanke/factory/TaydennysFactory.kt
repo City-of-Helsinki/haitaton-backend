@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.parseJson
 import fi.hel.haitaton.hanke.taydennys.Taydennys
 import fi.hel.haitaton.hanke.taydennys.TaydennysEntity
@@ -81,7 +82,7 @@ class TaydennysFactory(
     fun saveWithHakemus(
         type: ApplicationType = ApplicationType.CABLE_REPORT,
         hanke: HankeEntity? = null,
-        f: (HakemusBuilder) -> HakemusBuilder = { it },
+        f: (HakemusBuilder) -> Unit = {},
     ): Taydennys {
         val hakemusBuilder =
             if (hanke != null) hakemusFactory.builder(USERNAME, hanke, type)
@@ -89,9 +90,32 @@ class TaydennysFactory(
                 hakemusFactory.builder(type)
             }
         val hakemus =
-            f(hakemusBuilder.withStatus(ApplicationStatus.WAITING_INFORMATION)).saveEntity()
+            hakemusBuilder
+                .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                .apply { f(this) }
+                .saveEntity()
         return saveForHakemus(hakemus)
     }
+
+    /** Returns updated data */
+    fun updateTaydennys(
+        taydennys: Taydennys,
+        f: HakemusEntityData.() -> HakemusEntityData,
+    ): Taydennys {
+        val entity = taydennysRepository.getReferenceById(taydennys.id)
+        entity.hakemusData = entity.hakemusData.f()
+        return taydennysRepository.save(entity).toDomain()
+    }
+
+    /** Returns updated data */
+    fun updateJohtoselvitysTaydennys(
+        taydennys: Taydennys,
+        f: JohtoselvityshakemusEntityData.() -> JohtoselvityshakemusEntityData,
+    ): Taydennys =
+        updateTaydennys(taydennys) {
+            this as JohtoselvityshakemusEntityData
+            f()
+        }
 
     companion object {
         val DEFAULT_ID: UUID = UUID.fromString("49ee9168-a1e3-45a1-8fe0-9330cd5475d3")

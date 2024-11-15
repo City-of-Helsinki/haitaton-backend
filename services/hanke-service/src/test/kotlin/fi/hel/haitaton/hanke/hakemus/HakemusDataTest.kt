@@ -224,6 +224,8 @@ class HakemusDataTest {
 
         private fun johtoselvitysCases(): List<Arguments> =
             listOf(
+                // One shared field to test that the super method gets called.
+                Arguments.of(base.copy(startTime = base.startTime!!.minusDays(1)), "startTime"),
                 Arguments.of(
                     base.copy(postalAddress = ApplicationFactory.createPostalAddress()),
                     "postalAddress",
@@ -262,6 +264,8 @@ class HakemusDataTest {
         private fun kaivuilmoitusCases(): List<Arguments> {
             val base = HakemusFactory.createKaivuilmoitusData()
             return listOf(
+                // One shared field to test that the super method gets called.
+                Arguments.of(base.copy(startTime = base.startTime!!.minusDays(1)), "startTime"),
                 Arguments.of(base.copy(workDescription = "New description."), "workDescription"),
                 Arguments.of(base.copy(constructionWork = true), "constructionWork"),
                 Arguments.of(base.copy(maintenanceWork = true), "maintenanceWork"),

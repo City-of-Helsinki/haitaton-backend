@@ -7,6 +7,8 @@ import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.prop
+import com.fasterxml.jackson.databind.node.ObjectNode
+import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.logging.AuditLogActor
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
@@ -65,6 +67,12 @@ object AuditLogEntryEntityAsserts {
             .isNotNull()
             .transform { it.parseJson<T>() }
             .all { body(this) }
+
+    fun Assert<AuditLogTarget>.hasObjectBeforeJson(body: Assert<ObjectNode>.() -> Unit) =
+        prop(AuditLogTarget::objectBefore)
+            .isNotNull()
+            .transform { OBJECT_MAPPER.readTree(it) as ObjectNode }
+            .all(body)
 
     inline fun <reified T> Assert<AuditLogTarget>.hasObjectAfter(after: T) =
         hasObjectAfter<T> { isEqualTo(after) }

@@ -59,6 +59,7 @@ enum class ObjectType {
     TAYDENNYS,
     TAYDENNYS_CONTACT,
     TAYDENNYS_CUSTOMER,
+    TAYDENNYSPYYNTO,
     YHTEYSTIETO,
 }
 
