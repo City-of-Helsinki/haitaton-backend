@@ -163,4 +163,12 @@ class TaydennysController(private val taydennysService: TaydennysService) {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2002
     }
+
+    @ExceptionHandler(NoChangesException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun noChangesException(ex: NoChangesException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI6002
+    }
 }

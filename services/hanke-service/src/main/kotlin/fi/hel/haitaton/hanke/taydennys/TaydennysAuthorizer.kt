@@ -18,8 +18,12 @@ class TaydennysAuthorizer(
 ) : Authorizer(permissionService, hankeRepository) {
 
     @Transactional(readOnly = true)
-    fun authorize(id: UUID, permissionCode: String): Boolean =
-        taydennysRepository.findByIdOrNull(id)?.taydennyspyynto?.applicationId?.let {
+    fun authorize(id: UUID, permissionCode: String): Boolean {
+        val taydennys =
+            taydennysRepository.findByIdOrNull(id) ?: throw TaydennysNotFoundException(id)
+
+        return taydennys.taydennyspyynto.applicationId.let {
             hakemusAuthorizer.authorizeHakemusId(it, permissionCode)
-        } ?: false
+        }
+    }
 }
