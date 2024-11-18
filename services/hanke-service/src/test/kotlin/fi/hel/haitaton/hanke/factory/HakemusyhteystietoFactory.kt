@@ -14,10 +14,10 @@ import org.springframework.stereotype.Component
 object HakemusyhteystietoFactory {
 
     private val DEFAULT_ID = UUID.fromString("af23b9e5-208e-40ef-9291-962c05d783df")
-    private const val DEFAULT_NIMI = "Oy Testi Ab"
-    private const val DEFAULT_SAHKOPOSTI = "hakija@testi.fi"
-    private const val DEFAULT_PUHELINNUMERO = "0401234567"
-    private const val DEFAULT_YTUNNUS = "1817548-2"
+    const val DEFAULT_NIMI = "Oy Testi Ab"
+    const val DEFAULT_SAHKOPOSTI = "hakija@testi.fi"
+    const val DEFAULT_PUHELINNUMERO = "0401234567"
+    const val DEFAULT_YTUNNUS = "1817548-2"
     private const val DEFAULT_OVT = "003718175482"
 
     const val DEFAULT_PERSON_NIMI = "Pertti Perushenkilö"
