@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.taydennys
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.containsOnly
 import assertk.assertions.hasClass
 import assertk.assertions.isEmpty
@@ -16,6 +17,8 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.Attachment
+import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
@@ -38,6 +41,7 @@ import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
+import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasNullNode
 import fi.hel.haitaton.hanke.test.Asserts.hasTextNode
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
@@ -57,6 +61,7 @@ import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
+import io.mockk.slot
 import io.mockk.verifySequence
 import java.util.UUID
 import org.junit.jupiter.api.AfterEach
@@ -397,6 +402,7 @@ class TaydennysServiceITest(
             val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
             val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
             every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
@@ -415,6 +421,37 @@ class TaydennysServiceITest(
                         InformationRequestFieldKey.GEOMETRY,
                     ),
                 )
+                alluClient.addAttachment(any(), any())
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
+        fun `sends the updated form data as a PDF`() {
+            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            taydennysFactory.updateJohtoselvitysTaydennys(taydennys) {
+                copy(startTime = DateFactory.getStartDatetime().minusDays(1))
+            }
+            val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
+            val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            val attachmentCapturingSlot = slot<Attachment>()
+            justRun { alluClient.addAttachment(hakemus.alluid!!, capture(attachmentCapturingSlot)) }
+            every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            val attachment = attachmentCapturingSlot.captured
+            assertThat(attachment.metadata).all {
+                prop(AttachmentMetadata::name).isEqualTo("haitaton-form-data-taydennys.pdf")
+                prop(AttachmentMetadata::description)
+                    .isNotNull()
+                    .contains("Taydennys form data from Haitaton, dated ")
+            }
+            verifySequence {
+                alluClient.respondToInformationRequest(any(), any(), any(), any())
+                alluClient.addAttachment(hakemus.alluid!!, any())
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -428,6 +465,7 @@ class TaydennysServiceITest(
                 copy(startTime = DateFactory.getStartDatetime().minusDays(1))
             }
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
             every { alluClient.getApplicationInformation(any()) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
             auditLogRepository.deleteAll()
@@ -458,6 +496,7 @@ class TaydennysServiceITest(
 
             verifySequence {
                 alluClient.respondToInformationRequest(any(), any(), any(), any())
+                alluClient.addAttachment(any(), any())
                 alluClient.getApplicationInformation(any())
             }
         }
@@ -476,6 +515,7 @@ class TaydennysServiceITest(
                     copy(name = "New name")
                 }
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
             every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
@@ -485,6 +525,7 @@ class TaydennysServiceITest(
             assertThat(hanke.nimi).isEqualTo(taydennys.hakemusData.name)
             verifySequence {
                 alluClient.respondToInformationRequest(hakemus.alluid!!, any(), any(), any())
+                alluClient.addAttachment(any(), any())
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -497,6 +538,7 @@ class TaydennysServiceITest(
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
             val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
             every { alluClient.getApplicationInformation(any()) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
@@ -506,6 +548,7 @@ class TaydennysServiceITest(
             assertThat(updatedHakemus.applicationData.startTime).isEqualTo(startTime)
             verifySequence {
                 alluClient.respondToInformationRequest(hakemus.alluid!!, any(), any(), any())
+                alluClient.addAttachment(any(), any())
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -517,6 +560,7 @@ class TaydennysServiceITest(
                 copy(startTime = DateFactory.getStartDatetime().minusDays(1))
             }
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
             every { alluClient.getApplicationInformation(any()) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
@@ -524,6 +568,7 @@ class TaydennysServiceITest(
 
             verifySequence {
                 alluClient.respondToInformationRequest(any(), any(), any(), any())
+                alluClient.addAttachment(any(), any())
                 alluClient.getApplicationInformation(any())
             }
             assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
@@ -540,6 +585,7 @@ class TaydennysServiceITest(
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
             every { alluClient.getApplicationInformation(any()) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
+            justRun { alluClient.addAttachment(any(), any()) }
             auditLogRepository.deleteAll()
 
             taydennysService.sendTaydennys(taydennys.id, USERNAME)
@@ -566,7 +612,37 @@ class TaydennysServiceITest(
             }
             verifySequence {
                 alluClient.respondToInformationRequest(any(), any(), any(), any())
+                alluClient.addAttachment(any(), any())
                 alluClient.getApplicationInformation(any())
+            }
+        }
+
+        @Test
+        fun `updates the Allu status even when sending the form data attachment fails`() {
+            val unchangedTaydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            val taydennys =
+                taydennysFactory.updateJohtoselvitysTaydennys(unchangedTaydennys) {
+                    copy(startTime = DateFactory.getStartDatetime().minusDays(1))
+                }
+            val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
+            val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            every { alluClient.getApplicationInformation(any()) } returns
+                AlluFactory.createAlluApplicationResponse(
+                    hakemus.alluid!!,
+                    status = ApplicationStatus.HANDLING,
+                )
+            every { alluClient.addAttachment(hakemus.alluid!!, any()) } throws AlluException()
+
+            val response = taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            assertThat(response.alluStatus).isEqualTo(ApplicationStatus.HANDLING)
+            val updatedHakemus = hakemusService.getById(hakemus.id)
+            assertThat(updatedHakemus.alluStatus).isEqualTo(ApplicationStatus.HANDLING)
+            verifySequence {
+                alluClient.respondToInformationRequest(any(), any(), any(), any())
+                alluClient.addAttachment(hakemus.alluid!!, any())
+                alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
     }
