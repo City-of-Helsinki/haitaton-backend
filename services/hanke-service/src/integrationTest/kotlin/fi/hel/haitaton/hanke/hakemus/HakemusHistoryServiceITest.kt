@@ -122,11 +122,14 @@ class HakemusHistoryServiceITest(
                 ApplicationHistoryFactory.create(
                     alluId,
                     ApplicationHistoryFactory.createEvent(
-                        firstEventTime.plusDays(5), ApplicationStatus.PENDING),
+                        firstEventTime.plusDays(5),
+                        ApplicationStatus.PENDING,
+                    ),
                     ApplicationHistoryFactory.createEvent(
-                        firstEventTime.plusDays(10), ApplicationStatus.HANDLING),
-                    ApplicationHistoryFactory.createEvent(
-                        firstEventTime, ApplicationStatus.PENDING),
+                        firstEventTime.plusDays(10),
+                        ApplicationStatus.HANDLING,
+                    ),
+                    ApplicationHistoryFactory.createEvent(firstEventTime, ApplicationStatus.PENDING),
                 )
 
             historyService.handleHakemusUpdates(listOf(history), updateTime)
@@ -191,7 +194,9 @@ class HakemusHistoryServiceITest(
             assertThat(applications.map { it.alluid }).containsExactlyInAnyOrder(alluId, alluId + 2)
             assertThat(applications.map { it.alluStatus })
                 .containsExactlyInAnyOrder(
-                    ApplicationStatus.PENDING_CLIENT, ApplicationStatus.PENDING_CLIENT)
+                    ApplicationStatus.PENDING_CLIENT,
+                    ApplicationStatus.PENDING_CLIENT,
+                )
             assertThat(applications.map { it.applicationIdentifier })
                 .containsExactlyInAnyOrder("JS2300082", "JS2300084")
         }
@@ -211,7 +216,9 @@ class HakemusHistoryServiceITest(
                         alluId,
                         ApplicationHistoryFactory.createEvent(
                             applicationIdentifier = identifier,
-                            newStatus = ApplicationStatus.DECISION)),
+                            newStatus = ApplicationStatus.DECISION,
+                        ),
+                    )
                 )
 
             historyService.handleHakemusUpdates(histories, updateTime)
@@ -221,12 +228,15 @@ class HakemusHistoryServiceITest(
             assertThat(email.allRecipients[0].toString()).isEqualTo(hakija.sahkoposti)
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier")
+                    "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier"
+                )
         }
 
         @ParameterizedTest
         @EnumSource(
-            ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"])
+            ApplicationStatus::class,
+            names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"],
+        )
         fun `sends email to the contacts when a kaivuilmoitus gets a decision`(
             applicationStatus: ApplicationStatus
         ) {
@@ -246,7 +256,7 @@ class HakemusHistoryServiceITest(
                             applicationIdentifier = identifier,
                             newStatus = applicationStatus,
                         ),
-                    ),
+                    )
                 )
             mockAlluDownload(applicationStatus)
             every { alluClient.getApplicationInformation(alluId) } returns
@@ -259,14 +269,17 @@ class HakemusHistoryServiceITest(
             assertThat(email.allRecipients[0].toString()).isEqualTo(hakija.sahkoposti)
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa")
+                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa"
+                )
             verifyAlluDownload(applicationStatus)
             verify { alluClient.getApplicationInformation(alluId) }
         }
 
         @ParameterizedTest
         @EnumSource(
-            ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"])
+            ApplicationStatus::class,
+            names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"],
+        )
         fun `downloads the document when a kaivuilmoitus gets a decision`(
             status: ApplicationStatus
         ) {
@@ -282,7 +295,8 @@ class HakemusHistoryServiceITest(
                         ApplicationHistoryFactory.createEvent(
                             applicationIdentifier = identifier,
                             newStatus = status,
-                        )),
+                        ),
+                    )
                 )
             mockAlluDownload(status)
             every { alluClient.getApplicationInformation(alluId) } returns
@@ -352,7 +366,8 @@ class HakemusHistoryServiceITest(
             assertThat(emails).each {
                 it.prop(MimeMessage::getSubject)
                     .isEqualTo(
-                        "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö")
+                        "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö"
+                    )
             }
             verifySequence { alluClient.getInformationRequest(alluId) }
         }
@@ -383,7 +398,8 @@ class HakemusHistoryServiceITest(
                 prop(TaydennyspyyntoEntity::kentat)
                     .containsOnly(
                         InformationRequestFieldKey.OTHER to
-                            AlluFactory.DEFAULT_INFORMATION_REQUEST_DESCRIPTION)
+                            AlluFactory.DEFAULT_INFORMATION_REQUEST_DESCRIPTION
+                    )
             }
             verifySequence { alluClient.getInformationRequest(alluId) }
         }
@@ -464,7 +480,9 @@ class HakemusHistoryServiceITest(
             assertThat(output).contains("ERROR")
             assertThat(output)
                 .contains(
-                    "A hakemus moved to handling and it had a täydennyspyyntö, but the previous state was not 'HANDLING'. status=DECISION")
+                    "A hakemus moved to handling and it had a täydennyspyyntö, " +
+                        "but the previous state was not 'WAITING_INFORMATION'. status=DECISION"
+                )
         }
 
         private fun mockAlluDownload(status: ApplicationStatus) =

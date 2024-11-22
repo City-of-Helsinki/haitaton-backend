@@ -2,9 +2,14 @@ package fi.hel.haitaton.hanke.taydennys
 
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.InformationRequest
+import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
+import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
+import fi.hel.haitaton.hanke.hakemus.HakemusDataValidator
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
@@ -14,7 +19,9 @@ import fi.hel.haitaton.hanke.hakemus.HakemusService.Companion.toExistingYhteysti
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.TaydennysLoggingService
+import fi.hel.haitaton.hanke.logging.TaydennyspyyntoLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import java.util.UUID
 import mu.KotlinLogging
@@ -33,7 +40,9 @@ class TaydennysService(
     private val alluClient: AlluClient,
     private val loggingService: TaydennysLoggingService,
     private val hankeKayttajaService: HankeKayttajaService,
-    private val taydennysLoggingService: TaydennysLoggingService
+    private val taydennysLoggingService: TaydennysLoggingService,
+    private val taydennyspyyntoLoggingService: TaydennyspyyntoLoggingService,
+    private val disclosureLogService: DisclosureLogService,
 ) {
     @Transactional(readOnly = true)
     fun findTaydennyspyynto(hakemusId: Long): Taydennyspyynto? =
@@ -45,16 +54,20 @@ class TaydennysService(
 
     @Transactional
     fun saveTaydennyspyyntoFromAllu(hakemus: HakemusIdentifier) {
-        val request = alluClient.getInformationRequest(hakemus.alluid!!)
+        val request: InformationRequest? = alluClient.getInformationRequest(hakemus.alluid!!)
+        if (request == null) {
+            logger.error {
+                "Couldn't find the information request from Allu. Ignoring the information request. ${hakemus.logString()}"
+            }
+            return
+        }
 
         val entity =
             TaydennyspyyntoEntity(
                 applicationId = hakemus.id,
                 alluId = request.informationRequestId,
                 kentat =
-                    request.fields
-                        .associate { it.fieldKey to it.requestDescription }
-                        .toMutableMap(),
+                    request.fields.associate { it.fieldKey to it.requestDescription }.toMutableMap(),
             )
 
         taydennyspyyntoRepository.save(entity)
@@ -69,7 +82,10 @@ class TaydennysService(
 
         if (hakemus.alluStatus != ApplicationStatus.WAITING_INFORMATION) {
             throw HakemusInWrongStatusException(
-                hakemus, hakemus.alluStatus, listOf(ApplicationStatus.WAITING_INFORMATION))
+                hakemus,
+                hakemus.alluStatus,
+                listOf(ApplicationStatus.WAITING_INFORMATION),
+            )
         }
 
         val saved = createFromHakemus(hakemus, taydennyspyynto).toDomain()
@@ -86,10 +102,12 @@ class TaydennysService(
                 TaydennysEntity(
                     taydennyspyynto = taydennyspyynto,
                     hakemusData = hakemus.hakemusEntityData,
-                ))
+                )
+            )
 
         taydennys.yhteystiedot.putAll(
-            hakemus.yhteystiedot.mapValues { createYhteystieto(it.value, taydennys) })
+            hakemus.yhteystiedot.mapValues { createYhteystieto(it.value, taydennys) }
+        )
 
         return taydennys
     }
@@ -103,15 +121,78 @@ class TaydennysService(
         taydennyspyyntoRepository.findByApplicationId(application.id)?.let {
             logger.info { "A täydennyspyyntö was found. Removing it." }
             taydennyspyyntoRepository.delete(it)
+            taydennyspyyntoRepository.flush()
 
             if (application.alluStatus != ApplicationStatus.WAITING_INFORMATION) {
                 logger.error {
                     "A hakemus moved to handling and it had a täydennyspyyntö, " +
-                        "but the previous state was not 'HANDLING'. " +
+                        "but the previous state was not 'WAITING_INFORMATION'. " +
                         "status=${application.alluStatus} ${application.logString()}"
                 }
             }
         }
+    }
+
+    @Transactional
+    fun sendTaydennys(id: UUID, currentUserId: String): Hakemus {
+        val taydennysEntity =
+            taydennysRepository.findByIdOrNull(id) ?: throw TaydennysNotFoundException(id)
+        val taydennys = taydennysEntity.toDomain()
+        val hakemus =
+            hakemusRepository.getReferenceById(taydennysEntity.taydennyspyynto.applicationId)
+        val hanke = hakemus.hanke
+
+        logger.info {
+            "Sending taydennys to Allu. " +
+                "${taydennysEntity.logString()} " +
+                "${hakemus.logString()} " +
+                hanke.logString()
+        }
+
+        val changes =
+            taydennys.hakemusData.listChanges(hakemus.toHakemus().applicationData).ifEmpty {
+                throw NoChangesException(taydennysEntity, hakemus)
+            }
+
+        if (hakemus.alluStatus != ApplicationStatus.WAITING_INFORMATION) {
+            throw HakemusInWrongStatusException(
+                hakemus,
+                hakemus.alluStatus,
+                listOf(ApplicationStatus.WAITING_INFORMATION),
+            )
+        }
+
+        HakemusDataValidator.ensureValidForSend(taydennys.hakemusData)
+
+        if (!hanke.generated) {
+            taydennysEntity.hakemusData.areas?.let { areas ->
+                hakemusService.assertGeometryCompatibility(hanke.id, areas)
+            }
+        }
+
+        logger.info("Sending täydennys id=$id")
+        val taydennyspyyntoId = taydennysEntity.taydennyspyyntoAlluId()
+        sendTaydennysToAllu(taydennys, hakemus, taydennyspyyntoId, hanke.hankeTunnus, changes)
+
+        if (hanke.generated) {
+            hanke.nimi = taydennys.hakemusData.name
+        }
+
+        logger.info {
+            "Täydennys sent, updating hakemus identifier and status. " +
+                "${taydennysEntity.logString()} ${hakemus.logString()}"
+        }
+        hakemusService.updateStatusFromAllu(hakemus)
+
+        // TODO: Meld täydennys to hakemus and log the change
+
+        taydennysLoggingService.logDelete(taydennys, currentUserId)
+        taydennysRepository.delete(taydennysEntity)
+        val taydennyspyynto = taydennysEntity.taydennyspyynto.toDomain()
+        taydennyspyyntoLoggingService.logDelete(taydennyspyynto, currentUserId)
+        taydennyspyyntoRepository.delete(taydennysEntity.taydennyspyynto)
+
+        return hakemusRepository.save(hakemus).toHakemus()
     }
 
     @Transactional
@@ -142,7 +223,11 @@ class TaydennysService(
         val originalContactUserIds = taydennysEntity.allContactUsers().map { it.id }.toSet()
         val updatedTaydennysEntity = saveWithUpdate(taydennysEntity, request, hanke.id)
         sendHakemusNotifications(
-            updatedTaydennysEntity, hakemusEntity, originalContactUserIds, currentUserId)
+            updatedTaydennysEntity,
+            hakemusEntity,
+            originalContactUserIds,
+            currentUserId,
+        )
 
         logger.info("Updated täydennys. ${updatedTaydennysEntity.logString()}")
         val updatedTaydennys = updatedTaydennysEntity.toDomain()
@@ -153,13 +238,14 @@ class TaydennysService(
 
     private fun assertUpdateCompatible(
         taydennysEntity: TaydennysEntity,
-        request: HakemusUpdateRequest
+        request: HakemusUpdateRequest,
     ) {
         if (taydennysEntity.hakemusData.applicationType != request.applicationType) {
             throw IncompatibleTaydennysUpdateException(
                 taydennysEntity,
                 taydennysEntity.hakemusData.applicationType,
-                request.applicationType)
+                request.applicationType,
+            )
         }
     }
 
@@ -209,7 +295,10 @@ class TaydennysService(
             it
         }
             ?: customerWithContactsRequest.toNewTaydennysyhteystietoEntity(
-                rooli, taydennysEntity, hankeId)
+                rooli,
+                taydennysEntity,
+                hankeId,
+            )
     }
 
     private fun CustomerWithContactsRequest.toNewTaydennysyhteystietoEntity(
@@ -230,7 +319,8 @@ class TaydennysService(
                 yhteyshenkilot.addAll(
                     contacts.map {
                         newTaydennysyhteyshenkiloEntity(it.hankekayttajaId, this, hankeId)
-                    })
+                    }
+                )
             }
 
     private fun newTaydennysyhteyshenkiloEntity(
@@ -273,7 +363,8 @@ class TaydennysService(
             )
             .apply {
                 yhteyshenkilot.addAll(
-                    yhteystieto.yhteyshenkilot.map { createYhteyshenkilo(it, this) })
+                    yhteystieto.yhteyshenkilot.map { createYhteyshenkilo(it, this) }
+                )
             }
 
     private fun createYhteyshenkilo(
@@ -285,17 +376,44 @@ class TaydennysService(
             hankekayttaja = yhteyshenkilo.hankekayttaja,
             tilaaja = yhteyshenkilo.tilaaja,
         )
+
+    private fun sendTaydennysToAllu(
+        taydennys: Taydennys,
+        hakemus: HakemusIdentifier,
+        taydennyspyyntoAlluId: Int,
+        hankeTunnus: String,
+        muutokset: List<String>,
+    ) {
+        val updatedFieldKeys =
+            muutokset.mapNotNull { InformationRequestFieldKey.fromHaitatonFieldName(it) }.toSet()
+
+        val alluData = taydennys.hakemusData.toAlluData(hankeTunnus)
+        disclosureLogService.withDisclosureLogging(hakemus.id, alluData) {
+            alluClient.respondToInformationRequest(
+                hakemus.alluid!!,
+                taydennyspyyntoAlluId,
+                alluData,
+                updatedFieldKeys,
+            )
+        }
+    }
 }
 
 class NoTaydennyspyyntoException(hakemusId: Long) :
-    RuntimeException("Application doesn't have an open taydennyspyynto. hakemusId=$hakemusId")
+    RuntimeException("Hakemus doesn't have an open täydennyspyyntö. hakemusId=$hakemusId")
 
-class TaydennysNotFoundException(id: UUID) : RuntimeException("Taydennys not found. Id=$id")
+class TaydennysNotFoundException(id: UUID) : RuntimeException("Täydennys not found. id=$id")
 
 class IncompatibleTaydennysUpdateException(
     taydennysEntity: TaydennysEntity,
     existingType: ApplicationType,
-    requestedType: ApplicationType
+    requestedType: ApplicationType,
 ) :
     RuntimeException(
-        "Invalid update request for taydennys. ${taydennysEntity.id}, existing type=$existingType, requested type=$requestedType")
+        "Invalid update request for täydennys. ${taydennysEntity.id}, existing type=$existingType, requested type=$requestedType"
+    )
+
+class NoChangesException(taydennys: TaydennysIdentifier, hakemus: HakemusIdentifier) :
+    RuntimeException(
+        "Not sending a täydennys without any changes. ${taydennys.logString()} ${hakemus.logString()}"
+    )

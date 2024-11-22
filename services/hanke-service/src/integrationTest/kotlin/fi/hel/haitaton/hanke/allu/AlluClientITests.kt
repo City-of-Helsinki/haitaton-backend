@@ -277,7 +277,8 @@ class AlluClientITests {
                     .setResponseCode(400)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                     .setBody(
-                        """[{"errorMessage":"Cable report should have one orderer contact","additionalInfo":"customerWithContacts"}]""")
+                        """[{"errorMessage":"Cable report should have one orderer contact","additionalInfo":"customerWithContacts"}]"""
+                    )
             mockWebServer.enqueue(applicationIdResponse)
 
             assertThrows<WebClientResponseException.BadRequest> {
@@ -389,15 +390,10 @@ class AlluClientITests {
         @Test
         fun `calls the right address when the hakemus is a johtoselvityshakemus`() {
             val applicationData = AlluFactory.createCableReportApplicationData()
-            val fields = listOf(InformationRequestFieldKey.AREA, InformationRequestFieldKey.OTHER)
+            val fields = setOf(InformationRequestFieldKey.AREA, InformationRequestFieldKey.OTHER)
             mockWebServer.enqueue(MockResponse().setResponseCode(200))
 
-            service.respondToInformationRequest(
-                alluid,
-                requestId,
-                applicationData,
-                fields,
-            )
+            service.respondToInformationRequest(alluid, requestId, applicationData, fields)
 
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
@@ -413,21 +409,17 @@ class AlluClientITests {
         fun `calls the right address when the hakemus is a kaivuilmoitus`() {
             val applicationData = AlluFactory.createExcavationNotificationData()
             val fields =
-                listOf(InformationRequestFieldKey.START_TIME, InformationRequestFieldKey.END_TIME)
+                setOf(InformationRequestFieldKey.START_TIME, InformationRequestFieldKey.END_TIME)
             mockWebServer.enqueue(MockResponse().setResponseCode(200))
 
-            service.respondToInformationRequest(
-                alluid,
-                requestId,
-                applicationData,
-                fields,
-            )
+            service.respondToInformationRequest(alluid, requestId, applicationData, fields)
 
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
             assertThat(request.path)
                 .isEqualTo(
-                    "/v2/excavationannouncements/$alluid/informationrequests/$requestId/response")
+                    "/v2/excavationannouncements/$alluid/informationrequests/$requestId/response"
+                )
             val expectedBody = InformationRequestResponse(applicationData, fields).toJsonString()
             val actualBody = request.body.readUtf8()
             JSONAssert.assertEquals(expectedBody, actualBody, JSONCompareMode.NON_EXTENSIBLE)
@@ -443,7 +435,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(pdfContent()))
+                    .setBody(pdfContent())
+            )
 
             val response = service.getDecisionPdf(12)
 
@@ -462,7 +455,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(content))
+                    .setBody(content)
+            )
 
             val response = service.getDecisionPdf(12)
 
@@ -475,7 +469,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Not found"))
+                    .setBody("Not found")
+            )
 
             val exception =
                 assertThrows<HakemusDecisionNotFoundException> { service.getDecisionPdf(12) }
@@ -489,7 +484,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(500)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Other error"))
+                    .setBody("Other error")
+            )
 
             assertThrows<WebClientResponseException> { service.getDecisionPdf(12) }
         }
@@ -500,7 +496,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, IMAGE_PNG)
-                    .setBody(pdfContent()))
+                    .setBody(pdfContent())
+            )
 
             assertThrows<AlluApiException> { service.getDecisionPdf(12) }
         }
@@ -511,7 +508,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF)
-                    .setBody(""))
+                    .setBody("")
+            )
 
             assertThrows<AlluApiException> { service.getDecisionPdf(12) }
         }
@@ -525,7 +523,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(pdfContent()))
+                    .setBody(pdfContent())
+            )
 
             val response = service.getOperationalConditionPdf(12)
 
@@ -545,7 +544,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(content))
+                    .setBody(content)
+            )
 
             val response = service.getOperationalConditionPdf(12)
 
@@ -558,7 +558,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Not found"))
+                    .setBody("Not found")
+            )
 
             val exception =
                 assertThrows<HakemusDecisionNotFoundException> {
@@ -574,7 +575,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(500)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Other error"))
+                    .setBody("Other error")
+            )
 
             assertThrows<WebClientResponseException> { service.getOperationalConditionPdf(12) }
         }
@@ -585,7 +587,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, IMAGE_PNG)
-                    .setBody(pdfContent()))
+                    .setBody(pdfContent())
+            )
 
             assertThrows<AlluApiException> { service.getOperationalConditionPdf(12) }
         }
@@ -596,7 +599,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF)
-                    .setBody(""))
+                    .setBody("")
+            )
 
             assertThrows<AlluApiException> { service.getOperationalConditionPdf(12) }
         }
@@ -611,7 +615,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(pdfContent()))
+                    .setBody(pdfContent())
+            )
 
             val response = service.getWorkFinishedPdf(12)
 
@@ -631,7 +636,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(content))
+                    .setBody(content)
+            )
 
             val response = service.getOperationalConditionPdf(12)
 
@@ -644,7 +650,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Not found"))
+                    .setBody("Not found")
+            )
 
             val exception =
                 assertThrows<HakemusDecisionNotFoundException> { service.getWorkFinishedPdf(12) }
@@ -658,7 +665,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(500)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Other error"))
+                    .setBody("Other error")
+            )
 
             assertThrows<WebClientResponseException> { service.getWorkFinishedPdf(12) }
         }
@@ -669,7 +677,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, IMAGE_PNG)
-                    .setBody(pdfContent()))
+                    .setBody(pdfContent())
+            )
 
             assertThrows<AlluApiException> { service.getWorkFinishedPdf(12) }
         }
@@ -680,7 +689,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF)
-                    .setBody(""))
+                    .setBody("")
+            )
 
             assertThrows<AlluApiException> { service.getWorkFinishedPdf(12) }
         }
@@ -697,7 +707,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody(histories.toJsonString()))
+                    .setBody(histories.toJsonString())
+            )
 
             val response = service.getApplicationStatusHistories(alluids, eventsAfter)
 
@@ -716,7 +727,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("[]"))
+                    .setBody("[]")
+            )
 
             val response = service.getApplicationStatusHistories(alluids, eventsAfter)
 
@@ -731,7 +743,8 @@ class AlluClientITests {
                 MockResponse()
                     .setResponseCode(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Error message"))
+                    .setBody("Error message")
+            )
 
             assertFailure { service.getApplicationStatusHistories(alluids, eventsAfter) }
                 .hasClass(WebClientResponseException.NotFound::class)

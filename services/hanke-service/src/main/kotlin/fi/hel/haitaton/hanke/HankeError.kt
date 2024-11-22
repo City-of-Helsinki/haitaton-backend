@@ -57,7 +57,8 @@ enum class HankeError(val errorMessage: String) {
     HAI4006("Duplicate hankekayttaja"),
     HAI4007("Verified name not found in Profiili"),
     HAI5001("Decision not found"),
-    HAI6001("Taydennys not found");
+    HAI6001("Taydennys not found"),
+    HAI6002("Taydennys has no changes");
 
     val errorCode: String
         get() = name

@@ -28,6 +28,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusGeometryException
 import fi.hel.haitaton.hanke.hakemus.HakemusGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
+import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteyshenkiloException
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteystietoException
 import fi.hel.haitaton.hanke.hakemus.InvalidHiddenRegistryKey
@@ -469,6 +470,103 @@ class TaydennysControllerITest(@Autowired override val mockMvc: MockMvc) : Contr
                 taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
                 taydennysService.updateTaydennys(id, request, USERNAME)
                 disclosureLogService.saveForTaydennys(taydennys.toResponse(), USERNAME)
+            }
+        }
+    }
+
+    @Nested
+    inner class Send {
+        private val url = "/taydennykset/$id/laheta"
+
+        @Test
+        @WithAnonymousUser
+        fun `returns 401 when unknown user`() {
+            post(url).andExpect(status().isUnauthorized)
+        }
+
+        @Test
+        fun `returns 404 when taydennys doesn't exist`() {
+            every {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } throws TaydennysNotFoundException(id)
+
+            post(url).andExpect(status().isNotFound)
+        }
+
+        @Test
+        fun `returns 404 when user doesn't have access to the taydennys`() {
+            every {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } throws HakemusNotFoundException(hakemusId)
+
+            post(url).andExpect(status().isNotFound)
+        }
+
+        @Test
+        fun `returns 409 when there are no changes in the taydennys`() {
+            every {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { taydennysService.sendTaydennys(id, USERNAME) } throws
+                NoChangesException(TaydennysFactory.createEntity(), HakemusFactory.create())
+
+            post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI6002))
+
+            verifySequence {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                taydennysService.sendTaydennys(id, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 409 when the hakemus is in the wrong state`() {
+            every {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { taydennysService.sendTaydennys(id, USERNAME) } throws
+                HakemusInWrongStatusException(
+                    HakemusFactory.create(),
+                    ApplicationStatus.HANDLING,
+                    listOf(ApplicationStatus.WAITING_INFORMATION),
+                )
+
+            post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI2015))
+
+            verifySequence {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                taydennysService.sendTaydennys(id, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 400 when the data fails validation`() {
+            every {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { taydennysService.sendTaydennys(id, USERNAME) } throws
+                InvalidHakemusDataException(listOf("rockExcavation"))
+
+            post(url).andExpect(status().isBadRequest).andExpect(hankeError(HankeError.HAI2008))
+
+            verifySequence {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                taydennysService.sendTaydennys(id, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 400 when the geometry is outside hanke geometry`() {
+            every {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { taydennysService.sendTaydennys(id, USERNAME) } throws
+                HakemusGeometryNotInsideHankeException(GeometriaFactory.polygon())
+
+            post(url).andExpect(status().isBadRequest).andExpect(hankeError(HankeError.HAI2007))
+
+            verifySequence {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                taydennysService.sendTaydennys(id, USERNAME)
             }
         }
     }

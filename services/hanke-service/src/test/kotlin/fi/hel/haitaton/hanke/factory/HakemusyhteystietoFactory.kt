@@ -20,9 +20,9 @@ object HakemusyhteystietoFactory {
     private const val DEFAULT_YTUNNUS = "1817548-2"
     private const val DEFAULT_OVT = "003718175482"
 
-    private const val DEFAULT_PERSON_NIMI = "Pertti Perushenkilö"
-    private const val DEFAULT_PERSON_SAHKOPOSTI = "pertti@perus.fi"
-    private const val DEFAULT_PERSON_PUHELINNUMERO = "554466546"
+    const val DEFAULT_PERSON_NIMI = "Pertti Perushenkilö"
+    const val DEFAULT_PERSON_SAHKOPOSTI = "pertti@perus.fi"
+    const val DEFAULT_PERSON_PUHELINNUMERO = "554466546"
 
     fun createEntity(
         tyyppi: CustomerType = CustomerType.COMPANY,
@@ -51,7 +51,7 @@ object HakemusyhteystietoFactory {
         sahkoposti: String = DEFAULT_SAHKOPOSTI,
         puhelinnumero: String = DEFAULT_PUHELINNUMERO,
         registryKey: String? = DEFAULT_YTUNNUS,
-        yhteyshenkilot: List<Hakemusyhteyshenkilo> = listOf()
+        yhteyshenkilot: List<Hakemusyhteyshenkilo> = listOf(),
     ) =
         Hakemusyhteystieto(
             id = id,
@@ -72,7 +72,7 @@ object HakemusyhteystietoFactory {
         sahkoposti: String = DEFAULT_PERSON_SAHKOPOSTI,
         puhelinnumero: String = DEFAULT_PERSON_PUHELINNUMERO,
         registryKey: String? = null,
-        yhteyshenkilot: List<Hakemusyhteyshenkilo> = listOf()
+        yhteyshenkilot: List<Hakemusyhteyshenkilo> = listOf(),
     ) =
         Hakemusyhteystieto(
             id,
