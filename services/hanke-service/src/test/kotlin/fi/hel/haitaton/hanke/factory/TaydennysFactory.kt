@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
@@ -10,6 +11,8 @@ import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.parseJson
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
+import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import fi.hel.haitaton.hanke.taydennys.Taydennys
 import fi.hel.haitaton.hanke.taydennys.TaydennysEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
@@ -140,5 +143,62 @@ class TaydennysFactory(
 
         fun Taydennys.withMuutokset(muutokset: List<String>) =
             TaydennysWithMuutokset(id, taydennyspyyntoId, hakemusData, muutokset)
+
+        fun createYhteystietoEntity(
+            taydennys: TaydennysEntity,
+            tyyppi: CustomerType = CustomerType.COMPANY,
+            rooli: ApplicationContactType = ApplicationContactType.HAKIJA,
+            nimi: String = HakemusyhteystietoFactory.DEFAULT_NIMI,
+            sahkoposti: String = HakemusyhteystietoFactory.DEFAULT_SAHKOPOSTI,
+            puhelinnumero: String = HakemusyhteystietoFactory.DEFAULT_PUHELINNUMERO,
+            ytunnus: String? = HakemusyhteystietoFactory.DEFAULT_YTUNNUS,
+        ): TaydennysyhteystietoEntity =
+            TaydennysyhteystietoEntity(
+                tyyppi = tyyppi,
+                rooli = rooli,
+                nimi = nimi,
+                sahkoposti = sahkoposti,
+                puhelinnumero = puhelinnumero,
+                registryKey = ytunnus,
+                taydennys = taydennys,
+            )
+
+        fun createYhteyshenkiloEntity(
+            hankeId: Int,
+            yhteystieto: TaydennysyhteystietoEntity,
+            id: UUID = UUID.randomUUID(),
+            etunimi: String = HakemusyhteyshenkiloFactory.DEFAULT_ETUNIMI,
+            sukunimi: String = HakemusyhteyshenkiloFactory.DEFAULT_SUKUNIMI,
+            sahkoposti: String = HakemusyhteyshenkiloFactory.DEFAULT_SAHKOPOSTI,
+            puhelin: String = HakemusyhteyshenkiloFactory.DEFAULT_PUHELIN,
+            tilaaja: Boolean = HakemusyhteyshenkiloFactory.DEFAULT_TILAAJA,
+            permission: PermissionEntity = PermissionFactory.createEntity(),
+        ): TaydennysyhteyshenkiloEntity =
+            TaydennysyhteyshenkiloEntity(
+                id = id,
+                taydennysyhteystieto = yhteystieto,
+                hankekayttaja =
+                    HankekayttajaEntity(
+                        id = id,
+                        hankeId = hankeId,
+                        etunimi = etunimi,
+                        sukunimi = sukunimi,
+                        sahkoposti = sahkoposti,
+                        puhelin = puhelin,
+                        permission = permission,
+                    ),
+                tilaaja = tilaaja,
+            )
+
+        fun createYhteyshenkiloEntity(
+            yhteystieto: TaydennysyhteystietoEntity,
+            hankekayttaja: HankekayttajaEntity,
+            tilaaja: Boolean,
+        ): TaydennysyhteyshenkiloEntity =
+            TaydennysyhteyshenkiloEntity(
+                taydennysyhteystieto = yhteystieto,
+                hankekayttaja = hankekayttaja,
+                tilaaja = tilaaja,
+            )
     }
 }

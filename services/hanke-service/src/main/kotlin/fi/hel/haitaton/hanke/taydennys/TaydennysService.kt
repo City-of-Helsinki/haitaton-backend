@@ -184,7 +184,8 @@ class TaydennysService(
         }
         hakemusService.updateStatusFromAllu(hakemus)
 
-        // TODO: Meld täydennys to hakemus and log the change
+        logger.info { "Merging the täydennys data to the hakemus." }
+        mergeTaydennysToHakemus(taydennysEntity, hakemus)
 
         taydennysLoggingService.logDelete(taydennys, currentUserId)
         taydennysRepository.delete(taydennysEntity)
@@ -396,6 +397,94 @@ class TaydennysService(
                 updatedFieldKeys,
             )
         }
+    }
+
+    companion object {
+
+        fun mergeTaydennysToHakemus(taydennys: TaydennysEntity, hakemus: HakemusEntity) {
+            hakemus.hakemusEntityData = taydennys.hakemusData
+
+            for (contactType in ApplicationContactType.entries) {
+                val yhteystieto = taydennys.yhteystiedot[contactType]
+                val hakemusyhteystieto = hakemus.yhteystiedot[contactType]
+                if (yhteystieto == null) {
+                    hakemus.yhteystiedot.remove(contactType)
+                } else if (hakemusyhteystieto == null) {
+                    hakemus.yhteystiedot[contactType] =
+                        createHakemusyhteystietoFromTaydennysyhteystieto(yhteystieto, hakemus)
+                } else {
+                    mergeTaydennysyhteystietoToHakemusyhteystieto(yhteystieto, hakemusyhteystieto)
+                }
+            }
+        }
+
+        private fun mergeTaydennysyhteystietoToHakemusyhteystieto(
+            taydennysyhteystieto: TaydennysyhteystietoEntity,
+            hakemusyhteystieto: HakemusyhteystietoEntity,
+        ) {
+            hakemusyhteystieto.tyyppi = taydennysyhteystieto.tyyppi
+            hakemusyhteystieto.nimi = taydennysyhteystieto.nimi
+            hakemusyhteystieto.sahkoposti = taydennysyhteystieto.sahkoposti
+            hakemusyhteystieto.puhelinnumero = taydennysyhteystieto.puhelinnumero
+            hakemusyhteystieto.registryKey = taydennysyhteystieto.registryKey
+
+            val taydennysHankekayttajaIds =
+                taydennysyhteystieto.yhteyshenkilot.map { it.hankekayttaja.id }
+            hakemusyhteystieto.yhteyshenkilot.removeAll {
+                !taydennysHankekayttajaIds.contains(it.hankekayttaja.id)
+            }
+
+            for (yhteyshenkilo in taydennysyhteystieto.yhteyshenkilot) {
+                val hakemusyhteyshenkilo =
+                    hakemusyhteystieto.yhteyshenkilot.find {
+                        it.hankekayttaja.id == yhteyshenkilo.hankekayttaja.id
+                    }
+                if (hakemusyhteyshenkilo != null) {
+                    hakemusyhteyshenkilo.tilaaja = yhteyshenkilo.tilaaja
+                } else {
+                    hakemusyhteystieto.yhteyshenkilot.add(
+                        createHakemusYhteyshenkiloFromTaydennysyhteyshenkilo(
+                            yhteyshenkilo,
+                            hakemusyhteystieto,
+                        )
+                    )
+                }
+            }
+        }
+
+        private fun createHakemusyhteystietoFromTaydennysyhteystieto(
+            yhteystieto: TaydennysyhteystietoEntity,
+            hakemus: HakemusEntity,
+        ): HakemusyhteystietoEntity =
+            HakemusyhteystietoEntity(
+                    tyyppi = yhteystieto.tyyppi,
+                    rooli = yhteystieto.rooli,
+                    nimi = yhteystieto.nimi,
+                    sahkoposti = yhteystieto.sahkoposti,
+                    puhelinnumero = yhteystieto.puhelinnumero,
+                    registryKey = yhteystieto.registryKey,
+                    application = hakemus,
+                )
+                .apply {
+                    for (yhteyshenkilo in yhteystieto.yhteyshenkilot) {
+                        yhteyshenkilot.add(
+                            createHakemusYhteyshenkiloFromTaydennysyhteyshenkilo(
+                                yhteyshenkilo,
+                                this,
+                            )
+                        )
+                    }
+                }
+
+        private fun createHakemusYhteyshenkiloFromTaydennysyhteyshenkilo(
+            yhteyshenkilo: TaydennysyhteyshenkiloEntity,
+            yhteystieto: HakemusyhteystietoEntity,
+        ): HakemusyhteyshenkiloEntity =
+            HakemusyhteyshenkiloEntity(
+                hakemusyhteystieto = yhteystieto,
+                hankekayttaja = yhteyshenkilo.hankekayttaja,
+                tilaaja = yhteyshenkilo.tilaaja,
+            )
     }
 }
 
