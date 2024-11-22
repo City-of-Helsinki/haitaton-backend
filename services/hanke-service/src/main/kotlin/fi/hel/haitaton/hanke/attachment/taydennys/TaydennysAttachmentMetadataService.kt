@@ -56,7 +56,7 @@ class TaydennysAttachmentMetadataService(
     fun ensureRoomForAttachment(taydennys: TaydennysIdentifier) {
         if (attachmentAmountReached(taydennys)) {
             logger.warn {
-                "Täydennys ${taydennys.id} has reached the allowed total amount of attachments for it and its application."
+                "Täydennys ${taydennys.id} has reached the allowed total amount of attachments for it and its hakemus."
             }
             throw AttachmentLimitReachedException(taydennys.id, ALLOWED_ATTACHMENT_COUNT)
         }
