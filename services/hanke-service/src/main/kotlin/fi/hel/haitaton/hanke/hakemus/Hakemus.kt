@@ -254,7 +254,7 @@ data class KaivuilmoitusData(
         )
 
     override fun listChanges(other: HakemusData): List<String> {
-        val changes = mutableListOf<String>()
+        val changes = super.listChanges(other).toMutableList()
 
         other as KaivuilmoitusData
         checkChange(KaivuilmoitusData::workDescription, other)?.let { changes.add(it) }

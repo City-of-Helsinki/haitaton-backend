@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.taydennys
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
 import fi.hel.haitaton.hanke.hakemus.ValidHakemusUpdateRequest
@@ -57,7 +58,8 @@ class TaydennysController(private val taydennysService: TaydennysService) {
                     responseCode = "409",
                     content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ])
+            ]
+    )
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun create(@PathVariable id: Long): TaydennysResponse =
         taydennysService.create(id, currentUserId()).toResponse()
@@ -97,20 +99,38 @@ class TaydennysController(private val taydennysService: TaydennysService) {
                                             value = "{hankeError: 'HAI2002'}",
                                         ),
                                     ],
-                            )],
+                            )
+                        ],
                 ),
                 ApiResponse(
                     description = "A täydennys was not found with the given id",
                     responseCode = "404",
                     content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ])
+            ]
+    )
     @PreAuthorize("@taydennysAuthorizer.authorize(#id, 'EDIT_APPLICATIONS')")
     fun update(
         @PathVariable id: UUID,
         @ValidHakemusUpdateRequest @RequestBody request: HakemusUpdateRequest,
     ): TaydennysResponse =
         taydennysService.updateTaydennys(id, request, currentUserId()).toResponse()
+
+    @PostMapping("/taydennykset/{id}/laheta")
+    @Operation(
+        summary = "Send the täydennys, respond to the täydennyspyyntö",
+        description =
+            """
+               Sends the täydennys as a response to the information request it's based on.
+
+               Merges the updated information to the hakemus. The täydennys and täydennyspyyntö will be removed.
+
+               Returns the updated hakemus.                              
+            """,
+    )
+    @PreAuthorize("@taydennysAuthorizer.authorize(#id, 'EDIT_APPLICATIONS')")
+    fun send(@PathVariable id: UUID): HakemusResponse =
+        taydennysService.sendTaydennys(id, currentUserId()).toResponse()
 
     @ExceptionHandler(InvalidHakemusDataException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -142,5 +162,13 @@ class TaydennysController(private val taydennysService: TaydennysService) {
     fun incompatibleTaydennysUpdateException(ex: IncompatibleTaydennysUpdateException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2002
+    }
+
+    @ExceptionHandler(NoChangesException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun noChangesException(ex: NoChangesException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI6002
     }
 }

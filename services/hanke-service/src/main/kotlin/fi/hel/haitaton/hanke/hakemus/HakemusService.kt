@@ -254,10 +254,7 @@ class HakemusService(
         hakemus.alluid = createApplicationInAllu(hakemus.toHakemus())
 
         logger.info { "Hakemus sent, fetching identifier and status. ${hakemus.logString()}" }
-        getApplicationInformationFromAllu(hakemus.alluid!!)?.let { response ->
-            hakemus.applicationIdentifier = response.applicationId
-            hakemus.alluStatus = response.status
-        }
+        updateStatusFromAllu(hakemus)
 
         logger.info("Sent hakemus. ${hakemus.logString()}, alluStatus = ${hakemus.alluStatus}")
         // Save only if sendApplicationToAllu didn't throw an exception
@@ -548,6 +545,13 @@ class HakemusService(
         }
     }
 
+    @Transactional
+    fun updateStatusFromAllu(hakemus: HakemusEntity) =
+        getApplicationInformationFromAllu(hakemus.alluid!!)?.let { response ->
+            hakemus.applicationIdentifier = response.applicationId
+            hakemus.alluStatus = response.status
+        }
+
     /** Creates new application in Allu. All attachments are sent after creation. */
     private fun createApplicationInAllu(hakemus: Hakemus): Int {
         val alluId =
@@ -756,10 +760,7 @@ class HakemusService(
         if (newId == null || customerWithContacts.customer.yhteystietoId == yhteystietoEntityId) {
             return
         }
-        throw InvalidHakemusyhteystietoException(
-            yhteystietoEntityId,
-            customerWithContacts.customer.yhteystietoId,
-        )
+        throw InvalidHakemusyhteystietoException(yhteystietoEntityId, newId)
     }
 
     /** Assert that the contacts are users of the hanke. */
@@ -793,26 +794,29 @@ class HakemusService(
     }
 
     /** Assert that the geometries are compatible with the hanke area geometries. */
-    private fun assertGeometryCompatibility(hankeId: Int, areas: List<Hakemusalue>) {
+    fun assertGeometryCompatibility(hankeId: Int, areas: List<Hakemusalue>) {
         areas.forEach { area ->
             when (area) {
-                // for cable report we check that the geometry is inside any of the hanke areas
-                is JohtoselvitysHakemusalue -> {
-                    if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
-                        throw HakemusGeometryNotInsideHankeException(area.geometry)
-                }
-                // for excavation notification we check that all the tyoalue geometries are inside
-                // the same hanke area
-                is KaivuilmoitusAlue -> {
-                    area.tyoalueet.forEach { tyoalue ->
-                        if (!geometriatDao.isInsideHankeAlue(area.hankealueId, tyoalue.geometry))
-                            throw HakemusGeometryNotInsideHankeException(
-                                area.hankealueId,
-                                tyoalue.geometry,
-                            )
-                    }
-                }
+                is JohtoselvitysHakemusalue -> assertGeometryCompatibility(hankeId, area)
+                is KaivuilmoitusAlue -> assertGeometryCompatibility(area)
             }
+        }
+    }
+
+    /** For cable report we check that the geometry is inside any of the hanke areas. */
+    private fun assertGeometryCompatibility(hankeId: Int, area: JohtoselvitysHakemusalue) {
+        if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
+            throw HakemusGeometryNotInsideHankeException(area.geometry)
+    }
+
+    /**
+     * For excavation notification we check that all the tyoalue geometries are inside the same
+     * hanke area.
+     */
+    private fun assertGeometryCompatibility(area: KaivuilmoitusAlue) {
+        area.tyoalueet.forEach { tyoalue ->
+            if (!geometriatDao.isInsideHankeAlue(area.hankealueId, tyoalue.geometry))
+                throw HakemusGeometryNotInsideHankeException(area.hankealueId, tyoalue.geometry)
         }
     }
 

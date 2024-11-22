@@ -61,7 +61,7 @@ data class AlluCableReportApplicationData(
 
 data class InformationRequestResponse(
     val applicationData: AlluApplicationData,
-    val updatedFields: List<InformationRequestFieldKey>
+    val updatedFields: Set<InformationRequestFieldKey>,
 )
 
 data class AlluExcavationNotificationData(

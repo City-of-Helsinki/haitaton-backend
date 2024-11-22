@@ -34,12 +34,12 @@ enum class Operation(val isChange: Boolean) {
      * itself (for now), so add a row with this operation when manually setting that restriction
      * flag.
      */
-    UNLOCK(false)
+    UNLOCK(false),
 }
 
 enum class Status {
     SUCCESS,
-    FAILED
+    FAILED,
 }
 
 enum class ObjectType {
@@ -59,6 +59,7 @@ enum class ObjectType {
     TAYDENNYS,
     TAYDENNYS_CONTACT,
     TAYDENNYS_CUSTOMER,
+    TAYDENNYSPYYNTO,
     YHTEYSTIETO,
 }
 
@@ -90,5 +91,7 @@ data class AuditLogEntry(
                         failureDescription = failureDescription,
                         actor = AuditLogActor(userId, userRole, ipAddress),
                         target = AuditLogTarget(objectId, objectType, objectBefore, objectAfter),
-                    )))
+                    )
+                )
+        )
 }

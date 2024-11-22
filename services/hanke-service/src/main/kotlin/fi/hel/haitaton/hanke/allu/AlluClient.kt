@@ -162,7 +162,7 @@ class AlluClient(
         alluApplicationId: Int,
         application: AlluApplicationData,
         path: String,
-        name: String
+        name: String,
     ) {
         logger.info { "Updating $name $alluApplicationId." }
         put("$path/$alluApplicationId", application)
@@ -218,7 +218,8 @@ class AlluClient(
         logger.info { "Reporting ${type.logName} for application $alluApplicationId." }
         put(
                 "excavationannouncements/$alluApplicationId/${type.urlSuffix}",
-                reportDate.atStartOfDay(TZ_UTC).toJsonString())
+                reportDate.atStartOfDay(TZ_UTC).toJsonString(),
+            )
             .bodyToMono(Void::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
@@ -227,7 +228,7 @@ class AlluClient(
             .block()
     }
 
-    fun getInformationRequest(alluApplicationId: Int): InformationRequest {
+    fun getInformationRequest(alluApplicationId: Int): InformationRequest? {
         logger.info { "Fetching information request for application $alluApplicationId." }
         return get("applications/$alluApplicationId/informationrequests")
             .bodyToMono(InformationRequest::class.java)
@@ -235,17 +236,17 @@ class AlluClient(
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error getting application information from Allu", it)
             }
-            .block()!!
+            .block()
     }
 
     fun respondToInformationRequest(
         alluApplicationId: Int,
         requestId: Int,
         applicationData: AlluApplicationData,
-        updatedFields: List<InformationRequestFieldKey>,
+        updatedFields: Set<InformationRequestFieldKey>,
     ) {
         logger.info {
-            "Responding to information request. Application: $alluApplicationId, request: $requestId."
+            "Responding to information request. Application: $alluApplicationId, request: $requestId. Updated field keys are: ${updatedFields.joinToString()}"
         }
 
         val path =
@@ -287,8 +288,11 @@ class AlluClient(
                     {
                         Mono.error(
                             HakemusDecisionNotFoundException(
-                                "Document not found in Allu. alluApplicationId=$alluApplicationId"))
-                    })
+                                "Document not found in Allu. alluApplicationId=$alluApplicationId"
+                            )
+                        )
+                    },
+                )
                 .toEntity(ByteArrayResource::class.java)
                 .timeout(defaultTimeout)
                 .doOnError(WebClientResponseException::class.java) {
@@ -399,7 +403,7 @@ class AlluClient(
     private fun postRequest(
         path: String,
         contentType: MediaType = MediaType.APPLICATION_JSON,
-        accept: MediaType = MediaType.APPLICATION_JSON
+        accept: MediaType = MediaType.APPLICATION_JSON,
     ): WebClient.RequestBodySpec {
         val token = getToken()
         return webClient
@@ -414,7 +418,7 @@ class AlluClient(
         path: String,
         body: Any,
         contentType: MediaType = MediaType.APPLICATION_JSON,
-        accept: MediaType = MediaType.APPLICATION_JSON
+        accept: MediaType = MediaType.APPLICATION_JSON,
     ): WebClient.ResponseSpec = postRequest(path, contentType, accept).bodyValue(body).retrieve()
 
     private fun putRequest(path: String): WebClient.RequestBodySpec {
@@ -451,7 +455,7 @@ data class LoginInfo(val username: String, val password: String)
 
 data class Attachment(
     val metadata: AttachmentMetadata,
-    @Suppress("ArrayInDataClass") val file: ByteArray
+    @Suppress("ArrayInDataClass") val file: ByteArray,
 )
 
 class AlluLoginException(cause: Throwable) : RuntimeException(cause)
