@@ -490,6 +490,27 @@ class TaydennysServiceITest(
         }
 
         @Test
+        fun `merges the taydennys data with the hakemus`() {
+            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            val startTime = DateFactory.getStartDatetime().minusDays(1)
+            taydennysFactory.updateJohtoselvitysTaydennys(taydennys) { copy(startTime = startTime) }
+            val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
+            val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            every { alluClient.getApplicationInformation(any()) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            val updatedHakemus = hakemusService.getById(hakemus.id)
+            assertThat(updatedHakemus.applicationData.startTime).isEqualTo(startTime)
+            verifySequence {
+                alluClient.respondToInformationRequest(hakemus.alluid!!, any(), any(), any())
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
         fun `removes the taydennyspyynto and taydennys`() {
             val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
             taydennysFactory.updateJohtoselvitysTaydennys(taydennys) {
