@@ -64,7 +64,7 @@ object Asserts {
     }
 
     /**
-     * Blob location has a format of
+     * Täydennys blob location has a format of
      * 60f19069-9f22-4a4c-94c6-bc6a73813185/ab7993b7-a775-4eac-b5b7-8546332944fe. Täydennys id
      * followed by a slash and a UUID.
      */

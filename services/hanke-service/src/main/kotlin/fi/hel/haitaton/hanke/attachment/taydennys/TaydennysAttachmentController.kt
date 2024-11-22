@@ -3,8 +3,6 @@ package fi.hel.haitaton.hanke.attachment.taydennys
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadataDto
-import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
-import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -13,15 +11,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.util.UUID
 import mu.KotlinLogging
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 
@@ -56,13 +51,5 @@ class TaydennysAttachmentController(private val attachmentService: TaydennysAtta
         @RequestParam("liite") attachment: MultipartFile,
     ): TaydennysAttachmentMetadataDto {
         return attachmentService.addAttachment(taydennysId, tyyppi, attachment)
-    }
-
-    @ExceptionHandler(ValtakirjaForbiddenException::class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    @Hidden
-    fun valtakirjaForbiddenException(ex: ValtakirjaForbiddenException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI3004
     }
 }

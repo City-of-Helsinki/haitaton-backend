@@ -108,11 +108,11 @@ class IntegrationTestConfiguration {
 
     @Bean fun profiiliService(): ProfiiliService = mockk()
 
+    @Bean fun taydennysAttachmentService(): TaydennysAttachmentService = mockk()
+
     @Bean fun taydennysAuthorizer(): TaydennysAuthorizer = mockk()
 
     @Bean fun taydennysService(): TaydennysService = mockk()
-
-    @Bean fun taydennysAttachmentService(): TaydennysAttachmentService = mockk()
 
     @Bean fun testDataService(): TestDataService = mockk(relaxUnitFun = true)
 

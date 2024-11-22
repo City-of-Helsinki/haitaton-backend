@@ -68,7 +68,7 @@ class TaydennysAttachmentMetadataService(
         val taydennysAttachmentCount = attachmentRepository.countByTaydennysId(taydennys.id)
         val totalAttachmentCount = taydennysAttachmentCount + hakemusAttachmentCount
         logger.info {
-            "Täydennys ${taydennys.id} and hakemus ${taydennys.hakemusId()} contains total of $totalAttachmentCount attachments beforehand."
+            "Täydennys ${taydennys.id} and application ${taydennys.hakemusId()} contain total of $totalAttachmentCount attachments beforehand."
         }
         return totalAttachmentCount >= ALLOWED_ATTACHMENT_COUNT
     }

@@ -217,8 +217,6 @@ interface TaydennysAttachmentRepository : JpaRepository<TaydennysAttachmentEntit
     fun findByTaydennysId(taydennysId: UUID): List<TaydennysAttachmentEntity>
 
     fun countByTaydennysId(taydennysId: UUID): Int
-
-    fun deleteByTaydennysId(taydennysId: UUID)
 }
 
 enum class ApplicationAttachmentType {
