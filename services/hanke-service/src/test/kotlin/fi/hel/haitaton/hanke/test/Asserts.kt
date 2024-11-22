@@ -63,6 +63,19 @@ object Asserts {
         assertThat(UUID.fromString(uuidPart)).isNotNull()
     }
 
+    /**
+     * Blob location has a format of
+     * 60f19069-9f22-4a4c-94c6-bc6a73813185/ab7993b7-a775-4eac-b5b7-8546332944fe. Täydennys id
+     * followed by a slash and a UUID.
+     */
+    fun Assert<String>.isValidBlobLocation(id: UUID) = given { actual ->
+        assertThat(actual).contains("/")
+        val idPart = actual.substringBefore("/")
+        val uuidPart = actual.substringAfter("/")
+        assertThat(UUID.fromString(idPart)).isEqualTo(id)
+        assertThat(UUID.fromString(uuidPart)).isNotNull()
+    }
+
     fun Assert<PostalAddress?>.hasStreetName(street: String) =
         isNotNull()
             .prop(PostalAddress::streetAddress)

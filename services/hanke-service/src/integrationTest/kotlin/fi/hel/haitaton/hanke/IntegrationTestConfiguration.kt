@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentAuthorizer
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
+import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentService
 import fi.hel.haitaton.hanke.banners.BannerService
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
@@ -110,6 +111,8 @@ class IntegrationTestConfiguration {
     @Bean fun taydennysAuthorizer(): TaydennysAuthorizer = mockk()
 
     @Bean fun taydennysService(): TaydennysService = mockk()
+
+    @Bean fun taydennysAttachmentService(): TaydennysAttachmentService = mockk()
 
     @Bean fun testDataService(): TestDataService = mockk(relaxUnitFun = true)
 
