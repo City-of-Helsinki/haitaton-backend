@@ -8,7 +8,7 @@ import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.email.AccessRightsUpdateNotificationEmail
 import fi.hel.haitaton.hanke.email.HankeInvitationEmail
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
+import fi.hel.haitaton.hanke.profiili.ProfiiliService
 import fi.hel.haitaton.hanke.userId
 import java.util.UUID
 import mu.KotlinLogging
@@ -27,7 +27,7 @@ class HankeKayttajaService(
     private val hankeRepository: HankeRepository,
     private val permissionService: PermissionService,
     private val logService: HankeKayttajaLoggingService,
-    private val profiiliClient: ProfiiliClient,
+    private val profiiliService: ProfiiliService,
     private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional(readOnly = true)
@@ -79,12 +79,14 @@ class HankeKayttajaService(
     fun createNewUser(
         request: NewUserRequest,
         hanke: Hanke,
-        currentUserId: String
+        currentUserId: String,
     ): HankeKayttajaDto {
-        if (hankekayttajaRepository
-            .findByHankeId(hanke.id)
-            .map { it.sahkoposti }
-            .contains(request.sahkoposti)) {
+        if (
+            hankekayttajaRepository
+                .findByHankeId(hanke.id)
+                .map { it.sahkoposti }
+                .contains(request.sahkoposti)
+        ) {
             throw UserAlreadyExistsException(hanke, request.sahkoposti)
         }
 
@@ -105,7 +107,7 @@ class HankeKayttajaService(
     fun addHankeFounder(
         hankeId: Int,
         hankePerustaja: HankePerustaja,
-        securityContext: SecurityContext
+        securityContext: SecurityContext,
     ) {
         val permissionEntity =
             permissionService.create(
@@ -114,7 +116,7 @@ class HankeKayttajaService(
                 Kayttooikeustaso.KAIKKI_OIKEUDET,
             )
 
-        val names = profiiliClient.getVerifiedName(securityContext)
+        val names = profiiliService.getVerifiedName(securityContext)
         val kayttaja =
             HankekayttajaInput(
                 names.givenName,
@@ -175,7 +177,7 @@ class HankeKayttajaService(
     fun createPermissionFromToken(
         userId: String,
         tunniste: String,
-        securityContext: SecurityContext
+        securityContext: SecurityContext,
     ): HankeKayttaja {
         logger.info { "Trying to activate token $tunniste for user $userId" }
         val tunnisteEntity =
@@ -213,9 +215,9 @@ class HankeKayttajaService(
 
     private fun updateVerifiedName(
         kayttaja: HankekayttajaEntity,
-        securityContext: SecurityContext
+        securityContext: SecurityContext,
     ): Boolean {
-        val (_, lastName, givenName) = profiiliClient.getVerifiedName(securityContext)
+        val (_, lastName, givenName) = profiiliService.getVerifiedName(securityContext)
         return if (givenName != kayttaja.etunimi || lastName != kayttaja.sukunimi) {
             kayttaja.etunimi = givenName
             kayttaja.sukunimi = lastName
@@ -244,7 +246,7 @@ class HankeKayttajaService(
     fun updateOwnContactInfo(
         hankeTunnus: String,
         update: ContactUpdate,
-        currentUserId: String
+        currentUserId: String,
     ): HankeKayttaja {
         hankeRepository
             .findOneByHankeTunnus(hankeTunnus)
@@ -260,7 +262,7 @@ class HankeKayttajaService(
     fun updateKayttajaInfo(
         hankeTunnus: String,
         update: KayttajaUpdate,
-        userId: UUID
+        userId: UUID,
     ): HankeKayttaja {
         val hankeKayttajaEntity =
             hankeRepository.findOneByHankeTunnus(hankeTunnus)?.let {
@@ -268,8 +270,10 @@ class HankeKayttajaService(
             } ?: throw HankeNotFoundException(hankeTunnus)
 
         // changing name is not allowed if the user is identified (has a permission)
-        if (hankeKayttajaEntity.permission != null &&
-            (!update.etunimi.isNullOrBlank() || !update.sukunimi.isNullOrBlank())) {
+        if (
+            hankeKayttajaEntity.permission != null &&
+                (!update.etunimi.isNullOrBlank() || !update.sukunimi.isNullOrBlank())
+        ) {
             throw UserAlreadyHasPermissionException(
                 userId.toString(),
                 hankeKayttajaEntity.id,
@@ -311,12 +315,14 @@ class HankeKayttajaService(
     ) {
         val currentKayttooikeustasot = currentKayttooikeustasot(kayttajat)
 
-        if ((currentKayttooikeustasot.any { (_, kayttooikeustaso) ->
-            kayttooikeustaso == Kayttooikeustaso.KAIKKI_OIKEUDET
-        } ||
-            updates.any { (_, kayttooikeustaso) ->
+        if (
+            (currentKayttooikeustasot.any { (_, kayttooikeustaso) ->
                 kayttooikeustaso == Kayttooikeustaso.KAIKKI_OIKEUDET
-            }) && !deleteAdminPermission) {
+            } ||
+                updates.any { (_, kayttooikeustaso) ->
+                    kayttooikeustaso == Kayttooikeustaso.KAIKKI_OIKEUDET
+                }) && !deleteAdminPermission
+        ) {
             throw MissingAdminPermissionException(userId)
         }
     }
@@ -327,9 +333,11 @@ class HankeKayttajaService(
      * can add that access level.
      */
     private fun validateAdminRemains(hankeIdentifier: HankeIdentifier) {
-        if (permissionService.findByHankeId(hankeIdentifier.id).all {
-            it.kayttooikeustaso != Kayttooikeustaso.KAIKKI_OIKEUDET
-        }) {
+        if (
+            permissionService.findByHankeId(hankeIdentifier.id).all {
+                it.kayttooikeustaso != Kayttooikeustaso.KAIKKI_OIKEUDET
+            }
+        ) {
             throw NoAdminRemainingException(hankeIdentifier)
         }
     }
@@ -361,7 +369,7 @@ class HankeKayttajaService(
         hankeNimi: String,
         inviter: HankekayttajaEntity?,
         kayttaja: HankekayttajaInput,
-        currentUserId: String
+        currentUserId: String,
     ): HankekayttajaEntity {
         val newHankeUser =
             createKayttaja(
@@ -379,7 +387,7 @@ class HankeKayttajaService(
     private fun updateKayttooikeustaso(
         kayttajakutsuEntity: KayttajakutsuEntity,
         kayttooikeustaso: Kayttooikeustaso,
-        userId: String
+        userId: String,
     ) {
         val kayttajakutsuBefore = kayttajakutsuEntity.toDomain()
         kayttajakutsuEntity.kayttooikeustaso = kayttooikeustaso
@@ -414,7 +422,8 @@ class HankeKayttajaService(
                 hankeTunnus = hankeTunnus,
                 hankeNimi = hankeNimi,
                 invitationToken = recipient.kayttajakutsu!!.tunniste,
-            ))
+            )
+        )
     }
 
     private fun createKutsu(
@@ -493,7 +502,7 @@ class HankeKayttajaService(
     private fun sendAccessRightsUpdateNotificationEmails(
         hankeIdentifier: HankeIdentifier,
         usersAndPermissions: List<Pair<HankekayttajaEntity, Kayttooikeustaso>>,
-        updater: HankekayttajaEntity
+        updater: HankekayttajaEntity,
     ) {
         logger.info { "Sending access rights update notification." }
         val hanke =
@@ -516,7 +525,8 @@ class HankeKayttajaService(
 
 class UserAlreadyExistsException(hankeIdentifier: HankeIdentifier, sahkoposti: String) :
     RuntimeException(
-        "Hankekayttaja with that email was already present in the hanke. sahkoposti=$sahkoposti ${hankeIdentifier.logString()} ")
+        "Hankekayttaja with that email was already present in the hanke. sahkoposti=$sahkoposti ${hankeIdentifier.logString()} "
+    )
 
 class HankeKayttajaNotFoundException(kayttajaId: UUID) :
     RuntimeException("HankeKayttaja was not found with ID: $kayttajaId")
@@ -530,26 +540,30 @@ class MissingAdminPermissionException(userId: String) :
 class UsersWithoutKayttooikeustasoException(missingIds: Collection<UUID>) :
     RuntimeException(
         "Some HankeKayttaja have neither permissions nor user tokens, " +
-            "their ids = ${missingIds.joinToString()}")
+            "their ids = ${missingIds.joinToString()}"
+    )
 
 class NoAdminRemainingException(hankeIdentifier: HankeIdentifier) :
     RuntimeException(
-        "No one with admin rights would remain after permission changes. ${hankeIdentifier.logString()}")
+        "No one with admin rights would remain after permission changes. ${hankeIdentifier.logString()}"
+    )
 
 class HankeKayttajatNotFoundException(
     missingIds: Collection<UUID>,
-    hankeIdentifier: HankeIdentifier
+    hankeIdentifier: HankeIdentifier,
 ) :
     RuntimeException(
         "Some HankeKayttaja were not found. Either the IDs don't exist or they belong to another " +
-            "hanke. Missing IDs: ${missingIds.joinToString()}, ${hankeIdentifier.logString()}")
+            "hanke. Missing IDs: ${missingIds.joinToString()}, ${hankeIdentifier.logString()}"
+    )
 
 class TunnisteNotFoundException(userId: String, tunniste: String) :
     RuntimeException("A matching token was not found, userId=$userId, tunniste=$tunniste")
 
 class UserAlreadyHasPermissionException(userId: String, kayttajaId: UUID, permissionId: Int) :
     RuntimeException(
-        "The user already has an active permission, userId=$userId, hankeKayttajaId=$kayttajaId, permissionsId=$permissionId")
+        "The user already has an active permission, userId=$userId, hankeKayttajaId=$kayttajaId, permissionsId=$permissionId"
+    )
 
 class PermissionAlreadyExistsException(
     currentUserId: String,
@@ -560,7 +574,8 @@ class PermissionAlreadyExistsException(
     RuntimeException(
         "Another user has an active permission with the same hanke kayttaja, " +
             "the current user is $currentUserId, the user on the permission is $permissionUserId, " +
-            "hankeKayttajaId=$hankeKayttajaId, permissionId=$permissionId")
+            "hankeKayttajaId=$hankeKayttajaId, permissionId=$permissionId"
+    )
 
 class CurrentUserWithoutKayttajaException(currentUserId: String) :
     RuntimeException("The current user doesn't have a hankeKayttaja. userId=$currentUserId")
