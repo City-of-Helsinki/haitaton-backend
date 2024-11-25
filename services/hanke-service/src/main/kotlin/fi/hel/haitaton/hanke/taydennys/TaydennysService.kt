@@ -2,12 +2,15 @@ package fi.hel.haitaton.hanke.taydennys
 
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.InformationRequest
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
 import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.hakemus.HakemusDataValidator
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
@@ -23,6 +26,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.TaydennysLoggingService
 import fi.hel.haitaton.hanke.logging.TaydennyspyyntoLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import java.time.LocalDateTime
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
@@ -389,6 +393,7 @@ class TaydennysService(
             muutokset.mapNotNull { InformationRequestFieldKey.fromHaitatonFieldName(it) }.toSet()
 
         val alluData = taydennys.hakemusData.toAlluData(hankeTunnus)
+
         disclosureLogService.withDisclosureLogging(hakemus.id, alluData) {
             alluClient.respondToInformationRequest(
                 hakemus.alluid!!,
@@ -397,9 +402,39 @@ class TaydennysService(
                 updatedFieldKeys,
             )
         }
+        uploadFormDataPdf(hakemus, hankeTunnus, taydennys.hakemusData)
+    }
+
+    private fun uploadFormDataPdf(
+        hakemus: HakemusIdentifier,
+        hankeTunnus: String,
+        data: HakemusData,
+    ) {
+        val formAttachment = createPdfFromHakemusData(hankeTunnus = hankeTunnus, data)
+        try {
+            alluClient.addAttachment(hakemus.alluid!!, formAttachment)
+        } catch (e: Exception) {
+            logger.error(e) {
+                "Error while uploading form data PDF attachment for täydennys. Continuing anyway. ${hakemus.logString()}"
+            }
+        }
+    }
+
+    private fun createPdfFromHakemusData(hankeTunnus: String, data: HakemusData): Attachment {
+        logger.info { "Creating a PDF from the hakemus data for data attachment." }
+        // TODO: List attachments in HAI-2767, from both hakemus and taydennys
+        val attachments = listOf<ApplicationAttachmentMetadata>()
+        val pdf = hakemusService.getApplicationDataAsPdf(hankeTunnus, attachments, data)
+        val newMetadata =
+            pdf.metadata.copy(
+                name = FORM_DATA_PDF_FILENAME,
+                description = "Taydennys form data from Haitaton, dated ${LocalDateTime.now()}.",
+            )
+        return pdf.copy(metadata = newMetadata)
     }
 
     companion object {
+        private const val FORM_DATA_PDF_FILENAME = "haitaton-form-data-taydennys.pdf"
 
         fun mergeTaydennysToHakemus(taydennys: TaydennysEntity, hakemus: HakemusEntity) {
             hakemus.hakemusEntityData = taydennys.hakemusData

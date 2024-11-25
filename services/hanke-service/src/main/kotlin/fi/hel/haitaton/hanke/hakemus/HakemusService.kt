@@ -5,15 +5,14 @@ import fi.hel.haitaton.hanke.HankeMapper
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
-import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.AlluClient
-import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.daysBetween
 import fi.hel.haitaton.hanke.domain.Hankevaihe
@@ -24,7 +23,6 @@ import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
-import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.pdf.EnrichedKaivuilmoitusalue
 import fi.hel.haitaton.hanke.pdf.JohtoselvityshakemusPdfEncoder
@@ -579,7 +577,9 @@ class HakemusService(
 
         val alluId =
             withFormDataPdfUploading(applicationId, hankeTunnus, hakemusData) {
-                withDisclosureLogging(applicationId, alluData) { alluClient.create(alluData) }
+                disclosureLogService.withDisclosureLogging(applicationId, alluData) {
+                    alluClient.create(alluData)
+                }
             }
         if (hakemusData.paperDecisionReceiver != null) {
             alluClient.sendSystemComment(alluId, PAPER_DECISION_MSG)
@@ -627,10 +627,18 @@ class HakemusService(
         data: HakemusData,
     ): Attachment {
         logger.info { "Creating a PDF from the hakemus data for data attachment." }
+        val attachments = attachmentService.getMetadataList(applicationId)
+        return getApplicationDataAsPdf(hankeTunnus, attachments, data)
+    }
+
+    fun getApplicationDataAsPdf(
+        hankeTunnus: String,
+        attachments: List<ApplicationAttachmentMetadata>,
+        data: HakemusData,
+    ): Attachment {
         val totalArea =
             geometriatDao.calculateCombinedArea(data.areas?.flatMap { it.geometries() } ?: listOf())
 
-        val attachments = attachmentService.getMetadataList(applicationId)
         val pdfData =
             when (data) {
                 is JohtoselvityshakemusData -> {
@@ -669,37 +677,6 @@ class HakemusService(
             )
         logger.info { "Created the PDF for data attachment." }
         return Attachment(attachmentMetadata, pdfData)
-    }
-
-    /**
-     * Save disclosure logs for the personal information inside the application. Determine the
-     * status of the operation from whether there were exceptions or not. Don't save logging
-     * failures, since personal data was not yet disclosed.
-     */
-    private fun <T> withDisclosureLogging(
-        applicationId: Long,
-        alluApplicationData: AlluApplicationData,
-        f: () -> T,
-    ): T {
-        try {
-            val result = f()
-            disclosureLogService.saveForAllu(applicationId, alluApplicationData, Status.SUCCESS)
-            return result
-        } catch (e: AlluLoginException) {
-            // Since the login failed we didn't send the application itself, so logging not needed.
-            throw e
-        } catch (e: Throwable) {
-            // There was an exception outside login, so there was at least an attempt to send the
-            // application to Allu. Allu might have read it and rejected it, so we should log this
-            // as a disclosure event.
-            disclosureLogService.saveForAllu(
-                applicationId,
-                alluApplicationData,
-                Status.FAILED,
-                ALLU_APPLICATION_ERROR_MSG,
-            )
-            throw e
-        }
     }
 
     /** Assert that the update request is compatible with the application data. */

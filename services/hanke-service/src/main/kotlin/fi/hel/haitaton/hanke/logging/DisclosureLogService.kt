@@ -200,10 +200,8 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             throw e
         } catch (e: Throwable) {
             // There was an exception outside login, so there was at least an attempt to send
-            // the
-            // application to Allu. Allu might have read it and rejected it, so we should log
-            // this
-            // as a disclosure event.
+            // the application to Allu. Allu might have read it and rejected it, so we should log
+            // this as a disclosure event.
             saveForAllu(
                 applicationId,
                 alluApplicationData,
