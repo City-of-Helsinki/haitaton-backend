@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.taydennys
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped
 import fi.hel.haitaton.hanke.domain.HasId
-import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusDataResponse
 import java.util.UUID
@@ -10,6 +9,7 @@ import java.util.UUID
 data class Taydennys(
     override val id: UUID,
     val taydennyspyyntoId: UUID,
+    val hakemusId: Long,
     val hakemusData: HakemusData,
 ) : HasId<UUID> {
     fun toResponse() = TaydennysResponse(id, hakemusData.toResponse())
@@ -43,20 +43,3 @@ data class TaydennysWithMuutoksetResponse(
     @JsonUnwrapped val taydennys: TaydennysResponse,
     val muutokset: List<String>,
 )
-
-/** Without application data, just the identifiers and metadata. */
-data class TaydennysMetadata(
-    override val id: UUID,
-    val taydennyspyyntoId: UUID,
-    val taydennyspyyntoAlluId: Int,
-    val hakemusId: Long,
-    val hakemustyyppi: ApplicationType,
-) : TaydennysIdentifier {
-    override fun taydennyspyyntoId(): UUID = taydennyspyyntoId
-
-    override fun taydennyspyyntoAlluId(): Int = taydennyspyyntoAlluId
-
-    override fun hakemusId(): Long = hakemusId
-
-    override fun hakemustyyppi(): ApplicationType = hakemustyyppi
-}

@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.taydennys
 
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
@@ -16,6 +17,7 @@ import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 
 private val logger = KotlinLogging.logger {}
@@ -24,9 +26,10 @@ private val logger = KotlinLogging.logger {}
 class TaydennysAttachmentService(
     private val metadataService: TaydennysAttachmentMetadataService,
     private val taydennysRepository: TaydennysRepository,
-    private val attachmentContentService: TaydennysAttachmentContentService,
+    private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) {
+    @Transactional
     fun addAttachment(
         taydennysId: UUID,
         attachmentType: ApplicationAttachmentType,
@@ -52,7 +55,18 @@ class TaydennysAttachmentService(
         return newAttachment.toDto()
     }
 
-    fun saveAttachment(
+    private fun findTaydennys(taydennysId: UUID): TaydennysIdentifier =
+        taydennysRepository.findByIdOrNull(taydennysId)
+            ?: throw TaydennysNotFoundException(taydennysId)
+
+    private fun scanAttachment(filename: String, content: ByteArray) {
+        val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))
+        if (scanResult.hasInfected()) {
+            throw AttachmentInvalidException("Infected file detected, see previous logs.")
+        }
+    }
+
+    private fun saveAttachment(
         taydennys: TaydennysIdentifier,
         content: ByteArray,
         filename: String,
@@ -60,7 +74,8 @@ class TaydennysAttachmentService(
         attachmentType: ApplicationAttachmentType,
     ): TaydennysAttachmentMetadata {
         logger.info { "Saving attachment content for täydennys. ${taydennys.logString()}" }
-        val blobPath = attachmentContentService.upload(filename, contentType, content, taydennys.id)
+        val blobPath =
+            attachmentContentService.upload(filename, contentType, content, taydennys.hakemusId())
         logger.info { "Saving attachment metadata for täydennys. ${taydennys.logString()}" }
         val newAttachment =
             try {
@@ -83,16 +98,5 @@ class TaydennysAttachmentService(
             "Added attachment metadata ${newAttachment.id} and content $blobPath for täydennys. ${taydennys.logString()}"
         }
         return newAttachment
-    }
-
-    private fun findTaydennys(taydennysId: UUID): TaydennysIdentifier =
-        taydennysRepository.findByIdOrNull(taydennysId)?.toMetadata()
-            ?: throw TaydennysNotFoundException(taydennysId)
-
-    private fun scanAttachment(filename: String, content: ByteArray) {
-        val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))
-        if (scanResult.hasInfected()) {
-            throw AttachmentInvalidException("Infected file detected, see previous logs.")
-        }
     }
 }

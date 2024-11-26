@@ -46,14 +46,6 @@ class TaydennysEntity(
     var yhteystiedot: MutableMap<ApplicationContactType, TaydennysyhteystietoEntity> =
         mutableMapOf(),
 ) : TaydennysIdentifier {
-    fun toMetadata(): TaydennysMetadata =
-        TaydennysMetadata(
-            id = id,
-            taydennyspyyntoId = taydennyspyynto.id,
-            taydennyspyyntoAlluId = taydennyspyynto.alluId,
-            hakemusId = taydennyspyynto.applicationId,
-            hakemustyyppi = hakemusData.applicationType,
-        )
 
     fun toDomain(): Taydennys {
         val yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto> =
@@ -68,6 +60,7 @@ class TaydennysEntity(
         return Taydennys(
             id = id,
             taydennyspyyntoId = taydennyspyynto.id,
+            hakemusId = taydennyspyynto.applicationId,
             hakemusData = applicationData,
         )
     }

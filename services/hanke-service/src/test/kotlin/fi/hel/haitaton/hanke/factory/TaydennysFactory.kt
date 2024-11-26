@@ -127,8 +127,9 @@ class TaydennysFactory(
             id: UUID = DEFAULT_ID,
             taydennyspyyntoId: UUID = TaydennyspyyntoFactory.DEFAULT_ID,
             hakemusType: ApplicationType = ApplicationType.CABLE_REPORT,
+            hakemusId: Long = 1L,
             hakemusData: HakemusData = HakemusFactory.createHakemusData(hakemusType),
-        ) = Taydennys(id, taydennyspyyntoId, hakemusData)
+        ) = Taydennys(id, taydennyspyyntoId, hakemusId, hakemusData)
 
         fun createEntity(
             id: UUID = DEFAULT_ID,

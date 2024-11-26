@@ -109,7 +109,7 @@ class TaydennysAttachmentServiceITest(
                 prop(TaydennysAttachmentEntity::attachmentType).isEqualTo(typeInput)
                 prop(TaydennysAttachmentEntity::blobLocation)
                     .isNotNull()
-                    .startsWith("${taydennys.id}/")
+                    .startsWith("${taydennys.hakemusId}/")
             }
 
             val content =

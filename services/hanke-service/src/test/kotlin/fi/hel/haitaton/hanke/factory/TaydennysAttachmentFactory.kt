@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.PDF_BYTES
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService.Companion.generateBlobPath
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
@@ -11,7 +12,6 @@ import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
-import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentContentService.Companion.generateBlobPath
 import fi.hel.haitaton.hanke.factory.TaydennysFactory.Companion.DEFAULT_ID
 import fi.hel.haitaton.hanke.taydennys.Taydennys
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -47,6 +47,7 @@ class TaydennysAttachmentFactory(
                     createdByUser,
                     createdAt,
                     attachmentType,
+                    taydennys.hakemusId,
                     taydennys.id,
                 )
             )
@@ -75,7 +76,7 @@ class TaydennysAttachmentFactory(
             fileName: String = FILE_NAME,
             contentType: String = APPLICATION_PDF_VALUE,
             size: Long = DEFAULT_SIZE,
-            blobLocation: String = generateBlobPath(DEFAULT_ID),
+            blobLocation: String = generateBlobPath(1L),
             createdByUserId: String = USERNAME,
             createdAt: OffsetDateTime = CREATED_AT,
             attachmentType: ApplicationAttachmentType = MUU,
@@ -101,6 +102,7 @@ class TaydennysAttachmentFactory(
             createdByUserId: String = USERNAME,
             createdAt: OffsetDateTime = CREATED_AT,
             attachmentType: ApplicationAttachmentType = MUU,
+            applicationId: Long = 1L,
             taydennysId: UUID = DEFAULT_ID,
         ): TaydennysAttachmentEntity =
             TaydennysAttachmentEntity(
@@ -108,7 +110,7 @@ class TaydennysAttachmentFactory(
                 fileName = fileName,
                 contentType = contentType,
                 size = size,
-                blobLocation = generateBlobPath(taydennysId),
+                blobLocation = generateBlobPath(applicationId),
                 createdByUserId = createdByUserId,
                 createdAt = createdAt,
                 attachmentType = attachmentType,
