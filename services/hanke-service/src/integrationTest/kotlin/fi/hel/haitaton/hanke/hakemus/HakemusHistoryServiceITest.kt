@@ -405,6 +405,28 @@ class HakemusHistoryServiceITest(
         }
 
         @Test
+        fun `doesn't send email or save the taydennyspyynto when the new status is WAITING_INFORMATION but Allu doesn't have the taydennyspyynto`() {
+            hakemusFactory
+                .builder()
+                .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
+                .save()
+            val event =
+                ApplicationHistoryFactory.createEvent(
+                    applicationIdentifier = identifier,
+                    newStatus = ApplicationStatus.WAITING_INFORMATION,
+                )
+            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+            every { alluClient.getInformationRequest(alluId) } returns null
+
+            historyService.handleHakemusUpdates(histories, updateTime)
+
+            val emails = greenMail.receivedMessages
+            assertThat(emails).isEmpty()
+            assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
+            verifySequence { alluClient.getInformationRequest(alluId) }
+        }
+
+        @Test
         fun `removes any taydennyspyynto and taydennys when the new status is HANDLING`(
             output: CapturedOutput
         ) {

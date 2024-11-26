@@ -36,7 +36,7 @@ class HakemusHistoryService(
     @Transactional
     fun handleHakemusUpdates(
         applicationHistories: List<ApplicationHistory>,
-        updateTime: OffsetDateTime
+        updateTime: OffsetDateTime,
     ) {
         applicationHistories.forEach { handleHakemusUpdate(it) }
         val status = alluStatusRepository.getReferenceById(1)
@@ -115,8 +115,9 @@ class HakemusHistoryService(
             }
             ApplicationStatus.WAITING_INFORMATION -> {
                 updateStatus()
-                taydennysService.saveTaydennyspyyntoFromAllu(application)
-                sendInformationRequestEmails(application, event.applicationIdentifier)
+                taydennysService.saveTaydennyspyyntoFromAllu(application)?.also {
+                    sendInformationRequestEmails(application, event.applicationIdentifier)
+                }
             }
             ApplicationStatus.HANDLING -> {
                 logger.info {
@@ -147,10 +148,16 @@ class HakemusHistoryService(
                 when (application.applicationType) {
                     ApplicationType.CABLE_REPORT ->
                         JohtoselvitysCompleteEmail(
-                            it.sahkoposti, application.id, applicationIdentifier)
+                            it.sahkoposti,
+                            application.id,
+                            applicationIdentifier,
+                        )
                     ApplicationType.EXCAVATION_NOTIFICATION ->
                         KaivuilmoitusDecisionEmail(
-                            it.sahkoposti, application.id, applicationIdentifier)
+                            it.sahkoposti,
+                            application.id,
+                            applicationIdentifier,
+                        )
                 }
             applicationEventPublisher.publishEvent(event)
         }
@@ -167,7 +174,8 @@ class HakemusHistoryService(
                         hakemus.hakemusEntityData.name,
                         hakemusTunnus,
                         hakemus.id,
-                    ))
+                    )
+                )
             }
     }
 }

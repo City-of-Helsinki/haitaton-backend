@@ -56,14 +56,15 @@ class TaydennysService(
     fun findTaydennys(hakemusId: Long): Taydennys? =
         taydennysRepository.findByApplicationId(hakemusId)?.toDomain()
 
+    /** Returns the created täydennyspyyntö if one was created, i.e. if it was still in Allu. */
     @Transactional
-    fun saveTaydennyspyyntoFromAllu(hakemus: HakemusIdentifier) {
+    fun saveTaydennyspyyntoFromAllu(hakemus: HakemusIdentifier): Taydennyspyynto? {
         val request: InformationRequest? = alluClient.getInformationRequest(hakemus.alluid!!)
         if (request == null) {
             logger.error {
                 "Couldn't find the information request from Allu. Ignoring the information request. ${hakemus.logString()}"
             }
-            return
+            return null
         }
 
         val entity =
@@ -74,7 +75,7 @@ class TaydennysService(
                     request.fields.associate { it.fieldKey to it.requestDescription }.toMutableMap(),
             )
 
-        taydennyspyyntoRepository.save(entity)
+        return taydennyspyyntoRepository.save(entity).toDomain()
     }
 
     @Transactional
