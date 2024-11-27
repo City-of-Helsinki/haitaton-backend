@@ -24,6 +24,7 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
+import fi.hel.haitaton.hanke.profiili.ProfiiliService
 import fi.hel.haitaton.hanke.security.AccessRules
 import fi.hel.haitaton.hanke.taydennys.TaydennysAuthorizer
 import fi.hel.haitaton.hanke.taydennys.TaydennysService
@@ -52,7 +53,6 @@ import org.springframework.security.web.SecurityFilterChain
 @EnableMethodSecurity(prePostEnabled = true)
 @Import(value = [AopAutoConfiguration::class, DisclosureLoggingAspect::class])
 class IntegrationTestConfiguration {
-
     @Bean fun applicationAttachmentMetadataService(): ApplicationAttachmentMetadataService = mockk()
 
     @Bean fun applicationAttachmentService(): ApplicationAttachmentService = mockk()
@@ -67,11 +67,9 @@ class IntegrationTestConfiguration {
 
     @Bean fun gdprService(): GdprService = mockk(relaxUnitFun = true)
 
-    @Bean fun geometriatDao(jdbcOperations: JdbcOperations): GeometriatDao = mockk()
+    @Bean fun geometriatDao(): GeometriatDao = mockk()
 
-    @Bean
-    fun geometriatService(service: HankeService, geometriatDao: GeometriatDao): GeometriatService =
-        mockk()
+    @Bean fun geometriatService(): GeometriatService = mockk()
 
     @Bean fun hakemusAuthorizer(): HakemusAuthorizer = mockk(relaxUnitFun = true)
 
@@ -107,14 +105,15 @@ class IntegrationTestConfiguration {
 
     @Bean fun profiiliClient(): ProfiiliClient = mockk()
 
+    @Bean fun profiiliService(): ProfiiliService = mockk()
+
     @Bean fun taydennysAuthorizer(): TaydennysAuthorizer = mockk()
 
     @Bean fun taydennysService(): TaydennysService = mockk()
 
     @Bean fun testDataService(): TestDataService = mockk(relaxUnitFun = true)
 
-    @Bean
-    fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService = mockk()
+    @Bean fun tormaysService(): TormaystarkasteluTormaysService = mockk()
 
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
 

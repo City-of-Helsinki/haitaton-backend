@@ -26,10 +26,7 @@ import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
-import fi.hel.haitaton.hanke.userId
-import io.mockk.every
-import io.mockk.mockk
-import org.springframework.security.core.context.SecurityContext
+import fi.hel.haitaton.hanke.test.AuthenticationMocks
 
 data class HankeBuilder(
     private val hanke: Hanke,
@@ -54,7 +51,7 @@ data class HankeBuilder(
      */
     fun create(): Hanke {
         val request = CreateHankeRequest(hanke.nimi, perustaja)
-        return hankeService.createHanke(request, setUpProfiiliMocks())
+        return hankeService.createHanke(request, AuthenticationMocks.adLoginMock(userId))
     }
 
     /**
@@ -64,7 +61,9 @@ data class HankeBuilder(
     fun save(): Hanke {
         val createdHanke = create()
         return hankeService.updateHanke(
-            createdHanke.hankeTunnus, hanke.toModifyRequest(idMapper = { null }))
+            createdHanke.hankeTunnus,
+            hanke.toModifyRequest(idMapper = { null }),
+        )
     }
 
     /** Save the entity with [save], and - for convenience - get the saved entity from DB. */
@@ -80,7 +79,7 @@ data class HankeBuilder(
     internal fun saveGenerated(
         createRequest: CreateHankeRequest = HankeFactory.createRequest()
     ): HankeEntity {
-        val hanke = hankeService.createHanke(createRequest, setUpProfiiliMocks())
+        val hanke = hankeService.createHanke(createRequest, AuthenticationMocks.adLoginMock(userId))
         val entity = hankeRepository.getReferenceById(hanke.id)
         return hankeRepository.save(entity.apply { generated = true })
     }
@@ -150,13 +149,6 @@ data class HankeBuilder(
     fun withVaihe(vaihe: Hankevaihe): HankeBuilder = applyToHanke { this.vaihe = vaihe }
 
     private fun applyToHanke(f: Hanke.() -> Unit) = apply { hanke.apply { f() } }
-
-    private fun setUpProfiiliMocks(): SecurityContext {
-        val securityContext: SecurityContext = mockk()
-        every { securityContext.userId() } returns userId
-        every { mockProfiiliClient.getVerifiedName(any()) } returns names
-        return securityContext
-    }
 
     companion object {
         fun Hanke.toModifyRequest(idMapper: (Int?) -> Int? = { it }) =
@@ -238,7 +230,7 @@ data class HankeYhteystietoBuilder(
     fun omistaja(
         yhteystieto: HankeYhteystieto = HankeYhteystietoFactory.create(id = null),
         vararg yhteyshenkilot: HankekayttajaEntity =
-            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA))
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA)),
     ): HankeYhteystietoEntity =
         saveYhteystieto(ContactType.OMISTAJA, yhteystieto, yhteyshenkilot.asList())
 
@@ -247,13 +239,13 @@ data class HankeYhteystietoBuilder(
 
     fun omistaja(
         first: HankekayttajaEntity,
-        vararg yhteyshenkilot: HankekayttajaEntity
+        vararg yhteyshenkilot: HankekayttajaEntity,
     ): HankeYhteystietoEntity = omistaja(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
 
     fun rakennuttaja(
         yhteystieto: HankeYhteystieto = HankeYhteystietoFactory.create(id = null),
         vararg yhteyshenkilot: HankekayttajaEntity =
-            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_RAKENNUTTAJA))
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_RAKENNUTTAJA)),
     ): HankeYhteystietoEntity =
         saveYhteystieto(ContactType.RAKENNUTTAJA, yhteystieto, yhteyshenkilot.asList())
 
@@ -262,13 +254,13 @@ data class HankeYhteystietoBuilder(
 
     fun rakennuttaja(
         first: HankekayttajaEntity,
-        vararg yhteyshenkilot: HankekayttajaEntity
+        vararg yhteyshenkilot: HankekayttajaEntity,
     ): HankeYhteystietoEntity = rakennuttaja(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
 
     fun toteuttaja(
         yhteystieto: HankeYhteystieto = HankeYhteystietoFactory.create(id = null),
         vararg yhteyshenkilot: HankekayttajaEntity =
-            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA))
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA)),
     ): HankeYhteystietoEntity =
         saveYhteystieto(ContactType.TOTEUTTAJA, yhteystieto, yhteyshenkilot.asList())
 
@@ -277,13 +269,13 @@ data class HankeYhteystietoBuilder(
 
     fun toteuttaja(
         first: HankekayttajaEntity,
-        vararg yhteyshenkilot: HankekayttajaEntity
+        vararg yhteyshenkilot: HankekayttajaEntity,
     ): HankeYhteystietoEntity = toteuttaja(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
 
     fun muuYhteystieto(
         yhteystieto: HankeYhteystieto = HankeYhteystietoFactory.create(id = null),
         vararg yhteyshenkilot: HankekayttajaEntity =
-            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA))
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA)),
     ): HankeYhteystietoEntity =
         saveYhteystieto(ContactType.MUU, yhteystieto, yhteyshenkilot.asList())
 
@@ -292,18 +284,16 @@ data class HankeYhteystietoBuilder(
 
     fun muuYhteystieto(
         first: HankekayttajaEntity,
-        vararg yhteyshenkilot: HankekayttajaEntity
+        vararg yhteyshenkilot: HankekayttajaEntity,
     ): HankeYhteystietoEntity = muuYhteystieto(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
 
     private fun addYhteyshenkilo(
         yhteystietoEntity: HankeYhteystietoEntity,
-        kayttaja: HankekayttajaEntity
+        kayttaja: HankekayttajaEntity,
     ) {
         hankeYhteyshenkiloRepository.save(
-            HankeYhteyshenkiloEntity(
-                hankeKayttaja = kayttaja,
-                hankeYhteystieto = yhteystietoEntity,
-            ))
+            HankeYhteyshenkiloEntity(hankeKayttaja = kayttaja, hankeYhteystieto = yhteystietoEntity)
+        )
     }
 
     private fun saveYhteystieto(
