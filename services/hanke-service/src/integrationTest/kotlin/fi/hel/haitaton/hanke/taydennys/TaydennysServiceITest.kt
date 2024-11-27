@@ -170,6 +170,46 @@ class TaydennysServiceITest(
             }
             verifySequence { alluClient.getInformationRequest(hakemus.alluid!!) }
         }
+
+        @Test
+        fun `returns taydennyspyynto when Allu has one for the application`() {
+            val hakemus = hakemusFactory.builder().withStatus(alluId = alluId).save()
+            val kentat =
+                listOf(
+                    AlluFactory.createInformationRequestField(
+                        InformationRequestFieldKey.GEOMETRY,
+                        "Check the areas",
+                    ),
+                    AlluFactory.createInformationRequestField(
+                        InformationRequestFieldKey.START_TIME,
+                        "Too far in history",
+                    ),
+                )
+            every { alluClient.getInformationRequest(hakemus.alluid!!) } returns
+                AlluFactory.createInformationRequest(applicationAlluId = alluId, fields = kentat)
+
+            val response = taydennysService.saveTaydennyspyyntoFromAllu(hakemus)
+
+            assertThat(response)
+                .isNotNull()
+                .prop(Taydennyspyynto::kentat)
+                .containsOnly(
+                    InformationRequestFieldKey.GEOMETRY to "Check the areas",
+                    InformationRequestFieldKey.START_TIME to "Too far in history",
+                )
+            verifySequence { alluClient.getInformationRequest(hakemus.alluid!!) }
+        }
+
+        @Test
+        fun `returns null when Allu doesn't have the täydennyspyyntö`() {
+            val hakemus = hakemusFactory.builder().withStatus(alluId = alluId).save()
+            every { alluClient.getInformationRequest(hakemus.alluid!!) } returns null
+
+            val response = taydennysService.saveTaydennyspyyntoFromAllu(hakemus)
+
+            assertThat(response).isNull()
+            verifySequence { alluClient.getInformationRequest(hakemus.alluid!!) }
+        }
     }
 
     @Nested
