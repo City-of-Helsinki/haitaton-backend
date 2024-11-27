@@ -220,6 +220,7 @@ class HakemusServiceITest(
                 prop(Hakemus::id).isEqualTo(hakemus.id)
                 prop(Hakemus::applicationData).isInstanceOf(JohtoselvityshakemusData::class).all {
                     prop(JohtoselvityshakemusData::name).isEqualTo(hakemus.applicationData.name)
+                    prop(JohtoselvityshakemusData::areas).isNotNull().single().isNotNull()
                 }
             }
             assertThat(response.paatokset).isEmpty()

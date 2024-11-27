@@ -58,11 +58,10 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasTargetType
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
+import fi.hel.haitaton.hanke.test.AuthenticationMocks
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toChangeLogJsonString
-import fi.hel.haitaton.hanke.userId
 import io.mockk.every
-import io.mockk.mockk
 import jakarta.mail.internet.MimeMessage
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -161,7 +160,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
         @ParameterizedTest
         @ValueSource(booleans = [true, false])
         fun `returns the correct answer when the kayttaja is identified`(
-            hasEditPermission: Boolean,
+            hasEditPermission: Boolean
         ) {
             val kayttajaEntity =
                 kayttajaFactory.saveIdentifiedUser(
@@ -177,7 +176,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
         @ParameterizedTest
         @ValueSource(booleans = [true, false])
         fun `returns the correct answer when the kayttaja is unidentified`(
-            hasEditPermission: Boolean,
+            hasEditPermission: Boolean
         ) {
             val kayttajaEntity =
                 kayttajaFactory.saveUnidentifiedUser(
@@ -346,12 +345,11 @@ class HankeKayttajaServiceITest : IntegrationTest() {
     @Nested
     inner class AddHankeFounder {
         private val founder = DEFAULT_HANKE_PERUSTAJA
-        private val securityContext = mockk<SecurityContext>()
+        private lateinit var securityContext: SecurityContext
 
         @BeforeEach
         fun setUp() {
-            every { securityContext.userId() } returns USERNAME
-            every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
+            securityContext = AuthenticationMocks.adLoginMock()
         }
 
         @Test
@@ -518,7 +516,11 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             assertThat(capturedEmails).hasSize(1)
             assertThat(capturedEmails.first())
                 .isValidHankeInvitation(
-                    inviter.fullName(), inviter.sahkoposti, hanke.nimi, hanke.hankeTunnus)
+                    inviter.fullName(),
+                    inviter.sahkoposti,
+                    hanke.nimi,
+                    hanke.hankeTunnus,
+                )
         }
 
         @Test
@@ -598,7 +600,8 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                         .isEqualTo(
                             permission
                                 .copy(kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS)
-                                .toChangeLogJsonString())
+                                .toChangeLogJsonString()
+                        )
                 }
             }
         }
@@ -640,7 +643,8 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                         .isEqualTo(
                             expectedTunniste
                                 .copy(kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS)
-                                .toChangeLogJsonString())
+                                .toChangeLogJsonString()
+                        )
                 }
                 prop(AuditLogEvent::operation).isEqualTo(Operation.UPDATE)
                 hasUserActor(USERNAME)
@@ -655,7 +659,8 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                     hanke.id,
                     etunimi = "Kolmas",
                     sukunimi = "Kehveli",
-                    sahkoposti = "kolmas@kehveli.test")
+                    sahkoposti = "kolmas@kehveli.test",
+                )
             kayttajaFactory.addToken(kayttaja, "token for both", Kayttooikeustaso.KATSELUOIKEUS)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
@@ -677,12 +682,17 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                 kayttajaFactory.saveIdentifiedUser(
                     hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKIEN_MUOKKAUS,
-                    userId = USERNAME)
+                    userId = USERNAME,
+                )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier, updates, false, USERNAME)
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME,
+                    )
                 }
                 .all {
                     hasClass(ChangingOwnPermissionException::class)
@@ -698,7 +708,11 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier, updates, false, USERNAME)
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME,
+                    )
                 }
                 .all {
                     hasClass(HankeKayttajatNotFoundException::class)
@@ -732,7 +746,11 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier, updates, false, USERNAME)
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME,
+                    )
                 }
                 .all {
                     hasClass(UsersWithoutKayttooikeustasoException::class)
@@ -745,12 +763,18 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveIdentifiedUser(
-                    hankeIdentifier.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    hankeIdentifier.id,
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
+                )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier, updates, false, USERNAME)
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME,
+                    )
                 }
                 .all {
                     hasClass(MissingAdminPermissionException::class)
@@ -763,12 +787,18 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveUnidentifiedUser(
-                    hankeIdentifier.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    hankeIdentifier.id,
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
+                )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier, updates, false, USERNAME)
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME,
+                    )
                 }
                 .all {
                     hasClass(MissingAdminPermissionException::class)
@@ -781,7 +811,9 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveIdentifiedUser(
-                    hankeIdentifier.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    hankeIdentifier.id,
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
+                )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
@@ -798,7 +830,9 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveUnidentifiedUser(
-                    hankeIdentifier.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    hankeIdentifier.id,
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
+                )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
@@ -818,7 +852,11 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             assertFailure {
                     hankeKayttajaService.updatePermissions(
-                        hankeIdentifier, updates, false, USERNAME)
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME,
+                    )
                 }
                 .all {
                     hasClass(MissingAdminPermissionException::class)
@@ -846,7 +884,9 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             val hanke = hankeFactory.saveMinimal()
             val kayttaja =
                 kayttajaFactory.saveIdentifiedUser(
-                    hanke.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    hanke.id,
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
+                )
             kayttajaFactory.saveIdentifiedUser(
                 hanke.id,
                 kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS,
@@ -875,7 +915,9 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             permissionService.create(hankeIdentifier.id, USERNAME, Kayttooikeustaso.KAIKKI_OIKEUDET)
             val kayttaja =
                 kayttajaFactory.saveIdentifiedUser(
-                    hankeIdentifier.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    hankeIdentifier.id,
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
+                )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
@@ -912,19 +954,21 @@ class HankeKayttajaServiceITest : IntegrationTest() {
     inner class CreatePermissionFromToken {
         private val tunniste = "Itf4UuErPqBHkhJF7CUAsu69"
         private val newUserId = "newUser"
-        private val securityContext = mockk<SecurityContext>()
+        private lateinit var securityContext: SecurityContext
 
         @BeforeEach
         fun setUp() {
-            every { securityContext.userId() } returns USERNAME
-            every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
+            securityContext = AuthenticationMocks.adLoginMock()
         }
 
         @Test
         fun `throws exception if tunniste doesn't exist`() {
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
-                        newUserId, "fake", securityContext)
+                        newUserId,
+                        "fake",
+                        securityContext,
+                    )
                 }
                 .all {
                     hasClass(TunnisteNotFoundException::class)
@@ -935,6 +979,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
         @Test
         fun `throws exception if cannot retrieve verified name from Profiili`() {
+            securityContext = AuthenticationMocks.suomiFiLoginMock()
             val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
             every { profiiliClient.getVerifiedName(any()) } throws
@@ -942,7 +987,10 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
-                        newUserId, tunniste, securityContext)
+                        newUserId,
+                        tunniste,
+                        securityContext,
+                    )
                 }
                 .all {
                     hasClass(VerifiedNameNotFound::class)
@@ -953,16 +1001,15 @@ class HankeKayttajaServiceITest : IntegrationTest() {
         @Test
         fun `throws an exception if the user already has a permission for the hanke kayttaja`() {
             val hanke = hankeFactory.builder(USERNAME).save()
-            val kayttaja =
-                kayttajaFactory.saveIdentifiedUser(
-                    hanke.id,
-                    userId = newUserId,
-                )
+            val kayttaja = kayttajaFactory.saveIdentifiedUser(hanke.id, userId = newUserId)
             kayttajaFactory.addToken(kayttaja)
 
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
-                        newUserId, "existing", securityContext)
+                        newUserId,
+                        "existing",
+                        securityContext,
+                    )
                 }
                 .all {
                     hasClass(UserAlreadyHasPermissionException::class)
@@ -980,11 +1027,15 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                 permissionService.create(
                     userId = newUserId,
                     hankeId = hanke.id,
-                    kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS)
+                    kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+                )
 
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
-                        newUserId, tunniste, securityContext)
+                        newUserId,
+                        tunniste,
+                        securityContext,
+                    )
                 }
                 .all {
                     hasClass(UserAlreadyHasPermissionException::class)
@@ -1002,7 +1053,10 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
-                        newUserId, "existing", securityContext)
+                        newUserId,
+                        "existing",
+                        securityContext,
+                    )
                 }
                 .all {
                     hasClass(PermissionAlreadyExistsException::class)
@@ -1276,7 +1330,10 @@ class HankeKayttajaServiceITest : IntegrationTest() {
 
             val failure = assertFailure {
                 hankeKayttajaService.updateKayttajaInfo(
-                    hanke.hankeTunnus, update, identifiedUser.id)
+                    hanke.hankeTunnus,
+                    update,
+                    identifiedUser.id,
+                )
             }
 
             failure.all {

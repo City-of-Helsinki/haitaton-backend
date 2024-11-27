@@ -24,9 +24,7 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/profiili")
 @SecurityRequirement(name = "bearerAuth")
-class ProfiiliController(
-    private val profiiliClient: ProfiiliClient,
-) {
+class ProfiiliController(private val profiiliService: ProfiiliService) {
 
     @GetMapping("/verified-name")
     @Operation(summary = "Get verified name from Profiili")
@@ -34,10 +32,11 @@ class ProfiiliController(
     @ApiResponse(
         description = "Verification not found.",
         responseCode = "404",
-        content = [Content(schema = Schema(implementation = HankeError::class))])
+        content = [Content(schema = Schema(implementation = HankeError::class))],
+    )
     fun verifiedName(
-        @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext,
-    ): Names = profiiliClient.getVerifiedName(securityContext)
+        @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext
+    ): Names = profiiliService.getVerifiedName(securityContext)
 
     @ExceptionHandler(VerifiedNameNotFound::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)

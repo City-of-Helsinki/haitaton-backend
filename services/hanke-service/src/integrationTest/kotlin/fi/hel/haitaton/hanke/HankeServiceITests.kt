@@ -43,7 +43,6 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUST
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
@@ -68,7 +67,6 @@ import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.Asserts.isRecentUTC
 import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
@@ -79,6 +77,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
+import fi.hel.haitaton.hanke.test.AuthenticationMocks
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -87,7 +86,6 @@ import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
-import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifySequence
 import net.pwall.mustache.Template
@@ -103,7 +101,6 @@ import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.security.core.context.SecurityContext
 
 private const val NAME_1 = "etu1 suku1"
 private const val NAME_2 = "etu2 suku2"
@@ -119,7 +116,6 @@ class HankeServiceITests(
     @Autowired private val kayttajakutsuRepository: KayttajakutsuRepository,
     @Autowired private val hankeAttachmentRepository: HankeAttachmentRepository,
     @Autowired private val fileClient: MockFileClient,
-    @Autowired private val profiiliClient: ProfiiliClient,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
@@ -239,7 +235,7 @@ class HankeServiceITests(
         @Test
         fun `returns a new domain object with the correct values`() {
             val request: CreateHankeRequest = HankeFactory.createRequest()
-            val securityContext = setUpProfiiliMocks()
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             // Call create and get the return object:
             val returnedHanke = hankeService.createHanke(request, securityContext)
@@ -275,7 +271,7 @@ class HankeServiceITests(
         @Test
         fun `saves object to database with the correct values`() {
             val request: CreateHankeRequest = HankeFactory.createRequest()
-            val securityContext = setUpProfiiliMocks()
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             // Call create and get the return object:
             val returnedHanke = hankeService.createHanke(request, securityContext)
@@ -303,7 +299,7 @@ class HankeServiceITests(
         @Test
         fun `creates permissions and a user for the founder`() {
             val request: CreateHankeRequest = HankeFactory.createRequest()
-            val securityContext = setUpProfiiliMocks()
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             val returnedHanke = hankeService.createHanke(request, securityContext)
 
@@ -331,7 +327,7 @@ class HankeServiceITests(
         fun `creates audit log entry for created hanke`() {
             TestUtils.addMockedRequestIp()
             val request = HankeFactory.createRequest()
-            val securityContext = setUpProfiiliMocks()
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             val hanke = hankeService.createHanke(request, securityContext)
 
@@ -487,8 +483,9 @@ class HankeServiceITests(
         @Test
         fun `saves hanke based on request`() {
             val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
-            hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+            hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             assertThat(hankeRepository.findAll()).single().all {
                 prop(HankeEntity::generated).isTrue()
@@ -502,8 +499,9 @@ class HankeServiceITests(
         @Test
         fun `saves hakemus based on request`() {
             val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
-            hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+            hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             assertThat(hakemusRepository.findAll())
                 .single()
@@ -515,9 +513,10 @@ class HankeServiceITests(
         @Test
         fun `returns the saved hakemus`() {
             val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             val hakemus =
-                hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+                hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             assertThat(hakemus).all {
                 prop(Hakemus::applicationData).prop(HakemusData::name).isEqualTo(hakemusNimi)
@@ -527,9 +526,10 @@ class HankeServiceITests(
         @Test
         fun `generates hankekayttaja for founder`() {
             val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             val hakemus =
-                hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+                hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             val hanke = hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)!!
             val kayttajat = hankekayttajaRepository.findByHankeId(hanke.id)
@@ -555,9 +555,10 @@ class HankeServiceITests(
             val expectedName = "a".repeat(MAXIMUM_HANKE_NIMI_LENGTH)
             val tooLongName = expectedName + "bbb"
             val request = CreateHankeRequest(tooLongName, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             val hakemus =
-                hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+                hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             val hanke = hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)!!
             assertThat(hanke.nimi).isEqualTo(expectedName)
@@ -566,9 +567,10 @@ class HankeServiceITests(
         @Test
         fun `sets the hanke phase to RAKENTAMINEN`() {
             val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             val hakemus =
-                hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+                hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             val hanke = hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)!!
             assertThat(hanke.vaihe).isEqualTo(Hankevaihe.RAKENTAMINEN)
@@ -577,8 +579,9 @@ class HankeServiceITests(
         @Test
         fun `writes to audit logs`() {
             val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
-            hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+            hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             assertThat(auditLogRepository.findAll())
                 .extracting { it.message.auditEvent.target.type }
@@ -599,7 +602,8 @@ class HankeServiceITests(
                 hankeFactory
                     .builder(USERNAME)
                     .withHankealue(
-                        haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma())
+                        haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma()
+                    )
                     .save()
             auditLogRepository.deleteAll()
             assertEquals(0, auditLogRepository.count())
@@ -792,7 +796,7 @@ class HankeServiceITests(
 
     private fun initHankeWithHakemus(
         alluId: Int,
-        alluStatus: ApplicationStatus = ApplicationStatus.PENDING
+        alluStatus: ApplicationStatus = ApplicationStatus.PENDING,
     ): HankeEntity {
         hakemusFactory.builder().withStatus(alluId = alluId, status = alluStatus).saveEntity()
 
@@ -803,7 +807,8 @@ class HankeServiceITests(
         val templateData =
             mapOf("hankeId" to hanke.id.toString(), "hankeTunnus" to hanke.hankeTunnus)
         return Template.parse(
-                "/fi/hel/haitaton/hanke/logging/expectedNewHanke.json.mustache".getResourceAsText())
+                "/fi/hel/haitaton/hanke/logging/expectedNewHanke.json.mustache".getResourceAsText()
+            )
             .processToString(templateData)
     }
 
@@ -837,22 +842,14 @@ class HankeServiceITests(
      */
     fun AuditLogRepository.findByType(type: ObjectType) =
         this.findAll().filter { it.message.auditEvent.target.type == type }
-
-    fun AuditLogRepository.countByType(type: ObjectType) = this.findByType(type).count()
-
-    private fun setUpProfiiliMocks(): SecurityContext {
-        val securityContext: SecurityContext = mockk()
-        every { securityContext.userId() } returns USERNAME
-        every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
-        return securityContext
-    }
 }
 
 object ExpectedHankeLogObject {
     private val expectedHankeWithPolygon =
         Template.parse(
             "/fi/hel/haitaton/hanke/logging/expectedHankeWithPolygon.json.mustache"
-                .getResourceAsText())
+                .getResourceAsText()
+        )
 
     fun expectedHankeLogObject(
         hanke: Hanke,
