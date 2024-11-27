@@ -372,6 +372,16 @@ class AlluClientITests {
         }
 
         @Test
+        fun `returns null when Allu doesn't have a taydennyspyynto`() {
+            val mockResponse = MockResponse().setResponseCode(200).setBody("")
+            mockWebServer.enqueue(mockResponse)
+
+            val response = service.getInformationRequest(alluid)
+
+            assertThat(response).isNull()
+        }
+
+        @Test
         fun `throws an exception when Allu returns an error`() {
             val mockResponse = MockResponse().setResponseCode(500)
             mockWebServer.enqueue(mockResponse)
