@@ -102,16 +102,6 @@ class TaydennysFactory(
     }
 
     /** Returns updated data */
-    fun updateTaydennys(
-        taydennys: Taydennys,
-        f: HakemusEntityData.() -> HakemusEntityData,
-    ): Taydennys {
-        val entity = taydennysRepository.getReferenceById(taydennys.id)
-        entity.hakemusData = entity.hakemusData.f()
-        return taydennysRepository.save(entity).toDomain()
-    }
-
-    /** Returns updated data */
     @Transactional
     fun updateJohtoselvitysTaydennys(
         taydennys: Taydennys,
@@ -121,6 +111,15 @@ class TaydennysFactory(
             this as JohtoselvityshakemusEntityData
             f()
         }
+
+    private fun updateTaydennys(
+        taydennys: Taydennys,
+        f: HakemusEntityData.() -> HakemusEntityData,
+    ): Taydennys {
+        val entity = taydennysRepository.getReferenceById(taydennys.id)
+        entity.hakemusData = entity.hakemusData.f()
+        return taydennysRepository.save(entity).toDomain()
+    }
 
     companion object {
         val DEFAULT_ID: UUID = UUID.fromString("49ee9168-a1e3-45a1-8fe0-9330cd5475d3")
