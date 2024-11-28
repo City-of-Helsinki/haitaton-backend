@@ -97,4 +97,18 @@ class TaydennysAttachmentService(
         }
         return newAttachment
     }
+
+    fun deleteAllAttachments(taydennys: TaydennysIdentifier) {
+        logger.info { "Deleting all attachments from täydennys. ${taydennys.logString()}" }
+        try {
+            metadataService
+                .deleteAllAttachments(taydennys)
+                .forEach(attachmentContentService::delete)
+            logger.info { "Deleted all attachments from täydennys. ${taydennys.logString()}" }
+        } catch (e: Exception) {
+            logger.error(e) {
+                "Failed to delete all attachment content for täydennys. Continuing with täydennyys deletion regardless of error. ${taydennys.logString()}"
+            }
+        }
+    }
 }

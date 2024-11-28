@@ -39,10 +39,13 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
+import io.mockk.Runs
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.just
+import io.mockk.verify
 import io.mockk.verifySequence
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -61,6 +64,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @WebMvcTest(controllers = [TaydennysController::class])
@@ -568,6 +572,56 @@ class TaydennysControllerITest(@Autowired override val mockMvc: MockMvc) : Contr
             verifySequence {
                 taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
                 taydennysService.sendTaydennys(id, USERNAME)
+            }
+        }
+    }
+
+    @Nested
+    inner class Delete {
+        private val url = "/taydennykset/$id"
+
+        @Test
+        @WithAnonymousUser
+        fun `returns 401 when user is unknown`() {
+            delete(url).andExpect(status().isUnauthorized).andExpect(hankeError(HankeError.HAI0001))
+
+            verify { taydennysService wasNot Called }
+        }
+
+        @Test
+        fun `returns 404 when no taydennys`() {
+            every {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } throws TaydennysNotFoundException(id)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI6001))
+
+            verify { taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name) }
+        }
+
+        @Test
+        fun `returns 404 when no application`() {
+            every {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } throws HakemusNotFoundException(1L)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2001))
+
+            verify { taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name) }
+        }
+
+        @Test
+        fun `deletes taydennys`() {
+            every {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { taydennysService.delete(id, USERNAME) } just Runs
+
+            delete(url).andExpect(status().isOk).andExpect(content().string(""))
+
+            verifySequence {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                taydennysService.delete(id, USERNAME)
             }
         }
     }

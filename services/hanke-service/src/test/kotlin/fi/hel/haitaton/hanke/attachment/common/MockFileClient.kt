@@ -44,7 +44,7 @@ class MockFileClient : FileClient {
                 contentType,
                 content.size,
                 "attachment; filename*=UTF-8''${encodeFilename(originalFilename)}",
-                BinaryData.fromBytes(content)
+                BinaryData.fromBytes(content),
             )
     }
 
@@ -53,7 +53,8 @@ class MockFileClient : FileClient {
             ?: throw DownloadNotFoundException(path, container)
 
     override fun delete(container: Container, path: String): Boolean =
-        fileMap[container]!!.remove(path) != null
+        if (connected) fileMap[container]!!.remove(path) != null
+        else throw IllegalStateException("Not connected")
 
     override fun deleteAllByPrefix(container: Container, prefix: String) {
         if (!connected) throw IllegalStateException("Not connected")

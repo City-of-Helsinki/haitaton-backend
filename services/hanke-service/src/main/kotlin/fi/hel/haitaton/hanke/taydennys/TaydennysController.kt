@@ -20,11 +20,12 @@ import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -64,7 +65,7 @@ class TaydennysController(private val taydennysService: TaydennysService) {
     fun create(@PathVariable id: Long): TaydennysResponse =
         taydennysService.create(id, currentUserId()).toResponse()
 
-    @RequestMapping("/taydennykset/{id}")
+    @PutMapping("/taydennykset/{id}")
     @Operation(
         summary = "Update a täydennys",
         description =
@@ -131,6 +132,30 @@ class TaydennysController(private val taydennysService: TaydennysService) {
     @PreAuthorize("@taydennysAuthorizer.authorize(#id, 'EDIT_APPLICATIONS')")
     fun send(@PathVariable id: UUID): HakemusResponse =
         taydennysService.sendTaydennys(id, currentUserId()).toResponse()
+
+    @DeleteMapping("/taydennykset/{id}")
+    @Operation(
+        summary = "Delete a täydennys",
+        description =
+            """
+               Deletes a täydennys.
+            """,
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "Täydennys deleted, no body", responseCode = "200"),
+                ApiResponse(
+                    description = "A täydennys was not found with the given id",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
+    @PreAuthorize("@taydennysAuthorizer.authorize(#id, 'EDIT_APPLICATIONS')")
+    fun delete(@PathVariable id: UUID) {
+        taydennysService.delete(id, currentUserId())
+    }
 
     @ExceptionHandler(InvalidHakemusDataException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
