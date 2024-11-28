@@ -24,6 +24,8 @@ import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWith
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.asList
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.withDefaultEvents
 import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
 import fi.hel.haitaton.hanke.parseJson
 import fi.hel.haitaton.hanke.toJsonString
@@ -712,7 +714,8 @@ class AlluClientITests {
         fun `returns application histories`() {
             val alluids = listOf(12, 13)
             val eventsAfter = ZonedDateTime.parse("2022-10-10T15:25:34.981654Z")
-            val histories = listOf(ApplicationHistoryFactory.create(applicationId = 12))
+            val histories =
+                ApplicationHistoryFactory.create(applicationId = 12).withDefaultEvents().asList()
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
