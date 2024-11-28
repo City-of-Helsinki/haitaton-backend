@@ -28,7 +28,7 @@ import org.hibernate.annotations.Type
 @Table(name = "taydennys")
 class TaydennysEntity(
     @Id override var id: UUID = UUID.randomUUID(),
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.EAGER, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "taydennyspyynto_id", nullable = false)
     var taydennyspyynto: TaydennyspyyntoEntity,

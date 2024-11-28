@@ -17,7 +17,6 @@ import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 
 private val logger = KotlinLogging.logger {}
@@ -29,7 +28,6 @@ class TaydennysAttachmentService(
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) {
-    @Transactional
     fun addAttachment(
         taydennysId: UUID,
         attachmentType: ApplicationAttachmentType,
