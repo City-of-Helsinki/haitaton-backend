@@ -53,8 +53,7 @@ class MockFileClient : FileClient {
             ?: throw DownloadNotFoundException(path, container)
 
     override fun delete(container: Container, path: String): Boolean =
-        if (connected) fileMap[container]!!.remove(path) != null
-        else throw IllegalStateException("Not connected")
+        if (connected) fileMap[container]!!.remove(path) != null else error("Not connected")
 
     override fun deleteAllByPrefix(container: Container, prefix: String) {
         if (!connected) throw IllegalStateException("Not connected")
