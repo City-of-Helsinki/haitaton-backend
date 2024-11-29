@@ -147,8 +147,53 @@ class ApplicationAttachmentEntity(
 
     override fun hashCode(): Int {
         var result = super.hashCode()
-        result = 31 * result + attachmentType.hashCode()
-        result = 31 * result + applicationId.hashCode()
+        result = 31 * result + id.hashCode()
+        return result
+    }
+}
+
+@Entity
+@Table(name = "taydennys_liite")
+class TaydennysAttachmentEntity(
+    id: UUID?,
+    fileName: String,
+    contentType: String,
+    size: Long,
+    blobLocation: String,
+    createdByUserId: String,
+    createdAt: OffsetDateTime,
+    @Column(name = "taydennys_id") var taydennysId: UUID,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "attachment_type")
+    var attachmentType: ApplicationAttachmentType,
+) : AttachmentEntity(id, fileName, contentType, size, blobLocation, createdByUserId, createdAt) {
+
+    fun toDomain(): TaydennysAttachmentMetadata =
+        TaydennysAttachmentMetadata(
+            id = id!!,
+            fileName = fileName,
+            contentType = contentType,
+            size = size,
+            attachmentType = attachmentType,
+            createdByUserId = createdByUserId,
+            createdAt = createdAt,
+            blobLocation = blobLocation,
+            taydennysId = taydennysId,
+        )
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        if (!super.equals(other)) return false
+
+        other as TaydennysAttachmentEntity
+
+        return id == other.id
+    }
+
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + id.hashCode()
         return result
     }
 }
@@ -167,11 +212,17 @@ interface ApplicationAttachmentRepository : JpaRepository<ApplicationAttachmentE
     fun deleteByApplicationId(applicationId: Long)
 }
 
+@Repository
+interface TaydennysAttachmentRepository : JpaRepository<TaydennysAttachmentEntity, UUID> {
+    fun findByTaydennysId(taydennysId: UUID): List<TaydennysAttachmentEntity>
+
+    fun countByTaydennysId(taydennysId: UUID): Int
+}
+
 enum class ApplicationAttachmentType {
     MUU,
     LIIKENNEJARJESTELY,
-    VALTAKIRJA,
-    ;
+    VALTAKIRJA;
 
     fun toFinnish(): String =
         when (this) {

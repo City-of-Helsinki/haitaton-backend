@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.logging
 
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
+import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadataDto
 import fi.hel.haitaton.hanke.banners.BannerResponse
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.domain.Hanke
@@ -61,6 +62,7 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
 
             // Some classes cannot hold personal information, so they are skipped
             is ApplicationAttachmentMetadataDto -> return
+            is TaydennysAttachmentMetadataDto -> return
             is HakemusDeletionResultDto -> return
             is HankeAttachmentMetadataDto -> return
             is HankeKayttajaController.TunnistautuminenResponse -> return

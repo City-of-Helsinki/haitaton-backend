@@ -23,3 +23,14 @@ data class ApplicationAttachmentMetadataDto(
     val createdAt: OffsetDateTime,
     val applicationId: Long,
 )
+
+data class TaydennysAttachmentMetadataDto(
+    val id: UUID,
+    val fileName: String,
+    val contentType: String,
+    val size: Long,
+    val attachmentType: ApplicationAttachmentType,
+    val createdByUserId: String,
+    val createdAt: OffsetDateTime,
+    val taydennysId: UUID,
+)

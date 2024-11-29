@@ -13,7 +13,7 @@ import java.util.UUID
 class TaydennysDeserializer : JsonDeserializer<Taydennys>() {
     override fun deserialize(
         jsonParser: JsonParser,
-        deserializationContext: DeserializationContext
+        deserializationContext: DeserializationContext,
     ): Taydennys {
         val root = jsonParser.readValueAsTree<ObjectNode>()
 
@@ -29,6 +29,7 @@ class TaydennysDeserializer : JsonDeserializer<Taydennys>() {
         return Taydennys(
             UUID.fromString(root.path("id").textValue()),
             UUID.fromString(root.path("taydennyspyyntoId").textValue()),
+            root.path("hakemusId").longValue(),
             hakemusData,
         )
     }

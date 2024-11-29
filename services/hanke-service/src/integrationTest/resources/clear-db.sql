@@ -19,6 +19,7 @@ TRUNCATE TABLE
     paatos,
     permissions,
     taydennys,
+    taydennys_liite,
     taydennyspyynnon_kentta,
     taydennyspyynto,
     taydennysyhteyshenkilo,
