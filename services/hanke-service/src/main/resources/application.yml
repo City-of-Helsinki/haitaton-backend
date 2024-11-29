@@ -85,6 +85,9 @@ sentry:
     minimum-event-level: error
 
 server:
+  # Increase the header size to accommodate the Helsinki staff JWT with all of their AD groups.
+  # https://docs.spring.io/spring-boot/appendix/application-properties/index.html#application-properties.server.server.max-http-request-header-size
+  max-http-request-header-size: 64KB
   forward-headers-strategy: FRAMEWORK
 
 spring:
