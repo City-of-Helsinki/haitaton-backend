@@ -9,6 +9,7 @@ import java.util.UUID
 data class Taydennys(
     override val id: UUID,
     val taydennyspyyntoId: UUID,
+    val hakemusId: Long,
     val hakemusData: HakemusData,
 ) : HasId<UUID> {
     fun toResponse() = TaydennysResponse(id, hakemusData.toResponse())

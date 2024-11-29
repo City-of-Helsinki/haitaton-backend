@@ -277,7 +277,10 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                     hankeTunnus = HANKE_TUNNUS,
                 )
             val taydennys: TaydennysWithMuutokset =
-                TaydennysFactory.create(hakemusData = hakemus.applicationData)
+                TaydennysFactory.create(
+                        hakemusId = hakemus.id,
+                        hakemusData = hakemus.applicationData,
+                    )
                     .withMuutokset(hakemus.applicationData)
             every { hakemusService.getWithExtras(id) } returns
                 hakemus.withExtras(taydennys = taydennys)
@@ -315,7 +318,10 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 )
             val muutokset = listOf("name", "areas[1]")
             val taydennys: TaydennysWithMuutokset =
-                TaydennysFactory.create(hakemusData = hakemus.applicationData)
+                TaydennysFactory.create(
+                        hakemusId = hakemus.id,
+                        hakemusData = hakemus.applicationData,
+                    )
                     .withMuutokset(muutokset)
             every { hakemusService.getWithExtras(id) } returns
                 hakemus.withExtras(taydennys = taydennys)

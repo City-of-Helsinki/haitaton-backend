@@ -255,7 +255,7 @@ class ApplicationAttachmentServiceITest(
                 attachmentService.addAttachment(
                     applicationId = application.id,
                     attachmentType = VALTAKIRJA,
-                    attachment = testFile()
+                    attachment = testFile(),
                 )
             }
 
@@ -275,7 +275,7 @@ class ApplicationAttachmentServiceITest(
                 attachmentService.addAttachment(
                     applicationId = application.id,
                     attachmentType = VALTAKIRJA,
-                    attachment = testFile(data = byteArrayOf())
+                    attachment = testFile(data = byteArrayOf()),
                 )
             }
 
@@ -293,13 +293,13 @@ class ApplicationAttachmentServiceITest(
                 attachmentService.addAttachment(
                     applicationId = application.id,
                     attachmentType = VALTAKIRJA,
-                    attachment = testFile(contentType = null)
+                    attachment = testFile(contentType = null),
                 )
             }
 
             failure.all {
                 hasClass(AttachmentInvalidException::class)
-                hasMessage("Attachment upload exception: Content-type was not set")
+                hasMessage("Attachment upload exception: Content-Type null")
             }
         }
 
@@ -348,7 +348,7 @@ class ApplicationAttachmentServiceITest(
                 attachmentService.addAttachment(
                     applicationId = application.id,
                     attachmentType = VALTAKIRJA,
-                    attachment = testFile(fileName = invalidFilename)
+                    attachment = testFile(fileName = invalidFilename),
                 )
             }
 
@@ -368,7 +368,7 @@ class ApplicationAttachmentServiceITest(
                 attachmentService.addAttachment(
                     applicationId = application.id,
                     attachmentType = VALTAKIRJA,
-                    attachment = testFile(fileName = invalidFilename)
+                    attachment = testFile(fileName = invalidFilename),
                 )
             }
 
@@ -390,7 +390,7 @@ class ApplicationAttachmentServiceITest(
                 attachmentService.addAttachment(
                     applicationId = application.id,
                     attachmentType = VALTAKIRJA,
-                    attachment = testFile()
+                    attachment = testFile(),
                 )
             }
 

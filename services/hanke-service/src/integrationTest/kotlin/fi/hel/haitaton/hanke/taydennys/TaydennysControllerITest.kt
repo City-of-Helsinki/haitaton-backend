@@ -95,6 +95,7 @@ class TaydennysControllerITest(@Autowired override val mockMvc: MockMvc) : Contr
             Taydennys(
                 UUID.fromString("90b67df3-cd13-4dca-bd30-9dda424d1260"),
                 TaydennyspyyntoFactory.DEFAULT_ID,
+                1L,
                 HakemusFactory.createJohtoselvityshakemusData(name = "Täydennettävä hakemus"),
             )
 
