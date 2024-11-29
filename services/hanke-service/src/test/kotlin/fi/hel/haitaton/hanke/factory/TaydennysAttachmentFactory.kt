@@ -35,7 +35,7 @@ class TaydennysAttachmentFactory(
         createdByUser: String = USERNAME,
         createdAt: OffsetDateTime = CREATED_AT,
         attachmentType: ApplicationAttachmentType = MUU,
-        taydennys: Taydennys = taydennysFactory.save(1L),
+        taydennys: Taydennys = taydennysFactory.builder().saveEntity().toDomain(),
     ): TaydennysAttachmentBuilder {
         val entity =
             attachmentRepository.save(

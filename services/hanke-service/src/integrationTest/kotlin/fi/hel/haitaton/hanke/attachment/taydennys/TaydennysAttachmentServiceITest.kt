@@ -20,12 +20,15 @@ import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadResponse
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
@@ -47,11 +50,13 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
+import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 
 class TaydennysAttachmentServiceITest(
     @Autowired private val attachmentService: TaydennysAttachmentService,
     @Autowired private val attachmentRepository: TaydennysAttachmentRepository,
     @Autowired private val taydennysFactory: TaydennysFactory,
+    @Autowired private val attachmentFactory: TaydennysAttachmentFactory,
     @Autowired private val fileClient: MockFileClient,
 ) : IntegrationTest() {
     private lateinit var mockClamAv: MockWebServer
@@ -68,6 +73,44 @@ class TaydennysAttachmentServiceITest(
     fun tearDown() {
         mockClamAv.shutdown()
         checkUnnecessaryStub()
+    }
+
+    @Nested
+    inner class GetContent {
+        @Test
+        fun `Throws exception when attachment not found`() {
+            val attachmentId = UUID.fromString("93b5c49d-918a-453d-a2bf-b918b47923c1")
+
+            val failure = assertFailure { attachmentService.getContent(attachmentId) }
+
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachmentId.toString())
+            }
+        }
+
+        @Test
+        fun `Returns the attachment content, filename and type`() {
+            val attachment = attachmentFactory.save().withContent().value
+
+            val result = attachmentService.getContent(attachment.id!!)
+
+            assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+            assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+            assertThat(result.bytes).isEqualTo(PDF_BYTES)
+        }
+
+        @Test
+        fun `Throws exception when trying to get valtakirja content`() {
+            val attachment = attachmentFactory.save(attachmentType = VALTAKIRJA).withContent().value
+
+            val failure = assertFailure { attachmentService.getContent(attachment.id!!) }
+
+            failure.all {
+                hasClass(ValtakirjaForbiddenException::class)
+                messageContains("id=${attachment.id}")
+            }
+        }
     }
 
     @Nested
