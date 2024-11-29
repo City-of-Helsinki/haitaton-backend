@@ -21,6 +21,7 @@ import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusEntityData
+import fi.hel.haitaton.hanke.hakemus.PaperDecisionReceiver
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
@@ -161,6 +162,12 @@ data class HakemusBuilder(
         updateApplicationData(
             { throw InvalidParameterException("Not available for cable reports.") },
             { copy(invoicingCustomer = invoicingCustomer) },
+        )
+
+    fun withPaperReceiver(receiver: PaperDecisionReceiver = PaperDecisionReceiverFactory.default) =
+        updateApplicationData(
+            { copy(paperDecisionReceiver = receiver) },
+            { copy(paperDecisionReceiver = receiver) },
         )
 
     private fun updateApplicationData(
