@@ -707,12 +707,8 @@ class TaydennysServiceITest(
         @Test
         fun `deletes the attachments when deleting a taydennys`() {
             val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
-            attachmentFactory
-                .save(taydennys = taydennys)
-                .withContent(applicationId = taydennys.hakemusId)
-            attachmentFactory
-                .save(taydennys = taydennys)
-                .withContent(applicationId = taydennys.hakemusId)
+            attachmentFactory.save(taydennys = taydennys).withContent()
+            attachmentFactory.save(taydennys = taydennys).withContent()
             assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).hasSize(2)
             assertThat(
                     fileClient.list(
@@ -738,12 +734,8 @@ class TaydennysServiceITest(
         @Test
         fun `deletes all attachment metadata even when deleting attachment content fails`() {
             val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
-            attachmentFactory
-                .save(taydennys = taydennys)
-                .withContent(applicationId = taydennys.hakemusId)
-            attachmentFactory
-                .save(taydennys = taydennys)
-                .withContent(applicationId = taydennys.hakemusId)
+            attachmentFactory.save(taydennys = taydennys).withContent()
+            attachmentFactory.save(taydennys = taydennys).withContent()
             assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).hasSize(2)
             assertThat(
                     fileClient.list(
