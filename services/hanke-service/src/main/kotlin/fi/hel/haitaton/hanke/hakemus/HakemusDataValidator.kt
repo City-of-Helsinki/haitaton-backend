@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.validation.ValidationResult
+import fi.hel.haitaton.hanke.validation.Validators.notBlank
 import fi.hel.haitaton.hanke.validation.Validators.validate
 
 object HakemusDataValidator {
@@ -23,3 +24,9 @@ private fun ValidationResult.okOrThrow(): Boolean {
     }
     throw InvalidHakemusDataException(errorPaths())
 }
+
+fun PaperDecisionReceiver.validate(path: String) =
+    validate { notBlank(name, "$path.name") }
+        .and { notBlank(streetAddress, "$path.streetAddress") }
+        .and { notBlank(postalCode, "$path.postalCode") }
+        .and { notBlank(city, "$path.city") }

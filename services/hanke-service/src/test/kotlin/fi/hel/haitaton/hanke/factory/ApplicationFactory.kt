@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
-import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
@@ -40,6 +39,7 @@ class ApplicationFactory(
         const val DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER: String = "JS2300014"
         const val DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER: String = "KP2300015"
         const val DEFAULT_WORK_DESCRIPTION: String = "Työn kuvaus."
+        const val DEFAULT_HENKILOTUNNUS: String = "110166-8080"
         const val TEPPO = "Teppo"
         const val TESTIHENKILO = "Testihenkilö"
         const val TEPPO_EMAIL = "teppo@example.test"
@@ -69,6 +69,7 @@ class ApplicationFactory(
 
         fun createPersonInvoicingCustomer(
             name: String = "Liisa Laskutettava",
+            registryKey: String = DEFAULT_HENKILOTUNNUS,
         ): InvoicingCustomer =
             InvoicingCustomer(
                 type = CustomerType.PERSON,
@@ -76,7 +77,7 @@ class ApplicationFactory(
                 postalAddress = createPostalAddress(),
                 email = "liisa@laskutus.info",
                 phone = "963852741",
-                registryKey = null,
+                registryKey = registryKey,
                 ovt = null,
                 invoicingOperator = null,
             )
@@ -96,7 +97,7 @@ class ApplicationFactory(
             polyhaitta: Polyhaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
             tarinahaitta: Tarinahaitta = Tarinahaitta.SATUNNAINEN_TARINAHAITTA,
             kaistahaitta: VaikutusAutoliikenteenKaistamaariin =
-                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+                VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
             kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus =
                 AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA,
             lisatiedot: String = "Lisätiedot",
@@ -118,9 +119,7 @@ class ApplicationFactory(
         fun createTyoalue(
             geometry: Polygon = GeometriaFactory.secondPolygon(),
             area: Double = 100.0,
-            tormaystarkasteluTulos: TormaystarkasteluTulos =
-                TormaystarkasteluTulos(
-                    TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU, 3.0f, 5.0f, 5.0f),
+            tormaystarkasteluTulos: TormaystarkasteluTulos? = null,
         ) = Tyoalue(geometry, area, tormaystarkasteluTulos)
 
         fun createBlankApplicationData(applicationType: ApplicationType): HakemusEntityData =
@@ -134,7 +133,6 @@ class ApplicationFactory(
             areas: List<JohtoselvitysHakemusalue>? = listOf(createCableReportApplicationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-            pendingOnClient: Boolean = false,
             workDescription: String = DEFAULT_WORK_DESCRIPTION,
             rockExcavation: Boolean = false,
             postalAddress: PostalAddress? = null,
@@ -142,13 +140,13 @@ class ApplicationFactory(
             JohtoselvityshakemusEntityData(
                 applicationType = ApplicationType.CABLE_REPORT,
                 name = name,
-                areas = areas,
+                postalAddress = postalAddress,
+                rockExcavation = rockExcavation,
+                workDescription = workDescription,
                 startTime = startTime,
                 endTime = endTime,
-                pendingOnClient = pendingOnClient,
-                workDescription = workDescription,
-                rockExcavation = rockExcavation,
-                postalAddress = postalAddress,
+                areas = areas,
+                paperDecisionReceiver = null,
             )
 
         internal fun createBlankCableReportApplicationData() =
@@ -157,13 +155,12 @@ class ApplicationFactory(
                 areas = null,
                 startTime = null,
                 endTime = null,
-                pendingOnClient = false,
                 workDescription = "",
                 rockExcavation = false,
-                postalAddress = PostalAddress(StreetAddress(""), "", ""))
+                postalAddress = PostalAddress(StreetAddress(""), "", ""),
+            )
 
         fun createExcavationNotificationData(
-            pendingOnClient: Boolean = false,
             name: String = DEFAULT_APPLICATION_NAME,
             workDescription: String = "Työn kuvaus.",
             maintenanceWork: Boolean = false,
@@ -182,7 +179,6 @@ class ApplicationFactory(
         ): KaivuilmoitusEntityData =
             KaivuilmoitusEntityData(
                 applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                pendingOnClient = pendingOnClient,
                 name = name,
                 workDescription = workDescription,
                 maintenanceWork = maintenanceWork,
@@ -192,9 +188,10 @@ class ApplicationFactory(
                 cableReports = cableReports,
                 placementContracts = placementContracts,
                 requiredCompetence = requiredCompetence,
-                areas = areas,
                 startTime = startTime,
                 endTime = endTime,
+                areas = areas,
+                paperDecisionReceiver = null,
                 invoicingCustomer = invoicingCustomer,
                 customerReference = customerReference,
                 additionalInfo = additionalInfo,
@@ -204,10 +201,16 @@ class ApplicationFactory(
             createExcavationNotificationData(
                 name = "",
                 workDescription = "",
+                rockExcavation = null,
+                cableReports = null,
+                placementContracts = null,
                 areas = null,
                 startTime = null,
                 endTime = null,
-                additionalInfo = null)
+                invoicingCustomer = null,
+                customerReference = null,
+                additionalInfo = null,
+            )
 
         fun createApplicationEntity(
             id: Long = 3,
@@ -229,15 +232,6 @@ class ApplicationFactory(
                 hakemusEntityData,
                 hanke = hanke,
             )
-
-        fun createApplicationEntities(
-            n: Long,
-            hanke: HankeEntity = HankeFactory.createMinimalEntity(),
-            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-        ) =
-            (1..n).map { i ->
-                createApplicationEntity(id = i, hanke = hanke, applicationType = applicationType)
-            }
     }
 
     /** Save an application to database. it. */

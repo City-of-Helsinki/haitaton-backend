@@ -18,6 +18,7 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.verifySequence
 import java.time.ZonedDateTime
+import org.geojson.FeatureCollection
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -107,7 +108,7 @@ class TormaystarkasteluControllerITest(
         )
         fun `returns 400 when start time is after end time`(
             startDate: ZonedDateTime,
-            endDate: ZonedDateTime
+            endDate: ZonedDateTime,
         ) {
             val request = createRequest(startDate, endDate)
 
@@ -134,10 +135,10 @@ class TormaystarkasteluControllerITest(
             val request = createRequest(startDate, endDate)
             every {
                 laskentaService.calculateTormaystarkastelu(
-                    any(),
+                    any<FeatureCollection>(),
                     days,
-                    VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
-                    AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA
+                    VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
+                    AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
                 )
             } returns createTulos()
 
@@ -145,10 +146,10 @@ class TormaystarkasteluControllerITest(
 
             verifySequence {
                 laskentaService.calculateTormaystarkastelu(
-                    any(),
+                    any<FeatureCollection>(),
                     days,
-                    VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
-                    AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA
+                    VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
+                    AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
                 )
             }
         }
@@ -156,21 +157,34 @@ class TormaystarkasteluControllerITest(
         @Test
         fun `returns the calculation results`() {
             val request = createRequest()
-            every { laskentaService.calculateTormaystarkastelu(any(), 1, any(), any()) } returns
-                createTulos()
+            every {
+                laskentaService.calculateTormaystarkastelu(
+                    any<FeatureCollection>(),
+                    1,
+                    any(),
+                    any(),
+                )
+            } returns createTulos()
 
             val result: TormaystarkasteluTulos =
                 post(url, request).andExpect(status().isOk).andReturnBody()
 
             assertThat(result).isEqualTo(createTulos())
-            verifySequence { laskentaService.calculateTormaystarkastelu(any(), 1, any(), any()) }
+            verifySequence {
+                laskentaService.calculateTormaystarkastelu(
+                    any<FeatureCollection>(),
+                    1,
+                    any(),
+                    any(),
+                )
+            }
         }
 
         private fun createRequest(
             haittaAlkuPvm: ZonedDateTime = DateFactory.getStartDatetime(),
             haittaLoppuPvm: ZonedDateTime = DateFactory.getEndDatetime(),
             kaistaHaitta: VaikutusAutoliikenteenKaistamaariin =
-                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+                VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
             kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus =
                 AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
         ): TormaystarkasteluRequest {
@@ -190,7 +204,7 @@ class TormaystarkasteluControllerITest(
                 TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
                 2.4f,
                 7.1f,
-                5.0f
+                5.0f,
             )
     }
 }

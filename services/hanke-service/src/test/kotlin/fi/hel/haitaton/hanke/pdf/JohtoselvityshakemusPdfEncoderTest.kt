@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
+import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import java.time.ZonedDateTime
 import org.geojson.Polygon
@@ -176,10 +177,10 @@ class JohtoselvityshakemusPdfEncoderTest {
                 JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
-                contains("Työstä vastaavat")
-                contains("Työn suorittajat")
-                contains("Rakennuttajat")
-                contains("Asianhoitajat")
+                contains("Työstä vastaava")
+                contains("Työn suorittaja")
+                contains("Rakennuttaja")
+                contains("Asianhoitaja")
                 contains("Yhteyshenkilöt")
             }
         }
@@ -198,73 +199,21 @@ class JohtoselvityshakemusPdfEncoderTest {
                 JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
 
             assertThat(getPdfAsText(pdfData)).all {
-                contains("Työstä vastaavat")
-                contains("Työn suorittajat")
-                doesNotContain("Rakennuttajat")
-                doesNotContain("Asianhoitajat")
+                contains("Työstä vastaava")
+                contains("Työn suorittaja")
+                doesNotContain("Rakennuttaja")
+                doesNotContain("Asianhoitaja")
             }
         }
 
         @Test
         fun `created PDF contains contact information`() {
-            val hakija =
-                HakemusyhteystietoFactory.create(
-                        nimi = "Company Ltd",
-                        ytunnus = "1054713-0",
-                        sahkoposti = "info@company.test",
-                        puhelinnumero = "050123456789",
-                    )
-                    .withYhteyshenkilo(
-                        etunimi = "Cole",
-                        sukunimi = "Contact",
-                        sahkoposti = "cole@company.test",
-                        puhelin = "050987654321",
-                    )
-                    .withYhteyshenkilo(
-                        etunimi = "Seth",
-                        sukunimi = "Secondary",
-                        sahkoposti = "seth@company.test",
-                        puhelin = "0505556666",
-                    )
-            val tyonSuorittaja =
-                HakemusyhteystietoFactory.create(
-                        nimi = "Contractor Inc.",
-                        ytunnus = "0156555-6",
-                        sahkoposti = "info@contractor.test",
-                        puhelinnumero = "0509999999",
-                    )
-                    .withYhteyshenkilo(
-                        etunimi = "Cody",
-                        sukunimi = "Contractor",
-                        sahkoposti = "cody@contractor.test",
-                        puhelin = "0501111111",
-                        tilaaja = true)
-            val asianhoitaja =
-                HakemusyhteystietoFactory.create(
-                    nimi = "Reynold Representative",
-                    ytunnus = "281192-937W",
-                    sahkoposti = "reynold@company.test",
-                    puhelinnumero = "0509990000",
-                )
-            val rakennuttaja =
-                HakemusyhteystietoFactory.create(
-                        nimi = "Developer Inc.",
-                        ytunnus = "8545758-6",
-                        sahkoposti = "info@developer.test",
-                        puhelinnumero = "0508888888",
-                    )
-                    .withYhteyshenkilo(
-                        etunimi = "Denise",
-                        sukunimi = "Developer",
-                        sahkoposti = "denise@developer.test",
-                        puhelin = "0502222222")
-
             val hakemusData =
                 HakemusFactory.createJohtoselvityshakemusData(
-                    customerWithContacts = hakija,
-                    contractorWithContacts = tyonSuorittaja,
-                    representativeWithContacts = asianhoitaja,
-                    propertyDeveloperWithContacts = rakennuttaja,
+                    customerWithContacts = createCompany(),
+                    contractorWithContacts = createContractor(),
+                    representativeWithContacts = createRepresentative(),
+                    propertyDeveloperWithContacts = createDeveloper(),
                 )
 
             val pdfData =
@@ -303,6 +252,34 @@ class JohtoselvityshakemusPdfEncoderTest {
         }
 
         @Test
+        fun `created PDF contains paper decision receiver when present on the application`() {
+            val hakemusData =
+                HakemusFactory.createJohtoselvityshakemusData(
+                    paperDecisionReceiver = PaperDecisionReceiverFactory.default)
+
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+
+            assertThat(getPdfAsText(pdfData)).all {
+                contains("Päätös tilattu paperisena")
+                contains("Pekka Paperinen")
+                contains("Paperipolku 3 A 4")
+                contains("00451 Helsinki")
+            }
+        }
+
+        @Test
+        fun `created PDF doesn't contain paper decision receiver header when not present on the application`() {
+            val hakemusData =
+                HakemusFactory.createJohtoselvityshakemusData(paperDecisionReceiver = null)
+
+            val pdfData =
+                JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+
+            assertThat(getPdfAsText(pdfData)).doesNotContain("Päätös tilattu paperisena")
+        }
+
+        @Test
         fun `created PDF contains attachment information`() {
             val hakemusData =
                 HakemusFactory.createJohtoselvityshakemusData(
@@ -332,5 +309,64 @@ class JohtoselvityshakemusPdfEncoderTest {
         val pages = reader.numberOfPages
         val textExtractor = PdfTextExtractor(reader)
         return (1..pages).joinToString("\n") { textExtractor.getTextFromPage(it) }
+    }
+
+    companion object {
+        fun createCompany() =
+            HakemusyhteystietoFactory.create(
+                    nimi = "Company Ltd",
+                    registryKey = "1054713-0",
+                    sahkoposti = "info@company.test",
+                    puhelinnumero = "050123456789",
+                )
+                .withYhteyshenkilo(
+                    etunimi = "Cole",
+                    sukunimi = "Contact",
+                    sahkoposti = "cole@company.test",
+                    puhelin = "050987654321",
+                )
+                .withYhteyshenkilo(
+                    etunimi = "Seth",
+                    sukunimi = "Secondary",
+                    sahkoposti = "seth@company.test",
+                    puhelin = "0505556666",
+                )
+
+        fun createContractor() =
+            HakemusyhteystietoFactory.create(
+                    nimi = "Contractor Inc.",
+                    registryKey = "0156555-6",
+                    sahkoposti = "info@contractor.test",
+                    puhelinnumero = "0509999999",
+                )
+                .withYhteyshenkilo(
+                    etunimi = "Cody",
+                    sukunimi = "Contractor",
+                    sahkoposti = "cody@contractor.test",
+                    puhelin = "0501111111",
+                    tilaaja = true,
+                )
+
+        fun createRepresentative() =
+            HakemusyhteystietoFactory.create(
+                nimi = "Reynold Representative",
+                registryKey = "281192-937W",
+                sahkoposti = "reynold@company.test",
+                puhelinnumero = "0509990000",
+            )
+
+        fun createDeveloper() =
+            HakemusyhteystietoFactory.create(
+                    nimi = "Developer Inc.",
+                    registryKey = "8545758-6",
+                    sahkoposti = "info@developer.test",
+                    puhelinnumero = "0508888888",
+                )
+                .withYhteyshenkilo(
+                    etunimi = "Denise",
+                    sukunimi = "Developer",
+                    sahkoposti = "denise@developer.test",
+                    puhelin = "0502222222",
+                )
     }
 }

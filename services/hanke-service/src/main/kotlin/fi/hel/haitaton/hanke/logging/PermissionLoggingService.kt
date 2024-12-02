@@ -7,7 +7,10 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class PermissionLoggingService(private val auditLogService: AuditLogService) {
+class PermissionLoggingService(private val auditLogService: AuditLogService) :
+    ChangeLoggingService<Int, Permission>(auditLogService) {
+    override val objectType: ObjectType = ObjectType.PERMISSION
+
     @Transactional(propagation = Propagation.MANDATORY)
     fun logUpdate(
         kayttooikeustasoBefore: Kayttooikeustaso,
@@ -17,25 +20,7 @@ class PermissionLoggingService(private val auditLogService: AuditLogService) {
         val permissionBefore = permissionAfter.copy(kayttooikeustaso = kayttooikeustasoBefore)
 
         AuditLogService.updateEntry(
-                userId,
-                ObjectType.PERMISSION,
-                permissionBefore,
-                permissionAfter,
-            )
+                userId, ObjectType.PERMISSION, permissionBefore, permissionAfter)
             ?.let { auditLogService.create(it) }
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    fun logCreate(permission: Permission, userId: String) {
-        auditLogService.create(
-            AuditLogService.createEntry(userId, ObjectType.PERMISSION, permission)
-        )
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    fun logDelete(permission: Permission, currentUserId: String) {
-        auditLogService.create(
-            AuditLogService.deleteEntry(currentUserId, ObjectType.PERMISSION, permission)
-        )
     }
 }

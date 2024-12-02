@@ -10,29 +10,10 @@ import org.springframework.stereotype.Service
 @Service
 class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations) {
 
-    /** yleinen katuosa, ylre_parts */
-    fun anyIntersectsYleinenKatuosa(geometriaIds: Set<Int>): Boolean =
-        anyIntersectsWith(geometriaIds, "tormays_ylre_parts_polys")
-
-    fun anyIntersectsYleinenKatuosa(geometry: GeoJsonObject): Boolean =
-        anyIntersectsWith(geometry, "tormays_ylre_parts_polys")
-
-    /** yleinen katualue, ylre_classes */
-    fun maxIntersectingYleinenkatualueKatuluokka(geometriaIds: Set<Int>): Int? =
-        getDistinctValuesIntersectingRows(geometriaIds, "tormays_ylre_classes_polys", "ylre_class")
-            .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
-
-    fun maxIntersectingYleinenkatualueKatuluokka(geometry: GeoJsonObject): Int? =
-        getDistinctValuesIntersectingRows(geometry, "tormays_ylre_classes_polys", "ylre_class")
-            .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
-
     /** liikenteellinen katuluokka, street_classes */
     fun maxIntersectingLiikenteellinenKatuluokka(geometriaIds: Set<Int>): Int? =
         getDistinctValuesIntersectingRows(
-                geometriaIds,
-                "tormays_street_classes_polys",
-                "street_class"
-            )
+                geometriaIds, "tormays_street_classes_polys", "street_class")
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
     fun maxIntersectingLiikenteellinenKatuluokka(geometry: GeoJsonObject): Int? =
@@ -209,7 +190,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
                 rs.getString(1),
                 rs.getInt(2),
                 rs.getInt(3),
-                TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(4))
+                TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(4)),
             )
         }
     }
@@ -219,6 +200,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
 // values
 
 enum class PyoraliikenteenHierarkia(val value: Int, val hierarkia: String) {
+    PUISTOREITTI(1, "Puistoreitti"),
     MUU_YHTEYS(2, "Muu yhteys"),
     MUU_PYORAREITTI(3, "Muu pyöräreitti"),
     BAANA(5, "Baana"),
@@ -244,9 +226,7 @@ enum class TormaystarkasteluKatuluokka(val value: Int, val katuluokka: String) {
     OLD_TONTTIKATU_TAI_AJOYHTEYS(1, "Tonttikatu tai ajoyhteys"),
     TONTTIKATU_TAI_AJOYHTEYS(1, "Asuntokatu, huoltoväylä tai muu vähäliikenteinen katu"),
     KANTAKAUPUNGIN_ASUNTOKATU_HUOLTAVAYLA_TAI_VAHALIIKENTEINEN_KATU(
-        2,
-        "Kantakaupungin asuntokatu, huoltoväylä tai muu vähäliikenteinen katu"
-    ),
+        2, "Kantakaupungin asuntokatu, huoltoväylä tai muu vähäliikenteinen katu"),
     PAIKALLINEN_KOKOOJAKATU(3, "Paikallinen kokoojakatu"),
     ALUEELLINEN_KOKOOJAKATU(4, "Alueellinen kokoojakatu"),
     PAAKATU_TAI_MOOTTORIVAYLA(5, "Pääkatu tai moottoriväylä"),
@@ -267,8 +247,7 @@ enum class TormaystarkasteluBussiRunkolinja(val runkolinja: String) {
         fun valueOfRunkolinja(runkolinja: String): TormaystarkasteluBussiRunkolinja {
             return entries.find { it.runkolinja == runkolinja }
                 ?: throw IllegalArgumentException(
-                    "Unknown runkolinja value: $runkolinja. Only 'yes' and 'no' are allowed."
-                )
+                    "Unknown runkolinja value: $runkolinja. Only 'yes' and 'no' are allowed.")
         }
     }
 

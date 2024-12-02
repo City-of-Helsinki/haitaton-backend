@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired
 private const val TEST_EMAIL = "test@test.test"
 private const val HAITATON_NO_REPLY = "no-reply@hel.fi"
 private const val APPLICATION_IDENTIFIER = "JS2300001"
+private const val KAIVUILMOITUS_TUNNUS = "KP2300001"
 private const val INVITER_NAME = "Matti Meikäläinen"
 private const val INVITER_EMAIL = "matti.meikalainen@test.fi"
 private const val HANKE_TUNNUS = "HAI24-1"
@@ -98,12 +99,70 @@ class EmailSenderServiceITest : IntegrationTest() {
     }
 
     @Nested
+    inner class SendKaivuilmoitusDecisionEmail {
+        @Test
+        fun `sends email with correct recipient`() {
+            emailSenderService.sendKaivuilmoitusDecisionEmail(
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.allRecipients).hasSize(1)
+            assertThat(email.allRecipients[0].toString()).isEqualTo(TEST_EMAIL)
+        }
+
+        @Test
+        fun `sends email with sender from properties`() {
+            emailSenderService.sendKaivuilmoitusDecisionEmail(
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.from).hasSize(1)
+            assertThat(email.from[0].toString()).isEqualTo(HAITATON_NO_REPLY)
+        }
+
+        @Test
+        fun `sends email with correct subject`() {
+            emailSenderService.sendKaivuilmoitusDecisionEmail(
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa")
+        }
+
+        @Test
+        fun `sends email with parametrized hybrid body`() {
+            emailSenderService.sendKaivuilmoitusDecisionEmail(
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+
+            val email = greenMail.firstReceivedMessage()
+            val (textBody, htmlBody) = email.bodies()
+            assertThat(textBody).all {
+                contains(KAIVUILMOITUS_TUNNUS)
+                contains("http://localhost:3001/fi/hakemus/13")
+                contains("http://localhost:3001/sv/ansokan/13")
+                contains("http://localhost:3001/en/application/13")
+            }
+            // Compress all whitespace into single spaces so that they don't interfere with
+            // matching.
+            val squashedHtmlBody = htmlBody.replace("\\s+".toRegex(), " ")
+            assertThat(squashedHtmlBody).all {
+                contains(KAIVUILMOITUS_TUNNUS)
+                contains("""<a href="http://localhost:3001/fi/hakemus/13">""")
+                contains("""<a href="http://localhost:3001/sv/ansokan/13">""")
+                contains("""<a href="http://localhost:3001/en/application/13">""")
+            }
+        }
+    }
+
+    @Nested
     inner class HankeInvitation {
         private val notification =
-            HankeInvitationData(
+            HankeInvitationEmail(
                 inviterName = INVITER_NAME,
                 inviterEmail = INVITER_EMAIL,
-                recipientEmail = TEST_EMAIL,
+                to = TEST_EMAIL,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
                 invitationToken = "MgtzRbcPsvoKQamnaSxCnmW7",
@@ -165,10 +224,10 @@ class EmailSenderServiceITest : IntegrationTest() {
     @Nested
     inner class ApplicationNotification {
         private val notification =
-            ApplicationNotificationData(
+            ApplicationNotificationEmail(
                 senderName = INVITER_NAME,
                 senderEmail = INVITER_EMAIL,
-                recipientEmail = TEST_EMAIL,
+                to = TEST_EMAIL,
                 applicationType = ApplicationType.CABLE_REPORT,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
@@ -229,8 +288,8 @@ class EmailSenderServiceITest : IntegrationTest() {
     @Nested
     inner class AccessRightsUpdateNotification {
         private val notification =
-            AccessRightsUpdateNotificationData(
-                recipientEmail = TEST_EMAIL,
+            AccessRightsUpdateNotificationEmail(
+                to = TEST_EMAIL,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
                 updatedByName = INVITER_NAME,
@@ -297,8 +356,8 @@ class EmailSenderServiceITest : IntegrationTest() {
     @Nested
     inner class RemovalFromHankeNotification {
         private val notification =
-            RemovalFromHankeNotificationData(
-                recipientEmail = TEST_EMAIL,
+            RemovalFromHankeNotificationEmail(
+                to = TEST_EMAIL,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
                 deletedByName = INVITER_NAME,
@@ -349,6 +408,65 @@ class EmailSenderServiceITest : IntegrationTest() {
                     "${StringEscapeUtils.escapeHtml4(notification.deletedByName)} (${notification.deletedByEmail}) on")
                 contains(
                     "poistanut sinut hankkeelta <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>")
+            }
+        }
+    }
+
+    @Nested
+    inner class InformationRequest {
+        private val notification =
+            InformationRequestEmail(
+                to = TEST_EMAIL,
+                hakemusNimi = HANKE_NIMI,
+                hakemusTunnus = APPLICATION_IDENTIFIER,
+                hakemusId = 13L,
+            )
+
+        @Test
+        fun `Send email with correct recipient`() {
+            emailSenderService.sendInformationRequestEmail(notification)
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.allRecipients).hasSize(1)
+            assertThat(email.allRecipients[0].toString()).isEqualTo(TEST_EMAIL)
+        }
+
+        @Test
+        fun `Send email with sender from properties`() {
+            emailSenderService.sendInformationRequestEmail(notification)
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.from).hasSize(1)
+            assertThat(email.from[0].toString()).isEqualTo(HAITATON_NO_REPLY)
+        }
+
+        @Test
+        fun `Send email with correct subject`() {
+            emailSenderService.sendInformationRequestEmail(notification)
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö")
+        }
+
+        @Test
+        fun `Send email with parametrized hybrid body`() {
+            emailSenderService.sendInformationRequestEmail(notification)
+
+            val email = greenMail.firstReceivedMessage()
+            val (textBody, htmlBody) = email.bodies()
+            assertThat(textBody).all {
+                contains(
+                    "Hakemuksellesi $HANKE_NIMI ($APPLICATION_IDENTIFIER) on tullut täydennyspyyntö")
+                contains(
+                    "Käy vastaamassa siihen Haitattomassa: http://localhost:3001/fi/hakemus/13")
+            }
+            assertThat(htmlBody).all {
+                contains(
+                    "Hakemuksellesi $HANKE_NIMI ($APPLICATION_IDENTIFIER) on tullut täydennyspyyntö")
+                contains(
+                    """Käy vastaamassa siihen Haitattomassa: <a href="http://localhost:3001/fi/hakemus/13">http://localhost:3001/fi/hakemus/13</a>""")
             }
         }
     }

@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
+import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.Tyoalue
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
@@ -43,7 +44,8 @@ class KaivuilmoitusPdfEncoderTest {
                     "Perustiedot",
                     "Alueet",
                     "Yhteystiedot",
-                    "Liitteet ja lisätiedot")
+                    "Liitteet ja lisätiedot",
+                )
         }
 
         @Test
@@ -232,57 +234,10 @@ class KaivuilmoitusPdfEncoderTest {
 
         @Test
         fun `created PDF contains contact information`() {
-            val hakija =
-                HakemusyhteystietoFactory.create(
-                        nimi = "Company Ltd",
-                        ytunnus = "1054713-0",
-                        sahkoposti = "info@company.test",
-                        puhelinnumero = "050123456789",
-                    )
-                    .withYhteyshenkilo(
-                        etunimi = "Cole",
-                        sukunimi = "Contact",
-                        sahkoposti = "cole@company.test",
-                        puhelin = "050987654321",
-                    )
-                    .withYhteyshenkilo(
-                        etunimi = "Seth",
-                        sukunimi = "Secondary",
-                        sahkoposti = "seth@company.test",
-                        puhelin = "0505556666",
-                    )
-            val tyonSuorittaja =
-                HakemusyhteystietoFactory.create(
-                        nimi = "Contractor Inc.",
-                        ytunnus = "0156555-6",
-                        sahkoposti = "info@contractor.test",
-                        puhelinnumero = "0509999999",
-                    )
-                    .withYhteyshenkilo(
-                        etunimi = "Cody",
-                        sukunimi = "Contractor",
-                        sahkoposti = "cody@contractor.test",
-                        puhelin = "0501111111",
-                        tilaaja = true)
-            val asianhoitaja =
-                HakemusyhteystietoFactory.create(
-                    nimi = "Reynold Representative",
-                    ytunnus = "281192-937W",
-                    sahkoposti = "reynold@company.test",
-                    puhelinnumero = "0509990000",
-                )
-            val rakennuttaja =
-                HakemusyhteystietoFactory.create(
-                        nimi = "Developer Inc.",
-                        ytunnus = "8545758-6",
-                        sahkoposti = "info@developer.test",
-                        puhelinnumero = "0508888888",
-                    )
-                    .withYhteyshenkilo(
-                        etunimi = "Denise",
-                        sukunimi = "Developer",
-                        sahkoposti = "denise@developer.test",
-                        puhelin = "0502222222")
+            val hakija = JohtoselvityshakemusPdfEncoderTest.createCompany()
+            val tyonSuorittaja = JohtoselvityshakemusPdfEncoderTest.createContractor()
+            val asianhoitaja = JohtoselvityshakemusPdfEncoderTest.createRepresentative()
+            val rakennuttaja = JohtoselvityshakemusPdfEncoderTest.createDeveloper()
 
             val hakemusData =
                 HakemusFactory.createKaivuilmoitusData(
@@ -324,6 +279,31 @@ class KaivuilmoitusPdfEncoderTest {
                 contains("denise@developer.test")
                 contains("0502222222")
             }
+        }
+
+        @Test
+        fun `created PDF contains paper decision receiver when present on the application`() {
+            val hakemusData =
+                HakemusFactory.createKaivuilmoitusData(
+                    paperDecisionReceiver = PaperDecisionReceiverFactory.default)
+
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+
+            assertThat(getPdfAsText(pdfData)).all {
+                contains("Päätös tilattu paperisena")
+                contains("Pekka Paperinen")
+                contains("Paperipolku 3 A 4")
+                contains("00451 Helsinki")
+            }
+        }
+
+        @Test
+        fun `created PDF doesn't contain paper decision receiver header when not present on the application`() {
+            val hakemusData = HakemusFactory.createKaivuilmoitusData(paperDecisionReceiver = null)
+
+            val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
+
+            assertThat(getPdfAsText(pdfData)).doesNotContain("Päätös tilattu paperisena")
         }
 
         @Test

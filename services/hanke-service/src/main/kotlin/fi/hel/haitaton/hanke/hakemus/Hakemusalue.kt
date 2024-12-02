@@ -34,6 +34,9 @@ data class KaivuilmoitusAlue(
     val lisatiedot: String?,
 ) : Hakemusalue {
     override fun geometries(): List<Polygon> = tyoalueet.map { it.geometry }
+
+    fun withoutTormaystarkastelut() =
+        copy(tyoalueet = tyoalueet.map { it.copy(tormaystarkasteluTulos = null) })
 }
 
 data class Tyoalue(

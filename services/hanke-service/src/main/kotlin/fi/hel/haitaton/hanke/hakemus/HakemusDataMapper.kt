@@ -28,63 +28,73 @@ object HakemusDataMapper {
     ): AlluCableReportApplicationData {
         val description = workDescription()
         return AlluCableReportApplicationData(
+            identificationNumber = hankeTunnus,
+            // We don't send drafts to Allu
+            pendingOnClient = false,
             name = name,
+            postalAddress = postalAddress?.toAlluData(),
+            constructionWork = constructionWork,
+            maintenanceWork = maintenanceWork,
+            propertyConnectivity = propertyConnectivity,
+            emergencyWork = emergencyWork,
+            workDescription = description,
+            clientApplicationKind = description, // intentionally copied here
+            startTime = startTime ?: throw nullException("startTime"),
+            endTime = endTime ?: throw nullException("endTime"),
+            geometry = getGeometries(),
+            area = null,
             customerWithContacts =
                 customerWithContacts?.toAlluCustomer()
                     ?: throw nullException("customerWithContacts"),
-            geometry = getGeometries(),
-            startTime = startTime ?: throw nullException("startTime"),
-            endTime = endTime ?: throw nullException("endTime"),
-            pendingOnClient = pendingOnClient,
-            identificationNumber = hankeTunnus,
-            clientApplicationKind = description, // intentionally copied here
-            workDescription = description,
             contractorWithContacts =
                 contractorWithContacts?.toAlluCustomer()
                     ?: throw nullException("contractorWithContacts"),
-            postalAddress = postalAddress?.toAlluData(),
+            propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toAlluCustomer(),
             representativeWithContacts = representativeWithContacts?.toAlluCustomer(),
             invoicingCustomer = null,
             customerReference = null,
-            area = null,
-            propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toAlluCustomer(),
-            constructionWork = constructionWork,
-            maintenanceWork = maintenanceWork,
-            emergencyWork = emergencyWork,
-            propertyConnectivity = propertyConnectivity)
+            trafficArrangementImages = null,
+        )
     }
 
     fun KaivuilmoitusData.toAlluExcavationNotificationData(
         hankeTunnus: String
     ): AlluExcavationNotificationData =
         AlluExcavationNotificationData(
-            postalAddress = areas.combinedAddress()?.toAlluData(),
+            identificationNumber = hankeTunnus,
+            // We don't send drafts to Allu
+            pendingOnClient = false,
             name = name,
+            workPurpose = workDescription,
+            clientApplicationKind = workDescription,
+            constructionWork = constructionWork,
+            maintenanceWork = maintenanceWork,
+            emergencyWork = emergencyWork,
+            cableReports = cableReports?.toList(),
+            placementContracts = placementContracts?.toList(),
+            startTime = startTime ?: throw nullException("startTime"),
+            endTime = endTime ?: throw nullException("endTime"),
+            geometry = getGeometries(),
+            area = null, // currently area is not given nor calculated in Haitaton
+            postalAddress = areas.combinedAddress()?.toAlluData(),
             customerWithContacts =
                 customerWithContacts?.toAlluCustomer()
                     ?: throw nullException("customerWithContacts"),
-            representativeWithContacts = representativeWithContacts?.toAlluCustomer(),
-            invoicingCustomer = invoicingCustomer?.toAlluData(),
-            geometry = getGeometries(),
-            startTime = startTime ?: throw nullException("startTime"),
-            endTime = endTime ?: throw nullException("endTime"),
-            pendingOnClient = pendingOnClient,
-            identificationNumber = hankeTunnus,
-            customerReference = invoicingCustomer?.asiakkaanViite,
-            area = null, // currently area is not given nor calculated in Haitaton
-            clientApplicationKind = workDescription,
             contractorWithContacts =
                 contractorWithContacts?.toAlluCustomer()
                     ?: throw nullException("contractorWithContacts"),
             propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toAlluCustomer(),
+            representativeWithContacts = representativeWithContacts?.toAlluCustomer(),
+            invoicingCustomer = invoicingCustomer?.toAlluData(),
+            customerReference = invoicingCustomer?.asiakkaanViite,
+            additionalInfo = additionalInfo,
             pksCard = null,
-            constructionWork = constructionWork,
-            maintenanceWork = maintenanceWork,
-            emergencyWork = emergencyWork,
+            selfSupervision = null,
             propertyConnectivity = null,
-            workPurpose = workDescription,
-            placementContracts = placementContracts?.toList(),
-            cableReports = cableReports?.toList())
+            trafficArrangements = null,
+            trafficArrangementImages = null,
+            trafficArrangementImpediment = null,
+        )
 
     /** If areas are missing, throw an exception. */
     internal fun HakemusData.getGeometries(): GeometryCollection =
@@ -123,12 +133,13 @@ object HakemusDataMapper {
                 country = "FI",
                 email = sahkoposti,
                 phone = puhelinnumero,
-                registryKey = ytunnus,
+                registryKey = registryKey,
                 ovt = null,
                 invoicingOperator = null,
                 sapCustomerNumber = null,
             ),
-            yhteyshenkilot.map { it.toAlluContact() })
+            yhteyshenkilot.map { it.toAlluContact() },
+        )
 
     fun Hakemusyhteyshenkilo.toAlluContact() =
         Contact("$etunimi $sukunimi".trim(), sahkoposti, puhelin, tilaaja)
@@ -144,7 +155,7 @@ object HakemusDataMapper {
             country = "FI",
             email = sahkoposti,
             phone = puhelinnumero,
-            registryKey = ytunnus,
+            registryKey = registryKey,
             ovt = ovttunnus,
             invoicingOperator = valittajanTunnus,
             sapCustomerNumber = null,

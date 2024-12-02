@@ -6,8 +6,10 @@ import assertk.assertions.containsExactly
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeEntity
@@ -134,12 +136,12 @@ class PermissionServiceITest : IntegrationTest() {
     @Nested
     inner class HasPermission {
         @Test
-        fun `hasPermission returns false without permissions`() {
+        fun `returns false without permissions`() {
             assertFalse(permissionService.hasPermission(2, username, PermissionCode.EDIT))
         }
 
         @Test
-        fun `hasPermission with correct permission`() {
+        fun `returns true with correct permission`() {
             val hankeId = hankeFactory.saveMinimal().id
             permissionService.create(hankeId, username, Kayttooikeustaso.KAIKKI_OIKEUDET)
 
@@ -147,11 +149,31 @@ class PermissionServiceITest : IntegrationTest() {
         }
 
         @Test
-        fun `hasPermission with insufficient permissions`() {
+        fun `returns false with insufficient permissions`() {
             val hankeId = hankeFactory.saveMinimal().id
             permissionService.create(hankeId, username, Kayttooikeustaso.HAKEMUSASIOINTI)
 
             assertFalse(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
+        }
+    }
+
+    @Nested
+    inner class HasPermissionWithKayttooikeustaso {
+        @Test
+        fun `returns true when kayttooikeustaso contains the permission`() {
+            val result =
+                permissionService.hasPermission(Kayttooikeustaso.HANKEMUOKKAUS, PermissionCode.EDIT)
+
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `returns false when kayttooikeustaso doesn't contain the permission`() {
+            val result =
+                permissionService.hasPermission(
+                    Kayttooikeustaso.HANKEMUOKKAUS, PermissionCode.EDIT_APPLICATIONS)
+
+            assertThat(result).isFalse()
         }
     }
 

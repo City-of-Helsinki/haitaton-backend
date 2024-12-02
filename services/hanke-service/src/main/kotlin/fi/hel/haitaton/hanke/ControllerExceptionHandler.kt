@@ -7,7 +7,13 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import fi.hel.haitaton.hanke.hakemus.HakemusAlreadyProcessingException
+import fi.hel.haitaton.hanke.hakemus.HakemusGeometryException
+import fi.hel.haitaton.hanke.hakemus.HakemusGeometryNotInsideHankeException
+import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
+import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteyshenkiloException
+import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteystietoException
+import fi.hel.haitaton.hanke.hakemus.InvalidHiddenRegistryKey
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -39,10 +45,7 @@ class ControllerExceptionHandler {
     /** This is a horrible hack to get the 401 error to all endpoints in OpenAPI docs. */
     @ExceptionHandler(FakeAuthorizationException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    @ApiResponse(
-        description = "Request’s credentials are missing or invalid",
-        responseCode = "401",
-    )
+    @ApiResponse(description = "Request’s credentials are missing or invalid", responseCode = "401")
     fun forDocumentation(): HankeError = HankeError.HAI0001
 
     @ExceptionHandler(HankeNotFoundException::class)
@@ -61,20 +64,6 @@ class ControllerExceptionHandler {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI1020
-    }
-
-    @ExceptionHandler(HankeYhteystietoProcessingRestrictedException::class)
-    // Using 451 (since the restriction is typically due to legal reasons).
-    // However, in some cases 403 forbidden might be considered correct response, too.
-    @ResponseStatus(HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS)
-    @Hidden
-    fun hankeYhteystietoProcessingRestricted(
-        ex: HankeYhteystietoProcessingRestrictedException
-    ): HankeError {
-        logger.warn { ex.message }
-        // TODO: the response body SHOULD include an explanation and link to server;
-        //  left as future exercise. See https://tools.ietf.org/html/rfc7725
-        return HankeError.HAI1029
     }
 
     @ExceptionHandler(HankeAlluConflictException::class)
@@ -157,6 +146,56 @@ class ControllerExceptionHandler {
         return HankeError.HAI2003
     }
 
+    @ExceptionHandler(HakemusInWrongStatusException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun hakemusInWrongStatusException(ex: HakemusInWrongStatusException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2015
+    }
+
+    @ExceptionHandler(HakemusGeometryException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun applicationGeometryException(ex: HakemusGeometryException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2005
+    }
+
+    @ExceptionHandler(HakemusGeometryNotInsideHankeException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun applicationGeometryNotInsideHankeException(
+        ex: HakemusGeometryNotInsideHankeException
+    ): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2007
+    }
+
+    @ExceptionHandler(InvalidHakemusyhteystietoException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun invalidHakemusyhteystietoException(ex: InvalidHakemusyhteystietoException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2010
+    }
+
+    @ExceptionHandler(InvalidHakemusyhteyshenkiloException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun invalidHakemusyhteyshenkiloException(ex: InvalidHakemusyhteyshenkiloException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2011
+    }
+
+    @ExceptionHandler(InvalidHiddenRegistryKey::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun invalidHiddenRegistryKey(ex: InvalidHiddenRegistryKey): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2010
+    }
+
     @ExceptionHandler(AttachmentNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @Hidden
@@ -216,7 +255,9 @@ class ControllerExceptionHandler {
     @ExceptionHandler(Throwable::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ApiResponse(
-        description = "There has been an unexpected error during the call", responseCode = "500")
+        description = "There has been an unexpected error during the call",
+        responseCode = "500",
+    )
     fun throwable(ex: Throwable): HankeError {
         logger.error(ex) { ex.message }
         Sentry.captureException(ex)

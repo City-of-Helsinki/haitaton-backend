@@ -15,6 +15,7 @@ import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusDataResponse
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.hakemus.StreetAddress
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusResponse
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -29,7 +30,8 @@ object HakemusResponseFactory {
         alluStatus: ApplicationStatus? = null,
         applicationIdentifier: String? = null,
         applicationData: HakemusDataResponse = createHakemusDataResponse(applicationType),
-        hankeTunnus: String = "HAI-1234"
+        hankeTunnus: String = "HAI-1234",
+        valmistumisilmoitukset: List<ValmistumisilmoitusResponse> = listOf(),
     ): HakemusResponse =
         HakemusResponse(
             applicationId,
@@ -38,7 +40,8 @@ object HakemusResponseFactory {
             applicationIdentifier,
             applicationData.applicationType,
             applicationData,
-            hankeTunnus
+            hankeTunnus,
+            valmistumisilmoitukset.groupBy { it.type },
         )
 
     private fun createHakemusDataResponse(applicationType: ApplicationType): HakemusDataResponse =
@@ -48,7 +51,6 @@ object HakemusResponseFactory {
         }
 
     fun createJohtoselvitysHakemusDataResponse(
-        pendingOnClient: Boolean = false,
         name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
         postalAddress: PostalAddress = PostalAddress(StreetAddress(DEFAULT_STREET_NAME), "", ""),
         rockExcavation: Boolean = false,
@@ -58,20 +60,13 @@ object HakemusResponseFactory {
         areas: List<JohtoselvitysHakemusalue> =
             listOf(ApplicationFactory.createCableReportApplicationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
-            CustomerWithContactsResponse(
-                createCompanyCustomerResponse(),
-                listOf(createContactResponse())
-            ),
+            CustomerWithContactsResponse(companyCustomer(), listOf(createContactResponse())),
         contractorWithContacts: CustomerWithContactsResponse? =
-            CustomerWithContactsResponse(
-                createPersonCustomerResponse(),
-                listOf(createContactResponse())
-            ),
+            CustomerWithContactsResponse(personCustomer(), listOf(createContactResponse())),
         representativeWithContacts: CustomerWithContactsResponse? = null,
         propertyDeveloperWithContacts: CustomerWithContactsResponse? = null,
     ): JohtoselvitysHakemusDataResponse =
         JohtoselvitysHakemusDataResponse(
-            pendingOnClient = pendingOnClient,
             name = name,
             postalAddress = postalAddress,
             constructionWork = true,
@@ -83,6 +78,7 @@ object HakemusResponseFactory {
             startTime = startTime,
             endTime = endTime,
             areas = areas,
+            paperDecisionReceiver = null,
             customerWithContacts = customerWithContacts,
             contractorWithContacts = contractorWithContacts,
             representativeWithContacts = representativeWithContacts,
@@ -90,7 +86,6 @@ object HakemusResponseFactory {
         )
 
     private fun createKaivuilmoitusDataResponse(
-        pendingOnClient: Boolean = false,
         name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
         workDescription: String = "Work description.",
         cableReportDone: Boolean = false,
@@ -103,22 +98,15 @@ object HakemusResponseFactory {
         areas: List<KaivuilmoitusAlue> =
             listOf(ApplicationFactory.createExcavationNotificationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
-            CustomerWithContactsResponse(
-                createCompanyCustomerResponse(),
-                listOf(createContactResponse())
-            ),
+            CustomerWithContactsResponse(companyCustomer(), listOf(createContactResponse())),
         contractorWithContacts: CustomerWithContactsResponse? =
-            CustomerWithContactsResponse(
-                createPersonCustomerResponse(),
-                listOf(createContactResponse())
-            ),
+            CustomerWithContactsResponse(personCustomer(), listOf(createContactResponse())),
         representativeWithContacts: CustomerWithContactsResponse? = null,
         propertyDeveloperWithContacts: CustomerWithContactsResponse? = null,
         invoicingCustomer: InvoicingCustomerResponse? = createInvoicingCustomerResponse(),
         additionalInfo: String? = null,
     ): KaivuilmoitusDataResponse =
         KaivuilmoitusDataResponse(
-            pendingOnClient = pendingOnClient,
             name = name,
             workDescription = workDescription,
             constructionWork = true,
@@ -132,6 +120,7 @@ object HakemusResponseFactory {
             startTime = startTime,
             endTime = endTime,
             areas = areas,
+            paperDecisionReceiver = null,
             customerWithContacts = customerWithContacts,
             contractorWithContacts = contractorWithContacts,
             representativeWithContacts = representativeWithContacts,
@@ -141,6 +130,7 @@ object HakemusResponseFactory {
         )
 
     fun companyCustomer(
+        yhteystietoId: UUID = UUID.randomUUID(),
         type: CustomerType = CustomerType.COMPANY,
         name: String = "DNA",
         email: String = "info@dna.test",
@@ -148,68 +138,35 @@ object HakemusResponseFactory {
         registryKey: String? = "3766028-0",
     ): CustomerResponse =
         CustomerResponse(
-            UUID.randomUUID(),
-            type,
-            name,
-            email,
-            phone,
-            registryKey,
+            yhteystietoId = yhteystietoId,
+            type = type,
+            name = name,
+            email = email,
+            phone = phone,
+            registryKey = registryKey,
+            registryKeyHidden = false,
         )
 
     fun personCustomer(
+        yhteystietoId: UUID = UUID.randomUUID(),
         type: CustomerType = CustomerType.PERSON,
         name: String = TEPPO_TESTI,
         email: String = ApplicationFactory.TEPPO_EMAIL,
         phone: String = ApplicationFactory.TEPPO_PHONE,
-        registryKey: String? = "281192-937W",
     ) =
         CustomerResponse(
-            UUID.randomUUID(),
-            type,
-            name,
-            email,
-            phone,
-            registryKey,
+            yhteystietoId = yhteystietoId,
+            type = type,
+            name = name,
+            email = email,
+            phone = phone,
+            registryKey = null,
+            registryKeyHidden = true,
         )
 
     fun CustomerResponse.withContacts(
         vararg contacts: ContactResponse
     ): CustomerWithContactsResponse = CustomerWithContactsResponse(this, contacts.asList())
-
-    private fun createPersonCustomerResponse(
-        yhteystietoId: UUID = UUID.randomUUID(),
-        type: CustomerType = CustomerType.PERSON,
-        name: String = TEPPO_TESTI,
-        email: String = ApplicationFactory.TEPPO_EMAIL,
-        phone: String = "04012345678",
-        registryKey: String? = "281192-937W",
-    ) =
-        CustomerResponse(
-            yhteystietoId,
-            type,
-            name,
-            email,
-            phone,
-            registryKey,
-        )
-
-    private fun createCompanyCustomerResponse(
-        yhteystietoId: UUID = UUID.randomUUID(),
-        type: CustomerType = CustomerType.COMPANY,
-        name: String = "DNA",
-        email: String = "info@dna.test",
-        phone: String = "+3581012345678",
-        registryKey: String? = "3766028-0",
-    ): CustomerResponse {
-        return CustomerResponse(
-            yhteystietoId,
-            type,
-            name,
-            email,
-            phone,
-            registryKey,
-        )
-    }
 
     private fun createContactResponse(
         hankekayttajaId: UUID = UUID.randomUUID(),
@@ -217,13 +174,14 @@ object HakemusResponseFactory {
         lastName: String = "Testihenkilö",
         email: String = ApplicationFactory.TEPPO_EMAIL,
         phone: String = "04012345678",
-        orderer: Boolean = false
+        orderer: Boolean = false,
     ) = ContactResponse(hankekayttajaId, firstName, lastName, email, phone, orderer)
 
     private fun createInvoicingCustomerResponse(
         type: CustomerType = CustomerType.COMPANY,
         name: String = "Laskutus Oy",
         registryKey: String? = "3766028-0",
+        registryKeyHidden: Boolean = false,
         ovt: String = "003737660280",
         invoicingOperator: String = "003711223344",
         customerReference: String = "1234567890",
@@ -236,11 +194,12 @@ object HakemusResponseFactory {
             type,
             name,
             registryKey,
+            registryKeyHidden,
             ovt,
             invoicingOperator,
             customerReference,
             postalAddress,
             email,
-            phone
+            phone,
         )
 }

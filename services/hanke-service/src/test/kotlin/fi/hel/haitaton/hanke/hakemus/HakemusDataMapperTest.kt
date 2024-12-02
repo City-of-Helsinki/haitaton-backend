@@ -50,7 +50,7 @@ class HakemusDataMapperTest {
             val hakemus =
                 HakemusFactory.createJohtoselvityshakemusData(
                     customerWithContacts = HakemusyhteystietoFactory.create(),
-                    contractorWithContacts = HakemusyhteystietoFactory.create()
+                    contractorWithContacts = HakemusyhteystietoFactory.create(),
                 )
             val hanketunnus = "HAI23-0009"
 
@@ -66,7 +66,7 @@ class HakemusDataMapperTest {
             val hakemus =
                 HakemusFactory.createKaivuilmoitusData(
                     customerWithContacts = HakemusyhteystietoFactory.create(),
-                    contractorWithContacts = HakemusyhteystietoFactory.create()
+                    contractorWithContacts = HakemusyhteystietoFactory.create(),
                 )
             val hanketunnus = "HAI23-0019"
 
@@ -85,7 +85,7 @@ class HakemusDataMapperTest {
             HakemusFactory.createJohtoselvityshakemusData(
                 customerWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
                 contractorWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
-                postalAddress = PostalAddress(StreetAddress("Katu 1"), "00980", "Helsinki")
+                postalAddress = PostalAddress(StreetAddress("Katu 1"), "00980", "Helsinki"),
             )
 
         @Test
@@ -95,13 +95,13 @@ class HakemusDataMapperTest {
             val expected =
                 AlluCableReportApplicationData(
                     identificationNumber = "HAI23-9",
-                    pendingOnClient = hakemus.pendingOnClient,
+                    pendingOnClient = false,
                     name = hakemus.name,
                     postalAddress =
                         AlluPostalAddress(
                             AlluStreetAddress(hakemus.postalAddress!!.streetAddress.streetName),
-                            hakemus.postalAddress!!.postalCode,
-                            hakemus.postalAddress!!.city,
+                            hakemus.postalAddress.postalCode,
+                            hakemus.postalAddress.city,
                         ),
                     constructionWork = hakemus.constructionWork,
                     maintenanceWork = hakemus.maintenanceWork,
@@ -174,12 +174,13 @@ class HakemusDataMapperTest {
                         postinumero = "00410",
                         postitoimipaikka = "Helsinki",
                     ),
+                additionalInfo = "Lisätietoja hakemusesta.",
             )
 
         private val expectedResult =
             AlluExcavationNotificationData(
                 identificationNumber = "HAI23-0045",
-                pendingOnClient = hakemus.pendingOnClient,
+                pendingOnClient = false,
                 name = hakemus.name,
                 workPurpose = hakemus.workDescription,
                 clientApplicationKind = hakemus.workDescription,
@@ -200,7 +201,7 @@ class HakemusDataMapperTest {
                 representativeWithContacts = hakemus.representativeWithContacts!!.toAlluCustomer(),
                 invoicingCustomer = hakemus.invoicingCustomer!!.toAlluData(),
                 customerReference = "Hanke #521",
-                additionalInfo = null,
+                additionalInfo = hakemus.additionalInfo,
                 pksCard = null,
                 selfSupervision = null,
                 propertyConnectivity = null,
@@ -244,21 +245,9 @@ class HakemusDataMapperTest {
                     "contractorWithContacts",
                     AlluDataError.NULL,
                 ),
-                Arguments.of(
-                    hakemus.copy(startTime = null),
-                    "startTime",
-                    AlluDataError.NULL,
-                ),
-                Arguments.of(
-                    hakemus.copy(endTime = null),
-                    "endTime",
-                    AlluDataError.NULL,
-                ),
-                Arguments.of(
-                    hakemus.copy(areas = null),
-                    "areas",
-                    AlluDataError.EMPTY_OR_NULL,
-                ),
+                Arguments.of(hakemus.copy(startTime = null), "startTime", AlluDataError.NULL),
+                Arguments.of(hakemus.copy(endTime = null), "endTime", AlluDataError.NULL),
+                Arguments.of(hakemus.copy(areas = null), "areas", AlluDataError.EMPTY_OR_NULL),
             )
 
         @ParameterizedTest
@@ -276,15 +265,15 @@ class HakemusDataMapperTest {
             listOf(
                 Arguments.of(
                     hakemus.copy(representativeWithContacts = null),
-                    expectedResult.copy(representativeWithContacts = null)
+                    expectedResult.copy(representativeWithContacts = null),
                 ),
                 Arguments.of(
                     hakemus.copy(propertyDeveloperWithContacts = null),
-                    expectedResult.copy(propertyDeveloperWithContacts = null)
+                    expectedResult.copy(propertyDeveloperWithContacts = null),
                 ),
                 Arguments.of(
                     hakemus.copy(invoicingCustomer = null),
-                    expectedResult.copy(invoicingCustomer = null, customerReference = null)
+                    expectedResult.copy(invoicingCustomer = null, customerReference = null),
                 ),
                 Arguments.of(
                     hakemus.copy(
@@ -292,7 +281,7 @@ class HakemusDataMapperTest {
                             HakemusyhteystietoFactory.createLaskutusyhteystieto(
                                 sahkoposti = null,
                                 puhelinnumero = null,
-                                ytunnus = null,
+                                registryKey = null,
                                 ovttunnus = null,
                                 valittajanTunnus = null,
                                 asiakkaanViite = null,
@@ -316,7 +305,7 @@ class HakemusDataMapperTest {
                                 sapCustomerNumber = null,
                             ),
                         customerReference = null,
-                    )
+                    ),
                 ),
                 Arguments.of(
                     hakemus.copy(
@@ -334,7 +323,7 @@ class HakemusDataMapperTest {
                                     AlluPostalAddress(AlluStreetAddress("Katu 1"), "", "")
                             ),
                         customerReference = null,
-                    )
+                    ),
                 ),
                 Arguments.of(
                     hakemus.copy(
@@ -347,17 +336,17 @@ class HakemusDataMapperTest {
                     ),
                     expectedResult.copy(
                         invoicingCustomer =
-                            expectedResult.invoicingCustomer!!.copy(postalAddress = null),
+                            expectedResult.invoicingCustomer.copy(postalAddress = null),
                         customerReference = null,
-                    )
+                    ),
                 ),
                 Arguments.of(
                     hakemus.copy(placementContracts = null),
-                    expectedResult.copy(placementContracts = null)
+                    expectedResult.copy(placementContracts = null),
                 ),
                 Arguments.of(
                     hakemus.copy(cableReports = null),
-                    expectedResult.copy(cableReports = null)
+                    expectedResult.copy(cableReports = null),
                 ),
             )
     }

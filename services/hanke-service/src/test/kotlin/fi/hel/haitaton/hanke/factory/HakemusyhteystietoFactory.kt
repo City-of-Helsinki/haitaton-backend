@@ -14,15 +14,15 @@ import org.springframework.stereotype.Component
 object HakemusyhteystietoFactory {
 
     private val DEFAULT_ID = UUID.fromString("af23b9e5-208e-40ef-9291-962c05d783df")
-    private const val DEFAULT_NIMI = "Oy Testi Ab"
-    private const val DEFAULT_SAHKOPOSTI = "hakija@testi.fi"
-    private const val DEFAULT_PUHELINNUMERO = "0401234567"
-    private const val DEFAULT_YTUNNUS = "1817548-2"
+    const val DEFAULT_NIMI = "Oy Testi Ab"
+    const val DEFAULT_SAHKOPOSTI = "hakija@testi.fi"
+    const val DEFAULT_PUHELINNUMERO = "0401234567"
+    const val DEFAULT_YTUNNUS = "1817548-2"
     private const val DEFAULT_OVT = "003718175482"
 
-    private const val DEFAULT_PERSON_NIMI = "Pertti Perushenkilö"
-    private const val DEFAULT_PERSON_SAHKOPOSTI = "pertti@perus.fi"
-    private const val DEFAULT_PERSON_PUHELINNUMERO = "554466546"
+    const val DEFAULT_PERSON_NIMI = "Pertti Perushenkilö"
+    const val DEFAULT_PERSON_SAHKOPOSTI = "pertti@perus.fi"
+    const val DEFAULT_PERSON_PUHELINNUMERO = "554466546"
 
     fun createEntity(
         tyyppi: CustomerType = CustomerType.COMPANY,
@@ -39,8 +39,8 @@ object HakemusyhteystietoFactory {
             nimi = nimi,
             sahkoposti = sahkoposti,
             puhelinnumero = puhelinnumero,
-            ytunnus = ytunnus,
-            application = application
+            registryKey = ytunnus,
+            application = application,
         )
 
     fun create(
@@ -50,18 +50,18 @@ object HakemusyhteystietoFactory {
         nimi: String = DEFAULT_NIMI,
         sahkoposti: String = DEFAULT_SAHKOPOSTI,
         puhelinnumero: String = DEFAULT_PUHELINNUMERO,
-        ytunnus: String? = DEFAULT_YTUNNUS,
-        yhteyshenkilot: List<Hakemusyhteyshenkilo> = listOf()
+        registryKey: String? = DEFAULT_YTUNNUS,
+        yhteyshenkilot: List<Hakemusyhteyshenkilo> = listOf(),
     ) =
         Hakemusyhteystieto(
-            id,
-            tyyppi,
-            rooli,
-            nimi,
-            sahkoposti,
-            puhelinnumero,
-            ytunnus,
-            yhteyshenkilot,
+            id = id,
+            tyyppi = tyyppi,
+            rooli = rooli,
+            nimi = nimi,
+            sahkoposti = sahkoposti,
+            puhelinnumero = puhelinnumero,
+            registryKey = registryKey,
+            yhteyshenkilot = yhteyshenkilot,
         )
 
     fun createPerson(
@@ -71,8 +71,8 @@ object HakemusyhteystietoFactory {
         nimi: String = DEFAULT_PERSON_NIMI,
         sahkoposti: String = DEFAULT_PERSON_SAHKOPOSTI,
         puhelinnumero: String = DEFAULT_PERSON_PUHELINNUMERO,
-        ytunnus: String? = null,
-        yhteyshenkilot: List<Hakemusyhteyshenkilo> = listOf()
+        registryKey: String? = null,
+        yhteyshenkilot: List<Hakemusyhteyshenkilo> = listOf(),
     ) =
         Hakemusyhteystieto(
             id,
@@ -81,7 +81,7 @@ object HakemusyhteystietoFactory {
             nimi,
             sahkoposti,
             puhelinnumero,
-            ytunnus,
+            registryKey,
             yhteyshenkilot,
         )
 
@@ -93,7 +93,13 @@ object HakemusyhteystietoFactory {
         tilaaja: Boolean = HakemusyhteyshenkiloFactory.DEFAULT_TILAAJA,
     ): Hakemusyhteystieto {
         val yhteyshenkilo =
-            HakemusyhteyshenkiloFactory.create(etunimi, sukunimi, sahkoposti, puhelin, tilaaja)
+            HakemusyhteyshenkiloFactory.create(
+                etunimi = etunimi,
+                sukunimi = sukunimi,
+                sahkoposti = sahkoposti,
+                puhelin = puhelin,
+                tilaaja = tilaaja,
+            )
         return copy(yhteyshenkilot = yhteyshenkilot + yhteyshenkilo)
     }
 
@@ -102,7 +108,7 @@ object HakemusyhteystietoFactory {
         nimi: String = DEFAULT_NIMI,
         sahkoposti: String? = null,
         puhelinnumero: String? = null,
-        ytunnus: String? = DEFAULT_YTUNNUS,
+        registryKey: String? = DEFAULT_YTUNNUS,
         ovttunnus: String? = DEFAULT_OVT,
         valittajanTunnus: String? = DEFAULT_OVT,
         asiakkaanViite: String? = null,
@@ -113,7 +119,7 @@ object HakemusyhteystietoFactory {
         Laskutusyhteystieto(
             tyyppi = tyyppi,
             nimi = nimi,
-            ytunnus = ytunnus,
+            registryKey = registryKey,
             ovttunnus = ovttunnus,
             valittajanTunnus = valittajanTunnus,
             asiakkaanViite = asiakkaanViite,

@@ -1,0 +1,109 @@
+<mjml>
+    <mj-head>
+        <mj-include path="common/attributes.partial"/>
+    </mj-head>
+    <mj-body>
+        <mj-include path="common/header-content.partial"/>
+        <mj-section>
+            <mj-column>
+                <mj-text mj-class="header-txt">Kaivuilmoitukseen {{applicationIdentifier}} liittyvä päätös on
+                    ladattavissa / Kaivuilmoitukseen {{applicationIdentifier}} liittyvä päätös on
+                    ladattavissa / Kaivuilmoitukseen {{applicationIdentifier}} liittyvä päätös on
+                    ladattavissa
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Jättämäänne kaivuilmoitukseen {{applicationIdentifier}} on tehty päätös.
+                    Lataa päätös Haitattomasta (<a
+                        href="{{baseUrl}}/fi/hakemus/{{applicationId}}">{{baseUrl}}/fi/hakemus/{{applicationId}}</a>)
+                    ja tutustu sen sisältöön huolellisesti.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Miten onnistuimme? Kerro mielipiteesi <a href="https://ecv.microsoft.com/zepZlZSdnT">täällä</a>.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Ystävällisin terveisin,
+                </mj-text>
+                <mj-text mj-class="signature">
+                    Helsingin kaupunki
+                    <br/>
+                    Kaupunkiympäristön asukas- ja yrityspalvelut
+                    <br/>
+                    Alueiden käyttö ja valvonta
+                    <br/>
+                    Puh. 09 310 22111
+                    <br/>
+                    luvat@hel.fi
+                    <br/>
+                    <a href="https://www.hel.fi/fi/kaupunkiymparisto-ja-liikenne/tontit-ja-rakentamisen-luvat/tyomaan-luvat-ja-ohjeet/kaduilla-ja-puistoissa-tehtavat-tyot">
+                        https://www.hel.fi/fi/kaupunkiymparisto-ja-liikenne/tontit-ja-rakentamisen-luvat/tyomaan-luvat-ja-ohjeet/kaduilla-ja-puistoissa-tehtavat-tyot
+                    </a>
+                </mj-text>
+
+                <mj-divider mj-class="language-separator"/>
+
+                <mj-text mj-class="basic-txt">
+                    Jättämäänne kaivuilmoitukseen {{applicationIdentifier}} on tehty päätös.
+                    Lataa päätös Haitattomasta
+                    <a
+                            href="{{baseUrl}}/sv/ansokan/{{applicationId}}">{{baseUrl}}/sv/ansokan/{{applicationId}}
+                    </a>
+                    och läs innehållet i den noggrannt.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Hur lyckades vi? Ge din åsikt <a href="https://ecv.microsoft.com/zepZlZSdnT">här</a>.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Med vänlig hälsning,
+                </mj-text>
+                <mj-text mj-class="signature">
+                    Helsingfors stad
+                    <br/>
+                    Stadsmiljös boende- och företagstjänster
+                    <br/>
+                    Användning och tillsyn av områden
+                    <br/>
+                    Tfn 09 310 22111
+                    <br/>
+                    luvat@hel.fi
+                    <br/>
+                    <a href="https://www.hel.fi/sv/stadsmiljo-och-trafik/tomter-och-bygglov/tillstand-och-anvisningar-for-byggplatsen/arbete-pa-gatu-eller-parkomraden">
+                        https://www.hel.fi/sv/stadsmiljo-och-trafik/tomter-och-bygglov/tillstand-och-anvisningar-for-byggplatsen/arbete-pa-gatu-eller-parkomraden
+                    </a>
+                </mj-text>
+
+                <mj-divider mj-class="language-separator"/>
+
+                <mj-text mj-class="basic-txt">
+                    Jättämäänne kaivuilmoitukseen {{applicationIdentifier}} on tehty päätös.
+                    Lataa päätös Haitattomasta <a
+                        href="{{baseUrl}}/en/application/{{applicationId}}">{{baseUrl}}/en/application/{{applicationId}}
+                </a> and read it carefully.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    How did we do? Please share your opinion <a
+                        href="https://ecv.microsoft.com/zepZlZSdnT">
+                    here</a>.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Kind regards,
+                </mj-text>
+                <mj-text mj-class="signature">
+                    City of Helsinki
+                    <br/>
+                    Urban Environment Resident and Business Services
+                    <br/>
+                    Land Use and Monitoring
+                    <br/>
+                    Tel. +358 9 310 22111
+                    <br/>
+                    luvat@hel.fi
+                    <br/>
+                    <a href="https://www.hel.fi/en/urban-environment-and-traffic/plots-and-building-permits/permits-and-instructions-for-construction-site/working-on-streets-and-in-parks">
+                        https://www.hel.fi/en/urban-environment-and-traffic/plots-and-building-permits/permits-and-instructions-for-construction-site/working-on-streets-and-in-parks
+                    </a>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+        <mj-include path="common/footer-content.partial"/>
+    </mj-body>
+</mjml>

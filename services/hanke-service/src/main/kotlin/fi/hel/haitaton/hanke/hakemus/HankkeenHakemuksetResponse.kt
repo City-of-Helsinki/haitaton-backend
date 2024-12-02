@@ -14,22 +14,19 @@ data class HankkeenHakemusResponse(
     val applicationData: HankkeenHakemusDataResponse,
 ) {
     constructor(
-        application: HakemusEntity
+        hakemus: Hakemus,
+        includeAreas: Boolean = false,
     ) : this(
-        application.id,
-        application.alluid,
-        application.alluStatus,
-        application.applicationIdentifier,
-        application.applicationType,
-        when (application.hakemusEntityData) {
-            is JohtoselvityshakemusEntityData ->
-                HankkeenHakemusDataResponse(
-                    application.hakemusEntityData as JohtoselvityshakemusEntityData
-                )
-            is KaivuilmoitusEntityData ->
-                HankkeenHakemusDataResponse(
-                    application.hakemusEntityData as KaivuilmoitusEntityData
-                )
+        hakemus.id,
+        hakemus.alluid,
+        hakemus.alluStatus,
+        hakemus.applicationIdentifier,
+        hakemus.applicationType,
+        when (hakemus.applicationData) {
+            is JohtoselvityshakemusData ->
+                HankkeenHakemusDataResponse(hakemus.applicationData, includeAreas)
+            is KaivuilmoitusData ->
+                HankkeenHakemusDataResponse(hakemus.applicationData, includeAreas)
         },
     )
 }
@@ -38,23 +35,25 @@ data class HankkeenHakemusDataResponse(
     val name: String,
     val startTime: ZonedDateTime?,
     val endTime: ZonedDateTime?,
-    val pendingOnClient: Boolean,
+    val areas: List<Hakemusalue>?,
 ) {
     constructor(
-        cableReportApplicationData: JohtoselvityshakemusEntityData
+        cableReportApplicationData: JohtoselvityshakemusData,
+        includeAreas: Boolean,
     ) : this(
         cableReportApplicationData.name,
         cableReportApplicationData.startTime,
         cableReportApplicationData.endTime,
-        cableReportApplicationData.pendingOnClient,
+        if (includeAreas) cableReportApplicationData.areas else null,
     )
 
     constructor(
-        kaivuilmoitusEntityData: KaivuilmoitusEntityData
+        kaivuilmoitusEntityData: KaivuilmoitusData,
+        includeAreas: Boolean,
     ) : this(
         kaivuilmoitusEntityData.name,
         kaivuilmoitusEntityData.startTime,
         kaivuilmoitusEntityData.endTime,
-        kaivuilmoitusEntityData.pendingOnClient
+        if (includeAreas) kaivuilmoitusEntityData.areas else null,
     )
 }

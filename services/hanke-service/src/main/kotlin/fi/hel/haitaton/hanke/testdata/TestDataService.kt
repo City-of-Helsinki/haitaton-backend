@@ -10,9 +10,7 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 @ConditionalOnProperty(name = ["haitaton.testdata.enabled"], havingValue = "true")
-class TestDataService(
-    private val hakemusRepository: HakemusRepository,
-) {
+class TestDataService(private val hakemusRepository: HakemusRepository) {
     @Transactional
     fun unlinkApplicationsFromAllu() {
         logger.warn { "Unlinking all applications from Allu." }
@@ -21,7 +19,7 @@ class TestDataService(
             it.alluid = null
             it.alluStatus = null
             it.applicationIdentifier = null
-            it.hakemusEntityData = it.hakemusEntityData.copy(pendingOnClient = true)
+            it.hakemusEntityData = it.hakemusEntityData.copy(paperDecisionReceiver = null)
         }
     }
 }

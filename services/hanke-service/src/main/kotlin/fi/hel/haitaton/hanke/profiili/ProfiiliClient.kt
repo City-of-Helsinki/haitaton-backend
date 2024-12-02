@@ -8,8 +8,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.MediaType
-import org.springframework.security.core.context.SecurityContext
-import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
@@ -32,9 +30,9 @@ class ProfiiliClient(
 
     private var tokenUri: String? = null
 
-    fun getVerifiedName(securityContext: SecurityContext): Names {
+    fun getVerifiedName(accessToken: String): Names {
         logger.info { "Getting user's verified name from Profiili." }
-        val apiToken = authenticate(securityContext)
+        val apiToken = authenticate(accessToken)
         val profiiliData = queryForVerifiedName(apiToken, myProfileQuery)
         logger.info { "Got user's verified name from Profiili." }
         return profiiliData.data.myProfile?.verifiedPersonalInformation
@@ -54,11 +52,7 @@ class ProfiiliClient(
             .block()!!
     }
 
-    private fun authenticate(securityContext: SecurityContext): String {
-        val accessToken =
-            securityContext.authentication?.let { (it.credentials as Jwt).tokenValue }
-                ?: throw VerifiedNameNotFound("User not authenticated.")
-
+    private fun authenticate(accessToken: String): String {
         val apiTokens = getApiTokens(accessToken)
         return apiTokens["access_token"]?.asText()
             ?: throw VerifiedNameNotFound("Token response did not contain an access token.")
@@ -76,7 +70,8 @@ class ProfiiliClient(
             .body(
                 BodyInserters.fromFormData("audience", properties.audience)
                     .with("grant_type", TOKEN_API_GRANT_TYPE)
-                    .with("permission", TOKEN_API_PERMISSION))
+                    .with("permission", TOKEN_API_PERMISSION)
+            )
             .retrieve()
             .bodyToMono(JsonNode::class.java)
             .doOnError(WebClientResponseException::class.java) { ex ->
@@ -103,14 +98,16 @@ class ProfiiliClient(
                         "Unable to load OpenID configuration. " +
                             "Response status=${ex.statusCode}, " +
                             "body=${ex.responseBodyAsString}",
-                        ex)
+                        ex,
+                    )
                 }
                 .block()!!
 
         val uri =
             conf["token_endpoint"]?.asText()
                 ?: throw ProfiiliConfigurationError(
-                    "OpenID configuration didn't contain a token endpoint.")
+                    "OpenID configuration didn't contain a token endpoint."
+                )
         tokenUri = uri
         logger.info { "Got Profiili token URI: $uri" }
         return uri
@@ -126,7 +123,7 @@ class ProfiiliClient(
     data class GraphQlQuery(
         val query: String,
         val operationName: String,
-        val variables: Map<String, Any>? = null
+        val variables: Map<String, Any>? = null,
     )
 }
 

@@ -7,7 +7,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "7.12.1"
+val sentryVersion = "7.17.0"
 
 repositories { mavenCentral() }
 
@@ -36,20 +36,21 @@ tasks.getByName<BootRun>("bootRun") {
     environment("HAITATON_SWAGGER_PATH_PREFIX", "/v3")
     environment("HAITATON_EMAIL_ENABLED", "true")
     environment("HAITATON_BLOB_CONNECTION_STRING", "UseDevelopmentStorage=true;")
+    environment("HAITATON_GDPR_DISABLED", "true")
 }
 
 spotless {
     ratchetFrom("origin/dev") // only format files which have changed since origin/dev
 
     kotlin {
-        ktfmt("0.51").kotlinlangStyle()
+        ktfmt("0.53").kotlinlangStyle()
         toggleOffOn()
     }
 }
 
 plugins {
-    val kotlinVersion = "2.0.20"
-    id("org.springframework.boot") version "3.2.8"
+    val kotlinVersion = "2.0.21"
+    id("org.springframework.boot") version "3.3.5"
     id("io.spring.dependency-management") version "1.1.6"
     id("com.diffplug.spotless") version "6.25.0"
     kotlin("jvm") version kotlinVersion
@@ -59,7 +60,7 @@ plugins {
     kotlin("plugin.jpa") version kotlinVersion
     idea
     id("jacoco")
-    id("io.freefair.mjml.java") version "8.7.1"
+    id("io.freefair.mjml.java") version "8.10.2"
 }
 
 dependencies {
@@ -72,18 +73,23 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
-    implementation("ch.qos.logback:logback-access")
-    implementation("net.logstash.logback:logstash-logback-encoder:7.4")
+    implementation("ch.qos.logback.access:tomcat:2.0.3") {
+        // logback-access has dependencies incompatible with Spring Boot 3.3
+        // https://github.com/qos-ch/logback-access/issues/17
+        exclude("org.apache.tomcat")
+        exclude("jakarta.servlet")
+    }
+    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.8.2")
-    implementation("commons-io:commons-io:2.16.1")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.9.0")
+    implementation("commons-io:commons-io:2.17.0")
     implementation("com.github.librepdf:openpdf:2.0.3")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("com.auth0:java-jwt:4.4.0")
 
     implementation("org.postgresql:postgresql")
@@ -92,14 +98,14 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("io.mockk:mockk:1.13.13")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
     testImplementation("com.squareup.okhttp3:mockwebserver")
-    testImplementation("com.icegreen:greenmail-junit5:2.0.1")
+    testImplementation("com.icegreen:greenmail-junit5:2.1.0")
 
     // Testcontainers
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.1"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.3"))
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
@@ -115,7 +121,7 @@ dependencies {
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
-    implementation(platform("com.azure:azure-sdk-bom:1.2.26"))
+    implementation(platform("com.azure:azure-sdk-bom:1.2.29"))
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity")

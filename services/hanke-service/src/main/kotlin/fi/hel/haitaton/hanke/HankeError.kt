@@ -27,7 +27,6 @@ enum class HankeError(val errorMessage: String) {
     HAI1014("Internal error while loading Hanke geometry"),
     HAI1015("Hanke geometry not found"),
     HAI1020("HankeYhteystieto not found"),
-    HAI1029("HankeYhteystieto personal data processing restricted"),
     HAI1030("Problem with classification of geometries"),
     HAI1031("Invalid state: Missing needed data"),
     HAI1032("Invalid Hankealue data"),
@@ -58,7 +57,8 @@ enum class HankeError(val errorMessage: String) {
     HAI4006("Duplicate hankekayttaja"),
     HAI4007("Verified name not found in Profiili"),
     HAI5001("Decision not found"),
-    ;
+    HAI6001("Taydennys not found"),
+    HAI6002("Taydennys has no changes");
 
     val errorCode: String
         get() = name
@@ -78,7 +78,7 @@ enum class HankeError(val errorMessage: String) {
 
 data class HankeErrorDetail(
     @JsonUnwrapped val hankeError: HankeError,
-    val errorPaths: List<String>
+    val errorPaths: List<String>,
 )
 
 class HankeNotFoundException(val hankeTunnus: String?) :
@@ -88,10 +88,9 @@ class HankeArgumentException(message: String) : RuntimeException(message)
 
 class HankeYhteystietoNotFoundException(val hanke: HankeIdentifier, ytId: Int) :
     RuntimeException(
-        "HankeYhteystieto not found for Hanke, yhteystieto: $ytId, ${hanke.logString()}")
+        "HankeYhteystieto not found for Hanke, yhteystieto: $ytId, ${hanke.logString()}"
+    )
 
 class HankeAlluConflictException(message: String) : RuntimeException(message)
 
 class DatabaseStateException(message: String) : RuntimeException(message)
-
-class HankeYhteystietoProcessingRestrictedException(message: String) : RuntimeException(message)

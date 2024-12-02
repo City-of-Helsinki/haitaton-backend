@@ -34,15 +34,13 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
 private const val BASE_URL = "/profiili"
 
-@WebMvcTest(
-    controllers = [ProfiiliController::class],
-)
+@WebMvcTest(controllers = [ProfiiliController::class])
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
-    @Autowired private lateinit var profiiliClient: ProfiiliClient
+    @Autowired private lateinit var profiiliService: ProfiiliService
     @Autowired private lateinit var disclosureLogService: DisclosureLogService
 
     @BeforeEach
@@ -64,35 +62,35 @@ class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : Contro
         fun `Without user ID returns 401`() {
             get(url).andExpect(MockMvcResultMatchers.status().isUnauthorized)
 
-            verify { profiiliClient wasNot Called }
+            verify { profiiliService wasNot Called }
             verify { disclosureLogService wasNot Called }
         }
 
         @Test
         fun `returns 404 when profiili client throws expected exception`() {
-            every { profiiliClient.getVerifiedName(any()) } throws
+            every { profiiliService.getVerifiedName(any()) } throws
                 VerifiedNameNotFound("Because of reasons.")
 
             get(url).andExpect(MockMvcResultMatchers.status().isNotFound)
 
-            verifyAll { profiiliClient.getVerifiedName(any()) }
+            verifyAll { profiiliService.getVerifiedName(any()) }
             verify { disclosureLogService wasNot Called }
         }
 
         @Test
         fun `returns 500 when Profiili client throws unexpected exception`() {
-            every { profiiliClient.getVerifiedName(any()) } throws SocketTimeoutException()
+            every { profiiliService.getVerifiedName(any()) } throws SocketTimeoutException()
 
             get(url).andExpect(MockMvcResultMatchers.status().isInternalServerError)
 
-            verifyAll { profiiliClient.getVerifiedName(any()) }
+            verifyAll { profiiliService.getVerifiedName(any()) }
             verify { disclosureLogService wasNot Called }
         }
 
         @Test
         fun `returns verified names`() {
-            every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
-            every { disclosureLogService.saveDisclosureLogsForProfiiliNimi(any(), any()) } just Runs
+            every { profiiliService.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
+            every { disclosureLogService.saveForProfiiliNimi(any(), any()) } just Runs
 
             val names: Names =
                 get(url).andExpect(MockMvcResultMatchers.status().isOk).andReturnBody()
@@ -103,8 +101,8 @@ class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : Contro
                 prop(Names::givenName).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
             }
             verifyAll {
-                profiiliClient.getVerifiedName(any())
-                disclosureLogService.saveDisclosureLogsForProfiiliNimi(any(), any())
+                profiiliService.getVerifiedName(any())
+                disclosureLogService.saveForProfiiliNimi(any(), any())
             }
         }
     }

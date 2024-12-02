@@ -6,7 +6,10 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class HankeLoggingService(private val auditLogService: AuditLogService) {
+class HankeLoggingService(private val auditLogService: AuditLogService) :
+    ChangeLoggingService<Int, Hanke>(auditLogService) {
+
+    override val objectType: ObjectType = ObjectType.HANKE
 
     /**
      * Create audit log entry for a deleted hanke.
@@ -15,47 +18,15 @@ class HankeLoggingService(private val auditLogService: AuditLogService) {
      * deleted with the hanke, and they are not handled anywhere else.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    fun logDelete(hanke: Hanke, userId: String) {
-        val auditLogEntry = AuditLogService.deleteEntry(userId, ObjectType.HANKE, hanke)
+    override fun logDelete(before: Hanke, userId: String) {
+        val auditLogEntry = AuditLogService.deleteEntry(userId, ObjectType.HANKE, before)
         val yhteystietoEntries =
-            hanke.extractYhteystiedot().map {
+            before.extractYhteystiedot().map {
                 AuditLogService.deleteEntry(userId, ObjectType.YHTEYSTIETO, it)
             }
 
         auditLogService.createAll(yhteystietoEntries + auditLogEntry)
     }
 
-    /**
-     * Create audit log entry for a created hanke.
-     *
-     * Don't process sub-entities, they are handled elsewhere. Log entries for yhteystiedot are
-     * added in [fi.hel.haitaton.hanke.HankeServiceImpl]. Geometries are added in their own
-     * controller, so they are logged there.
-     */
-    @Transactional(propagation = Propagation.MANDATORY)
-    fun logCreate(hanke: Hanke, userId: String) {
-        auditLogService.create(AuditLogService.createEntry(userId, ObjectType.HANKE, hanke))
-    }
-
-    /**
-     * Create audit log entry for an updated hanke.
-     *
-     * Only create the entry if the logged content of the hanke has changed.
-     *
-     * Currently, the version field is updated even if there are no other changes, so the audit log
-     * entry is always created.
-     *
-     * Don't process sub-entities, they are handled elsewhere. Log entries for yhteystiedot are
-     * added in [fi.hel.haitaton.hanke.HankeServiceImpl]. Geometries are added in their own
-     * controller, so they are logged there.
-     */
-    @Transactional(propagation = Propagation.MANDATORY)
-    fun logUpdate(hankeBefore: Hanke, hankeAfter: Hanke, userId: String) {
-        AuditLogService.updateEntry(userId, ObjectType.HANKE, hankeBefore, hankeAfter)?.let {
-            auditLogService.create(it)
-        }
-    }
-
-    fun createAll(auditLogEntries: MutableList<AuditLogEntry>) =
-        auditLogService.createAll(auditLogEntries)
+    fun createAll(auditLogEntries: List<AuditLogEntry>) = auditLogService.createAll(auditLogEntries)
 }

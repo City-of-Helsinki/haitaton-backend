@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.toHankeError
 import fi.hel.haitaton.hanke.validation.ValidCreateHankeRequest
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -34,6 +35,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -65,11 +67,9 @@ class HakemusController(
                 ),
             ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
-    fun getById(@PathVariable(name = "id") id: Long): HakemusWithPaatoksetResponse {
+    fun getById(@PathVariable(name = "id") id: Long): HakemusWithExtrasResponse {
         logger.info { "Finding application $id" }
-        val response = hakemusService.getWithPaatokset(id).toResponse()
-        disclosureLogService.saveDisclosureLogsForHakemusResponse(response.hakemus, currentUserId())
-        return response
+        return hakemusService.getWithExtras(id).toResponse()
     }
 
     @GetMapping("/hankkeet/{hankeTunnus}/hakemukset")
@@ -91,11 +91,26 @@ class HakemusController(
                 ),
             ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
-    fun getHankkeenHakemukset(@PathVariable hankeTunnus: String): HankkeenHakemuksetResponse {
-        logger.info { "Finding applications for hanke $hankeTunnus" }
-        val response = hakemusService.hankkeenHakemuksetResponse(hankeTunnus)
-        logger.info { "Found ${response.applications.size} applications for hanke $hankeTunnus" }
-        return response
+    fun getHankkeenHakemukset(
+        @PathVariable hankeTunnus: String,
+        @Parameter(
+            description =
+                """Boolean flag indicating whether endpoint should return application areas. 
+                    Areas field will be null if false.""",
+            schema = Schema(type = "boolean", defaultValue = "false"),
+            required = false,
+            example = "false",
+        )
+        @RequestParam
+        areas: Boolean = false,
+    ): HankkeenHakemuksetResponse {
+        logger.info {
+            "Finding applications for hanke $hankeTunnus with areas ${if (areas) "included" else "excluded"}"
+        }
+        val hakemukset = hakemusService.hankkeenHakemukset(hankeTunnus)
+        logger.info { "Found ${hakemukset.size} applications for hanke $hankeTunnus" }
+        return HankkeenHakemuksetResponse(
+            hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus, areas) })
     }
 
     @PostMapping("/hakemukset")
@@ -158,7 +173,8 @@ class HakemusController(
     @Operation(
         summary = "Update an application",
         description =
-            """Returns the updated application.
+            """
+               Returns the updated application.
                The application can be updated until it has been sent to Allu.
                If the application hasn't changed since the last update, nothing more is done.
                The pendingOnClient value can't be changed with this endpoint.
@@ -207,13 +223,8 @@ class HakemusController(
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun update(
         @PathVariable(name = "id") id: Long,
-        @ValidHakemusUpdateRequest @RequestBody request: HakemusUpdateRequest
-    ): HakemusResponse {
-        val userId = currentUserId()
-        val response = hakemusService.updateHakemus(id, request, userId)
-        disclosureLogService.saveDisclosureLogsForHakemusResponse(response, userId)
-        return response
-    }
+        @ValidHakemusUpdateRequest @RequestBody request: HakemusUpdateRequest,
+    ): HakemusResponse = hakemusService.updateHakemus(id, request, currentUserId()).toResponse()
 
     @DeleteMapping("/hakemukset/{id}")
     @Operation(
@@ -260,7 +271,7 @@ The valid states are:
   - HANDLING,
   - INFORMATION_RECEIVED,
   - RETURNED_TO_PREPARATION,
-  - DECISIONMAKING
+  - DECISIONMAKING,
   - DECISION.
 
 The date cannot be before the application was started and not in the future.
@@ -296,18 +307,72 @@ The id needs to reference an excavation notification.
         logger.info {
             "Received request to report application to operational condition id=$id, date=$date"
         }
-        hakemusService.reportOperationalCondition(id, date)
+        hakemusService.reportCompletionDate(ValmistumisilmoitusType.TOIMINNALLINEN_KUNTO, id, date)
+    }
+
+    @PostMapping("/hakemukset/{id}/tyo-valmis")
+    @Operation(
+        summary = "Report the work finished date for an excavation notification",
+        description =
+            """
+                Report the date the work finished on the excavation.
+                The reported date will be sent to Allu as the work finished date.
+
+                The excavation notification needs to be in a valid state to accept the report.
+                The valid states are:
+                  - PENDING,
+                  - HANDLING,
+                  - INFORMATION_RECEIVED,
+                  - RETURNED_TO_PREPARATION,
+                  - DECISIONMAKING,
+                  - DECISION,
+                  - OPERATIONAL_CONDITION.
+
+                The date cannot be before the application was started and not in the future.
+                The id needs to reference an excavation notification.
+            """,
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "Work finished reported, no body", responseCode = "200"),
+                ApiResponse(
+                    description =
+                        "The date is malformed, the date isn't in the allowed bounds " +
+                            "or the application not an excavation notification",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                ApiResponse(
+                    description = "An application was not found with the given id",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                ApiResponse(
+                    description = "The application is not in one of the allowed states",
+                    responseCode = "409",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+            ])
+    @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
+    fun reportWorkFinished(
+        @PathVariable(name = "id") id: Long,
+        @RequestBody request: DateReportRequest,
+    ) {
+        val date = request.date
+        logger.info { "Received request to report application to work finished id=$id, date=$date" }
+        hakemusService.reportCompletionDate(ValmistumisilmoitusType.TYO_VALMIS, id, date)
     }
 
     @PostMapping("/hakemukset/{id}/laheta")
     @Operation(
         summary = "Send an application to Allu for processing",
         description =
-            """Returns the application with updated status fields.
+            """
+               Returns the application with updated status fields.
                - Sets the pendingOnClient value of the application to false. This means the application is no longer a draft.
                - A clerk at Allu can start processing the application after this call.
                - The application cannot be edited after it has been sent.
-               - The caller needs to be a contact on the application for at least one customer. 
+               - The caller needs to be a contact on the application for at least one customer.
+
+               Request body is optional. Can be used to request a paper copy of the decision to be sent to the address provided.
             """)
     @ApiResponses(
         value =
@@ -327,8 +392,11 @@ The id needs to reference an excavation notification.
                     content = [Content(schema = Schema(implementation = HankeError::class))]),
             ])
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
-    fun sendHakemus(@PathVariable(name = "id") id: Long): HakemusResponse =
-        hakemusService.sendHakemus(id, currentUserId()).toResponse()
+    fun sendHakemus(
+        @PathVariable(name = "id") id: Long,
+        @RequestBody(required = false) request: HakemusSendRequest?,
+    ): HakemusResponse =
+        hakemusService.sendHakemus(id, request?.paperDecisionReceiver, currentUserId()).toResponse()
 
     @GetMapping("/hakemukset/{id}/paatos")
     @Operation(
@@ -355,7 +423,7 @@ The id needs to reference an excavation notification.
         val userId = currentUserId()
         val (filename, pdfBytes) = hakemusService.downloadDecision(id)
         val application = hakemusService.getById(id)
-        disclosureLogService.saveDisclosureLogsForCableReport(application.toMetadata(), userId)
+        disclosureLogService.saveForCableReport(application.toMetadata(), userId)
 
         val headers = HttpHeaders()
         headers.add("Content-Disposition", "inline; filename=$filename.pdf")
@@ -389,40 +457,6 @@ The id needs to reference an excavation notification.
     ): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2002
-    }
-
-    @ExceptionHandler(HakemusGeometryException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @Hidden
-    fun applicationGeometryException(ex: HakemusGeometryException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2005
-    }
-
-    @ExceptionHandler(HakemusGeometryNotInsideHankeException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @Hidden
-    fun applicationGeometryNotInsideHankeException(
-        ex: HakemusGeometryNotInsideHankeException
-    ): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2007
-    }
-
-    @ExceptionHandler(InvalidHakemusyhteystietoException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @Hidden
-    fun invalidHakemusyhteystietoException(ex: InvalidHakemusyhteystietoException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2010
-    }
-
-    @ExceptionHandler(InvalidHakemusyhteyshenkiloException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @Hidden
-    fun invalidHakemusyhteyshenkiloException(ex: InvalidHakemusyhteyshenkiloException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2011
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -465,19 +499,11 @@ The id needs to reference an excavation notification.
         return HankeError.HAI2002
     }
 
-    @ExceptionHandler(OperationalConditionDateException::class)
+    @ExceptionHandler(CompletionDateException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
-    fun operationalConditionDateException(ex: OperationalConditionDateException): HankeError {
+    fun conditionDateException(ex: CompletionDateException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2014
-    }
-
-    @ExceptionHandler(HakemusInWrongStatusException::class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    @Hidden
-    fun hakemusInWrongStatusException(ex: HakemusInWrongStatusException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2015
     }
 }
