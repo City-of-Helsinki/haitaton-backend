@@ -189,3 +189,15 @@ databaseChangeLog:
       file: db/changelog/changesets/079-add-hakemustunnus-index-to-paatos.sql
   - include:
       file: db/changelog/changesets/080-create-ui-banners-table.sql
+  - include:
+      file: db/changelog/changesets/081-create-valmistumisilmoitukset.sql
+  - include:
+      file: db/changelog/changesets/082-rename-ytunnus-to-registry-key-for-hakemusyhteystieto.sql
+  - include:
+      file: db/changelog/changesets/083-create-tables-for-taydennyspyynto.sql
+  - include:
+      file: db/changelog/changesets/084-remove-datalock-from-hankeyhteystieto.sql
+  - include:
+      file: db/changelog/changesets/085-create-tables-for-taydennys.sql
+  - include:
+      file: db/changelog/changesets/086-change-car-lane-nuisance-enum.sql

@@ -97,7 +97,7 @@ internal class DisclosureLogServiceTest {
                     StringNode("puhelin", TEPPO_PHONE),
                 ))
 
-        disclosureLogService.saveDisclosureLogsForProfiili(userId, info)
+        disclosureLogService.saveForProfiili(info, userId)
 
         val expectedObject =
             """
@@ -126,7 +126,7 @@ internal class DisclosureLogServiceTest {
     fun `saveDisclosureLogsForHanke with hanke with no yhteystiedot doesn't do anything`() {
         val hanke = HankeFactory.create()
 
-        disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
+        disclosureLogService.saveForHanke(hanke, userId)
 
         verify { auditLogService wasNot Called }
     }
@@ -136,7 +136,7 @@ internal class DisclosureLogServiceTest {
         val hanke = HankeFactory.create().withYhteystiedot()
         val expectedLogs = AuditLogEntryFactory.createReadEntriesForHanke(hanke)
 
-        disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
+        disclosureLogService.saveForHanke(hanke, userId)
 
         verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
@@ -154,14 +154,14 @@ internal class DisclosureLogServiceTest {
         val expectedLogs =
             listOf(AuditLogEntryFactory.createReadEntry(objectBefore = yhteystieto.toJsonString()))
 
-        disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
+        disclosureLogService.saveForHanke(hanke, userId)
 
         verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
 
     @Test
     fun `saveDisclosureLogsForHankkeet without hankkeet does nothing`() {
-        disclosureLogService.saveDisclosureLogsForHankkeet(listOf(), userId)
+        disclosureLogService.saveForHankkeet(listOf(), userId)
 
         verify { auditLogService wasNot Called }
     }
@@ -170,7 +170,7 @@ internal class DisclosureLogServiceTest {
     fun `saveDisclosureLogsForHankkeet with hankkeet without yhteystiedot does nothing`() {
         val hankkeet = listOf(HankeFactory.create(), HankeFactory.create())
 
-        disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
+        disclosureLogService.saveForHankkeet(hankkeet, userId)
 
         verify { auditLogService wasNot Called }
     }
@@ -184,7 +184,7 @@ internal class DisclosureLogServiceTest {
             )
         val expectedLogs = hankkeet.flatMap { AuditLogEntryFactory.createReadEntriesForHanke(it) }
 
-        disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
+        disclosureLogService.saveForHankkeet(hankkeet, userId)
 
         verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
@@ -198,7 +198,7 @@ internal class DisclosureLogServiceTest {
             )
         val expectedLogs = AuditLogEntryFactory.createReadEntriesForHanke(hankkeet[0])
 
-        disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
+        disclosureLogService.saveForHankkeet(hankkeet, userId)
 
         verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
@@ -208,7 +208,7 @@ internal class DisclosureLogServiceTest {
         val hankeKayttaja = HankeKayttajaFactory.createDto()
         val expectedLogs = AuditLogEntryFactory.createReadEntryForHankeKayttaja(hankeKayttaja)
 
-        disclosureLogService.saveDisclosureLogsForHankeKayttaja(hankeKayttaja, userId)
+        disclosureLogService.saveForHankeKayttaja(hankeKayttaja, userId)
 
         verify { auditLogService.createAll(listOf(expectedLogs)) }
     }
@@ -218,7 +218,7 @@ internal class DisclosureLogServiceTest {
         val hankeKayttajat = HankeKayttajaFactory.createHankeKayttajat(amount = 2)
         val expectedLogs = AuditLogEntryFactory.createReadEntryForHankeKayttajat(hankeKayttajat)
 
-        disclosureLogService.saveDisclosureLogsForHankeKayttajat(hankeKayttajat, userId)
+        disclosureLogService.saveForHankeKayttajat(hankeKayttajat, userId)
 
         verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
@@ -241,7 +241,7 @@ internal class DisclosureLogServiceTest {
                     hankeTunnus = hankeTunnus,
                 )
 
-            disclosureLogService.saveDisclosureLogsForHakemusResponse(hakemusResponse, userId)
+            disclosureLogService.saveForHakemusResponse(hakemusResponse, userId)
 
             verify { auditLogService wasNot Called }
         }
@@ -263,7 +263,7 @@ internal class DisclosureLogServiceTest {
                     hankeTunnus = hankeTunnus,
                 )
 
-            disclosureLogService.saveDisclosureLogsForHakemusResponse(hakemusResponse, userId)
+            disclosureLogService.saveForHakemusResponse(hakemusResponse, userId)
 
             verify { auditLogService wasNot Called }
         }
@@ -271,7 +271,7 @@ internal class DisclosureLogServiceTest {
         @Test
         fun `doesn't save entries for blank customers`() {
             val blankCustomer =
-                CustomerResponse(UUID.randomUUID(), CustomerType.PERSON, "", "", "", "")
+                CustomerResponse(UUID.randomUUID(), CustomerType.PERSON, "", "", "", null, true)
             val customerWithoutContacts = CustomerWithContactsResponse(blankCustomer, listOf())
             val contractorWithoutContacts = CustomerWithContactsResponse(blankCustomer, listOf())
             val hakemusResponse =
@@ -284,7 +284,7 @@ internal class DisclosureLogServiceTest {
                     hankeTunnus = hankeTunnus,
                 )
 
-            disclosureLogService.saveDisclosureLogsForHakemusResponse(hakemusResponse, userId)
+            disclosureLogService.saveForHakemusResponse(hakemusResponse, userId)
 
             verify { auditLogService wasNot Called }
         }
@@ -305,7 +305,7 @@ internal class DisclosureLogServiceTest {
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
-            disclosureLogService.saveDisclosureLogsForHakemusResponse(hakemusResponse, userId)
+            disclosureLogService.saveForHakemusResponse(hakemusResponse, userId)
 
             val expectedLogs =
                 listOf(HAKIJA, TYON_SUORITTAJA).map {
@@ -335,7 +335,7 @@ internal class DisclosureLogServiceTest {
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
-            disclosureLogService.saveDisclosureLogsForHakemusResponse(application, userId)
+            disclosureLogService.saveForHakemusResponse(application, userId)
 
             assertThat(capturedLogs.captured)
                 .containsAtLeast(
@@ -377,7 +377,7 @@ internal class DisclosureLogServiceTest {
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
-            disclosureLogService.saveDisclosureLogsForAllu(
+            disclosureLogService.saveForAllu(
                 applicationId,
                 hakemusData.toAlluCableReportData(hankeTunnus),
                 expectedStatus,
@@ -400,7 +400,7 @@ internal class DisclosureLogServiceTest {
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
-            disclosureLogService.saveDisclosureLogsForAllu(
+            disclosureLogService.saveForAllu(
                 applicationId,
                 hakemusData.toAlluCableReportData(hankeTunnus),
                 Status.SUCCESS,
@@ -423,7 +423,7 @@ internal class DisclosureLogServiceTest {
             val applicationId = 41L
             val personCustomer =
                 HakemusyhteystietoFactory.createPerson(
-                    nimi = "", puhelinnumero = "", sahkoposti = "", ytunnus = "")
+                    nimi = "", puhelinnumero = "", sahkoposti = "", registryKey = "")
             val companyCustomer = HakemusyhteystietoFactory.create()
             val hakemusData =
                 HakemusFactory.createJohtoselvityshakemusData(
@@ -431,7 +431,7 @@ internal class DisclosureLogServiceTest {
                     contractorWithContacts = companyCustomer,
                 )
 
-            disclosureLogService.saveDisclosureLogsForAllu(
+            disclosureLogService.saveForAllu(
                 applicationId,
                 hakemusData.toAlluCableReportData(hankeTunnus),
                 Status.SUCCESS,
@@ -464,7 +464,7 @@ internal class DisclosureLogServiceTest {
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
-            disclosureLogService.saveDisclosureLogsForAllu(
+            disclosureLogService.saveForAllu(
                 applicationId,
                 hakemusData.toAlluExcavationNotificationData(hankeTunnus),
                 Status.SUCCESS,
@@ -489,7 +489,7 @@ internal class DisclosureLogServiceTest {
             val capturedLogs = slot<Collection<AuditLogEntry>>()
             every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
-            disclosureLogService.saveDisclosureLogsForAllu(
+            disclosureLogService.saveForAllu(
                 applicationId,
                 hakemusData.toAlluExcavationNotificationData(hankeTunnus),
                 Status.SUCCESS,
@@ -536,7 +536,7 @@ internal class DisclosureLogServiceTest {
                     objectBefore = expectedObject,
                 )
 
-            disclosureLogService.saveDisclosureLogsForCableReport(hakemus.toMetadata(), userId)
+            disclosureLogService.saveForCableReport(hakemus.toMetadata(), userId)
 
             verify { auditLogService.create(expectedLog) }
         }
@@ -568,7 +568,7 @@ internal class DisclosureLogServiceTest {
                     objectBefore = expectedObject)
             val metadata = PaatosMetadata(paatosId, hakemusId, hakemustunnus, tyyppi, tila)
 
-            disclosureLogService.saveDisclosureLogsForPaatos(metadata, userId)
+            disclosureLogService.saveForPaatos(metadata, userId)
 
             verifySequence { auditLogService.create(expectedLog) }
         }

@@ -18,6 +18,7 @@ import fi.hel.haitaton.hanke.validation.Validators.notNull
 import fi.hel.haitaton.hanke.validation.Validators.notNullOrBlank
 import fi.hel.haitaton.hanke.validation.Validators.notNullOrEmpty
 import fi.hel.haitaton.hanke.validation.Validators.validate
+import fi.hel.haitaton.hanke.validation.Validators.validateNull
 import fi.hel.haitaton.hanke.validation.Validators.validateTrue
 
 /**
@@ -52,13 +53,10 @@ object HankePublicValidator {
                 firstOf(
                     notNull(alue.geometriat, "$path.geometriat"),
                     notNull(
-                        alue.geometriat?.featureCollection,
-                        "$path.geometriat.featureCollection"
-                    ),
+                        alue.geometriat?.featureCollection, "$path.geometriat.featureCollection"),
                     notNullOrEmpty(
                         alue.geometriat?.featureCollection?.features,
-                        "$path.geometriat.featureCollection.features"
-                    ),
+                        "$path.geometriat.featureCollection.features"),
                 )
             }
             .and { notNullOrBlank(alue.nimi, "$path.nimi") }
@@ -78,7 +76,7 @@ object HankePublicValidator {
                 validateTrue(yhteystieto.ytunnus.isValidBusinessId(), "$path.ytunnus")
             }
             .andWhen(yhteystieto.tyyppi == YKSITYISHENKILO) {
-                validateTrue(yhteystieto.ytunnus == null, "$path.ytunnus")
+                validateNull(yhteystieto.ytunnus, "$path.ytunnus")
             }
 
     internal fun validateHaittojenhallintasuunnitelmaCommonFields(
@@ -102,9 +100,7 @@ object HankePublicValidator {
             }
             .andWhen(tt.linjaautoliikenneindeksi > 0) {
                 notNullOrBlank(
-                    hhs[Haittojenhallintatyyppi.LINJAAUTOLIIKENNE],
-                    "$path.LINJAAUTOLIIKENNE"
-                )
+                    hhs[Haittojenhallintatyyppi.LINJAAUTOLIIKENNE], "$path.LINJAAUTOLIIKENNE")
             }
             .andWhen(tt.raitioliikenneindeksi > 0f) {
                 notNullOrBlank(hhs[Haittojenhallintatyyppi.RAITIOLIIKENNE], "$path.RAITIOLIIKENNE")

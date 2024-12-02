@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.daysBetween
 import fi.hel.haitaton.hanke.geometria.GeometriatValidator
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
@@ -11,7 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.time.ZonedDateTime
-import java.time.temporal.ChronoUnit
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -34,7 +34,7 @@ class TormaystarkasteluController(
     @Operation(
         summary = "Calculate nuisance indices",
         description =
-            "Calculate nuisance indices with the given geometry and other information. The calculated indices will not be saved anywhere."
+            "Calculate nuisance indices with the given geometry and other information. The calculated indices will not be saved anywhere.",
     )
     @ApiResponses(
         value =
@@ -42,14 +42,14 @@ class TormaystarkasteluController(
                 ApiResponse(
                     description =
                         "The calculated nuisance indices for the given geometry and other information.",
-                    responseCode = "200"
+                    responseCode = "200",
                 ),
                 ApiResponse(
                     description = "The given information was not valid.",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ]
+            ],
     )
     fun calculate(@RequestBody request: TormaystarkasteluRequest): TormaystarkasteluTulos {
         GeometriatValidator.expectValid(request.geometriat.featureCollection)
@@ -58,14 +58,13 @@ class TormaystarkasteluController(
             throw EndBeforeStartException(request.haittaAlkuPvm, request.haittaLoppuPvm)
         }
 
-        val haittaajanKestoDays =
-            ChronoUnit.DAYS.between(request.haittaAlkuPvm, request.haittaLoppuPvm).toInt() + 1
+        val haittaajanKestoDays = daysBetween(request.haittaAlkuPvm, request.haittaLoppuPvm)
 
         return tormaystarkasteluLaskentaService.calculateTormaystarkastelu(
             request.geometriat.featureCollection,
             haittaajanKestoDays,
             request.kaistaHaitta,
-            request.kaistaPituusHaitta
+            request.kaistaPituusHaitta,
         )
     }
 

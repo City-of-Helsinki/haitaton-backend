@@ -32,56 +32,17 @@ data class EmailFilterProperties(
     @Delimiter(";") val allowList: List<String>,
 )
 
-data class ApplicationNotificationData(
-    val senderName: String,
-    val senderEmail: String,
-    val recipientEmail: String,
-    val applicationType: ApplicationType,
-    val hankeTunnus: String,
-    val hankeNimi: String,
-)
-
-data class HankeInvitationData(
-    val inviterName: String,
-    val inviterEmail: String,
-    val recipientEmail: String,
-    val hankeTunnus: String,
-    val hankeNimi: String,
-    val invitationToken: String,
-)
-
-data class AccessRightsUpdateNotificationData(
-    val recipientEmail: String,
-    val hankeTunnus: String,
-    val hankeNimi: String,
-    val updatedByName: String,
-    val updatedByEmail: String,
-    val newAccessRights: Kayttooikeustaso,
-)
-
-data class RemovalFromHankeNotificationData(
-    val recipientEmail: String,
-    val hankeTunnus: String,
-    val hankeNimi: String,
-    val deletedByName: String,
-    val deletedByEmail: String,
-)
-
 data class Translations(val fi: String, val sv: String, val en: String)
 
 enum class EmailTemplate(val value: String) {
-    CABLE_REPORT_DONE("johtoselvitys-valmis"),
-    INVITATION_HANKE("kayttaja-lisatty-hanke"),
-    APPLICATION_NOTIFICATION("kayttaja-lisatty-hakemus"),
     ACCESS_RIGHTS_UPDATE_NOTIFICATION("kayttooikeustason-muutos"),
+    APPLICATION_NOTIFICATION("kayttaja-lisatty-hakemus"),
+    CABLE_REPORT_DONE("johtoselvitys-valmis"),
+    EXCAVATION_NOTIFICATION_DECISION("kaivuilmoitus-paatos"),
+    INVITATION_HANKE("kayttaja-lisatty-hanke"),
     REMOVAL_FROM_HANKE_NOTIFICATION("kayttaja-poistettu-hanke"),
+    INFORMATION_REQUEST("taydennyspyynto"),
 }
-
-data class JohtoselvitysCompleteEmail(
-    val to: String,
-    val applicationId: Long?,
-    val applicationIdentifier: String,
-)
 
 @Service
 class EmailSenderService(
@@ -104,7 +65,22 @@ class EmailSenderService(
         sendHybridEmail(event.to, EmailTemplate.CABLE_REPORT_DONE, templateData)
     }
 
-    fun sendHankeInvitationEmail(data: HankeInvitationData) {
+    @TransactionalEventListener
+    fun sendKaivuilmoitusDecisionEmail(event: KaivuilmoitusDecisionEmail) {
+        logger.info { "Sending email for decision in kaivuilmoitus ${event.applicationIdentifier}" }
+
+        val templateData =
+            mapOf(
+                "baseUrl" to emailConfig.baseUrl,
+                "applicationId" to event.applicationId.toString(),
+                "applicationIdentifier" to event.applicationIdentifier,
+            )
+
+        sendHybridEmail(event.to, EmailTemplate.EXCAVATION_NOTIFICATION_DECISION, templateData)
+    }
+
+    @TransactionalEventListener
+    fun sendHankeInvitationEmail(data: HankeInvitationEmail) {
         logger.info { "Sending invitation email for Hanke" }
 
         val templateData =
@@ -118,10 +94,11 @@ class EmailSenderService(
                 "signatures" to signatures(),
             )
 
-        sendHybridEmail(data.recipientEmail, EmailTemplate.INVITATION_HANKE, templateData)
+        sendHybridEmail(data.to, EmailTemplate.INVITATION_HANKE, templateData)
     }
 
-    fun sendApplicationNotificationEmail(data: ApplicationNotificationData) {
+    @TransactionalEventListener
+    fun sendApplicationNotificationEmail(data: ApplicationNotificationEmail) {
         logger.info { "Sending notification email for application" }
 
         val templateData =
@@ -135,16 +112,17 @@ class EmailSenderService(
                 "signatures" to signatures(),
             )
 
-        sendHybridEmail(data.recipientEmail, EmailTemplate.APPLICATION_NOTIFICATION, templateData)
+        sendHybridEmail(data.to, EmailTemplate.APPLICATION_NOTIFICATION, templateData)
     }
 
-    fun sendAccessRightsUpdateNotificationEmail(data: AccessRightsUpdateNotificationData) {
+    @TransactionalEventListener
+    fun sendAccessRightsUpdateNotificationEmail(data: AccessRightsUpdateNotificationEmail) {
         logger.info { "Sending notification email for access rights update" }
 
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "recipientEmail" to data.recipientEmail,
+                "recipientEmail" to data.to,
                 "hankeTunnus" to data.hankeTunnus,
                 "hankeNimi" to data.hankeNimi,
                 "updatedByName" to data.updatedByName,
@@ -154,19 +132,20 @@ class EmailSenderService(
             )
 
         sendHybridEmail(
-            data.recipientEmail,
+            data.to,
             EmailTemplate.ACCESS_RIGHTS_UPDATE_NOTIFICATION,
             templateData,
         )
     }
 
-    fun sendRemovalFromHankeNotificationEmail(data: RemovalFromHankeNotificationData) {
+    @TransactionalEventListener
+    fun sendRemovalFromHankeNotificationEmail(data: RemovalFromHankeNotificationEmail) {
         logger.info { "Sending notification email for removal from hanke" }
 
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "recipientEmail" to data.recipientEmail,
+                "recipientEmail" to data.to,
                 "hankeTunnus" to data.hankeTunnus,
                 "hankeNimi" to data.hankeNimi,
                 "deletedByName" to data.deletedByName,
@@ -175,13 +154,35 @@ class EmailSenderService(
             )
 
         sendHybridEmail(
-            data.recipientEmail,
+            data.to,
             EmailTemplate.REMOVAL_FROM_HANKE_NOTIFICATION,
             templateData,
         )
     }
 
+    @TransactionalEventListener
+    fun sendInformationRequestEmail(data: InformationRequestEmail) {
+        logger.info { "Sending notification email for information request" }
+
+        val templateData =
+            mapOf(
+                "baseUrl" to emailConfig.baseUrl,
+                "recipientEmail" to data.to,
+                "hakemusNimi" to data.hakemusNimi,
+                "hakemusTunnus" to data.hakemusTunnus,
+                "hakemusId" to data.hakemusId,
+                "signatures" to signatures(),
+            )
+
+        sendHybridEmail(
+            data.to,
+            EmailTemplate.INFORMATION_REQUEST,
+            templateData,
+        )
+    }
+
     private fun sendHybridEmail(to: String, template: EmailTemplate, data: Map<String, Any>) {
+        logger.info { "Parsing email with template ${template.value}" }
         if (emailConfig.filter.use && emailNotAllowed(to)) {
             logger.info { "Email recipient not allowed, ignoring email." }
             return
@@ -198,7 +199,9 @@ class EmailSenderService(
         helper.setTo(to)
         helper.setSubject(subject)
         helper.setFrom(emailConfig.from)
+        logger.info { "Sending email message..." }
         mailSender.send(mimeMessage)
+        logger.info { "Sent email with template ${template.value}" }
     }
 
     private fun signatures() =
@@ -227,7 +230,7 @@ class EmailSenderService(
                     Translations(
                         fi = "kaivuilmoitusta",
                         sv = "grävningsanmälan",
-                        en = "excavating declaration",
+                        en = "an excavation notification",
                     )
             }
 

@@ -9,7 +9,7 @@ import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.ContactRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
-import fi.hel.haitaton.hanke.hakemus.HakemusResponse
+import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.Hakemusalue
 import fi.hel.haitaton.hanke.hakemus.InvoicingCustomerRequest
@@ -36,12 +36,6 @@ object HakemusUpdateRequestFactory {
         InvoicingPostalAddressRequest(StreetAddress("Testikatu 1"), "00100", "Helsinki")
     internal const val DEFAULT_OVT = "003734741376"
 
-    fun createBlankUpdateRequest(type: ApplicationType): HakemusUpdateRequest =
-        when (type) {
-            ApplicationType.CABLE_REPORT -> createBlankJohtoselvityshakemusUpdateRequest()
-            ApplicationType.EXCAVATION_NOTIFICATION -> createBlankKaivuilmoitusUpdateRequest()
-        }
-
     fun createBlankJohtoselvityshakemusUpdateRequest(): JohtoselvityshakemusUpdateRequest =
         JohtoselvityshakemusUpdateRequest(
             name = "",
@@ -58,7 +52,7 @@ object HakemusUpdateRequestFactory {
             customerWithContacts = null,
             contractorWithContacts = null,
             propertyDeveloperWithContacts = null,
-            representativeWithContacts = null
+            representativeWithContacts = null,
         )
 
     fun createBlankKaivuilmoitusUpdateRequest(): KaivuilmoitusUpdateRequest =
@@ -69,7 +63,9 @@ object HakemusUpdateRequestFactory {
             maintenanceWork = false,
             emergencyWork = false,
             cableReportDone = false,
-            rockExcavation = false,
+            rockExcavation = null,
+            cableReports = null,
+            placementContracts = null,
             startTime = null,
             endTime = null,
             areas = null,
@@ -105,11 +101,11 @@ object HakemusUpdateRequestFactory {
                 createCustomerWithContactsRequest(
                     CustomerType.COMPANY,
                     null,
-                    UUID.fromString("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f")
+                    UUID.fromString("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f"),
                 ),
             contractorWithContacts = null,
             propertyDeveloperWithContacts = null,
-            representativeWithContacts = null
+            representativeWithContacts = null,
         )
 
     fun createFilledKaivuilmoitusUpdateRequest(): KaivuilmoitusUpdateRequest =
@@ -127,54 +123,83 @@ object HakemusUpdateRequestFactory {
                 listOf(
                     createExcavationNotificationArea(
                         "Hankealue 1",
-                        tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon()))
-                    )
-                ),
+                        tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon())),
+                    )),
             customerWithContacts =
                 createCustomerWithContactsRequest(
                     CustomerType.COMPANY,
                     null,
-                    UUID.fromString("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f")
+                    UUID.fromString("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f"),
                 ),
             contractorWithContacts = null,
             propertyDeveloperWithContacts = null,
             representativeWithContacts = null,
             invoicingCustomer =
                 createInvoicingCustomerRequest(
-                    CustomerType.COMPANY,
-                    "Testiyritys",
-                    DEFAULT_CUSTOMER_REGISTRY_KEY,
-                    DEFAULT_OVT,
-                    "Välittäjän tunnus",
-                    DEFAULT_CUSTOMER_REFERENCE,
-                    DEFAULT_INVOICE_CUSTOMER_ADDRESS,
-                    DEFAULT_CUSTOMER_EMAIL,
-                    DEFAULT_CUSTOMER_PHONE,
+                    customerType = CustomerType.COMPANY,
+                    name = "Testiyritys",
+                    registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
+                    ovt = DEFAULT_OVT,
+                    invoicingOperator = "Välittäjän tunnus",
+                    customerReference = DEFAULT_CUSTOMER_REFERENCE,
+                    postalAddressRequest = DEFAULT_INVOICE_CUSTOMER_ADDRESS,
+                    email = DEFAULT_CUSTOMER_EMAIL,
+                    phone = DEFAULT_CUSTOMER_PHONE,
                 ),
-            additionalInfo = "Lisätiedot"
+            additionalInfo = "Lisätiedot",
         )
 
-    private fun createCustomerWithContactsRequest(
+    fun createCustomerWithContactsRequest(
+        customerType: CustomerType = CustomerType.COMPANY,
+        yhteystietoId: UUID? = UUID.randomUUID(),
+        registryKey: String?,
+        vararg hankekayttajaIds: UUID
+    ) =
+        CustomerWithContactsRequest(
+            createCustomer(
+                yhteystietoId = yhteystietoId,
+                type = customerType,
+                registryKey = registryKey,
+            ),
+            hankekayttajaIds.map { ContactRequest(it) },
+        )
+
+    fun createCustomerWithContactsRequest(
         customerType: CustomerType = CustomerType.COMPANY,
         yhteystietoId: UUID? = UUID.randomUUID(),
         vararg hankekayttajaIds: UUID
     ) =
-        CustomerWithContactsRequest(
-            CustomerRequest(
-                yhteystietoId = yhteystietoId,
-                type = customerType,
-                name = DEFAULT_CUSTOMER_NAME,
-                email = DEFAULT_CUSTOMER_EMAIL,
-                phone = DEFAULT_CUSTOMER_PHONE,
-                registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
-            ),
-            hankekayttajaIds.map { ContactRequest(it) }
+        createCustomerWithContactsRequest(
+            customerType = customerType,
+            yhteystietoId = yhteystietoId,
+            registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
+            hankekayttajaIds = hankekayttajaIds,
         )
 
-    private fun createInvoicingCustomerRequest(
+    fun createCustomer(
+        yhteystietoId: UUID? = UUID.randomUUID(),
+        type: CustomerType = CustomerType.COMPANY,
+        name: String = DEFAULT_CUSTOMER_NAME,
+        email: String = DEFAULT_CUSTOMER_EMAIL,
+        phone: String = DEFAULT_CUSTOMER_PHONE,
+        registryKey: String? = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKeyHidden: Boolean = false,
+    ) =
+        CustomerRequest(
+            yhteystietoId = yhteystietoId,
+            type = type,
+            name = name,
+            email = email,
+            phone = phone,
+            registryKey = registryKey,
+            registryKeyHidden = registryKeyHidden,
+        )
+
+    fun createInvoicingCustomerRequest(
         customerType: CustomerType = CustomerType.COMPANY,
         name: String = DEFAULT_CUSTOMER_NAME,
-        registryKey: String = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKey: String? = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKeyHidden: Boolean = false,
         ovt: String? = null,
         invoicingOperator: String? = null,
         customerReference: String? = null,
@@ -186,6 +211,7 @@ object HakemusUpdateRequestFactory {
             type = customerType,
             name = name,
             registryKey = registryKey,
+            registryKeyHidden = registryKeyHidden,
             ovt = ovt,
             invoicingOperator = invoicingOperator,
             customerReference = customerReference,
@@ -203,13 +229,11 @@ object HakemusUpdateRequestFactory {
             is JohtoselvityshakemusUpdateRequest ->
                 this.copy(
                     customerWithContacts =
-                        createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds)
-                )
+                        createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds))
             is KaivuilmoitusUpdateRequest ->
                 this.copy(
                     customerWithContacts =
-                        createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds)
-                )
+                        createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds))
         }
 
     fun HakemusUpdateRequest.withCustomer(
@@ -218,7 +242,8 @@ object HakemusUpdateRequestFactory {
         name: String = DEFAULT_CUSTOMER_NAME,
         email: String = DEFAULT_CUSTOMER_EMAIL,
         phone: String = DEFAULT_CUSTOMER_PHONE,
-        registryKey: String = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKey: String? = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKeyHidden: Boolean = false,
         vararg hankekayttajaIds: UUID
     ) =
         when (this) {
@@ -232,11 +257,10 @@ object HakemusUpdateRequestFactory {
                                 name = name,
                                 email = email,
                                 phone = phone,
-                                registryKey = registryKey
+                                registryKey = registryKey,
                             ),
-                            hankekayttajaIds.map { ContactRequest(it) }
-                        )
-                )
+                            hankekayttajaIds.map { ContactRequest(it) },
+                        ))
             is KaivuilmoitusUpdateRequest ->
                 this.copy(
                     customerWithContacts =
@@ -247,11 +271,11 @@ object HakemusUpdateRequestFactory {
                                 name = name,
                                 email = email,
                                 phone = phone,
-                                registryKey = registryKey
+                                registryKey = registryKey,
+                                registryKeyHidden = registryKeyHidden,
                             ),
-                            hankekayttajaIds.map { ContactRequest(it) }
-                        )
-                )
+                            hankekayttajaIds.map { ContactRequest(it) },
+                        ))
         }
 
     fun HakemusUpdateRequest.withName(name: String) =
@@ -272,6 +296,13 @@ object HakemusUpdateRequestFactory {
             is KaivuilmoitusUpdateRequest -> this.copy(requiredCompetence = requiredCompetence)
         }
 
+    fun HakemusUpdateRequest.withDates(startTime: ZonedDateTime?, endTime: ZonedDateTime?) =
+        when (this) {
+            is JohtoselvityshakemusUpdateRequest ->
+                this.copy(startTime = startTime, endTime = endTime)
+            is KaivuilmoitusUpdateRequest -> this.copy(startTime = startTime, endTime = endTime)
+        }
+
     fun HakemusUpdateRequest.withArea(area: Hakemusalue?) = withAreas(area?.let { listOf(it) })
 
     fun HakemusUpdateRequest.withAreas(areas: List<Hakemusalue>?) =
@@ -282,37 +313,11 @@ object HakemusUpdateRequestFactory {
                 this.copy(areas = areas?.map { it as KaivuilmoitusAlue })
         }
 
-    fun HakemusUpdateRequest.withTimes(startTime: ZonedDateTime?, endTime: ZonedDateTime?) =
-        when (this) {
-            is JohtoselvityshakemusUpdateRequest ->
-                this.copy(startTime = startTime, endTime = endTime)
-            is KaivuilmoitusUpdateRequest -> this.copy(startTime = startTime, endTime = endTime)
-        }
-
-    fun HakemusUpdateRequest.withRegistryKey(registryKey: String) =
-        when (this) {
-            is JohtoselvityshakemusUpdateRequest ->
-                this.copy(
-                    customerWithContacts =
-                        this.customerWithContacts?.copy(
-                            customer =
-                                this.customerWithContacts!!.customer.copy(registryKey = registryKey)
-                        )
-                )
-            is KaivuilmoitusUpdateRequest ->
-                this.copy(
-                    customerWithContacts =
-                        this.customerWithContacts?.copy(
-                            customer =
-                                this.customerWithContacts!!.customer.copy(registryKey = registryKey)
-                        )
-                )
-        }
-
     fun KaivuilmoitusUpdateRequest.withInvoicingCustomer(
-        type: CustomerType? = CustomerType.COMPANY,
+        type: CustomerType = CustomerType.COMPANY,
         name: String? = DEFAULT_CUSTOMER_NAME,
         registryKey: String? = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        registryKeyHidden: Boolean = false,
         ovt: String? = null,
         invoicingOperator: String? = null,
         customerReference: String? = null,
@@ -326,14 +331,14 @@ object HakemusUpdateRequestFactory {
                     type = type,
                     name = name,
                     registryKey = registryKey,
+                    registryKeyHidden = registryKeyHidden,
                     ovt = ovt,
                     invoicingOperator = invoicingOperator,
                     customerReference = customerReference,
                     postalAddress = postalAddressRequest,
                     email = email,
                     phone = phone,
-                )
-        )
+                ))
 
     fun HakemusUpdateRequest.withContractor(
         type: CustomerType = CustomerType.COMPANY,
@@ -355,11 +360,10 @@ object HakemusUpdateRequestFactory {
                                 name = name,
                                 email = email,
                                 phone = phone,
-                                registryKey = registryKey
+                                registryKey = registryKey,
                             ),
-                            hankekayttajaIds.map { ContactRequest(it) }
-                        )
-                )
+                            hankekayttajaIds.map { ContactRequest(it) },
+                        ))
             is KaivuilmoitusUpdateRequest ->
                 this.copy(
                     contractorWithContacts =
@@ -370,11 +374,10 @@ object HakemusUpdateRequestFactory {
                                 name = name,
                                 email = email,
                                 phone = phone,
-                                registryKey = registryKey
+                                registryKey = registryKey,
                             ),
-                            hankekayttajaIds.map { ContactRequest(it) }
-                        )
-                )
+                            hankekayttajaIds.map { ContactRequest(it) },
+                        ))
         }
 
     fun HakemusUpdateRequest.withCustomer(
@@ -389,7 +392,7 @@ object HakemusUpdateRequestFactory {
             email = DEFAULT_CUSTOMER_EMAIL,
             phone = DEFAULT_CUSTOMER_PHONE,
             registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
-            hankekayttajaIds = hankekayttajaIds
+            hankekayttajaIds = hankekayttajaIds,
         )
 
     fun HakemusUpdateRequest.withContractor(
@@ -404,7 +407,7 @@ object HakemusUpdateRequestFactory {
             email = DEFAULT_CUSTOMER_EMAIL,
             phone = DEFAULT_CUSTOMER_PHONE,
             registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
-            hankekayttajaIds = hankekayttajaIds
+            hankekayttajaIds = hankekayttajaIds,
         )
 
     fun JohtoselvityshakemusUpdateRequest.withWorkDescription(workDescription: String) =
@@ -419,10 +422,9 @@ object HakemusUpdateRequestFactory {
         this.copy(
             customerWithContacts =
                 this.customerWithContacts?.copy(
-                    customer = this.customerWithContacts!!.customer.copy(registryKey = registryKey)
-                )
-        )
+                    customer =
+                        this.customerWithContacts!!.customer.copy(registryKey = registryKey)))
 
-    fun HakemusResponse.toUpdateRequest(): HakemusUpdateRequest =
-        this.applicationData.toJsonString().parseJson()
+    fun Hakemus.toUpdateRequest(): HakemusUpdateRequest =
+        this.toResponse().applicationData.toJsonString().parseJson()
 }

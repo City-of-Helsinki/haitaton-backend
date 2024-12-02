@@ -10,7 +10,7 @@ data class Hakemusyhteystieto(
     val nimi: String,
     val sahkoposti: String,
     val puhelinnumero: String,
-    val ytunnus: String?,
+    val registryKey: String?,
     val yhteyshenkilot: List<Hakemusyhteyshenkilo>,
 ) {
     fun toResponse(): CustomerWithContactsResponse =
@@ -22,10 +22,14 @@ data class Hakemusyhteystieto(
                     name = nimi,
                     email = sahkoposti,
                     phone = puhelinnumero,
-                    registryKey = ytunnus,
+                    registryKey = if (hideRegistryKey()) null else registryKey,
+                    registryKeyHidden = hideRegistryKey(),
                 ),
-            contacts = yhteyshenkilot.map { it.toResponse() }
+            contacts = yhteyshenkilot.map { it.toResponse() },
         )
+
+    private fun hideRegistryKey(): Boolean =
+        registryKey != null && (tyyppi == CustomerType.PERSON || tyyppi == CustomerType.OTHER)
 }
 
 data class Hakemusyhteyshenkilo(
@@ -46,7 +50,7 @@ data class Hakemusyhteyshenkilo(
 data class Laskutusyhteystieto(
     val tyyppi: CustomerType,
     val nimi: String,
-    val ytunnus: String?,
+    val registryKey: String?,
     val ovttunnus: String?,
     val valittajanTunnus: String?,
     val asiakkaanViite: String?,
@@ -60,12 +64,19 @@ data class Laskutusyhteystieto(
         InvoicingCustomerResponse(
             tyyppi,
             nimi,
-            ytunnus,
+            registryKey = if (hideRegistryKey()) null else registryKey,
+            registryKeyHidden = hideRegistryKey(),
             ovttunnus,
             valittajanTunnus,
             asiakkaanViite,
-            PostalAddress(StreetAddress(katuosoite), postinumero ?: "", postitoimipaikka ?: ""),
+            postalAddress(),
             sahkoposti,
-            puhelinnumero
+            puhelinnumero,
         )
+
+    fun postalAddress(): PostalAddress =
+        PostalAddress(StreetAddress(katuosoite), postinumero ?: "", postitoimipaikka ?: "")
+
+    private fun hideRegistryKey(): Boolean =
+        registryKey != null && (tyyppi == CustomerType.PERSON || tyyppi == CustomerType.OTHER)
 }

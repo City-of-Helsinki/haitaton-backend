@@ -6,6 +6,12 @@ import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusDeserializer
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusResponseDeserializer
+import fi.hel.haitaton.hanke.hakemus.HankkeenHakemusResponse
+import fi.hel.haitaton.hanke.hakemus.HankkeenHakemusResponseDeserializer
+import fi.hel.haitaton.hanke.taydennys.Taydennys
+import fi.hel.haitaton.hanke.taydennys.TaydennysDeserializer
+import fi.hel.haitaton.hanke.taydennys.TaydennysResponse
+import fi.hel.haitaton.hanke.taydennys.TaydennysResponseDeserializer
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 
@@ -28,6 +34,10 @@ class JacksonTestExtension : BeforeAllCallback {
         val module = SimpleModule()
         module.addDeserializer(Hakemus::class.java, HakemusDeserializer())
         module.addDeserializer(HakemusResponse::class.java, HakemusResponseDeserializer())
+        module.addDeserializer(Taydennys::class.java, TaydennysDeserializer())
+        module.addDeserializer(TaydennysResponse::class.java, TaydennysResponseDeserializer())
+        module.addDeserializer(
+            HankkeenHakemusResponse::class.java, HankkeenHakemusResponseDeserializer())
         OBJECT_MAPPER.registerModule(module)
     }
 

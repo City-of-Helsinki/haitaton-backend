@@ -189,7 +189,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
 
             verifySequence {
                 gdprService.findGdprInfo(USERNAME)
-                disclosureLogService.saveDisclosureLogsForProfiili(USERNAME, any<CollectionNode>())
+                disclosureLogService.saveForProfiili(any<CollectionNode>(), USERNAME)
             }
         }
     }

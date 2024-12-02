@@ -5,12 +5,17 @@ import assertk.all
 import assertk.assertions.contains
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.extracting
+import assertk.assertions.hasClass
 import assertk.assertions.isBetween
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
 import assertk.assertions.prop
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.NullNode
+import com.fasterxml.jackson.databind.node.TextNode
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.hakemus.StreetAddress
 import fi.hel.haitaton.hanke.validation.ValidationResult
@@ -64,10 +69,18 @@ object Asserts {
             .prop(StreetAddress::streetName)
             .isEqualTo(street)
 
-    fun Assert<ValidationResult>.failsWith(vararg paths: String) = all {
+    fun Assert<ValidationResult>.failedWith(vararg paths: String) = all {
         this.prop(ValidationResult::isOk).isFalse()
         this.prop(ValidationResult::errorPaths).containsExactlyInAnyOrder(*paths)
     }
 
-    fun Assert<ValidationResult>.succeeds() = this.prop(ValidationResult::isOk).isTrue()
+    fun Assert<ValidationResult>.isSuccess() = this.prop(ValidationResult::isOk).isTrue()
+
+    fun Assert<JsonNode>.hasNullNode(path: String) = hasPath(path).hasClass(NullNode::class)
+
+    fun Assert<JsonNode>.hasTextNode(path: String) =
+        hasPath(path).isInstanceOf(TextNode::class).transform { node: JsonNode -> node.textValue() }
+
+    private fun Assert<JsonNode>.hasPath(path: String) =
+        transform { node: JsonNode -> node.get(path) }.isNotNull()
 }

@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.HakemusDecisionNotFoundException
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.Duration.ofSeconds
 import java.time.Instant
 import java.time.LocalDate
@@ -30,7 +31,7 @@ import reactor.core.publisher.Mono
 
 private val logger = KotlinLogging.logger {}
 
-const val HAITATON_SYSTEM = "Haitaton järjestelmä"
+const val HAITATON_SYSTEM = "Haitaton-järjestelmä"
 const val AUTH_TOKEN_SAFETY_MARGIN_SECONDS = 5L * 60L
 
 class AlluClient(
@@ -161,7 +162,7 @@ class AlluClient(
         alluApplicationId: Int,
         application: AlluApplicationData,
         path: String,
-        name: String
+        name: String,
     ) {
         logger.info { "Updating $name $alluApplicationId." }
         put("$path/$alluApplicationId", application)
@@ -209,46 +210,56 @@ class AlluClient(
         }
     }
 
-    fun reportOperationalCondition(alluApplicationId: Int, operationalConditionDate: LocalDate) {
-        logger.info { "Reporting operational condition for application $alluApplicationId." }
+    fun reportCompletionDate(
+        type: ValmistumisilmoitusType,
+        alluApplicationId: Int,
+        reportDate: LocalDate,
+    ) {
+        logger.info { "Reporting ${type.logName} for application $alluApplicationId." }
         put(
-                "excavationannouncements/$alluApplicationId/operationalcondition",
-                operationalConditionDate.atStartOfDay(TZ_UTC).toJsonString())
+                "excavationannouncements/$alluApplicationId/${type.urlSuffix}",
+                reportDate.atStartOfDay(TZ_UTC).toJsonString(),
+            )
             .bodyToMono(Void::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
-                logError("Error reporting operation condition to Allu", it)
+                logError("Error reporting ${type.logName} to Allu", it)
             }
             .block()
     }
 
-    fun getInformationRequests(alluApplicationId: Int): List<InformationRequest> {
+    fun getInformationRequest(alluApplicationId: Int): InformationRequest? {
         logger.info { "Fetching information request for application $alluApplicationId." }
         return get("applications/$alluApplicationId/informationrequests")
-            .bodyToFlux(InformationRequest::class.java)
+            .bodyToMono(InformationRequest::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error getting application information from Allu", it)
             }
-            .collectList()
-            .blockOptional()
-            .orElseThrow()
+            .block()
     }
 
     fun respondToInformationRequest(
         alluApplicationId: Int,
         requestId: Int,
-        cableReport: AlluCableReportApplicationData,
-        updatedFields: List<InformationRequestFieldKey>,
+        applicationData: AlluApplicationData,
+        updatedFields: Set<InformationRequestFieldKey>,
     ) {
-        logger.info { "Responding to information request." }
-        post(
-                "cablereports/$alluApplicationId/informationrequests/$requestId/response",
-                CableReportInformationRequestResponse(cableReport, updatedFields),
-            )
-            .toBodilessEntity()
-            .timeout(defaultTimeout)
-            .block()
+        logger.info {
+            "Responding to information request. Application: $alluApplicationId, request: $requestId. Updated field keys are: ${updatedFields.joinToString()}"
+        }
+
+        val path =
+            when (applicationData) {
+                is AlluCableReportApplicationData ->
+                    "cablereports/$alluApplicationId/informationrequests/$requestId/response"
+
+                is AlluExcavationNotificationData ->
+                    "excavationannouncements/$alluApplicationId/informationrequests/$requestId/response"
+            }
+
+        val request = InformationRequestResponse(applicationData, updatedFields)
+        post(path, request).toBodilessEntity().timeout(defaultTimeout).block()
     }
 
     fun getDecisionPdf(alluApplicationId: Int): ByteArray {
@@ -277,8 +288,11 @@ class AlluClient(
                     {
                         Mono.error(
                             HakemusDecisionNotFoundException(
-                                "Document not found in Allu. alluApplicationId=$alluApplicationId"))
-                    })
+                                "Document not found in Allu. alluApplicationId=$alluApplicationId"
+                            )
+                        )
+                    },
+                )
                 .toEntity(ByteArrayResource::class.java)
                 .timeout(defaultTimeout)
                 .doOnError(WebClientResponseException::class.java) {
@@ -389,7 +403,7 @@ class AlluClient(
     private fun postRequest(
         path: String,
         contentType: MediaType = MediaType.APPLICATION_JSON,
-        accept: MediaType = MediaType.APPLICATION_JSON
+        accept: MediaType = MediaType.APPLICATION_JSON,
     ): WebClient.RequestBodySpec {
         val token = getToken()
         return webClient
@@ -404,7 +418,7 @@ class AlluClient(
         path: String,
         body: Any,
         contentType: MediaType = MediaType.APPLICATION_JSON,
-        accept: MediaType = MediaType.APPLICATION_JSON
+        accept: MediaType = MediaType.APPLICATION_JSON,
     ): WebClient.ResponseSpec = postRequest(path, contentType, accept).bodyValue(body).retrieve()
 
     private fun putRequest(path: String): WebClient.RequestBodySpec {
@@ -441,7 +455,7 @@ data class LoginInfo(val username: String, val password: String)
 
 data class Attachment(
     val metadata: AttachmentMetadata,
-    @Suppress("ArrayInDataClass") val file: ByteArray
+    @Suppress("ArrayInDataClass") val file: ByteArray,
 )
 
 class AlluLoginException(cause: Throwable) : RuntimeException(cause)

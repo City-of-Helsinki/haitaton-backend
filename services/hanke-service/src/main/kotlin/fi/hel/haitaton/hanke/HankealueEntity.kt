@@ -26,7 +26,6 @@ import jakarta.persistence.MapKeyEnumerated
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 
 @Entity
 @Table(name = "hankealue")
@@ -53,25 +52,20 @@ class HankealueEntity(
         fetch = FetchType.LAZY,
         mappedBy = "hankealue",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     var tormaystarkasteluTulos: TormaystarkasteluTulosEntity?,
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
         name = "hankkeen_haittojenhallintasuunnitelma",
-        joinColumns = [JoinColumn(name = "hankealue_id", referencedColumnName = "id")]
+        joinColumns = [JoinColumn(name = "hankealue_id", referencedColumnName = "id")],
     )
     @MapKeyColumn(name = "tyyppi")
     @Column(name = "sisalto")
     @MapKeyEnumerated(EnumType.STRING)
     var haittojenhallintasuunnitelma: MutableMap<Haittojenhallintatyyppi, String> = mutableMapOf(),
 ) : HasId<Int> {
-    fun haittaAjanKestoDays(): Int? =
-        if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
-            ChronoUnit.DAYS.between(haittaAlkuPvm, haittaLoppuPvm).toInt() + 1
-        } else {
-            null
-        }
+    fun haittaAjanKestoDays(): Int? = daysBetween(haittaAlkuPvm, haittaLoppuPvm)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

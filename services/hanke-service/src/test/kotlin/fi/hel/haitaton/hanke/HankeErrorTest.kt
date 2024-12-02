@@ -12,5 +12,4 @@ class HankeErrorTest {
         val expected = """{"errorMessage":"${err.errorMessage}","errorCode":"${err.errorCode}"}"""
         assertThat(err.toJsonString()).isEqualTo(expected)
     }
-
 }

@@ -29,6 +29,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
@@ -42,7 +43,6 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUST
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
@@ -67,7 +67,6 @@ import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.Asserts.isRecentUTC
 import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
@@ -78,6 +77,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
+import fi.hel.haitaton.hanke.test.AuthenticationMocks
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -86,7 +86,6 @@ import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
-import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifySequence
 import net.pwall.mustache.Template
@@ -102,8 +101,6 @@ import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.security.core.context.SecurityContext
-import org.springframework.transaction.annotation.Transactional
 
 private const val NAME_1 = "etu1 suku1"
 private const val NAME_2 = "etu2 suku2"
@@ -119,7 +116,6 @@ class HankeServiceITests(
     @Autowired private val kayttajakutsuRepository: KayttajakutsuRepository,
     @Autowired private val hankeAttachmentRepository: HankeAttachmentRepository,
     @Autowired private val fileClient: MockFileClient,
-    @Autowired private val profiiliClient: ProfiiliClient,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
@@ -239,7 +235,7 @@ class HankeServiceITests(
         @Test
         fun `returns a new domain object with the correct values`() {
             val request: CreateHankeRequest = HankeFactory.createRequest()
-            val securityContext = setUpProfiiliMocks()
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             // Call create and get the return object:
             val returnedHanke = hankeService.createHanke(request, securityContext)
@@ -275,7 +271,7 @@ class HankeServiceITests(
         @Test
         fun `saves object to database with the correct values`() {
             val request: CreateHankeRequest = HankeFactory.createRequest()
-            val securityContext = setUpProfiiliMocks()
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             // Call create and get the return object:
             val returnedHanke = hankeService.createHanke(request, securityContext)
@@ -303,7 +299,7 @@ class HankeServiceITests(
         @Test
         fun `creates permissions and a user for the founder`() {
             val request: CreateHankeRequest = HankeFactory.createRequest()
-            val securityContext = setUpProfiiliMocks()
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             val returnedHanke = hankeService.createHanke(request, securityContext)
 
@@ -331,7 +327,7 @@ class HankeServiceITests(
         fun `creates audit log entry for created hanke`() {
             TestUtils.addMockedRequestIp()
             val request = HankeFactory.createRequest()
-            val securityContext = setUpProfiiliMocks()
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             val hanke = hankeService.createHanke(request, securityContext)
 
@@ -480,123 +476,6 @@ class HankeServiceITests(
         }
     }
 
-    @Test
-    @Transactional // due to lazy initialized fields being accessed
-    fun `test personal data processing restriction`() {
-        // Setup Hanke with two Yhteystietos in different groups. The test will only manipulate the
-        // rakennuttaja.
-        val hanke =
-            hankeFactory
-                .builder(USERNAME)
-                .withGeneratedOmistaja(1)
-                .withGeneratedRakennuttaja(2)
-                .save()
-        // Logs must have 2 entries (two yhteystietos were created):
-        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(2)
-
-        // Get the non-owner yhteystieto, and set the processing restriction (i.e. locked) -flag
-        // (must be done via entities):
-        // Fetching the yhteystieto is a bit clumsy since we don't have separate a
-        // YhteystietoRepository.
-        var hankeEntity = hankeRepository.findById(hanke.id).get()
-        var yhteystietos = hankeEntity.yhteystiedot
-        var rakennuttajaEntity =
-            yhteystietos.filter { it.contactType == ContactType.RAKENNUTTAJA }[0]
-        val rakennuttajaId = rakennuttajaEntity.id.toString()
-        rakennuttajaEntity.dataLocked = true
-        // Not setting the info field, or adding audit log entry, since the idea is to only test
-        // that the locking actually prevents processing.
-        // Saving the hanke will save the yhteystieto in it, too:
-        hankeRepository.save(hankeEntity)
-
-        // Try to update the yhteystieto. It should fail and add a new log entry.
-        val hankeWithLockedYT = hankeService.loadHanke(hanke.hankeTunnus)
-        hankeWithLockedYT!!.rakennuttajat[0].nimi = "Muhaha-Evil-Change"
-
-        assertFailure {
-                hankeService.updateHanke(hanke.hankeTunnus, hankeWithLockedYT.toModifyRequest())
-            }
-            .hasClass(HankeYhteystietoProcessingRestrictedException::class.java)
-        // The initial create has created two entries to the log, and now the failed update should
-        // have added one more.
-        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(3)
-        var auditLogEvents =
-            auditLogRepository
-                .findByType(ObjectType.YHTEYSTIETO)
-                .map { it.message.auditEvent }
-                .filter { it.target.id == rakennuttajaId }
-        // For the second yhteystieto, there should be one entry for the earlier creation and
-        // another for this failed update.
-        assertThat(auditLogEvents).hasSize(2)
-        assertThat(auditLogEvents[1].operation).isEqualTo(Operation.UPDATE)
-        assertThat(auditLogEvents[1].actor.userId).isEqualTo(USERNAME)
-        assertThat(auditLogEvents[1].actor.role).isEqualTo(UserRole.USER)
-        assertThat(auditLogEvents[1].status).isEqualTo(Status.FAILED)
-        assertThat(auditLogEvents[1].failureDescription)
-            .isEqualTo("update hanke yhteystieto BLOCKED by data processing restriction")
-        assertThat(auditLogEvents[1].target.type).isEqualTo(ObjectType.YHTEYSTIETO)
-        assertThat(auditLogEvents[1].target.objectBefore).isNotNull().contains(NAME_2)
-        assertThat(auditLogEvents[1].target.objectAfter).isNotNull().contains("Muhaha-Evil-Change")
-
-        // Try to delete the yhteystieto. It should fail and add a new log entry.
-        hankeWithLockedYT.rakennuttajat[0] = clearYhteystieto(hankeWithLockedYT.rakennuttajat[0])
-        assertFailure {
-                hankeService.updateHanke(hanke.hankeTunnus, hankeWithLockedYT.toModifyRequest())
-            }
-            .hasClass(HankeYhteystietoProcessingRestrictedException::class.java)
-        // There should be one more entry in the audit log.
-        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(4)
-        auditLogEvents =
-            auditLogRepository
-                .findByType(ObjectType.YHTEYSTIETO)
-                .map { it.message.auditEvent }
-                .filter { it.target.id == rakennuttajaId }
-        // For the second yhteystieto, there should be one more audit log entry for this failed
-        // deletion:
-        assertThat(auditLogEvents).hasSize(3)
-        assertThat(auditLogEvents[2].operation).isEqualTo(Operation.DELETE)
-        assertThat(auditLogEvents[2].actor.userId).isEqualTo(USERNAME)
-        assertThat(auditLogEvents[2].actor.role).isEqualTo(UserRole.USER)
-        assertThat(auditLogEvents[2].status).isEqualTo(Status.FAILED)
-        assertThat(auditLogEvents[2].failureDescription)
-            .isEqualTo("delete hanke yhteystieto BLOCKED by data processing restriction")
-        assertThat(auditLogEvents[2].target.type).isEqualTo(ObjectType.YHTEYSTIETO)
-        assertThat(auditLogEvents[2].target.objectBefore).isNotNull().contains(NAME_2)
-        assertThat(auditLogEvents[2].target.objectAfter).isNull()
-
-        // Check that both yhteystietos still exist and the values have not gotten changed.
-        val returnedHankeAfterBlockedActions = hankeService.loadHanke(hanke.hankeTunnus)
-        assertThat(returnedHankeAfterBlockedActions!!.rakennuttajat)
-            .single()
-            .prop(HankeYhteystieto::nimi)
-            .isEqualTo(NAME_2)
-
-        // Unset the processing restriction flag:
-        hankeEntity = hankeRepository.findById(hanke.id).get()
-        yhteystietos = hankeEntity.yhteystiedot
-        rakennuttajaEntity = yhteystietos.filter { it.contactType == ContactType.RAKENNUTTAJA }[0]
-        rakennuttajaEntity.dataLocked = false
-        hankeRepository.save(hankeEntity)
-
-        // Updating the yhteystieto should now work:
-        val hankeWithUnlockedYT = hankeService.loadHanke(hanke.hankeTunnus)
-        hankeWithUnlockedYT!!.rakennuttajat[0].nimi = "Hopefully-Not-Evil-Change"
-        val finalHanke =
-            hankeService.updateHanke(hanke.hankeTunnus, hankeWithUnlockedYT.toModifyRequest())
-
-        // Check that the change went through:
-        assertThat(finalHanke.rakennuttajat[0].nimi).isEqualTo("Hopefully-Not-Evil-Change")
-        // There should be one more entry in the log.
-        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(5)
-        auditLogEvents =
-            auditLogRepository
-                .findByType(ObjectType.YHTEYSTIETO)
-                .map { it.message.auditEvent }
-                .filter { it.target.id == rakennuttajaId }
-        // For the second yhteystieto, there should be one more entry in the log:
-        assertThat(auditLogEvents).hasSize(4)
-    }
-
     @Nested
     inner class GenerateHankeWithJohtoselvityshakemus {
         private val hakemusNimi = "Johtoselvitys for a private property"
@@ -604,8 +483,9 @@ class HankeServiceITests(
         @Test
         fun `saves hanke based on request`() {
             val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
-            hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+            hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             assertThat(hankeRepository.findAll()).single().all {
                 prop(HankeEntity::generated).isTrue()
@@ -619,8 +499,9 @@ class HankeServiceITests(
         @Test
         fun `saves hakemus based on request`() {
             val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
-            hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+            hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             assertThat(hakemusRepository.findAll())
                 .single()
@@ -632,9 +513,10 @@ class HankeServiceITests(
         @Test
         fun `returns the saved hakemus`() {
             val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             val hakemus =
-                hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+                hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             assertThat(hakemus).all {
                 prop(Hakemus::applicationData).prop(HakemusData::name).isEqualTo(hakemusNimi)
@@ -644,9 +526,10 @@ class HankeServiceITests(
         @Test
         fun `generates hankekayttaja for founder`() {
             val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             val hakemus =
-                hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+                hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             val hanke = hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)!!
             val kayttajat = hankekayttajaRepository.findByHankeId(hanke.id)
@@ -672,19 +555,33 @@ class HankeServiceITests(
             val expectedName = "a".repeat(MAXIMUM_HANKE_NIMI_LENGTH)
             val tooLongName = expectedName + "bbb"
             val request = CreateHankeRequest(tooLongName, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
             val hakemus =
-                hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+                hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             val hanke = hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)!!
             assertThat(hanke.nimi).isEqualTo(expectedName)
         }
 
         @Test
+        fun `sets the hanke phase to RAKENTAMINEN`() {
+            val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
+
+            val hakemus =
+                hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
+
+            val hanke = hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)!!
+            assertThat(hanke.vaihe).isEqualTo(Hankevaihe.RAKENTAMINEN)
+        }
+
+        @Test
         fun `writes to audit logs`() {
             val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+            val securityContext = AuthenticationMocks.adLoginMock()
 
-            hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+            hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
 
             assertThat(auditLogRepository.findAll())
                 .extracting { it.message.auditEvent.target.type }
@@ -705,7 +602,8 @@ class HankeServiceITests(
                 hankeFactory
                     .builder(USERNAME)
                     .withHankealue(
-                        haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma())
+                        haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma()
+                    )
                     .save()
             auditLogRepository.deleteAll()
             assertEquals(0, auditLogRepository.count())
@@ -898,7 +796,7 @@ class HankeServiceITests(
 
     private fun initHankeWithHakemus(
         alluId: Int,
-        alluStatus: ApplicationStatus = ApplicationStatus.PENDING
+        alluStatus: ApplicationStatus = ApplicationStatus.PENDING,
     ): HankeEntity {
         hakemusFactory.builder().withStatus(alluId = alluId, status = alluStatus).saveEntity()
 
@@ -909,7 +807,8 @@ class HankeServiceITests(
         val templateData =
             mapOf("hankeId" to hanke.id.toString(), "hankeTunnus" to hanke.hankeTunnus)
         return Template.parse(
-                "/fi/hel/haitaton/hanke/logging/expectedNewHanke.json.mustache".getResourceAsText())
+                "/fi/hel/haitaton/hanke/logging/expectedNewHanke.json.mustache".getResourceAsText()
+            )
             .processToString(templateData)
     }
 
@@ -935,25 +834,6 @@ class HankeServiceITests(
         }"""
 
     /**
-     * Clear all information fields from the yhteystieto. Returns a copy.
-     *
-     * The fields are set to empty strings instead of nulls, since nulls are interpreted as "no
-     * change" in update operations.
-     *
-     * Follows [fi.hel.haitaton.hanke.domain.Yhteystieto.isAnyFieldSet] in which fields are emptied.
-     */
-    private fun clearYhteystieto(yhteystieto: HankeYhteystieto) =
-        yhteystieto.copy(
-            nimi = "",
-            email = "",
-            puhelinnumero = "",
-            organisaatioNimi = "",
-            osasto = "",
-            rooli = "",
-            ytunnus = "",
-        )
-
-    /**
      * Find all audit logs for a specific object type. Getting all and filtering would obviously not
      * be acceptable in production, but in tests we usually have a very limited number of entities
      * at any one test.
@@ -962,22 +842,14 @@ class HankeServiceITests(
      */
     fun AuditLogRepository.findByType(type: ObjectType) =
         this.findAll().filter { it.message.auditEvent.target.type == type }
-
-    fun AuditLogRepository.countByType(type: ObjectType) = this.findByType(type).count()
-
-    private fun setUpProfiiliMocks(): SecurityContext {
-        val securityContext: SecurityContext = mockk()
-        every { securityContext.userId() } returns USERNAME
-        every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
-        return securityContext
-    }
 }
 
 object ExpectedHankeLogObject {
     private val expectedHankeWithPolygon =
         Template.parse(
             "/fi/hel/haitaton/hanke/logging/expectedHankeWithPolygon.json.mustache"
-                .getResourceAsText())
+                .getResourceAsText()
+        )
 
     fun expectedHankeLogObject(
         hanke: Hanke,

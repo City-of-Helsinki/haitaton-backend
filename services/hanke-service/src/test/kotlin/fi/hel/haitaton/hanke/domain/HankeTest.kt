@@ -30,8 +30,7 @@ internal class HankeTest {
                 haittaAlkuPvm = b,
                 haittaLoppuPvm = d,
                 kaistaHaitta =
-                    VaikutusAutoliikenteenKaistamaariin
-                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
+                    VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE_KAHDELLA_AJOSUUNNALLA,
                 kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
                 meluHaitta = Meluhaitta.JATKUVA_MELUHAITTA,
                 polyHaitta = Polyhaitta.JATKUVA_POLYHAITTA,

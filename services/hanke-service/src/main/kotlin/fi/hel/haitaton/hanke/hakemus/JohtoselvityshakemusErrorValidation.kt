@@ -22,6 +22,7 @@ fun JohtoselvityshakemusData.validateForErrors(): ValidationResult =
         .whenNotNull(propertyDeveloperWithContacts) {
             it.validateForErrors("propertyDeveloperWithContacts")
         }
+        .whenNotNull(paperDecisionReceiver) { it.validate("paperDecisionReceiver") }
 
 private fun PostalAddress.validateForErrors(path: String) =
     validate { notJustWhitespace(postalCode, "$path.postalCode") }

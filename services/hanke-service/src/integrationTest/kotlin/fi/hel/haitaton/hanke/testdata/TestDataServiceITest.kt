@@ -4,11 +4,14 @@ import assertk.assertThat
 import assertk.assertions.each
 import assertk.assertions.hasSize
 import assertk.assertions.isNull
-import assertk.assertions.isTrue
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Nested
@@ -40,7 +43,10 @@ class TestDataServiceITest : IntegrationTest() {
                     alluStatus = ApplicationStatus.entries[i + 4],
                     alluId = i,
                     applicationIdentifier = "JS00$i",
-                    hakemusEntityData = applicationData.copy(pendingOnClient = false),
+                    hakemusEntityData =
+                        applicationData.copy(
+                            paperDecisionReceiver = PaperDecisionReceiverFactory.default
+                        ),
                 )
 
                 applicationFactory.saveApplicationEntity(
@@ -49,7 +55,7 @@ class TestDataServiceITest : IntegrationTest() {
                     alluStatus = null,
                     alluId = null,
                     applicationIdentifier = null,
-                    hakemusEntityData = applicationData.copy(pendingOnClient = true),
+                    hakemusEntityData = applicationData,
                 )
             }
 
@@ -58,10 +64,13 @@ class TestDataServiceITest : IntegrationTest() {
             val applications = hakemusRepository.findAll()
             assertThat(applications).hasSize(8)
             assertThat(applications).each { application ->
-                application.transform { it.alluid }.isNull()
-                application.transform { it.applicationIdentifier }.isNull()
-                application.transform { it.alluStatus }.isNull()
-                application.transform { it.hakemusEntityData.pendingOnClient }.isTrue()
+                application.prop(HakemusEntity::alluid).isNull()
+                application.prop(HakemusEntity::applicationIdentifier).isNull()
+                application.prop(HakemusEntity::alluStatus).isNull()
+                application
+                    .prop(HakemusEntity::hakemusEntityData)
+                    .prop(HakemusEntityData::paperDecisionReceiver)
+                    .isNull()
             }
         }
     }

@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.hakemus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.isValidBusinessId
 import fi.hel.haitaton.hanke.isValidOVT
+import fi.hel.haitaton.hanke.validation.HenkilotunnusValidator.isValidHenkilotunnus
 import fi.hel.haitaton.hanke.validation.ValidationResult
 import fi.hel.haitaton.hanke.validation.ValidationResult.Companion.allIn
 import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
@@ -42,7 +43,7 @@ fun KaivuilmoitusData.validateForSend(): ValidationResult =
         .andWithNotNull(areas, "areas", ::validateAreas)
         .andWithNotNull(customerWithContacts, "customerWithContacts") {
             validate(it)
-                .and { validateTrue(isRegistryKeyValid(tyyppi, ytunnus), "$it.ytunnus") }
+                .and { notNull(registryKey, "$it.registryKey") }
                 .and { notEmpty(yhteyshenkilot, "$it.yhteyshenkilot") }
         }
         .andWithNotNull(contractorWithContacts, "contractorWithContacts") {
@@ -52,6 +53,7 @@ fun KaivuilmoitusData.validateForSend(): ValidationResult =
         .whenNotNull(propertyDeveloperWithContacts) { it.validate("propertyDeveloperWithContacts") }
         .andWithNotNull(invoicingCustomer, "invoicingCustomer") { validate(it) }
         .whenNotNull(additionalInfo) { notJustWhitespace(it, "additionalInfo") }
+        .whenNotNull(paperDecisionReceiver) { it.validate("paperDecisionReceiver") }
 
 internal fun validateAreas(areas: List<KaivuilmoitusAlue>, path: String) =
     validate { notEmpty(areas, path) }.and { allIn(areas, path, ::validateArea) }
@@ -73,15 +75,17 @@ internal fun Hakemusyhteystieto.validate(path: String) =
     validate { notBlank(nimi, "$path.nimi") }
         .and { notBlank(sahkoposti, "$path.sahkoposti") }
         .and { notBlank(puhelinnumero, "$path.puhelinnumero") }
-        .whenNotNull(ytunnus) { validateTrue(ytunnus.isValidBusinessId(), "$path.ytunnus") }
+        .whenNotNull(registryKey) {
+            validateTrue(isRegistryKeyValid(tyyppi, it), "$path.registryKey")
+        }
         .andAllIn(yhteyshenkilot, "$path.yhteyshenkilot", ::validateFullInfo)
 
-private fun isRegistryKeyValid(tyyppi: CustomerType, ytunnus: String?): Boolean =
+private fun isRegistryKeyValid(tyyppi: CustomerType, registryKey: String): Boolean =
     when (tyyppi) {
-        CustomerType.COMPANY -> ytunnus != null
-        CustomerType.ASSOCIATION -> ytunnus != null
-        CustomerType.PERSON -> true // TODO: Validate for personal identity code
-        CustomerType.OTHER -> true // TODO: ???
+        CustomerType.COMPANY -> registryKey.isValidBusinessId()
+        CustomerType.ASSOCIATION -> registryKey.isValidBusinessId()
+        CustomerType.PERSON -> registryKey.isValidHenkilotunnus()
+        CustomerType.OTHER -> registryKey.isNotBlank()
     }
 
 private fun validateFullInfo(yhteyshenkilo: Hakemusyhteyshenkilo, path: String) =
@@ -94,8 +98,10 @@ internal fun Laskutusyhteystieto.validate(path: String): ValidationResult =
     validate { notBlank(nimi, "$path.nimi") }
         .and { notJustWhitespace(sahkoposti, "$path.sahkoposti") }
         .and { notJustWhitespace(puhelinnumero, "$path.puhelinnumero") }
-        .whenNotNull(ytunnus) { validateTrue(ytunnus.isValidBusinessId(), "$path.ytunnus") }
-        .and { validateTrue(isRegistryKeyValid(tyyppi, ytunnus), "$path.ytunnus") }
+        .and { notNull(registryKey, "$path.registryKey") }
+        .whenNotNull(registryKey) {
+            validateTrue(isRegistryKeyValid(tyyppi, it), "$path.registryKey")
+        }
         .whenNotNull(ovttunnus) { validateTrue(ovttunnus.isValidOVT(), "$path.ovttunnus") }
         .and {
             validate {

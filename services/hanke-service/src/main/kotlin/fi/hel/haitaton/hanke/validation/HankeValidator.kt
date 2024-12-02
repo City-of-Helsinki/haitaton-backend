@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
 import fi.hel.haitaton.hanke.validation.Validators.notBlank
 import fi.hel.haitaton.hanke.validation.Validators.notLongerThan
 import fi.hel.haitaton.hanke.validation.Validators.validate
+import fi.hel.haitaton.hanke.validation.Validators.validateNull
 import fi.hel.haitaton.hanke.validation.Validators.validateTrue
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
@@ -75,4 +76,4 @@ private fun validateYhteystieto(yhteystieto: Yhteystieto, path: String): Validat
 
 private fun Yhteystieto.validate(path: String): ValidationResult =
     whenNotNull(ytunnus) { validateTrue(it.isValidBusinessId(), "$path.ytunnus") }
-        .andWhen(tyyppi == YKSITYISHENKILO) { validateTrue(ytunnus == null, "$path.ytunnus") }
+        .andWhen(tyyppi == YKSITYISHENKILO) { validateNull(ytunnus, "$path.ytunnus") }

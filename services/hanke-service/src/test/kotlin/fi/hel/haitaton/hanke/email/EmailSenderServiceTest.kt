@@ -36,7 +36,7 @@ class EmailSenderServiceTest {
         EmailProperties(
             from = "haitaton@hel.fi",
             baseUrl = "https://haitaton.hel.fi",
-            filter = EmailFilterProperties(false, listOf())
+            filter = EmailFilterProperties(false, listOf()),
         )
     private val mailSender: JavaMailSender = spyk()
     private val emailSenderService = EmailSenderService(mailSender, emailConfig)
@@ -53,10 +53,10 @@ class EmailSenderServiceTest {
     inner class HankeInvitation {
         private val invitationToken = "MgtzRbcPsvoKQamnaSxCnmW7"
         private val hankeInvitation =
-            HankeInvitationData(
+            HankeInvitationEmail(
                 inviterName = INVITER_NAME,
                 inviterEmail = INVITER_EMAIL,
-                recipientEmail = TEST_EMAIL,
+                to = TEST_EMAIL,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
                 invitationToken = invitationToken,
@@ -79,8 +79,7 @@ class EmailSenderServiceTest {
                 .isEqualTo(
                     "Haitaton: Sinut on kutsuttu hankkeelle HAI24-1 " +
                         "/ Du har blivit inbjuden till projektet HAI24-1 " +
-                        "/ You have been invited to project HAI24-1"
-                )
+                        "/ You have been invited to project HAI24-1")
         }
 
         @Test
@@ -120,8 +119,7 @@ class EmailSenderServiceTest {
                 assertThat(textBody).contains(invitationUrl)
                 assertThat(htmlBody)
                     .containsMatch(
-                        """\Q<a href="$invitationUrl">\E\s*\Q$invitationUrl\E\s*</a>""".toRegex()
-                    )
+                        """\Q<a href="$invitationUrl">\E\s*\Q$invitationUrl\E\s*</a>""".toRegex())
             }
 
             @Test
@@ -192,10 +190,10 @@ class EmailSenderServiceTest {
     @Nested
     inner class ApplicationNotification {
         private val applicationNotification =
-            ApplicationNotificationData(
+            ApplicationNotificationEmail(
                 senderName = INVITER_NAME,
                 senderEmail = "matti.meikalainen@test.fi",
-                recipientEmail = TEST_EMAIL,
+                to = TEST_EMAIL,
                 applicationType = ApplicationType.CABLE_REPORT,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
@@ -218,8 +216,7 @@ class EmailSenderServiceTest {
                 .isEqualTo(
                     "Haitaton: Sinut on lisätty hakemukselle " +
                         "/ Du har lagts till i en ansökan " +
-                        "/ You have been added to an application"
-                )
+                        "/ You have been added to an application")
         }
 
         @Test
@@ -285,8 +282,7 @@ class EmailSenderServiceTest {
                 assertThat(textBody).contains("$linkPrefix https://haitaton.hel.fi")
                 assertThat(htmlBody)
                     .contains(
-                        """$linkPrefix <a href="https://haitaton.hel.fi">https://haitaton.hel.fi</a>"""
-                    )
+                        """$linkPrefix <a href="https://haitaton.hel.fi">https://haitaton.hel.fi</a>""")
             }
 
             @Test
@@ -344,8 +340,8 @@ class EmailSenderServiceTest {
     @Nested
     inner class AccessRightsUpdateNotification {
         private val notification =
-            AccessRightsUpdateNotificationData(
-                recipientEmail = TEST_EMAIL,
+            AccessRightsUpdateNotificationEmail(
+                to = TEST_EMAIL,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
                 updatedByName = INVITER_NAME,
@@ -368,8 +364,7 @@ class EmailSenderServiceTest {
 
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Dina användarrättigheter har förändrats ($HANKE_TUNNUS) / Your access right level has been changed ($HANKE_TUNNUS)"
-                )
+                    "Haitaton: Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Dina användarrättigheter har förändrats ($HANKE_TUNNUS) / Your access right level has been changed ($HANKE_TUNNUS)")
         }
 
         @Test
@@ -493,8 +488,8 @@ class EmailSenderServiceTest {
     @Nested
     inner class RemovalFromHanke {
         private val notification =
-            RemovalFromHankeNotificationData(
-                recipientEmail = TEST_EMAIL,
+            RemovalFromHankeNotificationEmail(
+                to = TEST_EMAIL,
                 hankeTunnus = HANKE_TUNNUS,
                 hankeNimi = HANKE_NIMI,
                 deletedByName = INVITER_NAME,
@@ -516,8 +511,7 @@ class EmailSenderServiceTest {
 
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Du har tagits bort från projektet ($HANKE_TUNNUS) / You have been removed from the project ($HANKE_TUNNUS)"
-                )
+                    "Haitaton: Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Du har tagits bort från projektet ($HANKE_TUNNUS) / You have been removed from the project ($HANKE_TUNNUS)")
         }
 
         @Test

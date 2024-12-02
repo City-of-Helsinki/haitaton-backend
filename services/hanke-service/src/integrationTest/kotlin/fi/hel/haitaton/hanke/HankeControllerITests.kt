@@ -28,6 +28,7 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
+import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -125,7 +126,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hankeService.loadHanke(HANKE_TUNNUS)
-                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
+                disclosureLogService.saveForHanke(hanke, USERNAME)
             }
         }
 
@@ -141,7 +142,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                         autoliikenne = autoliikenne,
                         pyoraliikenneindeksi = pyoraliikenneindeksi,
                         linjaautoliikenneindeksi = linjaautoliikenneindeksi,
-                        raitioliikenneindeksi = raitioliikenneindeksi
+                        raitioliikenneindeksi = raitioliikenneindeksi,
                     )
             every { hankeService.loadHanke(HANKE_TUNNUS) }.returns(hanke)
             every {
@@ -199,7 +200,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hankeService.loadHanke(HANKE_TUNNUS)
-                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
+                disclosureLogService.saveForHanke(hanke, USERNAME)
             }
         }
 
@@ -214,7 +215,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                         3,
                         HankeYhteyshenkiloFactory.create(3),
                         HankeYhteyshenkiloFactory.create(5),
-                        HankeYhteyshenkiloFactory.create(6)
+                        HankeYhteyshenkiloFactory.create(6),
                     )
                     .withMuuYhteystieto(4, 4, HankeYhteyshenkiloFactory.create(4))
             every { hankeService.loadHanke(HANKE_TUNNUS) }.returns(hanke)
@@ -248,7 +249,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hankeService.loadHanke(HANKE_TUNNUS)
-                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
+                disclosureLogService.saveForHanke(hanke, USERNAME)
             }
         }
     }
@@ -267,18 +268,31 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         }
 
         @Test
+        fun `returns empty list when user has no hanke`() {
+            every { hankeService.loadHankkeetByIds(listOf()) }.returns(listOf())
+            every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
+                .returns(listOf())
+
+            get(url).andExpect { status().isOk }.andExpect { content().string("[]") }
+
+            verifySequence {
+                permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
+                hankeService.loadHankkeetByIds(listOf())
+                disclosureLogService wasNot Called
+            }
+        }
+
+        @Test
         fun `Without parameters return all Hanke data without geometry`() {
             val hankeIds = listOf(123, 444)
             val hankkeet =
                 listOf(
-                    HankeFactory.create(
-                        id = hankeIds[0],
-                    ),
+                    HankeFactory.create(id = hankeIds[0]),
                     HankeFactory.create(
                         id = hankeIds[1],
                         hankeTunnus = "hanketunnus2",
                         nimi = "Esplanadin viemäröinti",
-                    )
+                    ),
                 )
             every { hankeService.loadHankkeetByIds(hankeIds) }.returns(hankkeet)
             every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
@@ -298,7 +312,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
                 hankeService.loadHankkeetByIds(hankeIds)
-                disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME)
+                disclosureLogService.saveForHankkeet(hankkeet, USERNAME)
             }
         }
 
@@ -343,7 +357,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
                 hankeService.loadHankkeetByIds(hankeIds)
-                disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME)
+                disclosureLogService.saveForHankkeet(hankkeet, USERNAME)
             }
         }
 
@@ -378,7 +392,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
                 hankeService.loadHankkeetByIds(hankeIds)
-                disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME)
+                disclosureLogService.saveForHankkeet(hankkeet, USERNAME)
             }
         }
     }
@@ -417,7 +431,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             verifySequence {
                 hankeService.createHanke(request, any())
-                disclosureLogService.saveDisclosureLogsForHanke(createdHanke, USERNAME)
+                disclosureLogService.saveForHanke(createdHanke, USERNAME)
             }
         }
 
@@ -492,7 +506,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
                 hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any())
-                disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, USERNAME)
+                disclosureLogService.saveForHanke(updatedHanke, USERNAME)
             }
         }
 
@@ -503,7 +517,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             val modifiedHanke =
                 hankeToBeUpdated.copy(
                     modifiedBy = USERNAME,
-                    modifiedAt = DateFactory.getEndDatetime()
+                    modifiedAt = DateFactory.getEndDatetime(),
                 )
 
             every {
@@ -517,7 +531,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
                 hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any())
-                disclosureLogService.saveDisclosureLogsForHanke(modifiedHanke, USERNAME)
+                disclosureLogService.saveForHanke(modifiedHanke, USERNAME)
             }
         }
 
@@ -532,8 +546,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     nimi = "$HANKEALUE_DEFAULT_NAME 1",
                     haittaAlkuPvm = DateFactory.getStartDatetime(),
                     haittaLoppuPvm = DateFactory.getEndDatetime(),
-                    kaistaHaitta =
-                        VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+                    kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
                     kaistaPituusHaitta =
                         AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA,
                     meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
@@ -571,11 +584,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(jsonPath("$.tyomaaKatuosoite").value("Testikatu 1"))
                 .andExpect(
                     jsonPath("$.alueet[0].kaistaHaitta")
-                        .value(
-                            VaikutusAutoliikenteenKaistamaariin
-                                .VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-                                .name
-                        )
+                        .value(VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE.name)
                 ) // Note, here as string, not the enum.
                 .andExpect(
                     jsonPath("$.alueet[0].haittojenhallintasuunnitelma.YLEINEN")
@@ -588,7 +597,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
                 hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any())
-                disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME)
+                disclosureLogService.saveForHanke(expectedHanke, USERNAME)
             }
         }
     }

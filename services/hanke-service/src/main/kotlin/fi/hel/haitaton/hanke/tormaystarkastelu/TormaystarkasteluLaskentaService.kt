@@ -5,9 +5,11 @@ import fi.hel.haitaton.hanke.SRID
 import fi.hel.haitaton.hanke.roundToOneDecimal
 import kotlin.math.max
 import org.geojson.Crs
+import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.geojson.GeoJsonObject
 import org.geojson.GeometryCollection
+import org.geojson.Polygon
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -60,6 +62,19 @@ class TormaystarkasteluLaskentaService(
         )
     }
 
+    fun calculateTormaystarkastelu(
+        geometry: Polygon,
+        haittaajanKestoDays: Int,
+        kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
+        kaistapituushaitta: AutoliikenteenKaistavaikutustenPituus,
+    ): TormaystarkasteluTulos =
+        calculateTormaystarkastelu(
+            FeatureCollection().apply { add(Feature().apply { this.geometry = geometry }) },
+            haittaajanKestoDays,
+            kaistahaitta,
+            kaistapituushaitta,
+        )
+
     private fun hasAllRequiredInformation(alue: HankealueEntity): Boolean {
         return (alue.haittaAlkuPvm != null &&
             alue.haittaLoppuPvm != null &&
@@ -82,7 +97,7 @@ class TormaystarkasteluLaskentaService(
             katuluokka,
             liikennemaara,
             kaistahaitta.value,
-            kaistapituushaitta.value
+            kaistapituushaitta.value,
         )
     }
 
@@ -100,44 +115,15 @@ class TormaystarkasteluLaskentaService(
             katuluokka,
             liikennemaara,
             kaistahaitta.value,
-            kaistapituushaitta.value
+            kaistapituushaitta.value,
         )
     }
 
     internal fun katuluokkaluokittelu(geometriaIds: Set<Int>): Int =
-        katuluokkaluokittelu(
-            { tormaysService.anyIntersectsYleinenKatuosa(geometriaIds) },
-            { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds) },
-            { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriaIds) },
-        )
+        tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds) ?: 0
 
     internal fun katuluokkaluokittelu(geometry: GeoJsonObject): Int =
-        katuluokkaluokittelu(
-            { tormaysService.anyIntersectsYleinenKatuosa(geometry) },
-            { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) },
-            { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry) },
-        )
-
-    private fun katuluokkaluokittelu(
-        ylreParts: () -> Boolean,
-        streetClasses: () -> Int?,
-        ylreClasses: () -> Int?,
-    ): Int =
-        if (ylreParts()) {
-            // Use street classes if they are available.
-            // Otherwise, default to ylre classes.
-            streetClasses() ?: ylreClasses() ?: 0
-        } else {
-            val max = ylreClasses()
-            if (max == null) {
-                // If there are no ylre parts or classes, return 0
-                0
-            } else {
-                // Use street classes if they are available.
-                // Otherwise default to ylre classes.
-                streetClasses() ?: max
-            }
-        }
+        tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) ?: 0
 
     internal fun liikennemaaraluokittelu(geometriaIds: Set<Int>, katuluokkaluokittelu: Int): Int =
         liikennemaaraluokittelu(katuluokkaluokittelu) { radius ->

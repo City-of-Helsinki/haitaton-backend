@@ -52,135 +52,26 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
 
     @Nested
     inner class Katuluokkaluokittelu {
-        @Nested
-        inner class WithYlreParts {
-            @BeforeEach
-            fun mockYlreParts() {
-                every { tormaysService.anyIntersectsYleinenKatuosa(geometry) } returns true
-            }
+        @Test
+        fun `returns 0 when there are no street classes`() {
+            every { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) } returns null
 
-            @AfterEach
-            fun verifyYlreParts() {
-                verify { tormaysService.anyIntersectsYleinenKatuosa(geometry) }
-            }
+            val result = laskentaService.katuluokkaluokittelu(geometry)
 
-            @Nested
-            inner class WithoutStreetClasses {
-                @BeforeEach
-                fun mockStreetClasses() {
-                    every {
-                        tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry)
-                    } returns null
-                }
-
-                @AfterEach
-                fun verifyYlreParts() {
-                    verify { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) }
-                }
-
-                @Test
-                fun `returns 0 when there are no ylre classes`() {
-                    every {
-                        tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry)
-                    } returns null
-
-                    val result = laskentaService.katuluokkaluokittelu(geometry)
-
-                    assertThat(result).isEqualTo(0)
-                    verify { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry) }
-                }
-
-                @ParameterizedTest
-                @EnumSource(TormaystarkasteluKatuluokka::class)
-                fun `returns ylre class value when it exists`(
-                    ylreClass: TormaystarkasteluKatuluokka
-                ) {
-                    every {
-                        tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry)
-                    } returns ylreClass.value
-
-                    val result = laskentaService.katuluokkaluokittelu(geometry)
-
-                    assertThat(result).isEqualTo(ylreClass.value)
-                    verify { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry) }
-                }
-            }
-
-            @ParameterizedTest
-            @EnumSource(TormaystarkasteluKatuluokka::class)
-            fun `returns street class value when it exists`(
-                streetClass: TormaystarkasteluKatuluokka
-            ) {
-                every { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) } returns
-                    streetClass.value
-
-                val result = laskentaService.katuluokkaluokittelu(geometry)
-
-                assertThat(result).isEqualTo(streetClass.value)
-                verify { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) }
-            }
+            assertThat(result).isEqualTo(0)
+            verify { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) }
         }
 
-        @Nested
-        inner class WithoutYlreParts {
-            @BeforeEach
-            fun mockYlreParts() {
-                every { tormaysService.anyIntersectsYleinenKatuosa(geometry) } returns false
-            }
+        @ParameterizedTest
+        @EnumSource(TormaystarkasteluKatuluokka::class)
+        fun `returns street class value when it exists`(streetClass: TormaystarkasteluKatuluokka) {
+            every { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) } returns
+                streetClass.value
 
-            @AfterEach
-            fun verifyYlreParts() {
-                verify { tormaysService.anyIntersectsYleinenKatuosa(geometry) }
-            }
+            val result = laskentaService.katuluokkaluokittelu(geometry)
 
-            @Test
-            fun `returns 0 without ylre classes`() {
-                every { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry) } returns
-                    null
-
-                val result = laskentaService.katuluokkaluokittelu(geometry)
-
-                assertThat(result).isEqualTo(0)
-                verify { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry) }
-            }
-
-            @ParameterizedTest
-            @EnumSource(TormaystarkasteluKatuluokka::class)
-            fun `returns ylre classes when it exists and street classes doesn't`(
-                ylreClass: TormaystarkasteluKatuluokka
-            ) {
-                every { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry) } returns
-                    ylreClass.value
-                every { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) } returns
-                    null
-
-                val result = laskentaService.katuluokkaluokittelu(geometry)
-
-                assertThat(result).isEqualTo(ylreClass.value)
-                verify {
-                    tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry)
-                    tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry)
-                }
-            }
-
-            @ParameterizedTest
-            @EnumSource(TormaystarkasteluKatuluokka::class)
-            fun `returns street classes when both it and ylre classes exist`(
-                streetClass: TormaystarkasteluKatuluokka
-            ) {
-                every { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry) } returns
-                    2
-                every { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) } returns
-                    streetClass.value
-
-                val result = laskentaService.katuluokkaluokittelu(geometry)
-
-                assertThat(result).isEqualTo(streetClass.value)
-                verify {
-                    tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometry)
-                    tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry)
-                }
-            }
+            assertThat(result).isEqualTo(streetClass.value)
+            verify { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) }
         }
     }
 
@@ -240,7 +131,7 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
         )
         fun `returns matching classification when there is traffic`(
             volume: Int,
-            expectedResult: Int
+            expectedResult: Int,
         ) {
             every { tormaysService.maxLiikennemaara(geometry, RADIUS_15) } returns volume
 
@@ -254,7 +145,7 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
     @Nested
     inner class CalculatePyoraliikenneindeksi {
         @ParameterizedTest
-        @ValueSource(ints = [2, 3, 5])
+        @ValueSource(ints = [1, 2, 3, 5])
         fun `returns the matching float when the geometries intersect with cycle routes`(
             hierarkiaValue: Int
         ) {
@@ -347,15 +238,7 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
         }
 
         @ParameterizedTest
-        @CsvSource(
-            "0,2",
-            "1,3",
-            "10,3",
-            "11,4",
-            "20,4",
-            "21,5",
-            "100,5",
-        )
+        @CsvSource("0,2", "1,3", "10,3", "11,4", "20,4", "21,5", "100,5")
         fun `returns classification based on rush hour buses when there's no trunk line`(
             rushHourBuses: Int,
             expectedResult: Int,
@@ -366,7 +249,7 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
                         "",
                         0,
                         rushHourBuses,
-                        TormaystarkasteluBussiRunkolinja.EI
+                        TormaystarkasteluBussiRunkolinja.EI,
                     )
                 )
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometry) } returns false
@@ -382,13 +265,10 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
         }
 
         @ParameterizedTest
-        @CsvSource(
-            "ON,4",
-            "EI,2",
-        )
+        @CsvSource("ON,4", "EI,2")
         fun `returns classification based on trunk lines when there are zero rush hour buses`(
             runkolinja: TormaystarkasteluBussiRunkolinja,
-            expectedResult: Int
+            expectedResult: Int,
         ) {
             val busLines = setOf(TormaystarkasteluBussireitti("", 0, 0, runkolinja))
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometry) } returns false
@@ -413,8 +293,8 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
             laskentaService.calculateTormaystarkastelu(
                 featureCollection,
                 5,
-                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
-                AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA
+                VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
+                AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA,
             )
 
         assertThat(tulos.liikennehaittaindeksi.indeksi).isEqualTo(5.0f)
@@ -423,15 +303,14 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
         assertThat(tulos.autoliikenne.haitanKesto).isEqualTo(1)
         assertThat(tulos.autoliikenne.katuluokka).isEqualTo(4)
         assertThat(tulos.autoliikenne.liikennemaara).isEqualTo(2)
-        assertThat(tulos.autoliikenne.kaistahaitta).isEqualTo(2)
+        assertThat(tulos.autoliikenne.kaistahaitta).isEqualTo(1)
         assertThat(tulos.autoliikenne.kaistapituushaitta).isEqualTo(4)
-        assertThat(tulos.autoliikenne.indeksi).isEqualTo(2.7f)
+        assertThat(tulos.autoliikenne.indeksi).isEqualTo(2.5f)
         assertThat(tulos.linjaautoliikenneindeksi).isEqualTo(5.0f)
         assertThat(tulos.raitioliikenneindeksi).isEqualTo(3.0f)
         assertThat(tulos.pyoraliikenneindeksi).isEqualTo(3.0f)
 
         verifySequence {
-            tormaysService.anyIntersectsYleinenKatuosa(geometry)
             tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry)
             tormaysService.maxLiikennemaara(geometry, RADIUS_30)
             tormaysService.maxIntersectingPyoraliikenneHierarkia(geometry)
@@ -442,7 +321,6 @@ internal class TormaystarkasteluLaskentaServiceWithGeometryTest {
     }
 
     private fun setupHappyCase() {
-        every { tormaysService.anyIntersectsYleinenKatuosa(geometry) } returns true
         every { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometry) } returns
             TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value
         every { tormaysService.maxLiikennemaara(geometry, RADIUS_30) } returns 1000
