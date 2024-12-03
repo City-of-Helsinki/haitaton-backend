@@ -21,7 +21,6 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
-import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
@@ -710,24 +709,12 @@ class TaydennysServiceITest(
             attachmentFactory.save(taydennys = taydennys).withContent()
             attachmentFactory.save(taydennys = taydennys).withContent()
             assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).hasSize(2)
-            assertThat(
-                    fileClient.list(
-                        Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(taydennys.hakemusId),
-                    )
-                )
-                .hasSize(2)
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
 
             taydennysService.delete(taydennys.id, USERNAME)
 
             assertThat(taydennysRepository.findAll()).isEmpty()
-            assertThat(
-                    fileClient.list(
-                        Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(taydennys.hakemusId),
-                    )
-                )
-                .isEmpty()
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).isEmpty()
             assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).isEmpty()
         }
 
@@ -737,26 +724,14 @@ class TaydennysServiceITest(
             attachmentFactory.save(taydennys = taydennys).withContent()
             attachmentFactory.save(taydennys = taydennys).withContent()
             assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).hasSize(2)
-            assertThat(
-                    fileClient.list(
-                        Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(taydennys.hakemusId),
-                    )
-                )
-                .hasSize(2)
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
             fileClient.connected = false
 
             taydennysService.delete(taydennys.id, USERNAME)
 
             fileClient.connected = true
             assertThat(taydennysRepository.findAll()).isEmpty()
-            assertThat(
-                    fileClient.list(
-                        Container.HAKEMUS_LIITTEET,
-                        ApplicationAttachmentContentService.prefix(taydennys.hakemusId),
-                    )
-                )
-                .hasSize(2)
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
             assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).isEmpty()
         }
 
