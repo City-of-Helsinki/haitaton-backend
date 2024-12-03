@@ -30,10 +30,7 @@ class TaydennysAttachmentMetadataService(
 
     @Transactional(readOnly = true)
     fun findAttachment(attachmentId: UUID): TaydennysAttachmentMetadata =
-        findAttachmentEntity(attachmentId).toDomain()
-
-    private fun findAttachmentEntity(attachmentId: UUID): TaydennysAttachmentEntity =
-        attachmentRepository.findByIdOrNull(attachmentId)
+        attachmentRepository.findByIdOrNull(attachmentId)?.toDomain()
             ?: throw AttachmentNotFoundException(attachmentId)
 
     @Transactional
