@@ -23,7 +23,7 @@ import fi.hel.haitaton.hanke.taydennys.TaydennysyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteystietoEntity
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
-import java.util.*
+import java.util.UUID
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
