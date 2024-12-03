@@ -134,13 +134,7 @@ class TaydennysController(private val taydennysService: TaydennysService) {
         taydennysService.sendTaydennys(id, currentUserId()).toResponse()
 
     @DeleteMapping("/taydennykset/{id}")
-    @Operation(
-        summary = "Delete a täydennys",
-        description =
-            """
-               Deletes a täydennys.
-            """,
-    )
+    @Operation(summary = "Delete a täydennys", description = "Deletes a täydennys.")
     @ApiResponses(
         value =
             [
