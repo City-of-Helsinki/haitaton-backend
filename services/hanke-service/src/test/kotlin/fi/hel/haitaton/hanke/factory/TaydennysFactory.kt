@@ -19,6 +19,7 @@ import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennysWithMuutokset
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteyshenkiloEntity
+import fi.hel.haitaton.hanke.taydennys.TaydennysyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteystietoEntity
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
@@ -30,8 +31,31 @@ import org.springframework.transaction.annotation.Transactional
 class TaydennysFactory(
     private val taydennysRepository: TaydennysRepository,
     private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
+    private val taydennysyhteyshenkiloRepository: TaydennysyhteyshenkiloRepository,
     private val hakemusFactory: HakemusFactory,
+    private val hankeKayttajaFactory: HankeKayttajaFactory,
 ) {
+    fun builder(userId: String = USERNAME): TaydennysBuilder {
+        val hakemusEntity =
+            hakemusFactory
+                .builder(userId)
+                .withMandatoryFields()
+                .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                .saveEntity()
+        val taydennysEntity =
+            createEntity(taydennyspyynto = taydennyspyyntoFactory.saveEntity(hakemusEntity.id))
+        return builder(taydennysEntity, hakemusEntity.hanke.id)
+    }
+
+    private fun builder(taydennysEntity: TaydennysEntity, hankeId: Int): TaydennysBuilder =
+        TaydennysBuilder(
+            taydennysEntity,
+            hankeId,
+            taydennysRepository,
+            hankeKayttajaFactory,
+            taydennysyhteyshenkiloRepository,
+        )
+
     fun save(
         applicationId: Long? = null,
         hakemusData: HakemusEntityData = ApplicationFactory.createCableReportApplicationData(),

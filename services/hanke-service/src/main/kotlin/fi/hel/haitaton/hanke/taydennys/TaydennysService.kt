@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.InformationRequest
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentService
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
@@ -47,6 +48,7 @@ class TaydennysService(
     private val taydennysLoggingService: TaydennysLoggingService,
     private val taydennyspyyntoLoggingService: TaydennyspyyntoLoggingService,
     private val disclosureLogService: DisclosureLogService,
+    private val attachmentService: TaydennysAttachmentService,
 ) {
     @Transactional(readOnly = true)
     fun findTaydennyspyynto(hakemusId: Long): Taydennyspyynto? =
@@ -432,6 +434,16 @@ class TaydennysService(
                 description = "Taydennys form data from Haitaton, dated ${LocalDateTime.now()}.",
             )
         return pdf.copy(metadata = newMetadata)
+    }
+
+    @Transactional
+    fun delete(id: UUID, currentUserId: String) {
+        val taydennysEntity =
+            taydennysRepository.findByIdOrNull(id) ?: throw TaydennysNotFoundException(id)
+        attachmentService.deleteAllAttachments(taydennysEntity)
+        val taydennys = taydennysEntity.toDomain()
+        taydennysRepository.delete(taydennysEntity)
+        taydennysLoggingService.logDelete(taydennys, currentUserId)
     }
 
     companion object {

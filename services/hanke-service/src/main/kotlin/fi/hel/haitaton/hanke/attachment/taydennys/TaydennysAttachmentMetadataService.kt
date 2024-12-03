@@ -72,4 +72,20 @@ class TaydennysAttachmentMetadataService(
         }
         return totalAttachmentCount >= ALLOWED_ATTACHMENT_COUNT
     }
+
+    /**
+     * Delete all attachments for täydennys and return the blob locations of the deleted
+     * attachments.
+     */
+    @Transactional
+    fun deleteAllAttachments(taydennys: TaydennysIdentifier): List<String> {
+        return attachmentRepository
+            .deleteByTaydennysId(taydennys.id)
+            .map(TaydennysAttachmentEntity::blobLocation)
+            .also {
+                logger.info {
+                    "Deleted all attachment metadata for täydennys ${taydennys.logString()}"
+                }
+            }
+    }
 }

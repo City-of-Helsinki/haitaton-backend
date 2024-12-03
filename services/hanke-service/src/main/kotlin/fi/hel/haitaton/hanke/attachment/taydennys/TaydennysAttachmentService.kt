@@ -97,4 +97,17 @@ class TaydennysAttachmentService(
         }
         return newAttachment
     }
+
+    fun deleteAllAttachments(taydennys: TaydennysIdentifier) {
+        logger.info { "Deleting all attachments from täydennys. ${taydennys.logString()}" }
+        val paths = metadataService.deleteAllAttachments(taydennys)
+        try {
+            paths.forEach(attachmentContentService::delete)
+        } catch (e: Exception) {
+            logger.error(e) {
+                "Failed to delete all attachment content for täydennys. Continuing with täydennys deletion regardless of error. ${taydennys.logString()}"
+            }
+        }
+        logger.info { "Deleted all attachments from täydennys. ${taydennys.logString()}" }
+    }
 }
