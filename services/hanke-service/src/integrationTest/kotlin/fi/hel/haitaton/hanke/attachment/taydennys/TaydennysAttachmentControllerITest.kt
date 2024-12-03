@@ -32,6 +32,7 @@ import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.verifyOrder
 import io.mockk.verifySequence
 import java.util.UUID
@@ -211,18 +212,67 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
         fun `returns 401 and error when user is unauthorized`() {
             postAttachment().andExpectError(HAI0001)
         }
+
+        private fun postAttachment(
+            taydennysId: UUID = DEFAULT_ID,
+            attachmentType: ApplicationAttachmentType = ApplicationAttachmentType.MUU,
+            file: MockMultipartFile = testFile(),
+        ): ResultActions {
+            return mockMvc.perform(
+                multipart("/taydennykset/$taydennysId/liitteet")
+                    .file(file)
+                    .param("tyyppi", attachmentType.toString())
+                    .with(csrf())
+            )
+        }
     }
 
-    private fun postAttachment(
-        taydennysId: UUID = DEFAULT_ID,
-        attachmentType: ApplicationAttachmentType = ApplicationAttachmentType.MUU,
-        file: MockMultipartFile = testFile(),
-    ): ResultActions {
-        return mockMvc.perform(
-            multipart("/taydennykset/$taydennysId/liitteet")
-                .file(file)
-                .param("tyyppi", attachmentType.toString())
-                .with(csrf())
-        )
+    @Nested
+    inner class DeleteAttachment {
+        @Test
+        fun `when valid request should succeed`() {
+            val attachmentId = UUID.fromString("5c97dcf2-686f-4cd6-9b9d-4124aff23a07")
+            every {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            } returns true
+            justRun { attachmentService.deleteAttachment(attachmentId) }
+
+            deleteAttachment(attachmentId = attachmentId).andExpect(status().isOk)
+
+            verifySequence {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+                attachmentService.deleteAttachment(attachmentId)
+            }
+        }
+
+        @Test
+        @WithAnonymousUser
+        fun `unauthorized should return error`() {
+            deleteAttachment().andExpectError(HAI0001)
+        }
+
+        @Test
+        fun `when attachment not found should return error`() {
+            val attachmentId = UUID.fromString("5c97dcf2-686f-4cd6-9b9d-4124aff23a07")
+            every {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            } returns true
+            every { attachmentService.deleteAttachment(attachmentId) } throws
+                AttachmentNotFoundException(attachmentId)
+
+            deleteAttachment(attachmentId = attachmentId)
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI3002))
+
+            verifySequence {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+                attachmentService.deleteAttachment(attachmentId)
+            }
+        }
+
+        private fun deleteAttachment(
+            taydennysId: UUID = DEFAULT_ID,
+            attachmentId: UUID = UUID.fromString("5f79cc05-6a5e-4bb9-b457-f7df0e5e5471"),
+        ): ResultActions = delete("/taydennykset/$taydennysId/liitteet/$attachmentId")
     }
 }
