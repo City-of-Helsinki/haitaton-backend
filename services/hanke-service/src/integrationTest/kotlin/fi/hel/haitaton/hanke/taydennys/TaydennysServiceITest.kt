@@ -6,6 +6,7 @@ import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.containsOnly
 import assertk.assertions.hasClass
+import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
@@ -20,11 +21,15 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
+import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.common.MockFileClient
+import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
+import fi.hel.haitaton.hanke.factory.TaydennysAttachmentFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory
 import fi.hel.haitaton.hanke.findByType
@@ -39,8 +44,10 @@ import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
+import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
+import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasNullNode
 import fi.hel.haitaton.hanke.test.Asserts.hasTextNode
@@ -55,6 +62,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasTargetType
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
+import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -75,11 +83,17 @@ class TaydennysServiceITest(
     @Autowired private val hakemusService: HakemusService,
     @Autowired private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
     @Autowired private val taydennysRepository: TaydennysRepository,
+    @Autowired private val taydennysyhteystietoRepository: TaydennysyhteystietoRepository,
+    @Autowired private val taydennysyhteyshenkiloRepository: TaydennysyhteyshenkiloRepository,
     @Autowired private val hankeRepository: HankeRepository,
+    @Autowired private val hankekayttajaRepository: HankekayttajaRepository,
+    @Autowired private val attachmentRepository: TaydennysAttachmentRepository,
     @Autowired private val alluClient: AlluClient,
+    @Autowired private val fileClient: MockFileClient,
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
     @Autowired private val taydennysFactory: TaydennysFactory,
+    @Autowired private val attachmentFactory: TaydennysAttachmentFactory,
     @Autowired private val auditLogRepository: AuditLogRepository,
 ) : IntegrationTest() {
     private val alluId = 3464
@@ -684,6 +698,97 @@ class TaydennysServiceITest(
                 alluClient.addAttachment(hakemus.alluid!!, any())
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
+        }
+    }
+
+    @Nested
+    inner class Delete {
+        @Test
+        fun `deletes the attachments when deleting a taydennys`() {
+            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            attachmentFactory.save(taydennys = taydennys).withContent()
+            attachmentFactory.save(taydennys = taydennys).withContent()
+            assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).hasSize(2)
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
+
+            taydennysService.delete(taydennys.id, USERNAME)
+
+            assertThat(taydennysRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).isEmpty()
+            assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).isEmpty()
+        }
+
+        @Test
+        fun `deletes all attachment metadata even when deleting attachment content fails`() {
+            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            attachmentFactory.save(taydennys = taydennys).withContent()
+            attachmentFactory.save(taydennys = taydennys).withContent()
+            assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).hasSize(2)
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
+            fileClient.connected = false
+
+            taydennysService.delete(taydennys.id, USERNAME)
+
+            fileClient.connected = true
+            assertThat(taydennysRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
+            assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).isEmpty()
+        }
+
+        @Test
+        fun `writes audit log for the deleted taydennys`() {
+            TestUtils.addMockedRequestIp()
+            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            auditLogRepository.deleteAll()
+
+            taydennysService.delete(taydennys.id, USERNAME)
+
+            assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.DELETE) {
+                hasUserActor(USERNAME, TestUtils.mockedIp)
+                withTarget {
+                    prop(AuditLogTarget::id).isEqualTo(taydennys.id.toString())
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.TAYDENNYS)
+                    hasObjectBefore(taydennys)
+                    hasNoObjectAfter()
+                }
+            }
+        }
+
+        @Test
+        fun `deletes yhteystiedot and yhteyshenkilot but no hankekayttaja`() {
+            val taydennys =
+                taydennysFactory
+                    .builder()
+                    .hakija()
+                    .rakennuttaja()
+                    .tyonSuorittaja()
+                    .asianhoitaja()
+                    .saveEntity()
+            assertThat(taydennysRepository.findAll()).hasSize(1)
+            assertThat(taydennysyhteystietoRepository.findAll()).hasSize(4)
+            assertThat(taydennysyhteyshenkiloRepository.findAll()).hasSize(4)
+            assertThat(hankekayttajaRepository.count())
+                .isEqualTo(5) // Hanke founder + one kayttaja for each role
+
+            taydennysService.delete(taydennys.id, USERNAME)
+
+            assertThat(taydennysRepository.findAll()).isEmpty()
+            assertThat(taydennysyhteystietoRepository.findAll()).isEmpty()
+            assertThat(taydennysyhteyshenkiloRepository.findAll()).isEmpty()
+            assertThat(hankekayttajaRepository.count())
+                .isEqualTo(5) // Hanke founder + one kayttaja for each role
+        }
+
+        @Test
+        fun `deletes taydennys but not taydennyspyynto`() {
+            val taydennys = taydennysFactory.builder().saveEntity()
+            assertThat(taydennysRepository.findAll()).hasSize(1)
+            assertThat(taydennyspyyntoRepository.findAll()).hasSize(1)
+
+            taydennysService.delete(taydennys.id, USERNAME)
+
+            assertThat(taydennysRepository.findAll()).isEmpty()
+            assertThat(taydennyspyyntoRepository.findAll()).hasSize(1)
         }
     }
 }
