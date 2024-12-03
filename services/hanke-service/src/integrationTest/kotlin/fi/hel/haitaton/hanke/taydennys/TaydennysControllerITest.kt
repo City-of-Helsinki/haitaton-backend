@@ -39,12 +39,11 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
-import io.mockk.Runs
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
-import io.mockk.just
+import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifySequence
 import java.time.ZonedDateTime
@@ -615,7 +614,7 @@ class TaydennysControllerITest(@Autowired override val mockMvc: MockMvc) : Contr
             every {
                 taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            every { taydennysService.delete(id, USERNAME) } just Runs
+            justRun { taydennysService.delete(id, USERNAME) }
 
             delete(url).andExpect(status().isOk).andExpect(content().string(""))
 
