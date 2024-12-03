@@ -125,8 +125,17 @@ class TaydennysService(
             "A hakemus has has entered handling. Checking if there's a täydennyspyyntö for the hakemus. ${application.logString()}"
         }
 
-        taydennyspyyntoRepository.findByApplicationId(application.id)?.let {
+        taydennysRepository.findByApplicationId(application.id)?.also {
+            logger.info { "A täydennys was found. Removing it." }
+            attachmentService.deleteAllAttachments(it)
+            taydennysLoggingService.logDeleteFromAllu(it.toDomain())
+            taydennysRepository.delete(it)
+            taydennysRepository.flush()
+        }
+
+        taydennyspyyntoRepository.findByApplicationId(application.id)?.also {
             logger.info { "A täydennyspyyntö was found. Removing it." }
+            taydennyspyyntoLoggingService.logDeleteFromAllu(it.toDomain())
             taydennyspyyntoRepository.delete(it)
             taydennyspyyntoRepository.flush()
 

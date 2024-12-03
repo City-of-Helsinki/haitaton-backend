@@ -215,7 +215,7 @@ class TaydennysServiceITest(
         }
 
         @Test
-        fun `returns null when Allu doesn't have the täydennyspyyntö`() {
+        fun `returns null when Allu doesn't have the taydennyspyynto`() {
             val hakemus = hakemusFactory.builder().withStatus(alluId = alluId).save()
             every { alluClient.getInformationRequest(hakemus.alluid!!) } returns null
 
@@ -366,6 +366,90 @@ class TaydennysServiceITest(
 
         private fun Hakemusyhteystieto.resetIds() =
             copy(id = fixedUUID, yhteyshenkilot = yhteyshenkilot.map { it.copy(id = fixedUUID) })
+    }
+
+    @Nested
+    inner class RemoveTaydennyspyyntoIfItExists {
+        @Test
+        fun `logs removing the taydennyspyynto and taydennys to audit logs`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, 42)
+                    .saveEntity()
+            val taydennys = taydennysFactory.save(applicationId = hakemus.id)
+            val taydennyspyynto = taydennyspyyntoRepository.findByApplicationId(hakemus.id)!!
+            auditLogRepository.deleteAll()
+
+            taydennysService.removeTaydennyspyyntoIfItExists(hakemus)
+
+            val taydennysLogs = auditLogRepository.findByType(ObjectType.TAYDENNYS)
+            assertThat(taydennysLogs).single().isSuccess(Operation.DELETE) {
+                hasServiceActor("Allu")
+                withTarget {
+                    hasNoObjectAfter()
+                    hasObjectBefore<Taydennys> {
+                        prop(Taydennys::id).isEqualTo(taydennys.id)
+                        prop(Taydennys::hakemusId).isEqualTo(hakemus.id)
+                    }
+                }
+            }
+            val taydennyspyyntoLogs = auditLogRepository.findByType(ObjectType.TAYDENNYSPYYNTO)
+            assertThat(taydennyspyyntoLogs).single().isSuccess(Operation.DELETE) {
+                hasServiceActor("Allu")
+                withTarget {
+                    hasNoObjectAfter()
+                    hasObjectBefore<Taydennyspyynto> {
+                        prop(Taydennyspyynto::id).isEqualTo(taydennyspyynto.id)
+                        prop(Taydennyspyynto::hakemusId).isEqualTo(taydennyspyynto.applicationId)
+                    }
+                }
+            }
+        }
+
+        @Test
+        fun `removes and logs the taydennyspyynto when there is no taydennys`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, 42)
+                    .saveEntity()
+            val taydennyspyynto = taydennyspyyntoFactory.save(hakemus.id)
+            auditLogRepository.deleteAll()
+
+            taydennysService.removeTaydennyspyyntoIfItExists(hakemus)
+
+            assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
+            val taydennyspyyntoLogs = auditLogRepository.findAll()
+            assertThat(taydennyspyyntoLogs).single().isSuccess(Operation.DELETE) {
+                hasServiceActor("Allu")
+                withTarget {
+                    hasTargetType(ObjectType.TAYDENNYSPYYNTO)
+                    hasNoObjectAfter()
+                    hasObjectBefore(taydennyspyynto)
+                }
+            }
+        }
+
+        @Test
+        fun `removes taydennys attachments from Blob storage when the new status is HANDLING`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, 42)
+                    .saveEntity()
+            val taydennys = taydennysFactory.save(applicationId = hakemus.id)
+            attachmentFactory.save(taydennys = taydennys).withContent()
+            attachmentFactory.save(taydennys = taydennys).withContent()
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
+
+            taydennysService.removeTaydennyspyyntoIfItExists(hakemus)
+
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).isEmpty()
+            assertThat(attachmentRepository.findAll()).isEmpty()
+            assertThat(taydennysRepository.findAll()).isEmpty()
+            assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
+        }
     }
 
     @Nested
