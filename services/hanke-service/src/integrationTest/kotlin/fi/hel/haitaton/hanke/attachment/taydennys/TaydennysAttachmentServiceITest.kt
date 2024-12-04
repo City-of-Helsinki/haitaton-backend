@@ -22,8 +22,6 @@ import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
@@ -104,7 +102,11 @@ class TaydennysAttachmentServiceITest(
 
         @Test
         fun `Throws exception when trying to get valtakirja content`() {
-            val attachment = attachmentFactory.save(attachmentType = VALTAKIRJA).withContent().value
+            val attachment =
+                attachmentFactory
+                    .save(attachmentType = ApplicationAttachmentType.VALTAKIRJA)
+                    .withContent()
+                    .value
 
             val failure = assertFailure { attachmentService.getContent(attachment.id!!) }
 
@@ -172,7 +174,7 @@ class TaydennysAttachmentServiceITest(
             val result =
                 attachmentService.addAttachment(
                     taydennysId = taydennys.id,
-                    attachmentType = MUU,
+                    attachmentType = ApplicationAttachmentType.MUU,
                     attachment = testFile(fileName = "exa*mple.pdf"),
                 )
 
@@ -194,7 +196,7 @@ class TaydennysAttachmentServiceITest(
             val failure = assertFailure {
                 attachmentService.addAttachment(
                     taydennysId = taydennys.id,
-                    attachmentType = VALTAKIRJA,
+                    attachmentType = ApplicationAttachmentType.VALTAKIRJA,
                     attachment = testFile(),
                 )
             }
@@ -214,7 +216,7 @@ class TaydennysAttachmentServiceITest(
             val failure = assertFailure {
                 attachmentService.addAttachment(
                     taydennysId = taydennys.id,
-                    attachmentType = VALTAKIRJA,
+                    attachmentType = ApplicationAttachmentType.VALTAKIRJA,
                     attachment = testFile(data = byteArrayOf()),
                 )
             }
@@ -232,7 +234,7 @@ class TaydennysAttachmentServiceITest(
             val failure = assertFailure {
                 attachmentService.addAttachment(
                     taydennysId = taydennys.id,
-                    attachmentType = VALTAKIRJA,
+                    attachmentType = ApplicationAttachmentType.VALTAKIRJA,
                     attachment = testFile(contentType = null),
                 )
             }
@@ -248,7 +250,7 @@ class TaydennysAttachmentServiceITest(
             val failure = assertFailure {
                 attachmentService.addAttachment(
                     taydennysId = UUID.randomUUID(),
-                    attachmentType = MUU,
+                    attachmentType = ApplicationAttachmentType.MUU,
                     attachment = testFile(),
                 )
             }
@@ -265,7 +267,7 @@ class TaydennysAttachmentServiceITest(
             val failure = assertFailure {
                 attachmentService.addAttachment(
                     taydennysId = taydennys.id,
-                    attachmentType = VALTAKIRJA,
+                    attachmentType = ApplicationAttachmentType.VALTAKIRJA,
                     attachment = testFile(fileName = invalidFilename),
                 )
             }
@@ -285,7 +287,7 @@ class TaydennysAttachmentServiceITest(
             val failure = assertFailure {
                 attachmentService.addAttachment(
                     taydennysId = taydennys.id,
-                    attachmentType = VALTAKIRJA,
+                    attachmentType = ApplicationAttachmentType.VALTAKIRJA,
                     attachment = testFile(fileName = invalidFilename),
                 )
             }
@@ -294,7 +296,7 @@ class TaydennysAttachmentServiceITest(
                 hasClass(AttachmentInvalidException::class)
                 messageContains("File extension is not valid for attachment type")
                 messageContains("filename=$invalidFilename")
-                messageContains("attachmentType=${VALTAKIRJA}")
+                messageContains("attachmentType=${ApplicationAttachmentType.VALTAKIRJA}")
             }
             assertThat(attachmentRepository.findAll()).isEmpty()
         }
@@ -307,7 +309,7 @@ class TaydennysAttachmentServiceITest(
             val failure = assertFailure {
                 attachmentService.addAttachment(
                     taydennysId = taydennys.id,
-                    attachmentType = VALTAKIRJA,
+                    attachmentType = ApplicationAttachmentType.VALTAKIRJA,
                     attachment = testFile(),
                 )
             }
