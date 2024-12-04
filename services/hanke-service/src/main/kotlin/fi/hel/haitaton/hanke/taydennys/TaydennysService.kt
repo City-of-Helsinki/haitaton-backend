@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.allu.InformationRequest
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentService
+import fi.hel.haitaton.hanke.email.InformationRequestCanceledEmail
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
@@ -27,9 +28,11 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.TaydennysLoggingService
 import fi.hel.haitaton.hanke.logging.TaydennyspyyntoLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.permissions.PermissionCode
 import java.time.LocalDateTime
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -49,6 +52,7 @@ class TaydennysService(
     private val taydennyspyyntoLoggingService: TaydennyspyyntoLoggingService,
     private val disclosureLogService: DisclosureLogService,
     private val attachmentService: TaydennysAttachmentService,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional(readOnly = true)
     fun findTaydennyspyynto(hakemusId: Long): Taydennyspyynto? =
@@ -129,6 +133,7 @@ class TaydennysService(
             logger.info { "A täydennyspyyntö was found. Removing it." }
             taydennyspyyntoRepository.delete(it)
             taydennyspyyntoRepository.flush()
+            sendInformationRequestCanceledEmails(application)
 
             if (application.alluStatus != ApplicationStatus.WAITING_INFORMATION) {
                 logger.error {
@@ -425,7 +430,7 @@ class TaydennysService(
 
     private fun createPdfFromHakemusData(hankeTunnus: String, data: HakemusData): Attachment {
         logger.info { "Creating a PDF from the hakemus data for data attachment." }
-        // TODO: List attachments in HAI-2767, from both hakemus and taydennys
+        // TODO: List attachments in HAI-753, from both hakemus and taydennys
         val attachments = listOf<ApplicationAttachmentMetadata>()
         val pdf = hakemusService.getApplicationDataAsPdf(hankeTunnus, attachments, data)
         val newMetadata =
@@ -434,6 +439,22 @@ class TaydennysService(
                 description = "Taydennys form data from Haitaton, dated ${LocalDateTime.now()}.",
             )
         return pdf.copy(metadata = newMetadata)
+    }
+
+    private fun sendInformationRequestCanceledEmails(hakemus: HakemusEntity) {
+        hakemus
+            .allContactUsers()
+            .filter { hankeKayttajaService.hasPermission(it, PermissionCode.EDIT_APPLICATIONS) }
+            .forEach {
+                applicationEventPublisher.publishEvent(
+                    InformationRequestCanceledEmail(
+                        it.sahkoposti,
+                        hakemus.hakemusEntityData.name,
+                        hakemus.applicationIdentifier!!,
+                        hakemus.id,
+                    )
+                )
+            }
     }
 
     @Transactional

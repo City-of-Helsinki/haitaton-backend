@@ -9,6 +9,8 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.asList
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.withEvent
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory.withYhteyshenkilo
@@ -89,7 +91,8 @@ class HakemusHistoryServiceTest {
             every { hakemusRepository.getOneByAlluid(42) } returns applicationEntityWithCustomer()
             justRun {
                 publisher.publishEvent(
-                    JohtoselvitysCompleteEmail(receiver, applicationId, identifier))
+                    JohtoselvitysCompleteEmail(receiver, applicationId, identifier)
+                )
             }
             every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
@@ -99,7 +102,8 @@ class HakemusHistoryServiceTest {
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
                 publisher.publishEvent(
-                    JohtoselvitysCompleteEmail(receiver, applicationId, identifier))
+                    JohtoselvitysCompleteEmail(receiver, applicationId, identifier)
+                )
                 hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
             }
@@ -107,7 +111,9 @@ class HakemusHistoryServiceTest {
 
         @ParameterizedTest
         @EnumSource(
-            ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"])
+            ApplicationStatus::class,
+            names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"],
+        )
         fun `sends email to the contacts when a kaivuilmoitus gets a decision`(
             applicationStatus: ApplicationStatus
         ) {
@@ -115,7 +121,8 @@ class HakemusHistoryServiceTest {
                 applicationEntityWithCustomer(type = ApplicationType.EXCAVATION_NOTIFICATION)
             justRun {
                 publisher.publishEvent(
-                    KaivuilmoitusDecisionEmail(receiver, applicationId, identifier))
+                    KaivuilmoitusDecisionEmail(receiver, applicationId, identifier)
+                )
             }
             every { hakemusRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
@@ -136,7 +143,8 @@ class HakemusHistoryServiceTest {
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
                 publisher.publishEvent(
-                    KaivuilmoitusDecisionEmail(receiver, applicationId, identifier))
+                    KaivuilmoitusDecisionEmail(receiver, applicationId, identifier)
+                )
                 saveMethod(any(), any())
                 hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
@@ -150,13 +158,12 @@ class HakemusHistoryServiceTest {
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
 
             val histories =
-                listOf(
-                    ApplicationHistoryFactory.create(
-                        alluid,
-                        ApplicationHistoryFactory.createEvent(
-                            applicationIdentifier = identifier,
-                            newStatus = ApplicationStatus.DECISIONMAKING)),
-                )
+                ApplicationHistoryFactory.create(alluid)
+                    .withEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.DECISIONMAKING,
+                    )
+                    .asList()
 
             historyService.handleHakemusUpdates(histories, updateTime)
 
@@ -189,7 +196,7 @@ class HakemusHistoryServiceTest {
         @EnumSource(ApplicationStatus::class, names = ["OPERATIONAL_CONDITION", "FINISHED"])
         fun `logs an error when a johtoselvityshakemus gets a supervision document`(
             status: ApplicationStatus,
-            output: CapturedOutput
+            output: CapturedOutput,
         ) {
             every { hakemusRepository.getOneByAlluid(alluid) } returns
                 applicationEntityWithoutCustomer()
@@ -213,7 +220,7 @@ class HakemusHistoryServiceTest {
 
         private fun applicationEntityWithoutCustomer(
             id: Long = applicationId,
-            type: ApplicationType = ApplicationType.CABLE_REPORT
+            type: ApplicationType = ApplicationType.CABLE_REPORT,
         ): HakemusEntity {
             val entity =
                 HakemusFactory.createEntity(
@@ -229,24 +236,20 @@ class HakemusHistoryServiceTest {
 
         private fun applicationEntityWithCustomer(
             id: Long = applicationId,
-            type: ApplicationType = ApplicationType.CABLE_REPORT
+            type: ApplicationType = ApplicationType.CABLE_REPORT,
         ): HakemusEntity {
             val entity = applicationEntityWithoutCustomer(id, type)
             entity.yhteystiedot[ApplicationContactType.HAKIJA] =
                 HakemusyhteystietoFactory.createEntity(application = entity, sahkoposti = receiver)
                     .withYhteyshenkilo(
-                        permission = PermissionFactory.createEntity(userId = USERNAME))
+                        permission = PermissionFactory.createEntity(userId = USERNAME)
+                    )
             return entity
         }
 
         private fun createHistories(status: ApplicationStatus = ApplicationStatus.DECISION) =
-            listOf(
-                ApplicationHistoryFactory.create(
-                    alluid,
-                    ApplicationHistoryFactory.createEvent(
-                        applicationIdentifier = identifier,
-                        newStatus = status,
-                    )),
-            )
+            ApplicationHistoryFactory.create(alluid)
+                .withEvent(applicationIdentifier = identifier, newStatus = status)
+                .asList()
     }
 }
