@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory.Companion.DEFAULT_ALLU_ID
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
@@ -35,16 +36,29 @@ class TaydennysFactory(
     private val hakemusFactory: HakemusFactory,
     private val hankeKayttajaFactory: HankeKayttajaFactory,
 ) {
-    fun builder(userId: String = USERNAME): TaydennysBuilder {
-        val hakemusEntity =
+    fun builder(
+        userId: String = USERNAME,
+        id: UUID = DEFAULT_ID,
+        alluId: Int = DEFAULT_ALLU_ID,
+    ): TaydennysBuilder {
+        val hakemusEntity: HakemusEntity =
             hakemusFactory
                 .builder(userId)
                 .withMandatoryFields()
-                .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
                 .saveEntity()
         val taydennysEntity =
-            createEntity(taydennyspyynto = taydennyspyyntoFactory.saveEntity(hakemusEntity.id))
+            createEntity(
+                id = id,
+                taydennyspyynto = taydennyspyyntoFactory.saveEntity(hakemusEntity.id, alluId),
+            )
         return builder(taydennysEntity, hakemusEntity.hanke.id)
+    }
+
+    fun builder(hakemusId: Long, hankeId: Int): TaydennysBuilder {
+        val taydennysEntity =
+            createEntity(taydennyspyynto = taydennyspyyntoFactory.saveEntity(hakemusId))
+        return builder(taydennysEntity, hankeId)
     }
 
     private fun builder(taydennysEntity: TaydennysEntity, hankeId: Int): TaydennysBuilder =

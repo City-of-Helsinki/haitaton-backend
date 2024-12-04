@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
+import fi.hel.haitaton.hanke.taydennys.TaydennysNotFoundException
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -93,5 +94,13 @@ class TaydennysAttachmentController(private val attachmentService: TaydennysAtta
     fun valtakirjaForbiddenException(ex: ValtakirjaForbiddenException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI3004
+    }
+
+    @ExceptionHandler(TaydennysNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun taydennysNotFoundException(ex: TaydennysNotFoundException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI6001
     }
 }
