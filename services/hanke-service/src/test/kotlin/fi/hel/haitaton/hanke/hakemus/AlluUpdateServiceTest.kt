@@ -4,6 +4,8 @@ import assertk.assertThat
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.configuration.LockService
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.asList
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.withDefaultEvents
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -88,7 +90,10 @@ class AlluUpdateServiceTest {
         fun `calls application service with the returned histories`() {
             mockLocking(true)
             val alluids = listOf(23, 24)
-            val histories = listOf(ApplicationHistoryFactory.create(applicationId = 24))
+            val histories =
+                ApplicationHistoryFactory.create(applicationId = 24, *emptyArray())
+                    .withDefaultEvents()
+                    .asList()
             every { historyService.getAllAlluIds() } returns alluids
             every { historyService.getLastUpdateTime() } returns lastUpdated
             every { alluClient.getApplicationStatusHistories(alluids, eventsAfter) } returns

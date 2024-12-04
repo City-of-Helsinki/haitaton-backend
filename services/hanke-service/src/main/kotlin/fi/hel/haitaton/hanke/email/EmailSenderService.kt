@@ -20,17 +20,14 @@ private val logger = KotlinLogging.logger {}
 data class EmailProperties(
     val from: String,
     val baseUrl: String,
-    val filter: EmailFilterProperties
+    val filter: EmailFilterProperties,
 ) {
     val filterRegexes: List<Regex> by lazy {
         filter.allowList.map { EmailSenderService.expandAsterisks(it).toRegex() }
     }
 }
 
-data class EmailFilterProperties(
-    val use: Boolean,
-    @Delimiter(";") val allowList: List<String>,
-)
+data class EmailFilterProperties(val use: Boolean, @Delimiter(";") val allowList: List<String>)
 
 data class Translations(val fi: String, val sv: String, val en: String)
 
@@ -42,6 +39,7 @@ enum class EmailTemplate(val value: String) {
     INVITATION_HANKE("kayttaja-lisatty-hanke"),
     REMOVAL_FROM_HANKE_NOTIFICATION("kayttaja-poistettu-hanke"),
     INFORMATION_REQUEST("taydennyspyynto"),
+    INFORMATION_REQUEST_CANCELED("taydennyspyynto-peruttu"),
 }
 
 @Service
@@ -122,7 +120,6 @@ class EmailSenderService(
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "recipientEmail" to data.to,
                 "hankeTunnus" to data.hankeTunnus,
                 "hankeNimi" to data.hankeNimi,
                 "updatedByName" to data.updatedByName,
@@ -131,11 +128,7 @@ class EmailSenderService(
                 "signatures" to signatures(),
             )
 
-        sendHybridEmail(
-            data.to,
-            EmailTemplate.ACCESS_RIGHTS_UPDATE_NOTIFICATION,
-            templateData,
-        )
+        sendHybridEmail(data.to, EmailTemplate.ACCESS_RIGHTS_UPDATE_NOTIFICATION, templateData)
     }
 
     @TransactionalEventListener
@@ -145,7 +138,6 @@ class EmailSenderService(
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "recipientEmail" to data.to,
                 "hankeTunnus" to data.hankeTunnus,
                 "hankeNimi" to data.hankeNimi,
                 "deletedByName" to data.deletedByName,
@@ -153,11 +145,7 @@ class EmailSenderService(
                 "signatures" to signatures(),
             )
 
-        sendHybridEmail(
-            data.to,
-            EmailTemplate.REMOVAL_FROM_HANKE_NOTIFICATION,
-            templateData,
-        )
+        sendHybridEmail(data.to, EmailTemplate.REMOVAL_FROM_HANKE_NOTIFICATION, templateData)
     }
 
     @TransactionalEventListener
@@ -167,18 +155,29 @@ class EmailSenderService(
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "recipientEmail" to data.to,
                 "hakemusNimi" to data.hakemusNimi,
                 "hakemusTunnus" to data.hakemusTunnus,
                 "hakemusId" to data.hakemusId,
                 "signatures" to signatures(),
             )
 
-        sendHybridEmail(
-            data.to,
-            EmailTemplate.INFORMATION_REQUEST,
-            templateData,
-        )
+        sendHybridEmail(data.to, EmailTemplate.INFORMATION_REQUEST, templateData)
+    }
+
+    @TransactionalEventListener
+    fun sendInformationRequestCanceledEmail(data: InformationRequestCanceledEmail) {
+        logger.info { "Sending notification email for canceled information request" }
+
+        val templateData =
+            mapOf(
+                "baseUrl" to emailConfig.baseUrl,
+                "hakemusNimi" to data.hakemusNimi,
+                "hakemustunnus" to data.hakemustunnus,
+                "hakemusId" to data.hakemusId,
+                "signatures" to signatures(),
+            )
+
+        sendHybridEmail(data.to, EmailTemplate.INFORMATION_REQUEST_CANCELED, templateData)
     }
 
     private fun sendHybridEmail(to: String, template: EmailTemplate, data: Map<String, Any>) {
@@ -237,11 +236,7 @@ class EmailSenderService(
         fun Kayttooikeustaso.translations() =
             when (this) {
                 Kayttooikeustaso.KAIKKI_OIKEUDET ->
-                    Translations(
-                        fi = "Kaikki oikeudet",
-                        sv = "Alla rättigheter",
-                        en = "All rights",
-                    )
+                    Translations(fi = "Kaikki oikeudet", sv = "Alla rättigheter", en = "All rights")
                 Kayttooikeustaso.KAIKKIEN_MUOKKAUS ->
                     Translations(
                         fi = "Hankkeen ja hakemusten muokkaus",
@@ -261,11 +256,7 @@ class EmailSenderService(
                         en = "Application services",
                     )
                 Kayttooikeustaso.KATSELUOIKEUS ->
-                    Translations(
-                        fi = "Katseluoikeus",
-                        sv = "Visningsrätt",
-                        en = "Viewing right",
-                    )
+                    Translations(fi = "Katseluoikeus", sv = "Visningsrätt", en = "Viewing right")
             }
 
         /**
