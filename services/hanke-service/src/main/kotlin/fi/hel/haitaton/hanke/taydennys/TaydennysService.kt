@@ -119,6 +119,13 @@ class TaydennysService(
         return taydennys
     }
 
+    /**
+     * Delete the täydennyspyyntö related to the given application if the application has one. The
+     * related objects (täydennys and it's attachments, customers and contacts) are removed as well.
+     *
+     * The deletions are logged to have been done by Allu, since this is called from the Allu event
+     * handler.
+     */
     @Transactional
     fun removeTaydennyspyyntoIfItExists(application: HakemusEntity) {
         logger.info {
