@@ -4,8 +4,12 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.ControllerTest
-import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeError.HAI0001
+import fi.hel.haitaton.hanke.HankeError.HAI1001
+import fi.hel.haitaton.hanke.HankeError.HAI2001
+import fi.hel.haitaton.hanke.HankeError.HAI3002
+import fi.hel.haitaton.hanke.HankeError.HAI3004
+import fi.hel.haitaton.hanke.HankeError.HAI6001
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
@@ -67,6 +71,8 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
     @Autowired private lateinit var attachmentService: TaydennysAttachmentService
     @Autowired private lateinit var authorizer: TaydennysAuthorizer
 
+    private val attachmentId: UUID = UUID.fromString("df37fe12-fb36-4f61-8b07-2fb4ae8233f8")
+
     @BeforeEach
     fun clearMocks() {
         clearAllMocks()
@@ -81,11 +87,10 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
     @Nested
     inner class GetAttachmentContent {
 
-        private val attachmentId: UUID = UUID.fromString("df37fe12-fb36-4f61-8b07-2fb4ae8233f8")
         private val url = "/taydennykset/$DEFAULT_ID/liitteet/$attachmentId/content"
 
         @Test
-        fun `returns attachment file when request is valid`() {
+        fun `returns 200 and attachment file when request is valid`() {
             every { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) } returns
                 true
             every { attachmentService.getContent(attachmentId) } returns
@@ -106,7 +111,7 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
 
         @Test
         @WithAnonymousUser
-        fun `returns 401 and error when request is unauthorized`() {
+        fun `returns 401 and error when user is unauthorized`() {
             get(url).andExpectError(HAI0001)
         }
 
@@ -115,7 +120,7 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
             every { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) } throws
                 HakemusNotFoundException(APPLICATION_ID)
 
-            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2001))
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HAI2001))
 
             verifySequence { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) }
         }
@@ -127,7 +132,7 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
             every { attachmentService.getContent(attachmentId) } throws
                 ValtakirjaForbiddenException(attachmentId)
 
-            get(url).andExpect(status().isForbidden).andExpect(hankeError(HankeError.HAI3004))
+            get(url).andExpect(status().isForbidden).andExpect(hankeError(HAI3004))
 
             verifySequence {
                 authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name)
@@ -136,21 +141,21 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
         }
 
         @Test
-        fun `returns 404 and error when asking for non-existing attachment`() {
+        fun `returns 404 and error when attachment not found`() {
             every { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) } throws
                 AttachmentNotFoundException(attachmentId)
 
-            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI3002))
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HAI3002))
 
             verifySequence { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) }
         }
 
         @Test
-        fun `returns 404 and error when asking for non-existing taydennys`() {
+        fun `returns 404 and error when taydennys not found`() {
             every { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) } throws
                 TaydennysNotFoundException(DEFAULT_ID)
 
-            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI6001))
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HAI6001))
 
             verifySequence { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) }
         }
@@ -188,9 +193,7 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
             every { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) } throws
                 HankeNotFoundException("HAI24-1")
 
-            postAttachment()
-                .andExpect(status().isNotFound)
-                .andExpect(hankeError(HankeError.HAI1001))
+            postAttachment().andExpect(status().isNotFound).andExpect(hankeError(HAI1001))
 
             verifyOrder { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) }
         }
@@ -200,9 +203,7 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
             every { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) } throws
                 HakemusNotFoundException(APPLICATION_ID)
 
-            postAttachment()
-                .andExpect(status().isNotFound)
-                .andExpect(hankeError(HankeError.HAI2001))
+            postAttachment().andExpect(status().isNotFound).andExpect(hankeError(HAI2001))
 
             verifyOrder { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) }
         }
@@ -229,15 +230,17 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
 
     @Nested
     inner class DeleteAttachment {
+
+        private val url = "/taydennykset/$DEFAULT_ID/liitteet/$attachmentId"
+
         @Test
-        fun `when valid request should succeed`() {
-            val attachmentId = UUID.fromString("5c97dcf2-686f-4cd6-9b9d-4124aff23a07")
+        fun `returns 200 and empty body when deletion succeeds`() {
             every {
                 authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
             } returns true
             justRun { attachmentService.deleteAttachment(attachmentId) }
 
-            deleteAttachment(attachmentId = attachmentId).andExpect(status().isOk)
+            delete(url).andExpect(status().isOk).andExpect(content().string(""))
 
             verifySequence {
                 authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
@@ -247,32 +250,47 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
 
         @Test
         @WithAnonymousUser
-        fun `unauthorized should return error`() {
-            deleteAttachment().andExpectError(HAI0001)
+        fun `returns 401 and error when user is unauthorized`() {
+            delete(url).andExpectError(HAI0001)
         }
 
         @Test
-        fun `when attachment not found should return error`() {
-            val attachmentId = UUID.fromString("5c97dcf2-686f-4cd6-9b9d-4124aff23a07")
+        fun `returns 404 and error when user has no rights for application`() {
             every {
                 authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
-            } returns true
-            every { attachmentService.deleteAttachment(attachmentId) } throws
-                AttachmentNotFoundException(attachmentId)
+            } throws HakemusNotFoundException(APPLICATION_ID)
 
-            deleteAttachment(attachmentId = attachmentId)
-                .andExpect(status().isNotFound)
-                .andExpect(hankeError(HankeError.HAI3002))
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HAI2001))
 
             verifySequence {
                 authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
-                attachmentService.deleteAttachment(attachmentId)
             }
         }
 
-        private fun deleteAttachment(
-            taydennysId: UUID = DEFAULT_ID,
-            attachmentId: UUID = UUID.fromString("5f79cc05-6a5e-4bb9-b457-f7df0e5e5471"),
-        ): ResultActions = delete("/taydennykset/$taydennysId/liitteet/$attachmentId")
+        @Test
+        fun `returns 404 and error when attachment not found`() {
+            every {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            } throws AttachmentNotFoundException(attachmentId)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HAI3002))
+
+            verifySequence {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            }
+        }
+
+        @Test
+        fun `returns 404 and error when taydennys not found`() {
+            every {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            } throws TaydennysNotFoundException(DEFAULT_ID)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HAI6001))
+
+            verifySequence {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            }
+        }
     }
 }
