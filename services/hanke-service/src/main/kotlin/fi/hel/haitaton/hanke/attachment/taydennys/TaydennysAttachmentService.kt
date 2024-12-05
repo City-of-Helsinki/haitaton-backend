@@ -112,6 +112,15 @@ class TaydennysAttachmentService(
         return newAttachment
     }
 
+    fun deleteAttachment(attachmentId: UUID) {
+        val attachment = metadataService.findAttachment(attachmentId)
+        logger.info { "Deleting attachment metadata ${attachment.id}" }
+        metadataService.deleteAttachmentById(attachment.id)
+        logger.info { "Deleting attachment content at ${attachment.blobLocation}" }
+        attachmentContentService.delete(attachment.blobLocation)
+        logger.info { "Deleted attachment $attachmentId from täydennys ${attachment.taydennysId}" }
+    }
+
     fun deleteAllAttachments(taydennys: TaydennysIdentifier) {
         logger.info { "Deleting all attachments from täydennys. ${taydennys.logString()}" }
         val paths = metadataService.deleteAllAttachments(taydennys)
