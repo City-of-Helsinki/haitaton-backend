@@ -2,12 +2,14 @@ package fi.hel.haitaton.hanke.attachment.taydennys
 
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadataDto
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.attachment.common.hasInfected
 import fi.hel.haitaton.hanke.taydennys.TaydennysIdentifier
 import fi.hel.haitaton.hanke.taydennys.TaydennysNotFoundException
@@ -28,6 +30,18 @@ class TaydennysAttachmentService(
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) {
+    fun getContent(attachmentId: UUID): AttachmentContent {
+        val attachment = metadataService.findAttachment(attachmentId)
+
+        if (attachment.attachmentType == ApplicationAttachmentType.VALTAKIRJA) {
+            throw ValtakirjaForbiddenException(attachmentId)
+        }
+
+        val content = attachmentContentService.find(attachment.blobLocation, attachment.id)
+
+        return AttachmentContent(attachment.fileName, attachment.contentType, content)
+    }
+
     fun addAttachment(
         taydennysId: UUID,
         attachmentType: ApplicationAttachmentType,
