@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
@@ -12,6 +13,7 @@ import fi.hel.haitaton.hanke.taydennys.TaydennysIdentifier
 import java.time.OffsetDateTime
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -25,6 +27,11 @@ class TaydennysAttachmentMetadataService(
     @Transactional(readOnly = true)
     fun getMetadataList(taydennysId: UUID): List<TaydennysAttachmentMetadata> =
         attachmentRepository.findByTaydennysId(taydennysId).map { it.toDomain() }
+
+    @Transactional(readOnly = true)
+    fun findAttachment(attachmentId: UUID): TaydennysAttachmentMetadata =
+        attachmentRepository.findByIdOrNull(attachmentId)?.toDomain()
+            ?: throw AttachmentNotFoundException(attachmentId)
 
     @Transactional
     fun create(

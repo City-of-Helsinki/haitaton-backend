@@ -14,14 +14,12 @@ import org.springframework.stereotype.Service
 private val logger = KotlinLogging.logger {}
 
 @Service
-class ApplicationAttachmentContentService(
-    val fileClient: FileClient,
-) {
+class ApplicationAttachmentContentService(val fileClient: FileClient) {
     fun upload(
         filename: String,
         contentType: MediaType,
         content: ByteArray,
-        applicationId: Long
+        applicationId: Long,
     ): String {
         val blobPath = generateBlobPath(applicationId)
         fileClient.upload(Container.HAKEMUS_LIITTEET, blobPath, filename, contentType, content)
@@ -44,13 +42,13 @@ class ApplicationAttachmentContentService(
     }
 
     fun find(attachment: ApplicationAttachmentMetadata): ByteArray =
+        find(attachment.blobLocation, attachment.id)
+
+    fun find(blobPath: String, id: UUID): ByteArray =
         try {
-            fileClient
-                .download(Container.HAKEMUS_LIITTEET, attachment.blobLocation)
-                .content
-                .toBytes()
-        } catch (e: DownloadNotFoundException) {
-            throw AttachmentNotFoundException(attachment.id)
+            fileClient.download(Container.HAKEMUS_LIITTEET, blobPath).content.toBytes()
+        } catch (_: DownloadNotFoundException) {
+            throw AttachmentNotFoundException(id)
         }
 
     companion object {
