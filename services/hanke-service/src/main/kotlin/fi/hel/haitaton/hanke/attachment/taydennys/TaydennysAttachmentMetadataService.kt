@@ -80,6 +80,12 @@ class TaydennysAttachmentMetadataService(
         return totalAttachmentCount >= ALLOWED_ATTACHMENT_COUNT
     }
 
+    @Transactional
+    fun deleteAttachmentById(attachmentId: UUID) {
+        attachmentRepository.deleteById(attachmentId)
+        logger.info { "Deleted attachment metadata $attachmentId" }
+    }
+
     /**
      * Delete all attachments for täydennys and return the blob locations of the deleted
      * attachments.

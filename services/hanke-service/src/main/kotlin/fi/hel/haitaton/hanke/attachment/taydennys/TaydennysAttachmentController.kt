@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -86,6 +87,30 @@ class TaydennysAttachmentController(private val attachmentService: TaydennysAtta
         @RequestParam("liite") attachment: MultipartFile,
     ): TaydennysAttachmentMetadataDto {
         return attachmentService.addAttachment(taydennysId, tyyppi, attachment)
+    }
+
+    @DeleteMapping("/{attachmentId}")
+    @Operation(
+        summary = "Delete attachment from täydennys",
+        description = "Deletes attachment from täydennys.",
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "Delete attachment", responseCode = "200"),
+                ApiResponse(
+                    description = "Attachment not found",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
+    @PreAuthorize(
+        "@taydennysAuthorizer.authorizeAttachment(#taydennysId, #attachmentId, 'EDIT_APPLICATIONS')"
+    )
+    fun deleteAttachment(@PathVariable taydennysId: UUID, @PathVariable attachmentId: UUID) {
+        logger.info { "Deleting attachment $attachmentId from täydennys $taydennysId." }
+        attachmentService.deleteAttachment(attachmentId)
     }
 
     @ExceptionHandler(ValtakirjaForbiddenException::class)

@@ -3,8 +3,10 @@ package fi.hel.haitaton.hanke.attachment.taydennys
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.containsExactly
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
+import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
@@ -17,10 +19,9 @@ import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.PDF_BYTES
-import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
@@ -49,7 +50,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.MediaType
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 
 class TaydennysAttachmentServiceITest(
@@ -102,7 +102,11 @@ class TaydennysAttachmentServiceITest(
 
         @Test
         fun `Throws exception when trying to get valtakirja content`() {
-            val attachment = attachmentFactory.save(attachmentType = VALTAKIRJA).withContent().value
+            val attachment =
+                attachmentFactory
+                    .save(attachmentType = ApplicationAttachmentType.VALTAKIRJA)
+                    .withContent()
+                    .value
 
             val failure = assertFailure { attachmentService.getContent(attachment.id!!) }
 
@@ -133,7 +137,7 @@ class TaydennysAttachmentServiceITest(
             assertThat(result.id).isNotNull()
             assertThat(result.createdByUserId).isEqualTo(USERNAME)
             assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-            assertThat(result.contentType).isEqualTo(MediaType.APPLICATION_PDF_VALUE)
+            assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
             assertThat(result.size).isEqualTo(DEFAULT_SIZE)
             assertThat(result.createdAt).isRecent()
             assertThat(result.taydennysId).isEqualTo(taydennys.id)
@@ -144,8 +148,7 @@ class TaydennysAttachmentServiceITest(
                 prop(TaydennysAttachmentEntity::id).isEqualTo(result.id)
                 prop(TaydennysAttachmentEntity::createdByUserId).isEqualTo(USERNAME)
                 prop(TaydennysAttachmentEntity::fileName).isEqualTo(FILE_NAME_PDF)
-                prop(TaydennysAttachmentEntity::contentType)
-                    .isEqualTo(MediaType.APPLICATION_PDF_VALUE)
+                prop(TaydennysAttachmentEntity::contentType).isEqualTo(APPLICATION_PDF_VALUE)
                 prop(TaydennysAttachmentEntity::size).isEqualTo(DEFAULT_SIZE)
                 prop(TaydennysAttachmentEntity::createdAt).isRecent()
                 prop(TaydennysAttachmentEntity::taydennysId).isEqualTo(taydennys.id)
@@ -155,8 +158,7 @@ class TaydennysAttachmentServiceITest(
                     .startsWith("${taydennys.hakemusId}/")
             }
 
-            val content =
-                fileClient.download(Container.HAKEMUS_LIITTEET, attachments.first().blobLocation)
+            val content = fileClient.download(HAKEMUS_LIITTEET, attachments.first().blobLocation)
             assertThat(content)
                 .isNotNull()
                 .prop(DownloadResponse::content)
@@ -319,6 +321,34 @@ class TaydennysAttachmentServiceITest(
                 )
             }
             assertThat(attachmentRepository.findAll()).isEmpty()
+        }
+    }
+
+    @Nested
+    inner class DeleteAttachment {
+        @Test
+        fun `Throws exception when attachment not found`() {
+            val attachmentId = UUID.fromString("ab7993b7-a775-4eac-b5b7-8546332944fe")
+
+            val failure = assertFailure { attachmentService.deleteAttachment(attachmentId) }
+
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachmentId.toString())
+            }
+        }
+
+        @Test
+        fun `Deletes attachment and content when attachment exists`() {
+            val attachment = attachmentFactory.save().withContent().value
+            assertThat(attachmentRepository.findAll()).hasSize(1)
+            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET).map { it.path })
+                .containsExactly(attachment.blobLocation)
+
+            attachmentService.deleteAttachment(attachment.id!!)
+
+            assertThat(attachmentRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).isEmpty()
         }
     }
 }
