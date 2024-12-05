@@ -123,14 +123,30 @@ class TaydennysService(
         return taydennys
     }
 
+    /**
+     * Delete the täydennyspyyntö related to the given application if the application has one. The
+     * related objects (täydennys and it's attachments, customers and contacts) are removed as well.
+     *
+     * The deletions are logged to have been done by Allu, since this is called from the Allu event
+     * handler.
+     */
     @Transactional
     fun removeTaydennyspyyntoIfItExists(application: HakemusEntity) {
         logger.info {
             "A hakemus has has entered handling. Checking if there's a täydennyspyyntö for the hakemus. ${application.logString()}"
         }
 
-        taydennyspyyntoRepository.findByApplicationId(application.id)?.let {
+        taydennysRepository.findByApplicationId(application.id)?.also {
+            logger.info { "A täydennys was found. Removing it." }
+            attachmentService.deleteAllAttachments(it)
+            taydennysLoggingService.logDeleteFromAllu(it.toDomain())
+            taydennysRepository.delete(it)
+            taydennysRepository.flush()
+        }
+
+        taydennyspyyntoRepository.findByApplicationId(application.id)?.also {
             logger.info { "A täydennyspyyntö was found. Removing it." }
+            taydennyspyyntoLoggingService.logDeleteFromAllu(it.toDomain())
             taydennyspyyntoRepository.delete(it)
             taydennyspyyntoRepository.flush()
             sendInformationRequestCanceledEmails(application)

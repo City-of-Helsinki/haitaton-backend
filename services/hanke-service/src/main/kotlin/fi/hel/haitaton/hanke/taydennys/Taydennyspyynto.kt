@@ -6,6 +6,7 @@ import java.util.UUID
 
 data class Taydennyspyynto(
     override val id: UUID,
+    val hakemusId: Long,
     val kentat: Map<InformationRequestFieldKey, String>,
 ) : HasId<UUID> {
     fun toResponse(): TaydennyspyyntoResponse =
