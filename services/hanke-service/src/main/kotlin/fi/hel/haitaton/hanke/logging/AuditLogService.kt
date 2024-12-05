@@ -74,6 +74,18 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
                 objectAfter = null,
             )
 
+        fun <ID, T : HasId<ID>> deleteEntryForAllu(type: ObjectType, deletedObject: T) =
+            AuditLogEntry(
+                operation = Operation.DELETE,
+                status = Status.SUCCESS,
+                userId = ALLU_AUDIT_LOG_USERID,
+                userRole = UserRole.SERVICE,
+                objectId = deletedObject.id!!.toString(),
+                objectType = type,
+                objectBefore = deletedObject.toChangeLogJsonString(),
+                objectAfter = null,
+            )
+
         fun <ID, T : HasId<ID>> createEntry(userId: String, type: ObjectType, createdObject: T) =
             AuditLogEntry(
                 operation = Operation.CREATE,
@@ -95,7 +107,7 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
             userId: String,
             type: ObjectType,
             objectBefore: T,
-            objectAfter: T
+            objectAfter: T,
         ): AuditLogEntry? {
             val jsonBefore = objectBefore.toChangeLogJsonString()
             val jsonAfter = objectAfter.toChangeLogJsonString()

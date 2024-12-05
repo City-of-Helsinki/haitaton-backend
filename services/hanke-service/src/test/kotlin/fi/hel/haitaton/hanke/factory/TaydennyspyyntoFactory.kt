@@ -44,8 +44,9 @@ class TaydennyspyyntoFactory(private val taydennyspyyntoRepository: Taydennyspyy
 
         fun create(
             id: UUID = DEFAULT_ID,
+            hakemusId: Long = ApplicationFactory.DEFAULT_APPLICATION_ID,
             kentat: Map<InformationRequestFieldKey, String> = DEFAULT_KENTAT,
-        ): Taydennyspyynto = Taydennyspyynto(id = id, kentat = kentat)
+        ): Taydennyspyynto = Taydennyspyynto(id = id, hakemusId = hakemusId, kentat = kentat)
 
         fun TaydennyspyyntoEntity.addKentta(key: InformationRequestFieldKey, message: String) =
             kentat.put(key, message)
