@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
@@ -15,7 +16,7 @@ import fi.hel.haitaton.hanke.taydennys.Taydennys
 import fi.hel.haitaton.hanke.taydennys.TaydennysEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennysService
-import fi.hel.haitaton.hanke.taydennys.TaydennysWithMuutokset
+import fi.hel.haitaton.hanke.taydennys.TaydennysWithExtras
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteyshenkiloRepository
@@ -135,8 +136,10 @@ class TaydennysFactory(
         fun Taydennys.toUpdateRequest(): HakemusUpdateRequest =
             this.toResponse().applicationData.toJsonString().parseJson()
 
-        fun Taydennys.withMuutokset(muutokset: List<String>) =
-            TaydennysWithMuutokset(id, taydennyspyyntoId, hakemusData, muutokset)
+        fun Taydennys.withExtras(
+            muutokset: List<String> = listOf(),
+            liitteet: List<TaydennysAttachmentMetadata> = listOf(),
+        ) = TaydennysWithExtras(id, taydennyspyyntoId, hakemusData, muutokset, liitteet)
 
         fun createYhteystietoEntity(
             taydennys: TaydennysEntity,

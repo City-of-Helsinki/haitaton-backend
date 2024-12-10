@@ -14,6 +14,7 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentMetadataService
 import fi.hel.haitaton.hanke.daysBetween
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.email.ApplicationNotificationEmail
@@ -71,6 +72,7 @@ class HakemusService(
     private val disclosureLogService: DisclosureLogService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val attachmentService: ApplicationAttachmentService,
+    private val taydennysAttachmentService: TaydennysAttachmentMetadataService,
     private val alluClient: AlluClient,
     private val paatosService: PaatosService,
     private val applicationEventPublisher: ApplicationEventPublisher,
@@ -86,10 +88,10 @@ class HakemusService(
         val paatokset = paatosService.findByHakemusId(hakemusId)
         val taydennyspyynto = taydennyspyyntoRepository.findByApplicationId(hakemusId)?.toDomain()
         val taydennys =
-            taydennysRepository
-                .findByApplicationId(hakemusId)
-                ?.toDomain()
-                ?.withMuutokset(hakemus.applicationData)
+            taydennysRepository.findByApplicationId(hakemusId)?.let {
+                val liitteet = taydennysAttachmentService.getMetadataList(it.id)
+                it.toDomain().withExtras(hakemus.applicationData, liitteet)
+            }
 
         return HakemusWithExtras(hakemus, paatokset, taydennyspyynto, taydennys)
     }
