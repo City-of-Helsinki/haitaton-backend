@@ -74,7 +74,7 @@ class TaydennysAuthorizerITest(
         @Test
         fun `throws exception if the attachment belongs to another taydennys`() {
             val taydennys = taydennysFactory.builder().saveEntity()
-            val taydennys2 = taydennysFactory.builder(id = taydennysId, alluId = 2).saveEntity()
+            val taydennys2 = taydennysFactory.builder(alluId = 2).saveEntity()
             val attachment =
                 attachmentFactory.save(taydennys = taydennys2.toDomain()).withContent().value
 
