@@ -55,6 +55,7 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
+import fi.hel.haitaton.hanke.factory.TaydennysAttachmentFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory
 import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory.Companion.addKentta
@@ -78,7 +79,7 @@ import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.paatos.PaatosTila
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
-import fi.hel.haitaton.hanke.taydennys.TaydennysWithMuutokset
+import fi.hel.haitaton.hanke.taydennys.TaydennysWithExtras
 import fi.hel.haitaton.hanke.taydennys.Taydennyspyynto
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasStreetName
@@ -140,6 +141,7 @@ class HakemusServiceITest(
     @Autowired private val alluClient: AlluClient,
     @Autowired private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
     @Autowired private val taydennysFactory: TaydennysFactory,
+    @Autowired private val taydennysAttachmentFactory: TaydennysAttachmentFactory,
     @Autowired private val hankeService: HankeService,
 ) : IntegrationTest() {
 
@@ -284,12 +286,12 @@ class HakemusServiceITest(
             val response = hakemusService.getWithExtras(hakemus.id)
 
             assertThat(response.taydennys).isNotNull().all {
-                prop(TaydennysWithMuutokset::id).isEqualTo(taydennys.id)
-                prop(TaydennysWithMuutokset::hakemusData).all {
+                prop(TaydennysWithExtras::id).isEqualTo(taydennys.id)
+                prop(TaydennysWithExtras::hakemusData).all {
                     prop(HakemusData::name).isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_NAME)
                     prop(HakemusData::startTime).isEqualTo(DateFactory.getStartDatetime())
                 }
-                prop(TaydennysWithMuutokset::muutokset).isEmpty()
+                prop(TaydennysWithExtras::muutokset).isEmpty()
             }
         }
 
@@ -310,14 +312,34 @@ class HakemusServiceITest(
             val response = hakemusService.getWithExtras(hakemus.id)
 
             assertThat(response.taydennys).isNotNull().all {
-                prop(TaydennysWithMuutokset::hakemusData)
+                prop(TaydennysWithExtras::hakemusData)
                     .isInstanceOf(JohtoselvityshakemusData::class)
                     .all {
                         prop(JohtoselvityshakemusData::emergencyWork).isTrue()
                         prop(JohtoselvityshakemusData::postalAddress).hasStreetName("Tie 3")
                     }
-                prop(TaydennysWithMuutokset::muutokset)
+                prop(TaydennysWithExtras::muutokset)
                     .containsExactlyInAnyOrder("emergencyWork", "postalAddress")
+            }
+        }
+
+        @Test
+        fun `returns liitteet with taydennys`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).save()
+            taydennysAttachmentFactory.save(fileName = "First", taydennys = taydennys)
+            taydennysAttachmentFactory.save(fileName = "Second", taydennys = taydennys)
+
+            val response = hakemusService.getWithExtras(hakemus.id)
+
+            assertThat(response.taydennys).isNotNull().prop(TaydennysWithExtras::liitteet).all {
+                hasSize(2)
+                extracting { it.fileName }.containsExactlyInAnyOrder("First", "Second")
             }
         }
     }
