@@ -80,7 +80,7 @@ class TestDataServiceITest : IntegrationTest() {
 
         @Test
         fun `deletes taydennyspyynnot and taydennykset`() {
-            taydennysFactory.saveWithHakemus()
+            taydennysFactory.builder().save()
 
             testDataService.unlinkApplicationsFromAllu()
 
@@ -90,7 +90,7 @@ class TestDataServiceITest : IntegrationTest() {
 
         @Test
         fun `deletes taydennys attachments from Blob storage`() {
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
             taydennysAttachmentFactory.save(taydennys = taydennys).withContent().value
 
             testDataService.unlinkApplicationsFromAllu()

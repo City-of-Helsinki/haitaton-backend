@@ -279,7 +279,7 @@ class HakemusServiceITest(
                     .withMandatoryFields()
                     .withStatus(ApplicationStatus.WAITING_INFORMATION)
                     .saveEntity()
-            val taydennys = taydennysFactory.saveForHakemus(hakemus)
+            val taydennys = taydennysFactory.builder(hakemus).save()
 
             val response = hakemusService.getWithExtras(hakemus.id)
 
@@ -301,13 +301,11 @@ class HakemusServiceITest(
                     .withMandatoryFields()
                     .withStatus(ApplicationStatus.WAITING_INFORMATION)
                     .saveEntity()
-            taydennysFactory.saveForHakemus(hakemus) {
-                this as JohtoselvityshakemusEntityData
-                copy(
-                    emergencyWork = true,
-                    postalAddress = postalAddress?.copy(streetAddress = StreetAddress("Tie 3")),
-                )
-            }
+            taydennysFactory
+                .builder(hakemus)
+                .withEmergencyWork(true)
+                .withStreetAddress("Tie 3")
+                .saveEntity()
 
             val response = hakemusService.getWithExtras(hakemus.id)
 

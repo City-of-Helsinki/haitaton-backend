@@ -35,7 +35,6 @@ import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withArea
-import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withAreas
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withContractor
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomer
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomerWithContactsRequest
@@ -144,10 +143,8 @@ class UpdateTaydennysITest(
     fun `does not create a new audit log entry when the taydennys has not changed`(
         type: ApplicationType
     ) {
-        val taydennys = taydennysFactory.saveWithHakemus(type)
-        // The saved hakemus has null in areas, but the response replaces it with an empty
-        // list, so set the value back to null in the request.
-        val request = taydennys.toUpdateRequest().withAreas(null)
+        val taydennys = taydennysFactory.builder(type).save()
+        val request = taydennys.toUpdateRequest()
         auditLogRepository.deleteAll()
 
         taydennysService.updateTaydennys(taydennys.id, request, USERNAME)
@@ -160,7 +157,7 @@ class UpdateTaydennysITest(
     fun `throws exception when the request has a persisted contact but the taydennys does not`(
         type: ApplicationType
     ) {
-        val taydennys = taydennysFactory.saveWithHakemus(type)
+        val taydennys = taydennysFactory.builder(type).withoutYhteystiedot().save()
         val requestYhteystietoId = UUID.randomUUID()
         val request =
             taydennys
@@ -184,7 +181,8 @@ class UpdateTaydennysITest(
     fun `throws exception when the request has different persisted contact than the application`(
         type: ApplicationType
     ) {
-        val taydennys = taydennysFactory.saveWithHakemus(type) { it.hakija() }
+        val hakemus = hakemusFactory.builder(type).hakija().saveEntity()
+        val taydennys = taydennysFactory.builder(hakemus).save()
         val originalYhteystietoId = taydennys.hakemusData.yhteystiedot().single().id
         val requestYhteystietoId = UUID.fromString("ad2173c5-eda4-43e2-8457-7974d74319e8")
         val request =
@@ -207,7 +205,8 @@ class UpdateTaydennysITest(
     fun `throws exception when the request has a contact that is not a user on hanke`(
         type: ApplicationType
     ) {
-        val taydennys = taydennysFactory.saveWithHakemus(type) { it.hakija() }
+        val hakemus = hakemusFactory.builder(type).hakija().saveEntity()
+        val taydennys = taydennysFactory.builder(hakemus).save()
         val originalYhteystietoId = taydennys.hakemusData.yhteystiedot().single().id
         val requestHankekayttajaId = UUID.fromString("598e1383-0720-4fd4-8449-21fd759aa457")
         val request =
@@ -229,9 +228,9 @@ class UpdateTaydennysITest(
     @ParameterizedTest
     @EnumSource(ApplicationType::class)
     fun `doesn't send email when the caller adds themself as contact`(type: ApplicationType) {
-        val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
-        val taydennys = taydennysFactory.saveWithHakemus(type, hanke)
-        val permission = permissionService.findPermission(hanke.id, USERNAME)!!
+        val taydennys = taydennysFactory.builder(type).withAreas(listOf()).save()
+        val hankeId = hakemusRepository.getReferenceById(taydennys.hakemusId).hanke.id
+        val permission = permissionService.findPermission(hankeId, USERNAME)!!
         val founder = hankekayttajaRepository.findByPermissionId(permission.id)!!
         val request =
             taydennys
@@ -262,7 +261,7 @@ class UpdateTaydennysITest(
 
         @Test
         fun `throws exception when there are invalid geometry in areas`() {
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
             val request = taydennys.toUpdateRequest().withArea(intersectingArea)
 
             val exception = assertFailure {
@@ -281,7 +280,7 @@ class UpdateTaydennysITest(
 
         @Test
         fun `throws exception when area is not inside hanke area`() {
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
             val request = taydennys.toUpdateRequest().withArea(notInHankeArea)
 
             val exception = assertFailure {
@@ -297,19 +296,23 @@ class UpdateTaydennysITest(
 
         @Test
         fun `saves updated data and creates an audit log`() {
-            val taydennys =
-                taydennysFactory.saveWithHakemus {
-                    it.hakija().withWorkDescription("Old work description")
-                }
+            val hakemusEntity =
+                hakemusFactory
+                    .builder()
+                    .hakija()
+                    .withWorkDescription("Old work description")
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemusEntity).save()
             val yhteystieto = taydennys.hakemusData.yhteystiedot().single()
             val perustajaId = yhteystieto.yhteyshenkilot.single().hankekayttajaId
             val hanke = hankeRepository.findAll().single()
             val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
+            val newDescription = "New work description"
             val request =
                 taydennys
                     .toUpdateRequest()
                     .withCustomer(CustomerType.COMPANY, yhteystieto.id, perustajaId, newKayttaja.id)
-                    .withWorkDescription("New work description")
+                    .withWorkDescription(newDescription)
             auditLogRepository.deleteAll()
 
             val updatedTaydennys = taydennysService.updateTaydennys(taydennys.id, request, USERNAME)
@@ -317,8 +320,7 @@ class UpdateTaydennysITest(
             assertThat(updatedTaydennys.hakemusData)
                 .isInstanceOf(JohtoselvityshakemusData::class)
                 .all {
-                    prop(JohtoselvityshakemusData::workDescription)
-                        .isEqualTo("New work description")
+                    prop(JohtoselvityshakemusData::workDescription).isEqualTo(newDescription)
                     prop(JohtoselvityshakemusData::customerWithContacts)
                         .isNotNull()
                         .prop(Hakemusyhteystieto::yhteyshenkilot)
@@ -333,8 +335,7 @@ class UpdateTaydennysITest(
             assertThat(persistedTaydennys.hakemusData)
                 .isInstanceOf(JohtoselvityshakemusData::class)
                 .all {
-                    prop(JohtoselvityshakemusData::workDescription)
-                        .isEqualTo("New work description")
+                    prop(JohtoselvityshakemusData::workDescription).isEqualTo(newDescription)
                     prop(JohtoselvityshakemusData::customerWithContacts)
                         .isNotNull()
                         .prop(Hakemusyhteystieto::yhteyshenkilot)
@@ -348,10 +349,9 @@ class UpdateTaydennysITest(
             val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
             val kayttaja1 = hankeKayttajaFactory.saveUser(hanke.id)
             val kayttaja2 = hankeKayttajaFactory.saveUser(hanke.id, sahkoposti = "other@email")
-            val taydennys =
-                taydennysFactory.saveWithHakemus(hanke = hanke) {
-                    it.hakija().tyonSuorittaja(kayttaja1, kayttaja2)
-                }
+            val hakemusEntity =
+                hakemusFactory.builder().hakija().tyonSuorittaja(kayttaja1, kayttaja2).saveEntity()
+            val taydennys = taydennysFactory.builder(hakemusEntity).save()
             val tyonSuorittajaId =
                 taydennys.hakemusData.yhteystiedot().first { it.rooli == TYON_SUORITTAJA }.id
             val request =
@@ -384,12 +384,10 @@ class UpdateTaydennysITest(
 
         @Test
         fun `adds a new yhteystieto and an yhteyshenkilo for it at the same time`() {
-            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val hanke = hankeFactory.builder().withHankealue().saveEntity()
+            val hakemusEntity = hakemusFactory.builder(hanke).saveEntity()
+            val taydennys = taydennysFactory.builder(hakemusEntity).save()
             val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
-            val taydennys =
-                taydennysFactory.saveWithHakemus(hanke = hanke) {
-                    it.withWorkDescription("Old work description")
-                }
             assertThat(taydennys.hakemusData.customerWithContacts).isNull()
             val request =
                 taydennys
@@ -424,7 +422,8 @@ class UpdateTaydennysITest(
         @Test
         fun `sends email to new contacts`() {
             val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
-            val taydennys = taydennysFactory.saveWithHakemus(hanke = hanke) { it.hakija() }
+            val hakemus = hakemusFactory.builder(hanke).hakija().saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).save()
             val yhteystietoId = taydennys.hakemusData.yhteystiedot().single().id
             val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
             val request =
@@ -451,7 +450,7 @@ class UpdateTaydennysITest(
         fun `doesn't change project name when application name is changed`() {
             val hakemus =
                 hakemusFactory.builderWithGeneratedHanke(nimi = "An application").saveEntity()
-            val taydennys = taydennysFactory.saveForHakemus(hakemus)
+            val taydennys = taydennysFactory.builder(hakemus).save()
             val request = taydennys.toUpdateRequest().withName("New name")
 
             taydennysService.updateTaydennys(taydennys.id, request, USERNAME)
@@ -475,11 +474,11 @@ class UpdateTaydennysITest(
         fun `throws exception when area is not inside hanke area`() {
             val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
             val hankeEntity = hankeRepository.findAll().single()
-            val taydennys =
-                taydennysFactory.saveWithHakemus(
-                    ApplicationType.EXCAVATION_NOTIFICATION,
-                    hankeEntity,
-                )
+            val hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).save()
             val hankealueId = hanke.alueet.single().id!!
             val area = notInHankeArea.copy(hankealueId = hankealueId)
             val request = taydennys.toUpdateRequest().withArea(area)
@@ -501,11 +500,11 @@ class UpdateTaydennysITest(
         fun `throws exception when area references non-existent hankealue`() {
             val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
             val hankeEntity = hankeRepository.findAll().single()
-            val taydennys =
-                taydennysFactory.saveWithHakemus(
-                    ApplicationType.EXCAVATION_NOTIFICATION,
-                    hankeEntity,
-                )
+            val hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).save()
             val hankealueId = hanke.alueet.single().id!! + 1000
             val area = createExcavationNotificationArea(hankealueId = hankealueId)
             val request = taydennys.toUpdateRequest().withArea(area)
@@ -526,17 +525,18 @@ class UpdateTaydennysITest(
         fun `saves updated data and creates an audit log`() {
             val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
             val hankeEntity = hankeRepository.findAll().single()
-            val taydennys =
-                taydennysFactory.saveWithHakemus(
-                    ApplicationType.EXCAVATION_NOTIFICATION,
-                    hankeEntity,
-                ) {
-                    it.hakija().withWorkDescription("Old work description")
-                }
+            val hakemusEntity =
+                hakemusFactory
+                    .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .hakija()
+                    .withWorkDescription("Old work description")
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemusEntity).save()
             val yhteystieto = taydennys.hakemusData.yhteystiedot().single()
             val kayttajaId = yhteystieto.yhteyshenkilot.single().hankekayttajaId
             val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
             val area = createExcavationNotificationArea(hankealueId = hanke.alueet.single().id!!)
+            val newDescription = "New work description"
             val request =
                 taydennys
                     .toUpdateRequest()
@@ -546,7 +546,7 @@ class UpdateTaydennysITest(
                         kayttajaId,
                         newKayttaja.id,
                     )
-                    .withWorkDescription("New work description")
+                    .withWorkDescription(newDescription)
                     .withRequiredCompetence(true)
                     .withDates(ZonedDateTime.now(), ZonedDateTime.now().plusDays(1))
                     .withArea(area)
@@ -555,7 +555,7 @@ class UpdateTaydennysITest(
             val updatedTaydennys = taydennysService.updateTaydennys(taydennys.id, request, USERNAME)
 
             assertThat(updatedTaydennys.hakemusData).isInstanceOf(KaivuilmoitusData::class).all {
-                prop(KaivuilmoitusData::workDescription).isEqualTo("New work description")
+                prop(KaivuilmoitusData::workDescription).isEqualTo(newDescription)
                 prop(KaivuilmoitusData::requiredCompetence).isTrue()
                 prop(KaivuilmoitusData::customerWithContacts)
                     .isNotNull()
@@ -574,7 +574,7 @@ class UpdateTaydennysITest(
             val hakemus = hakemusRepository.findAll().single()
             val persistedTaydennys = taydennysService.findTaydennys(hakemus.id)!!
             assertThat(persistedTaydennys.hakemusData).isInstanceOf(KaivuilmoitusData::class).all {
-                prop(KaivuilmoitusData::workDescription).isEqualTo("New work description")
+                prop(KaivuilmoitusData::workDescription).isEqualTo(newDescription)
                 prop(KaivuilmoitusData::requiredCompetence).isTrue()
                 prop(KaivuilmoitusData::customerWithContacts)
                     .isNotNull()
@@ -594,10 +594,13 @@ class UpdateTaydennysITest(
             val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
             val kayttaja1 = hankeKayttajaFactory.saveUser(hanke.id)
             val kayttaja2 = hankeKayttajaFactory.saveUser(hanke.id, sahkoposti = "other@email")
-            val taydennys =
-                taydennysFactory.saveWithHakemus(ApplicationType.EXCAVATION_NOTIFICATION, hanke) {
-                    it.hakija().tyonSuorittaja(kayttaja1, kayttaja2)
-                }
+            val hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .hakija()
+                    .tyonSuorittaja(kayttaja1, kayttaja2)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).save()
             val tyonSuorittajaId =
                 taydennys.hakemusData.yhteystiedot().first { it.rooli == TYON_SUORITTAJA }.id
             val request =
@@ -623,10 +626,11 @@ class UpdateTaydennysITest(
         fun `adds a new yhteystieto and an yhteyshenkilo for it at the same time`() {
             val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
             val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
-            val taydennys =
-                taydennysFactory.saveWithHakemus(ApplicationType.EXCAVATION_NOTIFICATION, hanke) {
-                    it.withWorkDescription("Old work description")
-                }
+            val hakemusEntity =
+                hakemusFactory
+                    .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemusEntity).save()
             assertThat(taydennys.hakemusData.customerWithContacts).isNull()
             val request =
                 taydennys
@@ -660,10 +664,12 @@ class UpdateTaydennysITest(
 
         @Test
         fun `throws exception when an existing yhteystieto has registry key hidden but different type in the request`() {
-            val taydennys =
-                taydennysFactory.saveWithHakemus(ApplicationType.EXCAVATION_NOTIFICATION) {
-                    it.hakija(HakemusyhteystietoFactory.create(tyyppi = CustomerType.COMPANY))
-                }
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .hakija(HakemusyhteystietoFactory.create(tyyppi = CustomerType.COMPANY))
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).save()
             val yhteystietoId = taydennys.hakemusData.customerWithContacts!!.id
             val request =
                 taydennys
@@ -695,15 +701,17 @@ class UpdateTaydennysITest(
             newRegistryKey: String?
         ) {
             val henkilotunnus = "090626-885W"
-            val taydennys =
-                taydennysFactory.saveWithHakemus(ApplicationType.EXCAVATION_NOTIFICATION) {
-                    it.hakija(
+            val hakemusEntity =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .hakija(
                         HakemusyhteystietoFactory.create(
                             tyyppi = CustomerType.PERSON,
                             registryKey = henkilotunnus,
                         )
                     )
-                }
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemusEntity).save()
             val yhteystietoId = taydennys.hakemusData.customerWithContacts!!.id
             val request =
                 taydennys
@@ -736,10 +744,12 @@ class UpdateTaydennysITest(
 
         @Test
         fun `throws exception when an existing laskutusyhteystieto has registry key hidden but different type in the request`() {
-            val taydennys =
-                taydennysFactory.saveWithHakemus(ApplicationType.EXCAVATION_NOTIFICATION) {
-                    it.withInvoicingCustomer(ApplicationFactory.createCompanyInvoicingCustomer())
-                }
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withInvoicingCustomer(ApplicationFactory.createCompanyInvoicingCustomer())
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).save()
             val request =
                 (taydennys.toUpdateRequest() as KaivuilmoitusUpdateRequest).withInvoicingCustomer(
                     CustomerType.PERSON,
@@ -767,10 +777,12 @@ class UpdateTaydennysITest(
             newRegistryKey: String?
         ) {
             val henkilotunnus = ApplicationFactory.DEFAULT_HENKILOTUNNUS
-            val taydennys =
-                taydennysFactory.saveWithHakemus(ApplicationType.EXCAVATION_NOTIFICATION) {
-                    it.withInvoicingCustomer(ApplicationFactory.createPersonInvoicingCustomer())
-                }
+            val hakemusEntity =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withInvoicingCustomer(ApplicationFactory.createPersonInvoicingCustomer())
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemusEntity).save()
             val request =
                 (taydennys.toUpdateRequest() as KaivuilmoitusUpdateRequest).withInvoicingCustomer(
                     CustomerType.PERSON,
@@ -799,10 +811,12 @@ class UpdateTaydennysITest(
         @Test
         fun `sends email for new contacts`() {
             val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
-            val taydennys =
-                taydennysFactory.saveWithHakemus(ApplicationType.EXCAVATION_NOTIFICATION, hanke) {
-                    it.hakija()
-                }
+            val hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .hakija()
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).save()
             val yhteystietoId = taydennys.hakemusData.yhteystiedot().single().id
             val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
             val request =
@@ -829,11 +843,11 @@ class UpdateTaydennysITest(
         fun `calculates tormaystarkastelu for work areas`() {
             val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
             val hankeEntity = hankeRepository.findAll().single()
-            val taydennys =
-                taydennysFactory.saveWithHakemus(
-                    ApplicationType.EXCAVATION_NOTIFICATION,
-                    hankeEntity,
-                )
+            val hakemusEntity =
+                hakemusFactory
+                    .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemusEntity).save()
             val area = createExcavationNotificationArea(hankealueId = hanke.alueet.single().id!!)
             val request =
                 taydennys

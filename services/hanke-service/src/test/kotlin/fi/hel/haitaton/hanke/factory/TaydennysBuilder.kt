@@ -1,22 +1,36 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
+import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
+import fi.hel.haitaton.hanke.hakemus.Hakemusalue
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusEntityData
+import fi.hel.haitaton.hanke.hakemus.StreetAddress
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.taydennys.Taydennys
 import fi.hel.haitaton.hanke.taydennys.TaydennysEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
+import fi.hel.haitaton.hanke.taydennys.TaydennysService
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteystietoEntity
+import java.security.InvalidParameterException
+import java.time.ZonedDateTime
 
 data class TaydennysBuilder(
     private var taydennysEntity: TaydennysEntity,
     private var hankeId: Int,
+    private val taydennysService: TaydennysService,
     private val taydennysRepository: TaydennysRepository,
     private val hankeKayttajaFactory: HankeKayttajaFactory,
     private val taydennysyhteyshenkiloRepository: TaydennysyhteyshenkiloRepository,
 ) {
+    fun save(): Taydennys = taydennysService.findTaydennys(saveEntity().hakemusId())!!
+
     fun saveEntity(): TaydennysEntity {
         val savedTaydennys = taydennysRepository.save(taydennysEntity)
         savedTaydennys.yhteystiedot.forEach { (_, yhteystieto) ->
@@ -26,6 +40,62 @@ data class TaydennysBuilder(
         }
         return savedTaydennys
     }
+
+    fun withName(name: String): TaydennysBuilder =
+        updateApplicationData({ copy(name = name) }, { copy(name = name) })
+
+    fun withConstructionWork(constructionWork: Boolean): TaydennysBuilder =
+        updateApplicationData(
+            { copy(constructionWork = constructionWork) },
+            { copy(constructionWork = constructionWork) },
+        )
+
+    fun withMaintenanceWork(maintenanceWork: Boolean): TaydennysBuilder =
+        updateApplicationData(
+            { copy(maintenanceWork = maintenanceWork) },
+            { copy(maintenanceWork = maintenanceWork) },
+        )
+
+    fun withEmergencyWork(emergencyWork: Boolean): TaydennysBuilder =
+        updateApplicationData(
+            { copy(emergencyWork = emergencyWork) },
+            { copy(emergencyWork = emergencyWork) },
+        )
+
+    fun withWorkDescription(description: String): TaydennysBuilder =
+        updateApplicationData(
+            { copy(workDescription = description) },
+            { copy(workDescription = description) },
+        )
+
+    fun withStreetAddress(streetAddress: String): TaydennysBuilder =
+        updateApplicationData(
+            {
+                copy(
+                    postalAddress =
+                        postalAddress?.copy(streetAddress = StreetAddress(streetAddress))
+                )
+            },
+            { invalidHakemusType() },
+        )
+
+    fun withStartTime(startTime: ZonedDateTime?): TaydennysBuilder =
+        updateApplicationData({ copy(startTime = startTime) }, { copy(startTime = startTime) })
+
+    fun withEndTime(endTime: ZonedDateTime?): TaydennysBuilder =
+        updateApplicationData({ copy(endTime = endTime) }, { copy(endTime = endTime) })
+
+    fun withAreas(areas: List<Hakemusalue>) =
+        updateApplicationData(
+            {
+                if (areas.any { it !is JohtoselvitysHakemusalue }) throw InvalidParameterException()
+                copy(areas = areas.filterIsInstance<JohtoselvitysHakemusalue>())
+            },
+            {
+                if (areas.any { it !is KaivuilmoitusAlue }) throw InvalidParameterException()
+                copy(areas = areas.filterIsInstance<KaivuilmoitusAlue>())
+            },
+        )
 
     fun hakija(
         yhteystieto: TaydennysyhteystietoEntity =
@@ -49,6 +119,11 @@ data class TaydennysBuilder(
         first: HankekayttajaEntity,
         vararg yhteyshenkilot: HankekayttajaEntity,
     ): TaydennysBuilder = hakija(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
+
+    fun withoutYhteystiedot(): TaydennysBuilder {
+        taydennysEntity.yhteystiedot = mutableMapOf()
+        return this
+    }
 
     fun tyonSuorittaja(
         yhteystieto: TaydennysyhteystietoEntity =
@@ -181,4 +256,23 @@ data class TaydennysBuilder(
             taydennysyhteystieto = yhteystietoEntity,
             tilaaja = tilaaja,
         )
+
+    private fun updateApplicationData(
+        onCableReport: JohtoselvityshakemusEntityData.() -> JohtoselvityshakemusEntityData,
+        onExcavationNotification: KaivuilmoitusEntityData.() -> KaivuilmoitusEntityData,
+    ): TaydennysBuilder = apply {
+        taydennysEntity.hakemusData =
+            when (val data = taydennysEntity.hakemusData) {
+                is JohtoselvityshakemusEntityData -> {
+                    data.onCableReport()
+                }
+                is KaivuilmoitusEntityData -> {
+                    data.onExcavationNotification()
+                }
+            }
+    }
+
+    private fun HakemusEntityData.invalidHakemusType(): Nothing {
+        throw InvalidParameterException("Not available for hakemus type $applicationType.")
+    }
 }
