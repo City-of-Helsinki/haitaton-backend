@@ -30,6 +30,9 @@ class TaydennysAttachmentService(
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) {
+    fun getMetadataList(taydennysId: UUID): List<TaydennysAttachmentMetadata> =
+        metadataService.getMetadataList(taydennysId)
+
     fun getContent(attachmentId: UUID): AttachmentContent {
         val attachment = metadataService.findAttachment(attachmentId)
 

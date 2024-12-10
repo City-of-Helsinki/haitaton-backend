@@ -87,6 +87,18 @@ data class TaydennysAttachmentMetadata(
             taydennysId = taydennysId,
         )
     }
+
+    fun toAlluAttachment(content: ByteArray): AlluAttachment =
+        AlluAttachment(
+            metadata =
+                AlluAttachmentMetadata(
+                    id = null,
+                    mimeType = contentType,
+                    name = fileName,
+                    description = attachmentType.toFinnish(),
+                ),
+            file = content,
+        )
 }
 
 data class AttachmentContent(

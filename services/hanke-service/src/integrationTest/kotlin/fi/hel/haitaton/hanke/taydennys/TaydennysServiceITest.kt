@@ -11,6 +11,7 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
@@ -21,7 +22,11 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
+import fi.hel.haitaton.hanke.attachment.PDF_BYTES
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
 import fi.hel.haitaton.hanke.factory.AlluFactory
@@ -87,6 +92,8 @@ class TaydennysServiceITest(
     @Autowired private val hankeRepository: HankeRepository,
     @Autowired private val hankekayttajaRepository: HankekayttajaRepository,
     @Autowired private val attachmentRepository: TaydennysAttachmentRepository,
+    @Autowired private val hakemusAttachmentRepository: ApplicationAttachmentRepository,
+    @Autowired private val attachmentContentService: ApplicationAttachmentContentService,
     @Autowired private val alluClient: AlluClient,
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val hakemusFactory: HakemusFactory,
@@ -561,6 +568,82 @@ class TaydennysServiceITest(
                 alluClient.addAttachment(any(), any())
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
+        }
+
+        @Test
+        fun `sends the attachments to Allu`() {
+            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            val attachment =
+                attachmentFactory.save(taydennys = taydennys).withContent().value.toDomain()
+            val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
+            val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
+            val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+            every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            verifySequence {
+                alluClient.addAttachment(any(), eq(attachment.toAlluAttachment(PDF_BYTES)))
+                alluClient.respondToInformationRequest(
+                    hakemus.alluid!!,
+                    taydennyspyynto.alluId,
+                    updatedTaydennysData.toAlluData(hakemus.hankeTunnus),
+                    setOf(InformationRequestFieldKey.ATTACHMENT),
+                )
+                alluClient.addAttachment(any(), any())
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
+        fun `transfers attachments from taydennys to hakemus`() {
+            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            val attachment =
+                attachmentFactory.save(taydennys = taydennys).withContent().value.toDomain()
+            val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
+            val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
+            val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
+            assertThat(attachmentRepository.existsById(attachment.id)).isTrue()
+            assertThat(hakemusAttachmentRepository.findAll()).isEmpty()
+            assertThat(attachmentContentService.find(attachment.blobLocation, attachment.id))
+                .isEqualTo(PDF_BYTES)
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+            every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            verifySequence {
+                alluClient.addAttachment(any(), any())
+                alluClient.respondToInformationRequest(
+                    hakemus.alluid!!,
+                    taydennyspyynto.alluId,
+                    updatedTaydennysData.toAlluData(hakemus.hankeTunnus),
+                    setOf(InformationRequestFieldKey.ATTACHMENT),
+                )
+                alluClient.addAttachment(any(), any())
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+            assertThat(attachmentRepository.findAll()).isEmpty()
+            val hakemusAttachment =
+                hakemusAttachmentRepository.findByApplicationId(hakemus.id).single().toDomain()
+            assertThat(hakemusAttachment).all {
+                prop(ApplicationAttachmentMetadata::fileName).isEqualTo(attachment.fileName)
+                prop(ApplicationAttachmentMetadata::contentType).isEqualTo(attachment.contentType)
+                prop(ApplicationAttachmentMetadata::size).isEqualTo(attachment.size)
+                prop(ApplicationAttachmentMetadata::blobLocation).isEqualTo(attachment.blobLocation)
+                prop(ApplicationAttachmentMetadata::createdByUserId)
+                    .isEqualTo(attachment.createdByUserId)
+                prop(ApplicationAttachmentMetadata::createdAt).isEqualTo(attachment.createdAt)
+                prop(ApplicationAttachmentMetadata::applicationId).isEqualTo(hakemus.id)
+                prop(ApplicationAttachmentMetadata::attachmentType)
+                    .isEqualTo(attachment.attachmentType)
+            }
+            assertThat(attachmentContentService.find(hakemusAttachment)).isEqualTo(PDF_BYTES)
         }
 
         @Test

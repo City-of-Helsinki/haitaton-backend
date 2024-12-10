@@ -48,6 +48,7 @@ enum class InformationRequestFieldKey {
                 "propertyDeveloperWithContacts" -> PROPERTY_DEVELOPER
                 "representativeWithContacts" -> REPRESENTATIVE
                 "invoicingCustomer" -> INVOICING_CUSTOMER
+                "attachment" -> ATTACHMENT
                 else -> {
                     if (name.startsWith("areas")) GEOMETRY else null
                 }
