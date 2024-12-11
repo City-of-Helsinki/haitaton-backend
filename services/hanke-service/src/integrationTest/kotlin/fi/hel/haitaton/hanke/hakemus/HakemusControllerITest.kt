@@ -31,6 +31,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRegistryKey
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withTimes
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
@@ -421,6 +422,28 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             get(url)
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.valmistumisilmoitukset").doesNotHaveJsonPath())
+
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
+                hakemusService.getWithExtras(id)
+            }
+        }
+
+        @Test
+        fun `returns haittojenhallintasuunnitelma with a kaivuilmoitus`() {
+            val hakemus =
+                HakemusFactory.create(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
+            every { hakemusService.getWithExtras(id) } returns hakemus.withExtras()
+            val haittojenhallintaPath = "$.applicationData.areas[0].haittojenhallintasuunnitelma"
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath(haittojenhallintaPath).isMap())
+                .andExpect(
+                    jsonPath("$haittojenhallintaPath.PYORALIIKENNE")
+                        .value(HankealueFactory.DEFAULT_HHS_PYORALIIKENNE)
+                )
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
