@@ -3,7 +3,11 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
+import fi.hel.haitaton.hanke.factory.HankealueFactory.DEFAULT_HHS_PYORALIIKENNE
+import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
@@ -101,6 +105,8 @@ class ApplicationFactory(
             kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus =
                 AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA,
             lisatiedot: String = "Lisätiedot",
+            haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma =
+                mapOf(Haittojenhallintatyyppi.PYORALIIKENNE to DEFAULT_HHS_PYORALIIKENNE),
         ): KaivuilmoitusAlue =
             KaivuilmoitusAlue(
                 name,
@@ -114,6 +120,7 @@ class ApplicationFactory(
                 kaistahaitta,
                 kaistahaittojenPituus,
                 lisatiedot,
+                haittojenhallintasuunnitelma,
             )
 
         fun createTyoalue(
@@ -121,6 +128,11 @@ class ApplicationFactory(
             area: Double = 100.0,
             tormaystarkasteluTulos: TormaystarkasteluTulos? = null,
         ) = Tyoalue(geometry, area, tormaystarkasteluTulos)
+
+        fun KaivuilmoitusAlue.withHaittojenhallintasuunnitelma(
+            haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma =
+                createHaittojenhallintasuunnitelma()
+        ): KaivuilmoitusAlue = copy(haittojenhallintasuunnitelma = haittojenhallintasuunnitelma)
 
         fun createBlankApplicationData(applicationType: ApplicationType): HakemusEntityData =
             when (applicationType) {
