@@ -572,7 +572,7 @@ class TaydennysServiceITest(
 
         @Test
         fun `sends the attachments to Allu`() {
-            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            val taydennys = taydennysFactory.builder().save()
             val attachment =
                 attachmentFactory.save(taydennys = taydennys).withContent().value.toDomain()
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
@@ -600,7 +600,7 @@ class TaydennysServiceITest(
 
         @Test
         fun `transfers attachments from taydennys to hakemus`() {
-            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            val taydennys = taydennysFactory.builder().save()
             val attachment =
                 attachmentFactory.save(taydennys = taydennys).withContent().value.toDomain()
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
