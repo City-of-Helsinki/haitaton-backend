@@ -40,7 +40,6 @@ import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
-import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -454,6 +453,8 @@ class TaydennysServiceITest(
 
     @Nested
     inner class SendTaydennys {
+        private val startTime = DateFactory.getStartDatetime().minusDays(1)
+
         @Test
         fun `throws exception when taydennys is not found`() {
             val failure = assertFailure {
@@ -472,7 +473,7 @@ class TaydennysServiceITest(
 
         @Test
         fun `throws exception if the taydennys is identical to the hakemus`() {
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
 
             val failure = assertFailure { taydennysService.sendTaydennys(taydennys.id, USERNAME) }
 
@@ -485,14 +486,13 @@ class TaydennysServiceITest(
 
         @Test
         fun `throws exception if the hakemus is not in WAITING_INFORMATION`() {
-            val taydennys =
-                taydennysFactory.saveWithHakemus {
-                    it.withMandatoryFields()
-                        .withStatus(status = ApplicationStatus.INFORMATION_RECEIVED)
-                }
-            taydennysFactory.updateJohtoselvitysTaydennys(taydennys) {
-                copy(startTime = DateFactory.getStartDatetime().minusDays(1))
-            }
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.INFORMATION_RECEIVED)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).withStartTime(startTime).save()
 
             val failure = assertFailure { taydennysService.sendTaydennys(taydennys.id, USERNAME) }
 
@@ -506,8 +506,7 @@ class TaydennysServiceITest(
 
         @Test
         fun `throws exception when the taydennys fails validation`() {
-            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
-            taydennysFactory.updateJohtoselvitysTaydennys(taydennys) { copy(startTime = null) }
+            val taydennys = taydennysFactory.builder().withStartTime(null).save()
 
             val failure = assertFailure { taydennysService.sendTaydennys(taydennys.id, USERNAME) }
 
@@ -520,22 +519,22 @@ class TaydennysServiceITest(
 
         @Test
         fun `sends the data to Allu with list of changed fields`() {
-            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
-            taydennysFactory.updateJohtoselvitysTaydennys(taydennys) {
-                copy(
-                    startTime = DateFactory.getStartDatetime().minusDays(1),
-                    endTime = DateFactory.getEndDatetime().plusDays(1),
-                    constructionWork = true,
-                    maintenanceWork = true,
-                    workDescription = "New description",
-                    postalAddress = ApplicationFactory.createPostalAddress("New street"),
-                    areas =
+            val taydennys =
+                taydennysFactory
+                    .builder()
+                    .withStartTime(startTime)
+                    .withEndTime(DateFactory.getEndDatetime().plusDays(1))
+                    .withConstructionWork(true)
+                    .withMaintenanceWork(true)
+                    .withWorkDescription("New description")
+                    .withStreetAddress("New street")
+                    .withAreas(
                         listOf(
                             ApplicationFactory.createCableReportApplicationArea(),
                             ApplicationFactory.createCableReportApplicationArea(),
-                        ),
-                )
-            }
+                        )
+                    )
+                    .save()
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
             val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
             val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
@@ -566,10 +565,7 @@ class TaydennysServiceITest(
 
         @Test
         fun `sends the updated form data as a PDF`() {
-            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
-            taydennysFactory.updateJohtoselvitysTaydennys(taydennys) {
-                copy(startTime = DateFactory.getStartDatetime().minusDays(1))
-            }
+            val taydennys = taydennysFactory.builder().withStartTime(startTime).save()
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
             val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
@@ -597,11 +593,14 @@ class TaydennysServiceITest(
         @Test
         fun `logs personal info sent to Allu to disclosure logs`() {
             val hakija = HakemusyhteystietoFactory.createPerson()
-            val taydennys =
-                taydennysFactory.saveWithHakemus { it.withMandatoryFields().hakija(hakija) }
-            taydennysFactory.updateJohtoselvitysTaydennys(taydennys) {
-                copy(startTime = DateFactory.getStartDatetime().minusDays(1))
-            }
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                    .hakija(hakija)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).withStartTime(startTime).save()
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
             justRun { alluClient.addAttachment(any(), any()) }
             every { alluClient.getApplicationInformation(any()) } returns
@@ -647,11 +646,7 @@ class TaydennysServiceITest(
                     .withMandatoryFields()
                     .withStatus(ApplicationStatus.WAITING_INFORMATION)
                     .saveEntity()
-            val taydennys =
-                taydennysFactory.saveForHakemus(hakemus) {
-                    this as JohtoselvityshakemusEntityData
-                    copy(name = "New name")
-                }
+            val taydennys = taydennysFactory.builder(hakemus).withName("New name").save()
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
             justRun { alluClient.addAttachment(any(), any()) }
             every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
@@ -670,9 +665,7 @@ class TaydennysServiceITest(
 
         @Test
         fun `merges the taydennys data with the hakemus`() {
-            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
-            val startTime = DateFactory.getStartDatetime().minusDays(1)
-            taydennysFactory.updateJohtoselvitysTaydennys(taydennys) { copy(startTime = startTime) }
+            val taydennys = taydennysFactory.builder().withStartTime(startTime).save()
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
             val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
@@ -693,10 +686,7 @@ class TaydennysServiceITest(
 
         @Test
         fun `removes the taydennyspyynto and taydennys`() {
-            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
-            taydennysFactory.updateJohtoselvitysTaydennys(taydennys) {
-                copy(startTime = DateFactory.getStartDatetime().minusDays(1))
-            }
+            val taydennys = taydennysFactory.builder().withStartTime(startTime).save()
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
             justRun { alluClient.addAttachment(any(), any()) }
             every { alluClient.getApplicationInformation(any()) } returns
@@ -715,11 +705,7 @@ class TaydennysServiceITest(
 
         @Test
         fun `logs the removed taydennys and taydennyspyynto`() {
-            val unchangedTaydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
-            val taydennys =
-                taydennysFactory.updateJohtoselvitysTaydennys(unchangedTaydennys) {
-                    copy(startTime = DateFactory.getStartDatetime().minusDays(1))
-                }
+            val taydennys = taydennysFactory.builder().withStartTime(startTime).save()
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
             every { alluClient.getApplicationInformation(any()) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
@@ -757,11 +743,7 @@ class TaydennysServiceITest(
 
         @Test
         fun `updates the Allu status even when sending the form data attachment fails`() {
-            val unchangedTaydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
-            val taydennys =
-                taydennysFactory.updateJohtoselvitysTaydennys(unchangedTaydennys) {
-                    copy(startTime = DateFactory.getStartDatetime().minusDays(1))
-                }
+            val taydennys = taydennysFactory.builder().withStartTime(startTime).save()
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
             val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
@@ -789,7 +771,7 @@ class TaydennysServiceITest(
     inner class Delete {
         @Test
         fun `deletes the attachments when deleting a taydennys`() {
-            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            val taydennys = taydennysFactory.builder().save()
             attachmentFactory.save(taydennys = taydennys).withContent()
             attachmentFactory.save(taydennys = taydennys).withContent()
             assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).hasSize(2)
@@ -804,7 +786,7 @@ class TaydennysServiceITest(
 
         @Test
         fun `deletes all attachment metadata even when deleting attachment content fails`() {
-            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            val taydennys = taydennysFactory.builder().save()
             attachmentFactory.save(taydennys = taydennys).withContent()
             attachmentFactory.save(taydennys = taydennys).withContent()
             assertThat(attachmentRepository.findByTaydennysId(taydennys.id)).hasSize(2)
@@ -822,7 +804,7 @@ class TaydennysServiceITest(
         @Test
         fun `writes audit log for the deleted taydennys`() {
             TestUtils.addMockedRequestIp()
-            val taydennys = taydennysFactory.saveWithHakemus { it.withMandatoryFields() }
+            val taydennys = taydennysFactory.builder().save()
             auditLogRepository.deleteAll()
 
             taydennysService.delete(taydennys.id, USERNAME)

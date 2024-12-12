@@ -125,7 +125,7 @@ class TaydennysAttachmentServiceITest(
             typeInput: ApplicationAttachmentType
         ) {
             mockClamAv.enqueue(response(body(results = successResult())))
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
 
             val result =
                 attachmentService.addAttachment(
@@ -169,7 +169,7 @@ class TaydennysAttachmentServiceITest(
         @Test
         fun `Sanitizes filenames with special characters`() {
             mockClamAv.enqueue(response(body(results = successResult())))
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
 
             val result =
                 attachmentService.addAttachment(
@@ -185,7 +185,7 @@ class TaydennysAttachmentServiceITest(
 
         @Test
         fun `Throws exception when allowed attachment amount is reached`() {
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
             val attachments =
                 (1..ALLOWED_ATTACHMENT_COUNT).map {
                     TaydennysAttachmentFactory.Companion.createEntity(taydennysId = taydennys.id)
@@ -211,7 +211,7 @@ class TaydennysAttachmentServiceITest(
 
         @Test
         fun `Throws exception without content`() {
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
@@ -229,7 +229,7 @@ class TaydennysAttachmentServiceITest(
 
         @Test
         fun `Throws exception without content type`() {
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
@@ -261,7 +261,7 @@ class TaydennysAttachmentServiceITest(
 
         @Test
         fun `Throws exception when file type is not supported`() {
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
             val invalidFilename = "hello.html"
 
             val failure = assertFailure {
@@ -281,7 +281,7 @@ class TaydennysAttachmentServiceITest(
 
         @Test
         fun `Throws exception when file type is not supported for attachment type`() {
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
             val invalidFilename = "hello.jpeg"
 
             val failure = assertFailure {
@@ -304,7 +304,7 @@ class TaydennysAttachmentServiceITest(
         @Test
         fun `Throws exception when virus scan fails`() {
             mockClamAv.enqueue(response(body(results = failResult())))
-            val taydennys = taydennysFactory.saveWithHakemus()
+            val taydennys = taydennysFactory.builder().save()
 
             val failure = assertFailure {
                 attachmentService.addAttachment(

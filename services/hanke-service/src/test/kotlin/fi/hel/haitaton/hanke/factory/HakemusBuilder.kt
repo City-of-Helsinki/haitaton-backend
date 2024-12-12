@@ -175,14 +175,12 @@ data class HakemusBuilder(
         onExcavationNotification: KaivuilmoitusEntityData.() -> KaivuilmoitusEntityData,
     ) = apply {
         hakemusEntity.hakemusEntityData =
-            when (hakemusEntity.applicationType) {
-                ApplicationType.CABLE_REPORT -> {
-                    (hakemusEntity.hakemusEntityData as JohtoselvityshakemusEntityData)
-                        .onCableReport()
+            when (val data = hakemusEntity.hakemusEntityData) {
+                is JohtoselvityshakemusEntityData -> {
+                    data.onCableReport()
                 }
-                ApplicationType.EXCAVATION_NOTIFICATION -> {
-                    (hakemusEntity.hakemusEntityData as KaivuilmoitusEntityData)
-                        .onExcavationNotification()
+                is KaivuilmoitusEntityData -> {
+                    data.onExcavationNotification()
                 }
             }
     }
