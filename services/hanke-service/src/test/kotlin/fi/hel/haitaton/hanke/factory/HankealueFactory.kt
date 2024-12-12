@@ -40,6 +40,24 @@ object HankealueFactory {
             1,
         )
 
+    val DEFAULT_HHS_YLEINEN = "Yleisten haittojen hallintasuunnitelma"
+    val DEFAULT_HHS_PYORALIIKENNE = "Pyöräliikenteelle koituvien haittojen hallintasuunnitelma"
+    val DEFAULT_HHS_AUTOLIIKENNE = "Autoliikenteelle koituvien haittojen hallintasuunnitelma"
+    val DEFAULT_HHS_LINJAAUTOLIIKENNE =
+        "Linja-autoliikenteelle koituvien haittojen hallintasuunnitelma"
+    val DEFAULT_HHS_RAITIOLIIKENNE = "Raitioliikenteelle koituvien haittojen hallintasuunnitelma"
+    val DEFAULT_HHS_MUUT = "Muiden haittojen hallintasuunnitelma"
+
+    val DEFAULT_HHS: Haittojenhallintasuunnitelma =
+        mapOf(
+            Haittojenhallintatyyppi.YLEINEN to DEFAULT_HHS_YLEINEN,
+            Haittojenhallintatyyppi.PYORALIIKENNE to DEFAULT_HHS_PYORALIIKENNE,
+            Haittojenhallintatyyppi.AUTOLIIKENNE to DEFAULT_HHS_AUTOLIIKENNE,
+            Haittojenhallintatyyppi.LINJAAUTOLIIKENNE to DEFAULT_HHS_LINJAAUTOLIIKENNE,
+            Haittojenhallintatyyppi.RAITIOLIIKENNE to DEFAULT_HHS_RAITIOLIIKENNE,
+            Haittojenhallintatyyppi.MUUT to DEFAULT_HHS_MUUT,
+        )
+
     fun create(
         id: Int? = 1,
         hankeId: Int? = 2,
@@ -87,19 +105,7 @@ object HankealueFactory {
     fun createHaittojenhallintasuunnitelma(
         vararg overrides: Pair<Haittojenhallintatyyppi, String?>
     ): Haittojenhallintasuunnitelma {
-        val haittojenhallintasuunnitelma =
-            mutableMapOf(
-                Haittojenhallintatyyppi.YLEINEN to "Yleisten haittojen hallintasuunnitelma",
-                Haittojenhallintatyyppi.PYORALIIKENNE to
-                    "Pyöräliikenteelle koituvien haittojen hallintasuunnitelma",
-                Haittojenhallintatyyppi.AUTOLIIKENNE to
-                    "Autoliikenteelle koituvien haittojen hallintasuunnitelma",
-                Haittojenhallintatyyppi.LINJAAUTOLIIKENNE to
-                    "Linja-autoliikenteelle koituvien haittojen hallintasuunnitelma",
-                Haittojenhallintatyyppi.RAITIOLIIKENNE to
-                    "Raitioliikenteelle koituvien haittojen hallintasuunnitelma",
-                Haittojenhallintatyyppi.MUUT to "Muiden haittojen hallintasuunnitelma",
-            )
+        val haittojenhallintasuunnitelma = DEFAULT_HHS.toMutableMap()
         overrides.forEach { (haittojenhallintatyyppi, suunnitelma) ->
             if (suunnitelma == null) {
                 haittojenhallintasuunnitelma.remove(haittojenhallintatyyppi)

@@ -86,7 +86,8 @@ class KaivuilmoitusPdfEncoderTest {
                                 sahkoposti = "tapio@tilaaja.test",
                                 puhelin = "09876543",
                                 tilaaja = true,
-                            ))
+                            ),
+                )
 
             val pdfData = KaivuilmoitusPdfEncoder.createPdf(applicationData, 1f, listOf(), listOf())
 
@@ -98,7 +99,8 @@ class KaivuilmoitusPdfEncoderTest {
                 contains("Olemassaolevan rakenteen kunnossapitotyöstä")
                 hasPhrase(
                     "Kaivutyö on aloitettu ennen kaivuilmoituksen tekemistä " +
-                        "merkittävien vahinkojen välttämiseksi")
+                        "merkittävien vahinkojen välttämiseksi"
+                )
                 contains("JS2400001, JS2400002")
                 hasPhrase("Louhitaanko työn yhteydessä, esimerkiksi maaperää? Ei")
                 contains("Sopimus1, Sopimus2")
@@ -145,7 +147,8 @@ class KaivuilmoitusPdfEncoderTest {
                 HakemusFactory.createKaivuilmoitusData(
                     startTime = ZonedDateTime.parse("2022-11-17T22:00:00.000Z"),
                     endTime = ZonedDateTime.parse("2022-11-28T21:59:59.999Z"),
-                    areas = listOf())
+                    areas = listOf(),
+                )
             val area =
                 EnrichedKaivuilmoitusalue(
                     223.41411f,
@@ -167,7 +170,9 @@ class KaivuilmoitusPdfEncoderTest {
                         kaistahaittojenPituus =
                             AutoliikenteenKaistavaikutustenPituus.EI_VAIKUTA_KAISTAJARJESTELYIHIN,
                         lisatiedot = "Lisätiedot hakemusalueesta.",
-                    ))
+                        haittojenhallintasuunnitelma = mapOf(),
+                    ),
+                )
 
             val pdfData =
                 KaivuilmoitusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf(area))
@@ -199,7 +204,8 @@ class KaivuilmoitusPdfEncoderTest {
                     representativeWithContacts =
                         HakemusyhteystietoFactory.createPerson().withYhteyshenkilo(),
                     propertyDeveloperWithContacts =
-                        HakemusyhteystietoFactory.create().withYhteyshenkilo())
+                        HakemusyhteystietoFactory.create().withYhteyshenkilo(),
+                )
 
             val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
 
@@ -285,7 +291,8 @@ class KaivuilmoitusPdfEncoderTest {
         fun `created PDF contains paper decision receiver when present on the application`() {
             val hakemusData =
                 HakemusFactory.createKaivuilmoitusData(
-                    paperDecisionReceiver = PaperDecisionReceiverFactory.default)
+                    paperDecisionReceiver = PaperDecisionReceiverFactory.default
+                )
 
             val pdfData = KaivuilmoitusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
 
@@ -320,10 +327,12 @@ class KaivuilmoitusPdfEncoderTest {
                     ApplicationAttachmentFactory.create(fileName = "third.gt"),
                     ApplicationAttachmentFactory.create(
                         fileName = "valtakirja.pdf",
-                        attachmentType = ApplicationAttachmentType.VALTAKIRJA),
+                        attachmentType = ApplicationAttachmentType.VALTAKIRJA,
+                    ),
                     ApplicationAttachmentFactory.create(
                         fileName = "liikenne.pdf",
-                        attachmentType = ApplicationAttachmentType.LIIKENNEJARJESTELY),
+                        attachmentType = ApplicationAttachmentType.LIIKENNEJARJESTELY,
+                    ),
                 )
 
             val pdfData =

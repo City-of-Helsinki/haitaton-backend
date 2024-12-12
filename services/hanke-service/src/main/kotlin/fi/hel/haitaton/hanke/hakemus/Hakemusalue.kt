@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
@@ -32,6 +33,7 @@ data class KaivuilmoitusAlue(
     val kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
     val kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus,
     val lisatiedot: String?,
+    val haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma,
 ) : Hakemusalue {
     override fun geometries(): List<Polygon> = tyoalueet.map { it.geometry }
 
