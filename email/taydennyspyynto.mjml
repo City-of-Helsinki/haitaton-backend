@@ -22,7 +22,7 @@
                 <mj-text mj-class="basic-txt">
                     Hakemuksellesi {{hakemusNimi}} ({{hakemusTunnus}}) on tullut täydennyspyyntö. Käy vastaamassa siihen
                     Haitattomassa:
-                    <a href="{{baseUrl}}/sv/ansokan/{{hakemusTunnus}}">{{baseUrl}}/sv/ansokan/{{hakemusTunnus}}</a>.
+                    <a href="{{baseUrl}}/sv/ansokan/{{hakemusId}}">{{baseUrl}}/sv/ansokan/{{hakemusId}}</a>.
                 </mj-text>
                 <mj-include path="common/signature-sv.partial"/>
 
@@ -31,8 +31,7 @@
                 <mj-text mj-class="basic-txt">
                     Hakemuksellesi {{hakemusNimi}} ({{hakemusTunnus}}) on tullut täydennyspyyntö. Käy vastaamassa siihen
                     Haitattomassa:
-                    <a href="{{baseUrl}}/en/application/{{hakemusTunnus}}">
-                        {{baseUrl}}/en/application/{{hakemusTunnus}}</a>.
+                    <a href="{{baseUrl}}/en/application/{{hakemusId}}">{{baseUrl}}/en/application/{{hakemusId}}</a>.
                 </mj-text>
                 <mj-include path="common/signature-en.partial"/>
             </mj-column>
