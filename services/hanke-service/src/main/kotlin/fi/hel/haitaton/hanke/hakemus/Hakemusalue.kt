@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import com.fasterxml.jackson.annotation.JsonSetter
+import com.fasterxml.jackson.annotation.Nulls
 import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
@@ -33,7 +35,8 @@ data class KaivuilmoitusAlue(
     val kaistahaitta: VaikutusAutoliikenteenKaistamaariin,
     val kaistahaittojenPituus: AutoliikenteenKaistavaikutustenPituus,
     val lisatiedot: String?,
-    val haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma,
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
+    val haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma = mapOf(),
 ) : Hakemusalue {
     override fun geometries(): List<Polygon> = tyoalueet.map { it.geometry }
 
