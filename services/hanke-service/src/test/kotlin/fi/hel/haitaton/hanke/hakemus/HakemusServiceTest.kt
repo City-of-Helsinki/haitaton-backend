@@ -22,6 +22,7 @@ import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentMetadataService
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
@@ -79,6 +80,7 @@ class HakemusServiceTest {
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
     private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
     private val attachmentService: ApplicationAttachmentService = mockk()
+    private val taydennysAttachmentService: TaydennysAttachmentMetadataService = mockk()
     private val alluClient: AlluClient = mockk()
     private val paatosService: PaatosService = mockk()
     private val publisher: ApplicationEventPublisher = mockk()
@@ -97,6 +99,7 @@ class HakemusServiceTest {
             disclosureLogService,
             hankeKayttajaService,
             attachmentService,
+            taydennysAttachmentService,
             alluClient,
             paatosService,
             publisher,
@@ -121,6 +124,7 @@ class HakemusServiceTest {
             disclosureLogService,
             hankeKayttajaService,
             attachmentService,
+            taydennysAttachmentService,
             alluClient,
             paatosService,
             publisher,
