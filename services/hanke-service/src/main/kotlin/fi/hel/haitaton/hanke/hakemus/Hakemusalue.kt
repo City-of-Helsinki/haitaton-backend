@@ -42,6 +42,24 @@ data class KaivuilmoitusAlue(
 
     fun withoutTormaystarkastelut() =
         copy(tyoalueet = tyoalueet.map { it.copy(tormaystarkasteluTulos = null) })
+
+    /**
+     * Returns a new [TormaystarkasteluTulos] that contains the combination of the highest indexes
+     * from all the työalue in this area. Autoliikenne contains the autoliikenneluokittelu with the
+     * highest index.
+     */
+    fun worstCasesInTormaystarkastelut(): TormaystarkasteluTulos? {
+        val tulokset = tyoalueet.mapNotNull { it.tormaystarkasteluTulos }.ifEmpty { null }
+
+        return tulokset?.let {
+            TormaystarkasteluTulos(
+                autoliikenne = tulokset.map { it.autoliikenne }.maxBy { it.indeksi },
+                pyoraliikenneindeksi = tulokset.maxOf { it.pyoraliikenneindeksi },
+                linjaautoliikenneindeksi = tulokset.maxOf { it.linjaautoliikenneindeksi },
+                raitioliikenneindeksi = tulokset.maxOf { it.raitioliikenneindeksi },
+            )
+        }
+    }
 }
 
 data class Tyoalue(

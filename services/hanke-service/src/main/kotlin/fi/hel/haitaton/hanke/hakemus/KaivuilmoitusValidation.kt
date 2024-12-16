@@ -3,9 +3,12 @@ package fi.hel.haitaton.hanke.hakemus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.isValidBusinessId
 import fi.hel.haitaton.hanke.isValidOVT
+import fi.hel.haitaton.hanke.validation.HankePublicValidator.validateHaittojenhallintasuunnitelmaCommonFields
+import fi.hel.haitaton.hanke.validation.HankePublicValidator.validateHaittojenhallintasuunnitelmaLiikennemuodot
 import fi.hel.haitaton.hanke.validation.HenkilotunnusValidator.isValidHenkilotunnus
 import fi.hel.haitaton.hanke.validation.ValidationResult
 import fi.hel.haitaton.hanke.validation.ValidationResult.Companion.allIn
+import fi.hel.haitaton.hanke.validation.ValidationResult.Companion.whenNotNull
 import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
 import fi.hel.haitaton.hanke.validation.Validators.notBlank
 import fi.hel.haitaton.hanke.validation.Validators.notEmpty
@@ -65,6 +68,12 @@ private fun KaivuilmoitusAlue.validate(path: String): ValidationResult =
     validate { notEmpty(tyoalueet, "$path.tyoalueet") }
         .and { notBlank(katuosoite, "$path.katuosoite") }
         .and { notEmpty(tyonTarkoitukset, "$path.tyonTarkoitukset") }
+        .andNotNull(haittojenhallintasuunnitelma, "$path.haittojenhallintasuunnitelma") { hhs, p ->
+            whenNotNull(this.worstCasesInTormaystarkastelut()) { tt ->
+                    validateHaittojenhallintasuunnitelmaLiikennemuodot(hhs, tt, p)
+                }
+                .and { validateHaittojenhallintasuunnitelmaCommonFields(hhs, p) }
+        }
 
 private fun KaivuilmoitusData.validateWorkInvolves(): ValidationResult =
     validate { validateTrue(constructionWork, "constructionWork") }

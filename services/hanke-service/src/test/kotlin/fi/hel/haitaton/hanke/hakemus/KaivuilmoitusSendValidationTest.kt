@@ -3,8 +3,10 @@ package fi.hel.haitaton.hanke.hakemus
 import assertk.assertThat
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.DEFAULT_OVT
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
@@ -46,11 +48,7 @@ class KaivuilmoitusSendValidationTest {
     @Test
     fun `fails when nothing has been selected for work involves`() {
         val hakemus =
-            hakemus.copy(
-                constructionWork = false,
-                maintenanceWork = false,
-                emergencyWork = false,
-            )
+            hakemus.copy(constructionWork = false, maintenanceWork = false, emergencyWork = false)
 
         assertThat(hakemus.validateForSend())
             .failedWith("constructionWork", "maintenanceWork", "emergencyWork")
@@ -211,7 +209,9 @@ class KaivuilmoitusSendValidationTest {
     fun `succeeds when the other customer has an arbitrary henkilotunnus`() {
         val customer =
             HakemusyhteystietoFactory.create(
-                    tyyppi = CustomerType.OTHER, registryKey = "Some random string")
+                    tyyppi = CustomerType.OTHER,
+                    registryKey = "Some random string",
+                )
                 .withYhteyshenkilo()
         val hakemus = hakemus.copy(customerWithContacts = customer)
 
@@ -377,6 +377,35 @@ class KaivuilmoitusSendValidationTest {
                 ApplicationFactory.createExcavationNotificationArea(tyonTarkoitukset = setOf())
 
             assertThat(validateArea(area, "area")).failedWith("area.tyonTarkoitukset")
+        }
+
+        @Test
+        fun `fails when a single tyoalue has an index but there's no haittojenhallinta for that index`() {
+            val withZeroAutoliikenne =
+                HaittaFactory.tormaystarkasteluTulos(
+                    autoliikenne = HaittaFactory.TORMAYSTARKASTELU_ZERO_AUTOLIIKENNELUOKITTELU
+                )
+            val withPositiveAutoliikenne =
+                HaittaFactory.tormaystarkasteluTulos(
+                    autoliikenne = HaittaFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
+                )
+            val tyoalue1 =
+                ApplicationFactory.createTyoalue(tormaystarkasteluTulos = withPositiveAutoliikenne)
+            val tyoalue2 =
+                ApplicationFactory.createTyoalue(tormaystarkasteluTulos = withZeroAutoliikenne)
+            val tyoalue3 =
+                ApplicationFactory.createTyoalue(tormaystarkasteluTulos = withPositiveAutoliikenne)
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    tyoalueet = listOf(tyoalue1, tyoalue2, tyoalue3),
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(
+                            Haittojenhallintatyyppi.AUTOLIIKENNE to null
+                        ),
+                )
+
+            assertThat(validateArea(area, "area"))
+                .failedWith("area.haittojenhallintasuunnitelma.AUTOLIIKENNE")
         }
     }
 
@@ -546,7 +575,9 @@ class KaivuilmoitusSendValidationTest {
         fun `fails when invoicing customer has no registry key`(tyyppi: CustomerType) {
             val invoicingCustomer =
                 HakemusyhteystietoFactory.createLaskutusyhteystieto(
-                    tyyppi = tyyppi, registryKey = null)
+                    tyyppi = tyyppi,
+                    registryKey = null,
+                )
 
             assertThat(invoicingCustomer.validate("invoicingCustomer"))
                 .failedWith("invoicingCustomer.registryKey")
@@ -640,6 +671,19 @@ class KaivuilmoitusSendValidationTest {
                 requiredCompetence = true,
                 cableReportDone = false,
                 rockExcavation = false,
+                areas =
+                    listOf(
+                        ApplicationFactory.createExcavationNotificationArea(
+                            tyoalueet =
+                                listOf(
+                                    ApplicationFactory.createTyoalue(
+                                        tormaystarkasteluTulos =
+                                            HaittaFactory.tormaystarkasteluTulos()
+                                    )
+                                ),
+                            haittojenhallintasuunnitelma = HaittaFactory.DEFAULT_HHS,
+                        )
+                    ),
                 customerWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
                 contractorWithContacts = HakemusyhteystietoFactory.create().withYhteyshenkilo(),
                 invoicingCustomer = HakemusyhteystietoFactory.createLaskutusyhteystieto(),
