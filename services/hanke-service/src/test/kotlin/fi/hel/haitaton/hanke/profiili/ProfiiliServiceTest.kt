@@ -9,6 +9,8 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
+import fi.hel.haitaton.hanke.security.AmrValues
+import fi.hel.haitaton.hanke.security.JwtClaims
 import fi.hel.haitaton.hanke.test.AuthenticationMocks
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -134,8 +136,8 @@ class ProfiiliServiceTest {
             val jwt =
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
-                    .claim(ProfiiliService.AMR_CLAIM, listOf("helsinkiad"))
-                    .claim(ProfiiliService.FAMILY_NAME_CLAIM, ProfiiliFactory.DEFAULT_LAST_NAME)
+                    .claim(JwtClaims.AMR, listOf(AmrValues.AD))
+                    .claim(JwtClaims.FAMILY_NAME, ProfiiliFactory.DEFAULT_LAST_NAME)
                     .build()
             val authentication: Authentication = mockk()
             every { authentication.credentials } returns jwt
@@ -160,8 +162,8 @@ class ProfiiliServiceTest {
             val jwt =
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
-                    .claim(ProfiiliService.AMR_CLAIM, listOf("helsinkiad"))
-                    .claim(ProfiiliService.GIVEN_NAME_CLAIM, ProfiiliFactory.DEFAULT_GIVEN_NAME)
+                    .claim(JwtClaims.AMR, listOf(AmrValues.AD))
+                    .claim(JwtClaims.GIVEN_NAME, ProfiiliFactory.DEFAULT_GIVEN_NAME)
                     .build()
             val authentication: Authentication = mockk()
             every { authentication.credentials } returns jwt
