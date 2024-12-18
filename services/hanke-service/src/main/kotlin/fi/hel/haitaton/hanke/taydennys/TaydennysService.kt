@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.allu.InformationRequest
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentService
 import fi.hel.haitaton.hanke.email.InformationRequestCanceledEmail
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
@@ -53,7 +54,7 @@ class TaydennysService(
     private val taydennyspyyntoLoggingService: TaydennyspyyntoLoggingService,
     private val disclosureLogService: DisclosureLogService,
     private val attachmentService: TaydennysAttachmentService,
-    private val attachmentTransferService: TaydennysAttachmentTransferService,
+    private val attachmentMetadataService: TaydennysAttachmentMetadataService,
     private val hakemusAttachmentService: ApplicationAttachmentService,
     private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
@@ -240,7 +241,7 @@ class TaydennysService(
         attachments.forEach { attachment ->
             val content = attachmentService.getContent(attachment.id)
             alluClient.addAttachment(hakemus.alluid!!, attachment.toAlluAttachment(content.bytes))
-            attachmentTransferService.transferAttachmentToHakemus(attachment, hakemus)
+            attachmentMetadataService.transferAttachmentToHakemus(attachment, hakemus)
         }
     }
 

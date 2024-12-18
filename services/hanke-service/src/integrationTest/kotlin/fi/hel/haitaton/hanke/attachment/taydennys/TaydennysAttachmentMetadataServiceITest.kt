@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.taydennys
+package fi.hel.haitaton.hanke.attachment.taydennys
 
 import assertk.all
 import assertk.assertThat
@@ -11,28 +11,20 @@ import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
-import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.TaydennysAttachmentFactory
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 
-class TaydennysAttachmentTransferServiceITest(
-    @Autowired private val taydennysAttachmentTransferService: TaydennysAttachmentTransferService,
+class TaydennysAttachmentMetadataServiceITest(
+    @Autowired private val taydennysAttachmentMetadataService: TaydennysAttachmentMetadataService,
     @Autowired private val taydennysAttachmentFactory: TaydennysAttachmentFactory,
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val taydennysAttachmentRepository: TaydennysAttachmentRepository,
     @Autowired private val hakemusAttachmentRepository: ApplicationAttachmentRepository,
     @Autowired private val hakemusAttachmentContentService: ApplicationAttachmentContentService,
-    @Autowired private val fileClient: MockFileClient,
 ) : IntegrationTest() {
-
-    @BeforeEach
-    fun setup() {
-        fileClient.recreateContainers()
-    }
 
     @Test
     fun `transfers attachment metadata from taydennys to hakemus`() {
@@ -48,7 +40,7 @@ class TaydennysAttachmentTransferServiceITest(
             )
             .isEqualTo(PDF_BYTES)
 
-        taydennysAttachmentTransferService.transferAttachmentToHakemus(
+        taydennysAttachmentMetadataService.transferAttachmentToHakemus(
             taydennysAttachment,
             hakemusEntity,
         )

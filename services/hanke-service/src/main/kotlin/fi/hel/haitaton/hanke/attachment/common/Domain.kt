@@ -15,6 +15,23 @@ sealed interface AttachmentMetadata {
     val blobLocation: String?
 }
 
+sealed interface AttachmentMetadataWithType : AttachmentMetadata {
+    val attachmentType: ApplicationAttachmentType
+
+    fun toAlluAttachment(content: ByteArray): AlluAttachment {
+        return AlluAttachment(
+            metadata =
+                AlluAttachmentMetadata(
+                    id = null,
+                    mimeType = contentType,
+                    name = fileName,
+                    description = attachmentType.toFinnish(),
+                ),
+            file = content,
+        )
+    }
+}
+
 data class HankeAttachmentMetadata(
     override val id: UUID,
     override val fileName: String,
@@ -35,8 +52,8 @@ data class ApplicationAttachmentMetadata(
     override val createdAt: OffsetDateTime,
     override val blobLocation: String,
     val applicationId: Long,
-    val attachmentType: ApplicationAttachmentType,
-) : AttachmentMetadata {
+    override val attachmentType: ApplicationAttachmentType,
+) : AttachmentMetadataWithType {
     fun toDto(): ApplicationAttachmentMetadataDto {
         return ApplicationAttachmentMetadataDto(
             id = id,
@@ -47,19 +64,6 @@ data class ApplicationAttachmentMetadata(
             createdAt = createdAt,
             createdByUserId = createdByUserId,
             applicationId = applicationId,
-        )
-    }
-
-    fun toAlluAttachment(content: ByteArray): AlluAttachment {
-        return AlluAttachment(
-            metadata =
-                AlluAttachmentMetadata(
-                    id = null,
-                    mimeType = contentType,
-                    name = fileName,
-                    description = attachmentType.toFinnish(),
-                ),
-            file = content,
         )
     }
 }
@@ -73,8 +77,8 @@ data class TaydennysAttachmentMetadata(
     override val createdAt: OffsetDateTime,
     override val blobLocation: String,
     val taydennysId: UUID,
-    val attachmentType: ApplicationAttachmentType,
-) : AttachmentMetadata {
+    override val attachmentType: ApplicationAttachmentType,
+) : AttachmentMetadataWithType {
     fun toDto(): TaydennysAttachmentMetadataDto {
         return TaydennysAttachmentMetadataDto(
             id = id,
@@ -87,18 +91,6 @@ data class TaydennysAttachmentMetadata(
             taydennysId = taydennysId,
         )
     }
-
-    fun toAlluAttachment(content: ByteArray): AlluAttachment =
-        AlluAttachment(
-            metadata =
-                AlluAttachmentMetadata(
-                    id = null,
-                    mimeType = contentType,
-                    name = fileName,
-                    description = attachmentType.toFinnish(),
-                ),
-            file = content,
-        )
 }
 
 data class AttachmentContent(
