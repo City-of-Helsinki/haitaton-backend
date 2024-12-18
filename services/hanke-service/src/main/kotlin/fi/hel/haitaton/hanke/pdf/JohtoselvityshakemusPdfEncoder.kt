@@ -24,13 +24,7 @@ object JohtoselvityshakemusPdfEncoder {
         val outputStream = ByteArrayOutputStream()
         val document = Document(PageSize.A4)
         PdfWriter.getInstance(document, outputStream)
-        formatJohtoselvitysPdf(
-            document,
-            data,
-            totalArea,
-            areas,
-            attachments,
-        )
+        formatJohtoselvitysPdf(document, data, totalArea, areas, attachments)
         return outputStream.toByteArray()
     }
 
@@ -67,7 +61,8 @@ object JohtoselvityshakemusPdfEncoder {
                 "Alueet",
                 areas
                     .mapIndexed { i, area -> "${areaNames[i]}\n\nPinta-ala: ${area.format()} m²" }
-                    .joinToString("\n\n"))
+                    .joinToString("\n\n"),
+            )
         }
 
         document.newPage()
@@ -92,7 +87,7 @@ object JohtoselvityshakemusPdfEncoder {
 
         document.section("Liitteet") {
             if (attachments.isNotEmpty()) {
-                row("Lisätyt liitetiedostot", attachments.map { it.fileName }.joinToString("\n"))
+                row("Lisätyt liitetiedostot", attachments.joinToString("\n") { it.fileName })
             }
         }
 
@@ -104,7 +99,8 @@ object JohtoselvityshakemusPdfEncoder {
                 customerWithContacts,
                 contractorWithContacts,
                 representativeWithContacts,
-                propertyDeveloperWithContacts)
+                propertyDeveloperWithContacts,
+            )
             .flatMap { it.yhteyshenkilot }
             .find { it.tilaaja }
 
@@ -114,7 +110,8 @@ object JohtoselvityshakemusPdfEncoder {
                 maintenanceWork to "Olemassaolevan rakenteen kunnossapitotyöstä",
                 emergencyWork to
                     "Kaivutyö on aloitettu ennen johtoselvityksen tilaamista merkittävien vahinkojen välttämiseksi",
-                propertyConnectivity to "Kiinteistöliittymien rakentamisesta")
+                propertyConnectivity to "Kiinteistöliittymien rakentamisesta",
+            )
             .filter { (active, _) -> active }
             .joinToString("\n") { (_, description) -> description }
 }
