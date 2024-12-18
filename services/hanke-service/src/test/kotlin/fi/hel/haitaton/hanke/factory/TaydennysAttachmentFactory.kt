@@ -67,7 +67,7 @@ class TaydennysAttachmentFactory(
         val defaultAttachmentId: UUID = UUID.fromString("5cba3a76-28ad-42aa-b7e6-b5c1775be81a")
         val MEDIA_TYPE = MediaType.APPLICATION_PDF
         val CONTENT_TYPE = MEDIA_TYPE.toString()
-        val CREATED_AT: OffsetDateTime = OffsetDateTime.parse("2023-11-09T10:03:55+02:00")
+        val CREATED_AT: OffsetDateTime = OffsetDateTime.parse("2023-11-09T08:03:55Z")
 
         const val FILE_NAME = "file.pdf"
 

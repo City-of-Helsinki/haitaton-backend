@@ -5,7 +5,9 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.InformationRequest
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentService
 import fi.hel.haitaton.hanke.email.InformationRequestCanceledEmail
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
@@ -52,6 +54,8 @@ class TaydennysService(
     private val taydennyspyyntoLoggingService: TaydennyspyyntoLoggingService,
     private val disclosureLogService: DisclosureLogService,
     private val attachmentService: TaydennysAttachmentService,
+    private val attachmentMetadataService: TaydennysAttachmentMetadataService,
+    private val hakemusAttachmentService: ApplicationAttachmentService,
     private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional(readOnly = true)
@@ -171,15 +175,18 @@ class TaydennysService(
         val hanke = hakemus.hanke
 
         logger.info {
-            "Sending taydennys to Allu. " +
+            "Sending täydennys to Allu. " +
                 "${taydennysEntity.logString()} " +
                 "${hakemus.logString()} " +
                 hanke.logString()
         }
 
+        val attachments = attachmentService.getMetadataList(taydennysEntity.id)
+
         val changes =
             taydennys.hakemusData.listChanges(hakemus.toHakemus().applicationData).ifEmpty {
-                throw NoChangesException(taydennysEntity, hakemus)
+                if (attachments.isEmpty()) throw NoChangesException(taydennysEntity, hakemus)
+                else listOf("attachment")
             }
 
         if (hakemus.alluStatus != ApplicationStatus.WAITING_INFORMATION) {
@@ -200,6 +207,9 @@ class TaydennysService(
 
         logger.info("Sending täydennys id=$id")
         val taydennyspyyntoId = taydennysEntity.taydennyspyyntoAlluId()
+
+        sendAttachments(attachments, hakemus)
+
         sendTaydennysToAllu(taydennys, hakemus, taydennyspyyntoId, hanke.hankeTunnus, changes)
 
         if (hanke.generated) {
@@ -224,15 +234,26 @@ class TaydennysService(
         return hakemusRepository.save(hakemus).toHakemus()
     }
 
+    private fun sendAttachments(
+        attachments: List<TaydennysAttachmentMetadata>,
+        hakemus: HakemusEntity,
+    ) {
+        attachments.forEach { attachment ->
+            val content = attachmentService.getContent(attachment.id)
+            alluClient.addAttachment(hakemus.alluid!!, attachment.toAlluAttachment(content.bytes))
+            attachmentMetadataService.transferAttachmentToHakemus(attachment, hakemus)
+        }
+    }
+
     @Transactional
     fun updateTaydennys(id: UUID, request: HakemusUpdateRequest, currentUserId: String): Taydennys {
-        logger.info("Updating taydennys id=$id")
+        logger.info("Updating täydennys id=$id")
 
         val taydennysEntity =
             taydennysRepository.findByIdOrNull(id) ?: throw TaydennysNotFoundException(id)
         val originalTaydennys = taydennysEntity.toDomain()
 
-        logger.info { "The taydennys to update is ${taydennysEntity.logString()}" }
+        logger.info { "The täydennys to update is ${taydennysEntity.logString()}" }
 
         assertUpdateCompatible(taydennysEntity, request)
 
@@ -284,7 +305,7 @@ class TaydennysService(
         request: HakemusUpdateRequest,
         hankeId: Int,
     ): TaydennysEntity {
-        logger.info { "Creating and saving new taydennys data. ${taydennysEntity.logString()}" }
+        logger.info { "Creating and saving new täydennys data. ${taydennysEntity.logString()}" }
         taydennysEntity.hakemusData = request.toEntityData(taydennysEntity.hakemusData)
         updateYhteystiedot(taydennysEntity, request.customersByRole(), hankeId)
 
@@ -434,7 +455,7 @@ class TaydennysService(
         hankeTunnus: String,
         data: HakemusData,
     ) {
-        val formAttachment = createPdfFromHakemusData(hankeTunnus = hankeTunnus, data)
+        val formAttachment = createPdfFromHakemusData(hakemus, hankeTunnus, data)
         try {
             alluClient.addAttachment(hakemus.alluid!!, formAttachment)
         } catch (e: Exception) {
@@ -444,10 +465,13 @@ class TaydennysService(
         }
     }
 
-    private fun createPdfFromHakemusData(hankeTunnus: String, data: HakemusData): Attachment {
+    private fun createPdfFromHakemusData(
+        hakemus: HakemusIdentifier,
+        hankeTunnus: String,
+        data: HakemusData,
+    ): Attachment {
         logger.info { "Creating a PDF from the hakemus data for data attachment." }
-        // TODO: List attachments in HAI-753, from both hakemus and taydennys
-        val attachments = listOf<ApplicationAttachmentMetadata>()
+        val attachments = hakemusAttachmentService.getMetadataList(hakemus.id)
         val pdf = hakemusService.getApplicationDataAsPdf(hankeTunnus, attachments, data)
         val newMetadata =
             pdf.metadata.copy(
