@@ -30,13 +30,15 @@ object HaittaFactory {
             1,
         )
 
-    val DEFAULT_HHS_YLEINEN = "Yleisten haittojen hallintasuunnitelma"
-    val DEFAULT_HHS_PYORALIIKENNE = "Pyöräliikenteelle koituvien haittojen hallintasuunnitelma"
-    val DEFAULT_HHS_AUTOLIIKENNE = "Autoliikenteelle koituvien haittojen hallintasuunnitelma"
-    val DEFAULT_HHS_LINJAAUTOLIIKENNE =
+    const val DEFAULT_HHS_YLEINEN = "Yleisten haittojen hallintasuunnitelma"
+    const val DEFAULT_HHS_PYORALIIKENNE =
+        "Pyöräliikenteelle koituvien haittojen hallintasuunnitelma"
+    const val DEFAULT_HHS_AUTOLIIKENNE = "Autoliikenteelle koituvien haittojen hallintasuunnitelma"
+    const val DEFAULT_HHS_LINJAAUTOLIIKENNE =
         "Linja-autoliikenteelle koituvien haittojen hallintasuunnitelma"
-    val DEFAULT_HHS_RAITIOLIIKENNE = "Raitioliikenteelle koituvien haittojen hallintasuunnitelma"
-    val DEFAULT_HHS_MUUT = "Muiden haittojen hallintasuunnitelma"
+    const val DEFAULT_HHS_RAITIOLIIKENNE =
+        "Raitioliikenteelle koituvien haittojen hallintasuunnitelma"
+    const val DEFAULT_HHS_MUUT = "Muiden haittojen hallintasuunnitelma"
 
     val DEFAULT_HHS: Haittojenhallintasuunnitelma =
         mapOf(

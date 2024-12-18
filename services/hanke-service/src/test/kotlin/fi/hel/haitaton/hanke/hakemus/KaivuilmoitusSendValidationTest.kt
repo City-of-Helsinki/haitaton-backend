@@ -390,11 +390,11 @@ class KaivuilmoitusSendValidationTest {
                     autoliikenne = HaittaFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
                 )
             val tyoalue1 =
-                ApplicationFactory.createTyoalue(tormaystarkasteluTulos = withPositiveAutoliikenne)
-            val tyoalue2 =
                 ApplicationFactory.createTyoalue(tormaystarkasteluTulos = withZeroAutoliikenne)
-            val tyoalue3 =
+            val tyoalue2 =
                 ApplicationFactory.createTyoalue(tormaystarkasteluTulos = withPositiveAutoliikenne)
+            val tyoalue3 =
+                ApplicationFactory.createTyoalue(tormaystarkasteluTulos = withZeroAutoliikenne)
             val area =
                 ApplicationFactory.createExcavationNotificationArea(
                     tyoalueet = listOf(tyoalue1, tyoalue2, tyoalue3),
