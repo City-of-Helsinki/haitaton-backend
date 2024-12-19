@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.DateFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withMuuYhteystieto
@@ -15,8 +16,6 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withToteuttaja
 import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
-import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
-import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -132,7 +131,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
         @Test
         fun `Returns tormaystarkastelutulos with the hanke if it has been calculated`() {
-            val autoliikenne = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
+            val autoliikenne = HaittaFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
             val pyoraliikenneindeksi = 2.1f
             val linjaautoliikenneindeksi = 1.4f
             val raitioliikenneindeksi = 3f
@@ -553,7 +552,8 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
                     tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
                     tormaystarkasteluTulos = null,
-                    haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma(),
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(),
                 )
             hankeToBeUpdated.alueet.add(alue)
             // Prepare the expected result/return

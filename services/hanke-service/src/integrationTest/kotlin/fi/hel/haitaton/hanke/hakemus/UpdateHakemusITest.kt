@@ -34,6 +34,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavati
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.toUpdateRequest
@@ -50,7 +51,6 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescrip
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
-import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType.TYON_SUORITTAJA
@@ -918,14 +918,14 @@ class UpdateHakemusITest(
                 .single()
                 .isInstanceOf(KaivuilmoitusAlue::class)
                 .prop(KaivuilmoitusAlue::haittojenhallintasuunnitelma)
-                .isEqualTo(HankealueFactory.DEFAULT_HHS)
+                .isEqualTo(HaittaFactory.DEFAULT_HHS)
             val persistedHakemus = hakemusRepository.findAll().single()
             assertThat(persistedHakemus.hakemusEntityData.areas)
                 .isNotNull()
                 .single()
                 .isInstanceOf(KaivuilmoitusAlue::class)
                 .prop(KaivuilmoitusAlue::haittojenhallintasuunnitelma)
-                .isEqualTo(HankealueFactory.DEFAULT_HHS)
+                .isEqualTo(HaittaFactory.DEFAULT_HHS)
         }
     }
 }

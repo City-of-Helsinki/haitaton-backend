@@ -24,6 +24,7 @@ import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.andReturnContent
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.factory.CreateHakemusRequestFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory.Companion.withExtras
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
@@ -31,7 +32,6 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRegistryKey
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withTimes
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.factory.TaydennysAttachmentFactory
@@ -483,7 +483,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(jsonPath(haittojenhallintaPath).isMap())
                 .andExpect(
                     jsonPath("$haittojenhallintaPath.PYORALIIKENNE")
-                        .value(HankealueFactory.DEFAULT_HHS_PYORALIIKENNE)
+                        .value(HaittaFactory.DEFAULT_HHS_PYORALIIKENNE)
                 )
 
             verifySequence {

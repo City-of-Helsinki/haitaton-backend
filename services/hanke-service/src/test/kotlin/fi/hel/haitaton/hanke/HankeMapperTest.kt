@@ -13,6 +13,7 @@ import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
@@ -90,8 +91,7 @@ class HankeMapperTest {
                 haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate().atStartOfDay(TZ_UTC),
                 geometriat =
                     GeometriaFactory.create().apply { resetFeatureProperties(hankeTunnus) },
-                haittojenhallintasuunnitelma =
-                    HankealueFactory.createHaittojenhallintasuunnitelma(),
+                haittojenhallintasuunnitelma = HaittaFactory.createHaittojenhallintasuunnitelma(),
             )
         )
 }
