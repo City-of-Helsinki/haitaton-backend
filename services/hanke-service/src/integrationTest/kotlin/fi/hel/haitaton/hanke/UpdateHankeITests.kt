@@ -32,6 +32,7 @@ import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HankeBuilder.Companion.toModifyRequest
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
@@ -42,7 +43,6 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
-import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -626,7 +626,7 @@ class UpdateHankeITests(
         assertThat(hankealue.haittojenhallintasuunnitelma!![Haittojenhallintatyyppi.YLEINEN])
             .isEqualTo("Yleisten haittojen hallintasuunnitelma")
         hankealue.haittojenhallintasuunnitelma =
-            createHaittojenhallintasuunnitelma(
+            HaittaFactory.createHaittojenhallintasuunnitelma(
                 Haittojenhallintatyyppi.YLEINEN to "Uusi yleisten haittojen hallintasuunnitelma"
             )
         val request = createdHanke.toModifyRequest()
@@ -646,7 +646,9 @@ class UpdateHankeITests(
         val hankealue = createdHanke.alueet[0]
         assertThat(hankealue.haittojenhallintasuunnitelma!!.size).isEqualTo(6)
         hankealue.haittojenhallintasuunnitelma =
-            createHaittojenhallintasuunnitelma(Haittojenhallintatyyppi.YLEINEN to null)
+            HaittaFactory.createHaittojenhallintasuunnitelma(
+                Haittojenhallintatyyppi.YLEINEN to null
+            )
         val request = createdHanke.toModifyRequest()
 
         val updateHankeResult = hankeService.updateHanke(createdHanke.hankeTunnus, request)
@@ -664,7 +666,9 @@ class UpdateHankeITests(
                 .builder(USERNAME)
                 .withHankealue(
                     haittojenhallintasuunnitelma =
-                        createHaittojenhallintasuunnitelma(Haittojenhallintatyyppi.YLEINEN to null)
+                        HaittaFactory.createHaittojenhallintasuunnitelma(
+                            Haittojenhallintatyyppi.YLEINEN to null
+                        )
                 )
                 .save()
         val hankealue = createdHanke.alueet[0]
@@ -672,7 +676,7 @@ class UpdateHankeITests(
         assertThat(hankealue.haittojenhallintasuunnitelma!![Haittojenhallintatyyppi.YLEINEN])
             .isNull()
         hankealue.haittojenhallintasuunnitelma =
-            createHaittojenhallintasuunnitelma(
+            HaittaFactory.createHaittojenhallintasuunnitelma(
                 Haittojenhallintatyyppi.YLEINEN to "Uusi yleisten haittojen hallintasuunnitelma"
             )
         val request = createdHanke.toModifyRequest()
@@ -896,7 +900,8 @@ class UpdateHankeITests(
         auditLogRepository.deleteAll()
         assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
-        hanke.alueet[0].haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma()
+        hanke.alueet[0].haittojenhallintasuunnitelma =
+            HaittaFactory.createHaittojenhallintasuunnitelma()
         val request = hanke.toModifyRequest()
 
         val updatedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
