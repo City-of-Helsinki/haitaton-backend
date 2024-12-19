@@ -1,4 +1,9 @@
 haitaton:
+  ad:
+    filter:
+      use: ${HAITATON_USE_AD_FILTER:false}
+      # List of allowed groups, seperated by ;
+      allowed-groups: ${HAITATON_ALLOWED_AD_GROUPS:}
   allu:
     baseUrl: ${ALLU_BASEURL:/}
     concurrentUploads: ${ALLU_CONCURRENT_UPLOADS:1}

@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.attachment.azure.Containers
 import fi.hel.haitaton.hanke.email.EmailProperties
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
 import fi.hel.haitaton.hanke.profiili.ProfiiliProperties
+import fi.hel.haitaton.hanke.security.AdFilterProperties
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import kotlinx.coroutines.CoroutineDispatcher
@@ -27,6 +28,7 @@ import reactor.netty.http.client.HttpClient
     AlluProperties::class,
     ProfiiliProperties::class,
     EmailProperties::class,
+    AdFilterProperties::class,
     Containers::class,
 )
 class Configuration {
