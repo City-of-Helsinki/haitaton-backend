@@ -1,12 +1,9 @@
 package fi.hel.haitaton.hanke.pdf
 
 import com.lowagie.text.Document
-import com.lowagie.text.PageSize
-import com.lowagie.text.pdf.PdfWriter
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
-import java.io.ByteArrayOutputStream
 
 /**
  * Transform an application to a PDF. The PDF is added as an attachment when sending the application
@@ -20,12 +17,8 @@ object JohtoselvityshakemusPdfEncoder {
         totalArea: Float?,
         areas: List<Float?>,
         attachments: List<ApplicationAttachmentMetadata>,
-    ): ByteArray {
-        val outputStream = ByteArrayOutputStream()
-        val document = Document(PageSize.A4)
-        PdfWriter.getInstance(document, outputStream)
+    ): ByteArray = createDocument { document, _ ->
         formatJohtoselvitysPdf(document, data, totalArea, areas, attachments)
-        return outputStream.toByteArray()
     }
 
     private fun formatJohtoselvitysPdf(
@@ -35,9 +28,9 @@ object JohtoselvityshakemusPdfEncoder {
         areas: List<Float?>,
         attachments: List<ApplicationAttachmentMetadata>,
     ) {
-        document.open()
 
         document.title("Johtoselvityshakemus")
+        document.subtitle(data.name)
 
         document.section("Perustiedot") {
             row("Työn nimi", data.name)
@@ -46,8 +39,6 @@ object JohtoselvityshakemusPdfEncoder {
             row("Työn kuvaus", data.workDescription)
             row("Omat tiedot", data.getOrderer()?.format())
         }
-
-        document.newPage()
 
         document.section("Alueet") {
             val areaNames =
@@ -65,8 +56,6 @@ object JohtoselvityshakemusPdfEncoder {
             )
         }
 
-        document.newPage()
-
         document.section("Yhteystiedot") {
             if (data.customerWithContacts != null) {
                 row("Työstä vastaava", data.customerWithContacts.format())
@@ -83,15 +72,11 @@ object JohtoselvityshakemusPdfEncoder {
             data.paperDecisionReceiver?.let { row("Päätös tilattu paperisena", it.format()) }
         }
 
-        document.newPage()
-
         document.section("Liitteet") {
             if (attachments.isNotEmpty()) {
                 row("Lisätyt liitetiedostot", attachments.joinToString("\n") { it.fileName })
             }
         }
-
-        document.close()
     }
 
     private fun JohtoselvityshakemusData.getOrderer(): Hakemusyhteyshenkilo? =

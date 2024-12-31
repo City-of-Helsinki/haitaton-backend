@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.pdf
 
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.hakemus.PaperDecisionReceiver
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import java.time.ZoneId
@@ -43,3 +44,13 @@ fun Double?.format(): String = "%.2f".format(LOCALE, this)
 fun List<String>?.format(): String = if (this.isNullOrEmpty()) "-" else this.joinToString(", ")
 
 fun String?.orDash() = if (this.isNullOrEmpty()) "-" else this
+
+fun KaivuilmoitusData.getWorkTargets(): String =
+    listOf(
+            constructionWork to "Uuden rakenteen tai johdon rakentamisesta",
+            maintenanceWork to "Olemassaolevan rakenteen kunnossapitotyöstä",
+            emergencyWork to
+                "Kaivutyö on aloitettu ennen kaivuilmoituksen tekemistä merkittävien vahinkojen välttämiseksi",
+        )
+        .filter { (active, _) -> active }
+        .joinToString("\n") { (_, description) -> description }

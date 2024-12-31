@@ -41,6 +41,8 @@ import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
+const val FORM_DATA_PDF_FILENAME = "haitaton-form-data-taydennys.pdf"
+
 @Service
 class TaydennysService(
     private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
@@ -508,7 +510,6 @@ class TaydennysService(
     }
 
     companion object {
-        private const val FORM_DATA_PDF_FILENAME = "haitaton-form-data-taydennys.pdf"
 
         fun mergeTaydennysToHakemus(taydennys: TaydennysEntity, hakemus: HakemusEntity) {
             hakemus.hakemusEntityData = taydennys.hakemusData

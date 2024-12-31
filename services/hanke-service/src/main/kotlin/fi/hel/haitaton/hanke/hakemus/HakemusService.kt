@@ -26,6 +26,7 @@ import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.pdf.EnrichedKaivuilmoitusalue
+import fi.hel.haitaton.hanke.pdf.HaittojenhallintasuunnitelmaPdfEncoder
 import fi.hel.haitaton.hanke.pdf.JohtoselvityshakemusPdfEncoder
 import fi.hel.haitaton.hanke.pdf.KaivuilmoitusPdfEncoder
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
@@ -55,7 +56,8 @@ const val ALLU_USER_CANCELLATION_MSG = "Käyttäjä perui hakemuksen Haitattomas
 const val ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG =
     "Haitaton ei saanut lisättyä hakemuksen liitteitä. Hakemus peruttu."
 
-private const val FORM_DATA_PDF_FILENAME = "haitaton-form-data.pdf"
+const val FORM_DATA_PDF_FILENAME = "haitaton-form-data.pdf"
+const val HHS_PDF_FILENAME = "haitaton-haittojenhallintasuunnitelma.pdf"
 private const val PAPER_DECISION_MSG =
     "Asiakas haluaa päätöksen myös paperisena. Liitteessä $FORM_DATA_PDF_FILENAME on päätöksen toimitukseen liittyvät osoitetiedot."
 
@@ -251,7 +253,7 @@ class HakemusService(
         }
 
         logger.info("Sending hakemus id=$id")
-        hakemus.alluid = createApplicationInAllu(hakemus.toHakemus())
+        hakemus.alluid = createApplicationInAllu(hakemus.toHakemus(), hanke)
 
         logger.info { "Hakemus sent, fetching identifier and status. ${hakemus.logString()}" }
         updateStatusFromAllu(hakemus)
@@ -553,9 +555,8 @@ class HakemusService(
         }
 
     /** Creates new application in Allu. All attachments are sent after creation. */
-    private fun createApplicationInAllu(hakemus: Hakemus): Int {
-        val alluId =
-            createApplicationToAllu(hakemus.id, hakemus.hankeTunnus, hakemus.applicationData)
+    private fun createApplicationInAllu(hakemus: Hakemus, hankeEntity: HankeEntity): Int {
+        val alluId = createApplicationToAllu(hakemus.id, hankeEntity, hakemus.applicationData)
         try {
             attachmentService.sendInitialAttachments(alluId, hakemus.id)
         } catch (e: Exception) {
@@ -572,13 +573,13 @@ class HakemusService(
 
     private fun createApplicationToAllu(
         applicationId: Long,
-        hankeTunnus: String,
+        hankeEntity: HankeEntity,
         hakemusData: HakemusData,
     ): Int {
-        val alluData = hakemusData.toAlluData(hankeTunnus)
+        val alluData = hakemusData.toAlluData(hankeEntity.hankeTunnus)
 
         val alluId =
-            withFormDataPdfUploading(applicationId, hankeTunnus, hakemusData) {
+            withFormDataPdfUploading(applicationId, hankeEntity, hakemusData) {
                 disclosureLogService.withDisclosureLogging(applicationId, alluData) {
                     alluClient.create(alluData)
                 }
@@ -604,16 +605,19 @@ class HakemusService(
      */
     private fun withFormDataPdfUploading(
         applicationId: Long,
-        hankeTunnus: String,
+        hankeEntity: HankeEntity,
         hakemusData: HakemusData,
         alluAction: () -> Int,
     ): Int {
-        val formAttachment = getApplicationDataAsPdf(applicationId, hankeTunnus, hakemusData)
+        val formAttachment =
+            getApplicationDataAsPdf(applicationId, hankeEntity.hankeTunnus, hakemusData)
+        val hhsAttachment = getHaittojenhallintasuunnitelmaPdf(hankeEntity, hakemusData)
 
         val alluId = alluAction()
 
         try {
             alluClient.addAttachment(alluId, formAttachment)
+            hhsAttachment?.let { alluClient.addAttachment(alluId, it) }
         } catch (e: Exception) {
             logger.error(e) {
                 "Error while uploading form data PDF attachment. Continuing anyway. alluid=$alluId"
@@ -649,23 +653,7 @@ class HakemusService(
                     JohtoselvityshakemusPdfEncoder.createPdf(data, totalArea, areas, attachments)
                 }
                 is KaivuilmoitusData -> {
-                    val areas =
-                        data.areas?.associate {
-                            it.hankealueId to
-                                geometriatDao.calculateCombinedArea(
-                                    it.tyoalueet.map { alue -> alue.geometry }
-                                )
-                        } ?: mapOf()
-                    val hankealueet = hankeRepository.findByHankeTunnus(hankeTunnus)?.alueet
-                    val hankealueNames = hankealueet?.associate { it.id to it.nimi } ?: mapOf()
-                    val alueet =
-                        data.areas?.map {
-                            EnrichedKaivuilmoitusalue(
-                                areas[it.hankealueId],
-                                hankealueNames[it.hankealueId] ?: "Nimetön hankealue",
-                                it,
-                            )
-                        }
+                    val alueet = data.areas?.let { enrichKaivuilmoitusalueet(it, hankeTunnus) }
                     KaivuilmoitusPdfEncoder.createPdf(data, totalArea, attachments, alueet)
                 }
             }
@@ -678,6 +666,52 @@ class HakemusService(
                 description = "Original form data from Haitaton, dated ${LocalDateTime.now()}.",
             )
         logger.info { "Created the PDF for data attachment." }
+        return Attachment(attachmentMetadata, pdfData)
+    }
+
+    private fun enrichKaivuilmoitusalueet(
+        alueet: List<KaivuilmoitusAlue>,
+        hankeTunnus: String,
+    ): List<EnrichedKaivuilmoitusalue> {
+        val surfaceAreas =
+            alueet.associate {
+                it.hankealueId to
+                    geometriatDao.calculateCombinedArea(it.tyoalueet.map { alue -> alue.geometry })
+            }
+        val hankealueet = hankeRepository.findByHankeTunnus(hankeTunnus)?.alueet
+        val hankealueNames = hankealueet?.associate { it.id to it.nimi } ?: mapOf()
+        return alueet.map {
+            EnrichedKaivuilmoitusalue(
+                surfaceAreas[it.hankealueId],
+                hankealueNames[it.hankealueId] ?: "Nimetön hankealue",
+                it,
+            )
+        }
+    }
+
+    private fun getHaittojenhallintasuunnitelmaPdf(
+        hankeEntity: HankeEntity,
+        data: HakemusData,
+    ): Attachment? {
+        if (data !is KaivuilmoitusData) return null
+        logger.info { "Creating a PDF from haittojenhallintasuunnitelma." }
+
+        // We can't use HankeService to load the hanke, because HankeService depends on this class.
+        val geometriatMap = hankealueService.geometryMapFrom(hankeEntity.alueet)
+        val hanke = HankeMapper.domainFrom(hankeEntity, geometriatMap)
+
+        val totalArea =
+            geometriatDao.calculateCombinedArea(data.areas?.flatMap { it.geometries() } ?: listOf())
+        val pdfData = HaittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, data, totalArea)
+        val attachmentMetadata =
+            AttachmentMetadata(
+                id = null,
+                mimeType = MediaType.APPLICATION_PDF_VALUE,
+                name = HHS_PDF_FILENAME,
+                description =
+                    "Haittojenhallintasuunnitelma from Haitaton, dated ${LocalDateTime.now()}.",
+            )
+        logger.info { "Created the PDF from haittojenhallintasuunnitelma." }
         return Attachment(attachmentMetadata, pdfData)
     }
 

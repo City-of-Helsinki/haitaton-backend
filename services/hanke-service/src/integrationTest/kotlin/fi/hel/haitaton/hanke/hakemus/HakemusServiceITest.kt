@@ -35,6 +35,7 @@ import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
+import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
@@ -77,6 +78,8 @@ import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.paatos.PaatosTila
+import fi.hel.haitaton.hanke.pdf.withName
+import fi.hel.haitaton.hanke.pdf.withNames
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.taydennys.TaydennysWithExtras
@@ -726,7 +729,7 @@ class HakemusServiceITest(
 
             verifySequence {
                 alluClient.create(any())
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(any())
             }
         }
@@ -750,7 +753,7 @@ class HakemusServiceITest(
 
             verifySequence {
                 alluClient.create(applicationData)
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(alluId)
             }
         }
@@ -803,7 +806,7 @@ class HakemusServiceITest(
 
             verifySequence {
                 alluClient.create(any())
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(alluId)
             }
         }
@@ -845,8 +848,8 @@ class HakemusServiceITest(
             failure.hasClass(AlluException::class)
             verifySequence {
                 alluClient.create(any())
-                alluClient.addAttachment(alluId, any())
-                alluClient.addAttachments(alluId, any(), any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachments(alluId, withNames(FILE_NAME_PDF), any())
                 alluClient.cancel(alluId)
                 alluClient.sendSystemComment(alluId, ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG)
             }
@@ -869,7 +872,7 @@ class HakemusServiceITest(
             assertThat(savedHakemus.alluStatus).isEqualTo(ApplicationStatus.PENDING)
             verifySequence {
                 alluClient.create(any())
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(alluId)
             }
         }
@@ -907,8 +910,8 @@ class HakemusServiceITest(
             }
             verifySequence {
                 alluClient.create(expectedAlluRequest)
-                alluClient.addAttachment(alluId, any())
-                alluClient.addAttachments(alluId, any(), any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachments(alluId, withNames(FILE_NAME_PDF), any())
                 alluClient.getApplicationInformation(alluId)
             }
         }
@@ -949,7 +952,7 @@ class HakemusServiceITest(
                 .contains(Pair(founder.id, true))
             verifySequence {
                 alluClient.create(expectedAlluRequest)
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(alluId)
             }
         }
@@ -1065,7 +1068,7 @@ class HakemusServiceITest(
                 .hasSameElementsAs(expectedObjects.map { it.toJsonString() })
             verifySequence {
                 alluClient.create(any())
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(alluId)
             }
         }
@@ -1097,7 +1100,7 @@ class HakemusServiceITest(
             }
             verifySequence {
                 alluClient.create(any())
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 alluClient.sendSystemComment(alluId, any())
                 alluClient.getApplicationInformation(alluId)
             }
@@ -1125,7 +1128,7 @@ class HakemusServiceITest(
                 .isEqualTo(paperDecisionReceiver)
             verifySequence {
                 alluClient.create(any())
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 alluClient.sendSystemComment(alluId, any())
                 alluClient.getApplicationInformation(alluId)
             }
@@ -1145,7 +1148,7 @@ class HakemusServiceITest(
 
             verifySequence {
                 alluClient.create(any())
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 alluClient.sendSystemComment(
                     alluId,
                     "Asiakas haluaa päätöksen myös paperisena. Liitteessä " +
@@ -1203,8 +1206,9 @@ class HakemusServiceITest(
                     }
                     verifySequence {
                         alluClient.create(expectedAlluRequest)
-                        alluClient.addAttachment(alluId, any())
-                        alluClient.addAttachments(alluId, any(), any())
+                        alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
+                        alluClient.addAttachment(alluId, withName(HHS_PDF_FILENAME))
+                        alluClient.addAttachments(alluId, withNames(FILE_NAME_PDF), any())
                         alluClient.getApplicationInformation(alluId)
                     }
                 }
@@ -1214,8 +1218,8 @@ class HakemusServiceITest(
             inner class AccompanyingJohtoselvitys {
 
                 private var kaivuilmoitusHakemusId: Long = 0
-                private val cableReportAlluId: Int = alluId
-                private val excavationNotificationAlluId: Int = alluId + 1
+                private val cableReportId: Int = alluId
+                private val kaivuilmoitusId: Int = alluId + 1
                 private lateinit var expectedCableReportAlluRequest: AlluCableReportApplicationData
                 private lateinit var expectedExcavationNotificationAlluRequest:
                     AlluExcavationNotificationData
@@ -1272,22 +1276,18 @@ class HakemusServiceITest(
                             hakemus.hankeTunnus
                         )
                     every { alluClient.create(expectedCableReportAlluRequest) } returns
-                        cableReportAlluId
+                        cableReportId
                     every { alluClient.create(expectedExcavationNotificationAlluRequest) } returns
-                        excavationNotificationAlluId
-                    justRun { alluClient.addAttachment(cableReportAlluId, any()) }
-                    justRun { alluClient.addAttachment(excavationNotificationAlluId, any()) }
-                    justRun { alluClient.addAttachments(cableReportAlluId, any(), any()) }
-                    justRun {
-                        alluClient.addAttachments(excavationNotificationAlluId, any(), any())
-                    }
-                    every { alluClient.getApplicationInformation(cableReportAlluId) } returns
-                        AlluFactory.createAlluApplicationResponse(cableReportAlluId)
-                    every {
-                        alluClient.getApplicationInformation(excavationNotificationAlluId)
-                    } returns
+                        kaivuilmoitusId
+                    justRun { alluClient.addAttachment(cableReportId, any()) }
+                    justRun { alluClient.addAttachment(kaivuilmoitusId, any()) }
+                    justRun { alluClient.addAttachments(cableReportId, any(), any()) }
+                    justRun { alluClient.addAttachments(kaivuilmoitusId, any(), any()) }
+                    every { alluClient.getApplicationInformation(cableReportId) } returns
+                        AlluFactory.createAlluApplicationResponse(cableReportId)
+                    every { alluClient.getApplicationInformation(kaivuilmoitusId) } returns
                         AlluFactory.createAlluApplicationResponse(
-                            excavationNotificationAlluId,
+                            kaivuilmoitusId,
                             applicationId = DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER,
                         )
                 }
@@ -1308,17 +1308,15 @@ class HakemusServiceITest(
                 fun `saves johtoselvitys to DB`() {
                     hakemusService.sendHakemus(kaivuilmoitusHakemusId, null, USERNAME)
 
-                    assertThat(hakemusRepository.getOneByAlluid(cableReportAlluId))
-                        .isNotNull()
-                        .all {
-                            prop(HakemusEntity::alluid).isEqualTo(cableReportAlluId)
-                            prop(HakemusEntity::applicationIdentifier)
-                                .isEqualTo(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
-                            prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
-                            prop(HakemusEntity::hakemusEntityData)
-                                .isEqualTo(expectedJohtoselvitysHakemusEntityData)
-                            prop(HakemusEntity::userId).isEqualTo(USERNAME)
-                        }
+                    assertThat(hakemusRepository.getOneByAlluid(cableReportId)).isNotNull().all {
+                        prop(HakemusEntity::alluid).isEqualTo(cableReportId)
+                        prop(HakemusEntity::applicationIdentifier)
+                            .isEqualTo(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                        prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
+                        prop(HakemusEntity::hakemusEntityData)
+                            .isEqualTo(expectedJohtoselvitysHakemusEntityData)
+                        prop(HakemusEntity::userId).isEqualTo(USERNAME)
+                    }
                 }
 
                 @Test
@@ -1329,14 +1327,14 @@ class HakemusServiceITest(
                     hakemusyhteystietoRepository.save(hakija)
                     every {
                         alluClient.create(match { it is AlluCableReportApplicationData })
-                    } returns cableReportAlluId
+                    } returns cableReportId
                     every {
                         alluClient.create(match { it is AlluExcavationNotificationData })
-                    } returns excavationNotificationAlluId
+                    } returns kaivuilmoitusId
 
                     hakemusService.sendHakemus(kaivuilmoitusHakemusId, null, USERNAME)
 
-                    val entity = hakemusRepository.getOneByAlluid(cableReportAlluId)!!
+                    val entity = hakemusRepository.getOneByAlluid(cableReportId)!!
                     val johtoselvitys = hakemusService.getById(entity.id)
                     assertThat(johtoselvitys.applicationData.customerWithContacts)
                         .isNotNull()
@@ -1359,14 +1357,15 @@ class HakemusServiceITest(
                     verifySequence {
                         // first the cable report is sent
                         alluClient.create(expectedCableReportAlluRequest)
-                        alluClient.addAttachment(cableReportAlluId, any())
-                        alluClient.addAttachments(cableReportAlluId, any(), any())
-                        alluClient.getApplicationInformation(cableReportAlluId)
+                        alluClient.addAttachment(cableReportId, withName(FORM_DATA_PDF_FILENAME))
+                        alluClient.addAttachments(cableReportId, withNames(FILE_NAME_PDF), any())
+                        alluClient.getApplicationInformation(cableReportId)
                         // then the excavation notification is sent
                         alluClient.create(expectedExcavationNotificationAlluRequest)
-                        alluClient.addAttachment(excavationNotificationAlluId, any())
-                        alluClient.addAttachments(excavationNotificationAlluId, any(), any())
-                        alluClient.getApplicationInformation(excavationNotificationAlluId)
+                        alluClient.addAttachment(kaivuilmoitusId, withName(FORM_DATA_PDF_FILENAME))
+                        alluClient.addAttachment(kaivuilmoitusId, withName(HHS_PDF_FILENAME))
+                        alluClient.addAttachments(kaivuilmoitusId, withNames(FILE_NAME_PDF), any())
+                        alluClient.getApplicationInformation(kaivuilmoitusId)
                     }
                 }
 
@@ -1376,7 +1375,7 @@ class HakemusServiceITest(
                         hakemusService.sendHakemus(kaivuilmoitusHakemusId, null, USERNAME)
 
                     assertThat(response).all {
-                        prop(Hakemus::alluid).isEqualTo(excavationNotificationAlluId)
+                        prop(Hakemus::alluid).isEqualTo(kaivuilmoitusId)
                         prop(Hakemus::applicationIdentifier)
                             .isEqualTo(DEFAULT_EXCAVATION_NOTIFICATION_IDENTIFIER)
                         prop(Hakemus::alluStatus).isEqualTo(ApplicationStatus.PENDING)
