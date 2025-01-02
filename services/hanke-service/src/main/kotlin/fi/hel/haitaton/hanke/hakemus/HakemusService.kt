@@ -79,6 +79,7 @@ class HakemusService(
     private val paatosService: PaatosService,
     private val applicationEventPublisher: ApplicationEventPublisher,
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
+    private val haittojenhallintasuunnitelmaPdfEncoder: HaittojenhallintasuunnitelmaPdfEncoder,
 ) {
 
     @Transactional(readOnly = true)
@@ -702,7 +703,7 @@ class HakemusService(
 
         val totalArea =
             geometriatDao.calculateCombinedArea(data.areas?.flatMap { it.geometries() } ?: listOf())
-        val pdfData = HaittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, data, totalArea)
+        val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, data, totalArea)
         val attachmentMetadata =
             AttachmentMetadata(
                 id = null,

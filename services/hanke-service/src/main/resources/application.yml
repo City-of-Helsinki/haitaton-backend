@@ -50,6 +50,8 @@ haitaton:
     issuer: ${HAITATON_OAUTH2_ISSUER:http://gdpr-api-tester:8888/}
     delete-scope: gdprdelete
     query-scope: gdprquery
+  map-service:
+    capability-url: https://kartta.hel.fi/ws/geoserver/avoindata/wms?REQUEST=GetCapabilities&SERVICE=WMS&VERSION=1.1.1
   profiili-api:
     graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
     audience: ${PROFIILI_AUDIENCE:profile-api-test}

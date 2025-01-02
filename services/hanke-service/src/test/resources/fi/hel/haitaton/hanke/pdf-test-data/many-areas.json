@@ -1,0 +1,450 @@
+[
+  {
+    "name": "Hankealue 3",
+    "hankealueId": 105,
+    "tyoalueet": [
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25496842,
+                6672974
+              ],
+              [
+                25496855,
+                6672974
+              ],
+              [
+                25496855,
+                6672992
+              ],
+              [
+                25496842,
+                6672992
+              ],
+              [
+                25496842,
+                6672974
+              ]
+            ]
+          ]
+        },
+        "area": 250.9791226760525,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 0.7,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 0,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 0.7,
+            "tyyppi": "AUTOLIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25496867,
+                6672804
+              ],
+              [
+                25496877,
+                6672804
+              ],
+              [
+                25496877,
+                6672818
+              ],
+              [
+                25496867,
+                6672818
+              ],
+              [
+                25496867,
+                6672804
+              ]
+            ]
+          ]
+        },
+        "area": 148.5957615267796,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 0,
+            "haitanKesto": 3,
+            "katuluokka": 0,
+            "liikennemaara": 0,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 0,
+            "tyyppi": "LINJAAUTOLIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25496978,
+                6672808
+              ],
+              [
+                25496996,
+                6672808
+              ],
+              [
+                25496996,
+                6672817
+              ],
+              [
+                25496978,
+                6672817
+              ],
+              [
+                25496978,
+                6672808
+              ]
+            ]
+          ]
+        },
+        "area": 159.521427118922,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 0.7,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 0,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 3,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 3,
+            "tyyppi": "PYORALIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25497185,
+                6672820
+              ],
+              [
+                25497202,
+                6672820
+              ],
+              [
+                25497202,
+                6672846
+              ],
+              [
+                25497185,
+                6672846
+              ],
+              [
+                25497185,
+                6672820
+              ]
+            ]
+          ]
+        },
+        "area": 431.1831230811498,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 1.5,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 3,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 1.5,
+            "tyyppi": "AUTOLIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25496961,
+                6672760
+              ],
+              [
+                25496999,
+                6672760
+              ],
+              [
+                25496999,
+                6672771
+              ],
+              [
+                25496961,
+                6672771
+              ],
+              [
+                25496961,
+                6672760
+              ]
+            ]
+          ]
+        },
+        "area": 430.7122447388991,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 2.1,
+            "haitanKesto": 3,
+            "katuluokka": 4,
+            "liikennemaara": 4,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 3,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 3,
+            "tyyppi": "PYORALIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25497041,
+                6672880
+              ],
+              [
+                25497071,
+                6672880
+              ],
+              [
+                25497071,
+                6672902
+              ],
+              [
+                25497041,
+                6672902
+              ],
+              [
+                25497041,
+                6672880
+              ]
+            ]
+          ]
+        },
+        "area": 654.9746946369295,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 1.2,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 2,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 5,
+          "liikennehaittaindeksi": {
+            "indeksi": 5,
+            "tyyppi": "RAITIOLIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25497170,
+                6672937
+              ],
+              [
+                25497189,
+                6672937
+              ],
+              [
+                25497189,
+                6672961
+              ],
+              [
+                25497170,
+                6672961
+              ],
+              [
+                25497170,
+                6672937
+              ]
+            ]
+          ]
+        },
+        "area": 434.7214573028518,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 1.5,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 3,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 1.5,
+            "tyyppi": "AUTOLIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25497030,
+                6672977
+              ],
+              [
+                25497059,
+                6672977
+              ],
+              [
+                25497059,
+                6673002
+              ],
+              [
+                25497030,
+                6673002
+              ],
+              [
+                25497030,
+                6672977
+              ]
+            ]
+          ]
+        },
+        "area": 742.3960700839747,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 1.5,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 3,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 1.5,
+            "tyyppi": "AUTOLIIKENNEINDEKSI"
+          }
+        }
+      }
+    ],
+    "katuosoite": "Kaivokatu 12",
+    "tyonTarkoitukset": [
+      "SAHKO"
+    ],
+    "meluhaitta": "EI_MELUHAITTAA",
+    "polyhaitta": "EI_POLYHAITTAA",
+    "tarinahaitta": "EI_TARINAHAITTAA",
+    "kaistahaitta": "EI_VAIKUTA",
+    "kaistahaittojenPituus": "EI_VAIKUTA_KAISTAJARJESTELYIHIN",
+    "lisatiedot": "",
+    "haittojenhallintasuunnitelma": {
+      "MUUT": "Monta aluetta",
+      "YLEINEN": "Monta aluetta",
+      "AUTOLIIKENNE": "Monta aluetta",
+      "PYORALIIKENNE": "Monta aluetta",
+      "RAITIOLIIKENNE": "Monta aluetta",
+      "LINJAAUTOLIIKENNE": ""
+    }
+  }
+]

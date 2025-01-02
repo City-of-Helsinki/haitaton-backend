@@ -36,6 +36,7 @@ import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.paatos.PaatosService
+import fi.hel.haitaton.hanke.pdf.HaittojenhallintasuunnitelmaPdfEncoder
 import fi.hel.haitaton.hanke.pdf.withName
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
@@ -86,6 +87,8 @@ class HakemusServiceTest {
     private val paatosService: PaatosService = mockk()
     private val publisher: ApplicationEventPublisher = mockk()
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService = mockk()
+    private val haittojenhallintasuunnitelmaPdfEncoder: HaittojenhallintasuunnitelmaPdfEncoder =
+        mockk()
 
     private val hakemusService =
         HakemusService(
@@ -105,6 +108,7 @@ class HakemusServiceTest {
             paatosService,
             publisher,
             tormaystarkasteluLaskentaService,
+            haittojenhallintasuunnitelmaPdfEncoder,
         )
 
     @BeforeEach
@@ -129,6 +133,7 @@ class HakemusServiceTest {
             alluClient,
             paatosService,
             publisher,
+            haittojenhallintasuunnitelmaPdfEncoder,
         )
     }
 

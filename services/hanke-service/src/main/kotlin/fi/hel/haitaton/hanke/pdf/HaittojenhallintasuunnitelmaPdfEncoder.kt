@@ -1,20 +1,25 @@
 package fi.hel.haitaton.hanke.pdf
 
+import com.lowagie.text.Chunk
 import com.lowagie.text.Document
+import com.lowagie.text.Image
 import com.lowagie.text.ImgTemplate
+import com.lowagie.text.Paragraph
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import java.time.ZonedDateTime
+import org.springframework.stereotype.Component
 
-object HaittojenhallintasuunnitelmaPdfEncoder {
+@Component
+class HaittojenhallintasuunnitelmaPdfEncoder(private val mapGenerator: MapGenerator) {
 
     fun createPdf(hanke: Hanke, data: KaivuilmoitusData, totalArea: Float?): ByteArray =
         createDocument { document, writer ->
             val locationIcon = loadLocationIcon(writer)
-            formatKaivuilmoitusPdf(document, hanke, data, totalArea, locationIcon)
+            formatPdf(document, hanke, data, totalArea, locationIcon)
         }
 
-    private fun formatKaivuilmoitusPdf(
+    private fun formatPdf(
         document: Document,
         hanke: Hanke,
         data: KaivuilmoitusData,
@@ -30,7 +35,18 @@ object HaittojenhallintasuunnitelmaPdfEncoder {
         document.subtitle(data.name)
 
         document.mapHeader("Alueiden sijainti", locationIcon)
-        document.placeholderImage()
+        // The image is better quality, if it's rendered at a higher resolution and then scaled down
+        // to fit in the PDF layout.
+        val bytes =
+            mapGenerator.mapWithAreas(data.areas!!, hanke.alueet, MAP_WIDTH * 2, MAP_HEIGHT * 2)
+        val image = Image.getInstance(bytes)
+        image.scaleToFit(pxToPt(MAP_WIDTH), pxToPt(MAP_HEIGHT))
+        document.add(image)
+
+        val spacer = Paragraph(Chunk.NEWLINE)
+        spacer.spacingBefore = 1f
+        spacer.spacingAfter = pxToPt(-16)
+        document.add(spacer)
 
         document.section("Perustiedot") {
             row("Työn nimi", data.name)
@@ -52,5 +68,10 @@ object HaittojenhallintasuunnitelmaPdfEncoder {
             row("Työn alkupäivämäärä", data.startTime.format())
             row("Työn loppupäivämäärä", data.endTime.format())
         }
+    }
+
+    companion object {
+        const val MAP_WIDTH = 1110
+        const val MAP_HEIGHT = 400
     }
 }

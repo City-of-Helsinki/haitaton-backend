@@ -1,0 +1,376 @@
+[
+  {
+    "id": 105,
+    "hankeId": 46,
+    "haittaAlkuPvm": "2025-01-02T00:00:00Z",
+    "haittaLoppuPvm": "2025-01-31T00:00:00Z",
+    "geometriat": {
+      "id": 118,
+      "featureCollection": {
+        "type": "FeatureCollection",
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "urn:ogc:def:crs:EPSG::3879"
+          }
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "hankeTunnus": "HAI25-2"
+            },
+            "geometry": {
+              "type": "Polygon",
+              "crs": {
+                "type": "name",
+                "properties": {
+                  "name": "EPSG:3879"
+                }
+              },
+              "coordinates": [
+                [
+                  [
+                    25496824.139549617,
+                    6672755.6806356
+                  ],
+                  [
+                    25497219.580001418,
+                    6672755.6806356
+                  ],
+                  [
+                    25497219.580001418,
+                    6673014.740453159
+                  ],
+                  [
+                    25496824.139549617,
+                    6673014.740453159
+                  ],
+                  [
+                    25496824.139549617,
+                    6672755.6806356
+                  ]
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "version": 11,
+      "createdByUserId": "38310af1-0242-4efd-8b7b-5c2e01684f40",
+      "createdAt": "2025-01-02T07:53:50.902Z",
+      "modifiedByUserId": "38310af1-0242-4efd-8b7b-5c2e01684f40",
+      "modifiedAt": "2025-01-02T14:05:59.945Z"
+    },
+    "kaistaHaitta": "EI_VAIKUTA",
+    "kaistaPituusHaitta": "EI_VAIKUTA_KAISTAJARJESTELYIHIN",
+    "meluHaitta": "EI_MELUHAITTAA",
+    "polyHaitta": "EI_POLYHAITTAA",
+    "tarinaHaitta": "EI_TARINAHAITTAA",
+    "nimi": "Hankealue 3",
+    "tormaystarkasteluTulos": {
+      "autoliikenne": {
+        "indeksi": 2.1,
+        "haitanKesto": 3,
+        "katuluokka": 4,
+        "liikennemaara": 4,
+        "kaistahaitta": 0,
+        "kaistapituushaitta": 0
+      },
+      "pyoraliikenneindeksi": 3,
+      "linjaautoliikenneindeksi": 0,
+      "raitioliikenneindeksi": 5,
+      "liikennehaittaindeksi": {
+        "indeksi": 5,
+        "tyyppi": "RAITIOLIIKENNEINDEKSI"
+      }
+    },
+    "haittojenhallintasuunnitelma": {
+      "MUUT": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "RAITIOLIIKENNE": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "YLEINEN": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "AUTOLIIKENNE": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "PYORALIIKENNE": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi."
+    }
+  },
+  {
+    "id": 103,
+    "hankeId": 46,
+    "haittaAlkuPvm": "2014-10-01T00:00:00Z",
+    "haittaLoppuPvm": "2025-11-18T00:00:00Z",
+    "geometriat": {
+      "id": 116,
+      "featureCollection": {
+        "type": "FeatureCollection",
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "urn:ogc:def:crs:EPSG::3879"
+          }
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "hankeTunnus": "HAI25-2"
+            },
+            "geometry": {
+              "type": "Polygon",
+              "crs": {
+                "type": "name",
+                "properties": {
+                  "name": "EPSG:3879"
+                }
+              },
+              "coordinates": [
+                [
+                  [
+                    25496400,
+                    6673000
+                  ],
+                  [
+                    25496900,
+                    6672950
+                  ],
+                  [
+                    25497000,
+                    6673100
+                  ],
+                  [
+                    25496500,
+                    6673150
+                  ],
+                  [
+                    25496400,
+                    6673000
+                  ]
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "version": 11,
+      "createdByUserId": "38310af1-0242-4efd-8b7b-5c2e01684f40",
+      "createdAt": "2025-01-02T07:53:50.898Z",
+      "modifiedByUserId": "38310af1-0242-4efd-8b7b-5c2e01684f40",
+      "modifiedAt": "2025-01-02T14:05:59.967Z"
+    },
+    "kaistaHaitta": "EI_VAIKUTA",
+    "kaistaPituusHaitta": "EI_VAIKUTA_KAISTAJARJESTELYIHIN",
+    "meluHaitta": "EI_MELUHAITTAA",
+    "polyHaitta": "EI_POLYHAITTAA",
+    "tarinaHaitta": "EI_TARINAHAITTAA",
+    "nimi": "Hankealue 1",
+    "tormaystarkasteluTulos": {
+      "autoliikenne": {
+        "indeksi": 2.5,
+        "haitanKesto": 5,
+        "katuluokka": 4,
+        "liikennemaara": 5,
+        "kaistahaitta": 0,
+        "kaistapituushaitta": 0
+      },
+      "pyoraliikenneindeksi": 3,
+      "linjaautoliikenneindeksi": 5,
+      "raitioliikenneindeksi": 5,
+      "liikennehaittaindeksi": {
+        "indeksi": 5,
+        "tyyppi": "LINJAAUTOLIIKENNEINDEKSI"
+      }
+    },
+    "haittojenhallintasuunnitelma": {
+      "MUUT": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "RAITIOLIIKENNE": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "YLEINEN": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "LINJAAUTOLIIKENNE": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "AUTOLIIKENNE": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "PYORALIIKENNE": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi."
+    }
+  },
+  {
+    "id": 104,
+    "hankeId": 46,
+    "haittaAlkuPvm": "2025-01-02T00:00:00Z",
+    "haittaLoppuPvm": "2025-01-31T00:00:00Z",
+    "geometriat": {
+      "id": 117,
+      "featureCollection": {
+        "type": "FeatureCollection",
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "urn:ogc:def:crs:EPSG::3879"
+          }
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "hankeTunnus": "HAI25-2"
+            },
+            "geometry": {
+              "type": "Polygon",
+              "crs": {
+                "type": "name",
+                "properties": {
+                  "name": "EPSG:3879"
+                }
+              },
+              "coordinates": [
+                [
+                  [
+                    25497250,
+                    6672900
+                  ],
+                  [
+                    25497300,
+                    6672900
+                  ],
+                  [
+                    25497300,
+                    6673100
+                  ],
+                  [
+                    25497250,
+                    6673100
+                  ],
+                  [
+                    25497250,
+                    6672900
+                  ]
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "version": 11,
+      "createdByUserId": "38310af1-0242-4efd-8b7b-5c2e01684f40",
+      "createdAt": "2025-01-02T07:53:50.901Z",
+      "modifiedByUserId": "38310af1-0242-4efd-8b7b-5c2e01684f40",
+      "modifiedAt": "2025-01-02T14:05:59.969Z"
+    },
+    "kaistaHaitta": "EI_VAIKUTA",
+    "kaistaPituusHaitta": "EI_VAIKUTA_KAISTAJARJESTELYIHIN",
+    "meluHaitta": "EI_MELUHAITTAA",
+    "polyHaitta": "EI_POLYHAITTAA",
+    "tarinaHaitta": "EI_TARINAHAITTAA",
+    "nimi": "Hankealue 2",
+    "tormaystarkasteluTulos": {
+      "autoliikenne": {
+        "indeksi": 2.3,
+        "haitanKesto": 3,
+        "katuluokka": 4,
+        "liikennemaara": 5,
+        "kaistahaitta": 0,
+        "kaistapituushaitta": 0
+      },
+      "pyoraliikenneindeksi": 3,
+      "linjaautoliikenneindeksi": 0,
+      "raitioliikenneindeksi": 5,
+      "liikennehaittaindeksi": {
+        "indeksi": 5,
+        "tyyppi": "RAITIOLIIKENNEINDEKSI"
+      }
+    },
+    "haittojenhallintasuunnitelma": {
+      "MUUT": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "RAITIOLIIKENNE": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "YLEINEN": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "AUTOLIIKENNE": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "PYORALIIKENNE": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi."
+    }
+  },
+  {
+    "id": 106,
+    "hankeId": 46,
+    "haittaAlkuPvm": "2025-01-03T00:00:00Z",
+    "haittaLoppuPvm": "2025-01-31T00:00:00Z",
+    "geometriat": {
+      "id": 119,
+      "featureCollection": {
+        "type": "FeatureCollection",
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "urn:ogc:def:crs:EPSG::3879"
+          }
+        },
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "hankeTunnus": "HAI25-2"
+            },
+            "geometry": {
+              "type": "Polygon",
+              "crs": {
+                "type": "name",
+                "properties": {
+                  "name": "EPSG:3879"
+                }
+              },
+              "coordinates": [
+                [
+                  [
+                    25497468.5556505,
+                    6673353.730021486
+                  ],
+                  [
+                    25497520.04488658,
+                    6673299.757124501
+                  ],
+                  [
+                    25497537.72820804,
+                    6673467.673836828
+                  ],
+                  [
+                    25497468.5556505,
+                    6673396.161895422
+                  ],
+                  [
+                    25497468.5556505,
+                    6673353.730021486
+                  ]
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "version": 9,
+      "createdByUserId": "38310af1-0242-4efd-8b7b-5c2e01684f40",
+      "createdAt": "2025-01-02T07:55:00.536Z",
+      "modifiedByUserId": "38310af1-0242-4efd-8b7b-5c2e01684f40",
+      "modifiedAt": "2025-01-02T14:05:59.971Z"
+    },
+    "kaistaHaitta": "EI_VAIKUTA",
+    "kaistaPituusHaitta": "EI_VAIKUTA_KAISTAJARJESTELYIHIN",
+    "meluHaitta": "EI_MELUHAITTAA",
+    "polyHaitta": "EI_POLYHAITTAA",
+    "tarinaHaitta": "EI_TARINAHAITTAA",
+    "nimi": "Hankealue 4",
+    "tormaystarkasteluTulos": {
+      "autoliikenne": {
+        "indeksi": 0,
+        "haitanKesto": 3,
+        "katuluokka": 0,
+        "liikennemaara": 0,
+        "kaistahaitta": 0,
+        "kaistapituushaitta": 0
+      },
+      "pyoraliikenneindeksi": 0,
+      "linjaautoliikenneindeksi": 0,
+      "raitioliikenneindeksi": 0,
+      "liikennehaittaindeksi": {
+        "indeksi": 0,
+        "tyyppi": "LINJAAUTOLIIKENNEINDEKSI"
+      }
+    },
+    "haittojenhallintasuunnitelma": {
+      "MUUT": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi.",
+      "YLEINEN": "Tähdellä * merkityt kentät vaaditaan hankkeen julkaisemiseksi."
+    }
+  }
+]
