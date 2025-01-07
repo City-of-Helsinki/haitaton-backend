@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.pdf
 
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
@@ -42,6 +43,9 @@ fun Float?.format(): String = "%.2f".format(LOCALE, this)
 fun Double?.format(): String = "%.2f".format(LOCALE, this)
 
 fun List<String>?.format(): String = if (this.isNullOrEmpty()) "-" else this.joinToString(", ")
+
+fun Collection<TyomaaTyyppi>?.format(): String =
+    if (this.isNullOrEmpty()) "-" else this.joinToString(", ") { it.format() }
 
 fun String?.orDash() = if (this.isNullOrEmpty()) "-" else this
 

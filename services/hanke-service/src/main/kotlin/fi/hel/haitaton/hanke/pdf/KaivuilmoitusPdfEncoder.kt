@@ -117,9 +117,7 @@ object KaivuilmoitusPdfEncoder {
 
         builder.append("Pinta-ala: ${totalArea.format()} m²\n")
         builder.append("Katuosoite: ${alue.katuosoite}\n")
-        builder.append(
-            "Työn tarkoitus: ${alue.tyonTarkoitukset.map { it.format() }.joinToString ( ", " )}\n"
-        )
+        builder.append("Työn tarkoitus: ${alue.tyonTarkoitukset.format()}\n")
         builder.append("\n")
 
         builder.append("Meluhaitta: ${alue.meluhaitta.format()}\n")

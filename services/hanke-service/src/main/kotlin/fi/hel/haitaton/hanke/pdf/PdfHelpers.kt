@@ -66,10 +66,6 @@ private val textFont = Font(baseRegularFont, pxToPt(14), Font.NORMAL, Color.BLAC
 
 fun pxToPt(px: Int): Float = px * PX_TO_PT
 
-fun Document.newline() {
-    this.add(Paragraph(Chunk.NEWLINE))
-}
-
 fun Document.headerRow(leftSide: String, rightSide: String) {
     val glue = Chunk(VerticalPositionMark())
     val paragraph = Paragraph()

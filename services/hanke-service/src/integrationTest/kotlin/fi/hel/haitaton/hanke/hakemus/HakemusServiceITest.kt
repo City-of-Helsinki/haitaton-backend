@@ -1218,7 +1218,7 @@ class HakemusServiceITest(
             inner class AccompanyingJohtoselvitys {
 
                 private var kaivuilmoitusHakemusId: Long = 0
-                private val cableReportId: Int = alluId
+                private val johtoselvitysId: Int = alluId
                 private val kaivuilmoitusId: Int = alluId + 1
                 private lateinit var expectedCableReportAlluRequest: AlluCableReportApplicationData
                 private lateinit var expectedExcavationNotificationAlluRequest:
@@ -1276,15 +1276,15 @@ class HakemusServiceITest(
                             hakemus.hankeTunnus
                         )
                     every { alluClient.create(expectedCableReportAlluRequest) } returns
-                        cableReportId
+                        johtoselvitysId
                     every { alluClient.create(expectedExcavationNotificationAlluRequest) } returns
                         kaivuilmoitusId
-                    justRun { alluClient.addAttachment(cableReportId, any()) }
+                    justRun { alluClient.addAttachment(johtoselvitysId, any()) }
                     justRun { alluClient.addAttachment(kaivuilmoitusId, any()) }
-                    justRun { alluClient.addAttachments(cableReportId, any(), any()) }
+                    justRun { alluClient.addAttachments(johtoselvitysId, any(), any()) }
                     justRun { alluClient.addAttachments(kaivuilmoitusId, any(), any()) }
-                    every { alluClient.getApplicationInformation(cableReportId) } returns
-                        AlluFactory.createAlluApplicationResponse(cableReportId)
+                    every { alluClient.getApplicationInformation(johtoselvitysId) } returns
+                        AlluFactory.createAlluApplicationResponse(johtoselvitysId)
                     every { alluClient.getApplicationInformation(kaivuilmoitusId) } returns
                         AlluFactory.createAlluApplicationResponse(
                             kaivuilmoitusId,
@@ -1308,8 +1308,8 @@ class HakemusServiceITest(
                 fun `saves johtoselvitys to DB`() {
                     hakemusService.sendHakemus(kaivuilmoitusHakemusId, null, USERNAME)
 
-                    assertThat(hakemusRepository.getOneByAlluid(cableReportId)).isNotNull().all {
-                        prop(HakemusEntity::alluid).isEqualTo(cableReportId)
+                    assertThat(hakemusRepository.getOneByAlluid(johtoselvitysId)).isNotNull().all {
+                        prop(HakemusEntity::alluid).isEqualTo(johtoselvitysId)
                         prop(HakemusEntity::applicationIdentifier)
                             .isEqualTo(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
                         prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING)
@@ -1327,14 +1327,14 @@ class HakemusServiceITest(
                     hakemusyhteystietoRepository.save(hakija)
                     every {
                         alluClient.create(match { it is AlluCableReportApplicationData })
-                    } returns cableReportId
+                    } returns johtoselvitysId
                     every {
                         alluClient.create(match { it is AlluExcavationNotificationData })
                     } returns kaivuilmoitusId
 
                     hakemusService.sendHakemus(kaivuilmoitusHakemusId, null, USERNAME)
 
-                    val entity = hakemusRepository.getOneByAlluid(cableReportId)!!
+                    val entity = hakemusRepository.getOneByAlluid(johtoselvitysId)!!
                     val johtoselvitys = hakemusService.getById(entity.id)
                     assertThat(johtoselvitys.applicationData.customerWithContacts)
                         .isNotNull()
@@ -1357,9 +1357,9 @@ class HakemusServiceITest(
                     verifySequence {
                         // first the cable report is sent
                         alluClient.create(expectedCableReportAlluRequest)
-                        alluClient.addAttachment(cableReportId, withName(FORM_DATA_PDF_FILENAME))
-                        alluClient.addAttachments(cableReportId, withNames(FILE_NAME_PDF), any())
-                        alluClient.getApplicationInformation(cableReportId)
+                        alluClient.addAttachment(johtoselvitysId, withName(FORM_DATA_PDF_FILENAME))
+                        alluClient.addAttachments(johtoselvitysId, withNames(FILE_NAME_PDF), any())
+                        alluClient.getApplicationInformation(johtoselvitysId)
                         // then the excavation notification is sent
                         alluClient.create(expectedExcavationNotificationAlluRequest)
                         alluClient.addAttachment(kaivuilmoitusId, withName(FORM_DATA_PDF_FILENAME))
