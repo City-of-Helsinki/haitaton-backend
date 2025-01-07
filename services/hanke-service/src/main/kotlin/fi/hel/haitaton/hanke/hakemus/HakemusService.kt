@@ -246,7 +246,8 @@ class HakemusService(
             hakemus.hakemusEntityData =
                 hakemusEntityData.copy(
                     cableReports =
-                        cableReports.plus(sentJohtoselvityshakemus.applicationIdentifier!!)
+                        cableReports.plus(sentJohtoselvityshakemus.applicationIdentifier!!),
+                    cableReportDone = true,
                 )
         }
 
