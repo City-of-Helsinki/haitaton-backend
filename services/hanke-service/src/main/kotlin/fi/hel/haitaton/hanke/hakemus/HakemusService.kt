@@ -246,8 +246,7 @@ class HakemusService(
             hakemus.hakemusEntityData =
                 hakemusEntityData.copy(
                     cableReports =
-                        cableReports.plus(sentJohtoselvityshakemus.applicationIdentifier!!),
-                    cableReportDone = true,
+                        cableReports.plus(sentJohtoselvityshakemus.applicationIdentifier!!)
                 )
         }
 
@@ -256,6 +255,8 @@ class HakemusService(
 
         logger.info { "Hakemus sent, fetching identifier and status. ${hakemus.logString()}" }
         updateStatusFromAllu(hakemus)
+
+        updateCableReportDoneFlag(hakemus)
 
         logger.info("Sent hakemus. ${hakemus.logString()}, alluStatus = ${hakemus.alluStatus}")
         // Save only if sendApplicationToAllu didn't throw an exception
@@ -316,6 +317,16 @@ class HakemusService(
         )
         hakemusLoggingService.logCreate(savedJohtoselvityshakemus.toHakemus(), currentUserId)
         return savedJohtoselvityshakemus
+    }
+
+    private fun updateCableReportDoneFlag(hakemus: HakemusEntity) {
+        val hakemusData = hakemus.hakemusEntityData
+        if (hakemusData is KaivuilmoitusEntityData && !hakemusData.cableReportDone) {
+            hakemus.hakemusEntityData = hakemusData.copy(cableReportDone = true)
+            logger.info(
+                "Set cablereportDone as 'true' after send for accompanying johtoselvityshakemus in kaivuilmoitus. ${hakemus.logString()}"
+            )
+        }
     }
 
     /**
