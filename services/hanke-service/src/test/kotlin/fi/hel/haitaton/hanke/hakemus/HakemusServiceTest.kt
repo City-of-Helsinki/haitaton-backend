@@ -36,6 +36,7 @@ import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.paatos.PaatosService
+import fi.hel.haitaton.hanke.pdf.withName
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
@@ -251,7 +252,7 @@ class HakemusServiceTest {
                 disclosureLogService.withDisclosureLogging<Int>(applicationEntity.id, any(), any())
                 alluClient.create(any())
                 disclosureLogService.saveForAllu(3, any(), Status.SUCCESS)
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
                 hakemusRepository.save(any())
@@ -352,7 +353,7 @@ class HakemusServiceTest {
                 disclosureLogService.withDisclosureLogging<Int>(applicationEntity.id, any(), any())
                 alluClient.create(any())
                 disclosureLogService.saveForAllu(3, any(), Status.SUCCESS)
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
                 hakemusRepository.save(any())

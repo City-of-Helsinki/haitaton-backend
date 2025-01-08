@@ -16,21 +16,16 @@ object AuthenticationMocks {
     const val ALLOWED_AD_GROUP_2 = "second_allowed"
     val DEFAULT_AD_GROUPS = setOf(ALLOWED_AD_GROUP_1, ALLOWED_AD_GROUP_2)
 
-    fun adLoginMock(userId: String = USERNAME): SecurityContext {
-        val auth: Authentication = adAuthentication(userId)
-        every { auth.name } returns userId
-        val securityContext: SecurityContext = mockk()
-        every { securityContext.authentication } returns auth
-
-        return securityContext
+    fun adLoginMock(userId: String = USERNAME): SecurityContext = mockk {
+        every { authentication } returns
+            mockk {
+                every { credentials } returns adJwt(userId)
+                every { name } returns userId
+            }
     }
 
-    fun adAuthentication(userId: String = USERNAME): Authentication {
-        val jwt = adJwt(userId)
-
-        val auth: Authentication = mockk()
-        every { auth.credentials } returns jwt
-        return auth
+    fun adAuthentication(userId: String = USERNAME): Authentication = mockk {
+        every { credentials } returns adJwt(userId)
     }
 
     fun adJwt(userId: String = USERNAME, adGroups: Collection<String> = DEFAULT_AD_GROUPS): Jwt =
@@ -44,21 +39,16 @@ object AuthenticationMocks {
             .build()
 
     /** When using this, you have to mock ProfiiliClient.getVerifiedName as well. */
-    fun suomiFiLoginMock(userId: String = USERNAME): SecurityContext {
-        val auth: Authentication = suomiFiAuthentication(userId)
-        every { auth.name } returns userId
-        val securityContext: SecurityContext = mockk()
-        every { securityContext.authentication } returns auth
-
-        return securityContext
+    fun suomiFiLoginMock(userId: String = USERNAME): SecurityContext = mockk {
+        every { authentication } returns
+            mockk {
+                every { credentials } returns suomiFiJwt(userId)
+                every { name } returns userId
+            }
     }
 
-    fun suomiFiAuthentication(userId: String = USERNAME): Authentication {
-        val jwt = suomiFiJwt(userId)
-        val auth: Authentication = mockk(relaxed = true)
-        every { auth.credentials } returns jwt
-        return auth
-    }
+    fun suomiFiAuthentication(userId: String = USERNAME): Authentication =
+        mockk(relaxed = true) { every { credentials } returns suomiFiJwt(userId) }
 
     fun suomiFiJwt(userId: String = USERNAME): Jwt =
         Jwt.withTokenValue(TOKEN_VALUE)
