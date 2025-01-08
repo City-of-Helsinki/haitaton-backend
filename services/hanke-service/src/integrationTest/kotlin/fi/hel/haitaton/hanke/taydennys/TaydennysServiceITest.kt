@@ -22,6 +22,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
+import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container
@@ -51,6 +52,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
+import fi.hel.haitaton.hanke.pdf.withName
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasNullNode
@@ -565,7 +567,7 @@ class TaydennysServiceITest(
                         InformationRequestFieldKey.GEOMETRY,
                     ),
                 )
-                alluClient.addAttachment(any(), any())
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -593,7 +595,7 @@ class TaydennysServiceITest(
                     updatedTaydennysData.toAlluData(hakemus.hankeTunnus),
                     setOf(InformationRequestFieldKey.ATTACHMENT),
                 )
-                alluClient.addAttachment(any(), any())
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -618,14 +620,14 @@ class TaydennysServiceITest(
             taydennysService.sendTaydennys(taydennys.id, USERNAME)
 
             verifySequence {
-                alluClient.addAttachment(any(), any())
+                alluClient.addAttachment(any(), withName(FILE_NAME_PDF))
                 alluClient.respondToInformationRequest(
                     hakemus.alluid!!,
                     taydennyspyynto.alluId,
                     updatedTaydennysData.toAlluData(hakemus.hankeTunnus),
                     setOf(InformationRequestFieldKey.ATTACHMENT),
                 )
-                alluClient.addAttachment(any(), any())
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
             assertThat(attachmentRepository.findAll()).isEmpty()
@@ -668,7 +670,7 @@ class TaydennysServiceITest(
             }
             verifySequence {
                 alluClient.respondToInformationRequest(any(), any(), any(), any())
-                alluClient.addAttachment(hakemus.alluid!!, any())
+                alluClient.addAttachment(hakemus.alluid!!, withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -716,7 +718,7 @@ class TaydennysServiceITest(
 
             verifySequence {
                 alluClient.respondToInformationRequest(any(), any(), any(), any())
-                alluClient.addAttachment(any(), any())
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(any())
             }
         }
@@ -741,7 +743,7 @@ class TaydennysServiceITest(
             assertThat(hanke.nimi).isEqualTo(taydennys.hakemusData.name)
             verifySequence {
                 alluClient.respondToInformationRequest(hakemus.alluid!!, any(), any(), any())
-                alluClient.addAttachment(any(), any())
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -762,7 +764,7 @@ class TaydennysServiceITest(
             assertThat(updatedHakemus.applicationData.startTime).isEqualTo(startTime)
             verifySequence {
                 alluClient.respondToInformationRequest(hakemus.alluid!!, any(), any(), any())
-                alluClient.addAttachment(any(), any())
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -779,7 +781,7 @@ class TaydennysServiceITest(
 
             verifySequence {
                 alluClient.respondToInformationRequest(any(), any(), any(), any())
-                alluClient.addAttachment(any(), any())
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(any())
             }
             assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
@@ -819,7 +821,7 @@ class TaydennysServiceITest(
             }
             verifySequence {
                 alluClient.respondToInformationRequest(any(), any(), any(), any())
-                alluClient.addAttachment(any(), any())
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(any())
             }
         }
@@ -844,7 +846,7 @@ class TaydennysServiceITest(
             assertThat(updatedHakemus.alluStatus).isEqualTo(ApplicationStatus.HANDLING)
             verifySequence {
                 alluClient.respondToInformationRequest(any(), any(), any(), any())
-                alluClient.addAttachment(hakemus.alluid!!, any())
+                alluClient.addAttachment(hakemus.alluid!!, withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }

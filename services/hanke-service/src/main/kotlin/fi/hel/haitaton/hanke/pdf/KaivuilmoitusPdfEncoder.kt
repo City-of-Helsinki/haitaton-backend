@@ -1,13 +1,10 @@
 package fi.hel.haitaton.hanke.pdf
 
 import com.lowagie.text.Document
-import com.lowagie.text.PageSize
-import com.lowagie.text.pdf.PdfWriter
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
-import java.io.ByteArrayOutputStream
 
 object KaivuilmoitusPdfEncoder {
 
@@ -16,18 +13,8 @@ object KaivuilmoitusPdfEncoder {
         totalArea: Float?,
         attachments: List<ApplicationAttachmentMetadata>,
         areas: List<EnrichedKaivuilmoitusalue>?,
-    ): ByteArray {
-        val outputStream = ByteArrayOutputStream()
-        val document = Document(PageSize.A4)
-        PdfWriter.getInstance(document, outputStream)
-        formatKaivuilmoitusPdf(
-            document,
-            data,
-            totalArea,
-            attachments,
-            areas,
-        )
-        return outputStream.toByteArray()
+    ): ByteArray = createDocument { document, _ ->
+        formatKaivuilmoitusPdf(document, data, totalArea, attachments, areas)
     }
 
     private fun formatKaivuilmoitusPdf(
@@ -37,9 +24,9 @@ object KaivuilmoitusPdfEncoder {
         attachments: List<ApplicationAttachmentMetadata>,
         areas: List<EnrichedKaivuilmoitusalue>?,
     ) {
-        document.open()
 
         document.title("Kaivuilmoitus")
+        document.subtitle(data.name)
 
         document.section("Perustiedot") {
             row("Työn nimi", data.name)
@@ -49,23 +36,20 @@ object KaivuilmoitusPdfEncoder {
             if (!data.cableReportDone) {
                 row(
                     "Uusi johtoselvitys",
-                    "Louhitaanko työn yhteydessä, esimerkiksi maaperää? ${data.rockExcavation.format()}")
+                    "Louhitaanko työn yhteydessä, esimerkiksi maaperää? ${data.rockExcavation.format()}",
+                )
             }
             row("Sijoitussopimustunnukset", data.placementContracts.format())
             row("Työhön vaadittavat pätevyydet", data.requiredCompetence.format())
             row("Tilaaja", data.getOrderer()?.format() ?: "-")
         }
 
-        document.newPage()
-
         document.section("Alueet") {
             row("Alueiden kokonaispinta-ala", totalArea.format() + " m²")
-            row("Työn arvioitu alkupäivä", data.startTime.format())
-            row("Työn arvioitu loppupäivä", data.endTime.format())
+            row("Työn alkupäivämäärä", data.startTime.format())
+            row("Työn loppupäivämäärä", data.endTime.format())
             row("Alueet", areas?.joinToString("\n\n") { it.format() })
         }
-
-        document.newPage()
 
         document.section("Yhteystiedot") {
             data.customerWithContacts?.let { row("Työstä vastaava", it.format()) }
@@ -74,7 +58,6 @@ object KaivuilmoitusPdfEncoder {
             data.representativeWithContacts?.let { row("Asianhoitaja", it.format()) }
             data.paperDecisionReceiver?.let { row("Päätös tilattu paperisena", it.format()) }
         }
-        document.newPage()
 
         document.section("Laskutustiedot") {
             data.invoicingCustomer?.let {
@@ -84,7 +67,8 @@ object KaivuilmoitusPdfEncoder {
                 if (!it.katuosoite.isNullOrBlank()) {
                     row(
                         "Osoite",
-                        "${it.katuosoite}\n${it.postinumero.orDash()} ${it.postitoimipaikka.orDash()}")
+                        "${it.katuosoite}\n${it.postinumero.orDash()} ${it.postitoimipaikka.orDash()}",
+                    )
                 }
 
                 row("OVT-tunnus", it.ovttunnus.orDash())
@@ -94,29 +78,22 @@ object KaivuilmoitusPdfEncoder {
                 row("Asiakkaan viite", it.asiakkaanViite.orDash())
             }
         }
-        document.newPage()
 
         document.section("Liitteet ja lisätiedot") {
-            val attachmentsByType = attachments.groupBy { it.attachmentType }
+            val attachmentsByType =
+                attachments
+                    .groupBy { it.attachmentType }
+                    .mapValues { (_, attachments) ->
+                        attachments.joinToString("\n") { it.fileName }
+                    }
             row(
                 "Tilapäisiä liikennejärjestelyitä koskevat suunnitelmat",
-                attachmentsByType[ApplicationAttachmentType.LIIKENNEJARJESTELY]?.joinToString(
-                    "\n") {
-                        it.fileName
-                    } ?: "")
-            row(
-                "Valtakirjat",
-                attachmentsByType[ApplicationAttachmentType.VALTAKIRJA]?.joinToString("\n") {
-                    it.fileName
-                } ?: "")
-            row(
-                "Muut liitteet",
-                attachmentsByType[ApplicationAttachmentType.MUU]?.joinToString("\n") { it.fileName }
-                    ?: "")
+                attachmentsByType[ApplicationAttachmentType.LIIKENNEJARJESTELY] ?: "",
+            )
+            row("Valtakirjat", attachmentsByType[ApplicationAttachmentType.VALTAKIRJA] ?: "")
+            row("Muut liitteet", attachmentsByType[ApplicationAttachmentType.MUU] ?: "")
             row("Lisätietoja hakemuksesta", data.additionalInfo.orDash())
         }
-
-        document.close()
     }
 
     private fun KaivuilmoitusData.getOrderer(): Hakemusyhteyshenkilo? =
@@ -124,19 +101,10 @@ object KaivuilmoitusPdfEncoder {
                 customerWithContacts,
                 contractorWithContacts,
                 representativeWithContacts,
-                propertyDeveloperWithContacts)
+                propertyDeveloperWithContacts,
+            )
             .flatMap { it.yhteyshenkilot }
             .find { it.tilaaja }
-
-    private fun KaivuilmoitusData.getWorkTargets(): String =
-        listOf(
-                constructionWork to "Uuden rakenteen tai johdon rakentamisesta",
-                maintenanceWork to "Olemassaolevan rakenteen kunnossapitotyöstä",
-                emergencyWork to
-                    "Kaivutyö on aloitettu ennen kaivuilmoituksen tekemistä merkittävien vahinkojen välttämiseksi",
-            )
-            .filter { (active, _) -> active }
-            .joinToString("\n") { (_, description) -> description }
 
     private fun EnrichedKaivuilmoitusalue.format(): String {
         val builder = StringBuilder()
@@ -149,8 +117,7 @@ object KaivuilmoitusPdfEncoder {
 
         builder.append("Pinta-ala: ${totalArea.format()} m²\n")
         builder.append("Katuosoite: ${alue.katuosoite}\n")
-        builder.append(
-            "Työn tarkoitus: ${alue.tyonTarkoitukset.map { it.format() }.joinToString ( ", " )}\n")
+        builder.append("Työn tarkoitus: ${alue.tyonTarkoitukset.format()}\n")
         builder.append("\n")
 
         builder.append("Meluhaitta: ${alue.meluhaitta.format()}\n")

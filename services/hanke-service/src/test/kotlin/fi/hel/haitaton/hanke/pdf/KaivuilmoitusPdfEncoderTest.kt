@@ -1,13 +1,9 @@
 package fi.hel.haitaton.hanke.pdf
 
-import assertk.Assert
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.contains
-import assertk.assertions.containsMatch
 import assertk.assertions.doesNotContain
-import com.lowagie.text.pdf.PdfReader
-import com.lowagie.text.pdf.parser.PdfTextExtractor
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
@@ -135,8 +131,8 @@ class KaivuilmoitusPdfEncoderTest {
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Alueiden kokonaispinta-ala")
-                contains("Työn arvioitu alkupäivä")
-                contains("Työn arvioitu loppupäivä")
+                contains("Työn alkupäivämäärä")
+                contains("Työn loppupäivämäärä")
                 contains("Alueet")
             }
         }
@@ -347,17 +343,4 @@ class KaivuilmoitusPdfEncoderTest {
             }
         }
     }
-
-    private fun getPdfAsText(pdfData: ByteArray): String {
-        val reader = PdfReader(pdfData)
-        val pages = reader.numberOfPages
-        val textExtractor = PdfTextExtractor(reader)
-        return (1..pages).joinToString("\n") { textExtractor.getTextFromPage(it) }
-    }
-
-    private fun phraseAsRegexWithEscapes(phrase: String): Regex =
-        phrase.splitToSequence(' ').map { "\\Q$it\\E" }.joinToString("\\s+").toRegex()
-
-    private fun Assert<String>.hasPhrase(phrase: String) =
-        containsMatch(phraseAsRegexWithEscapes(phrase))
 }
