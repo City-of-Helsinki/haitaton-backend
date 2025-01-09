@@ -6,6 +6,8 @@ import com.lowagie.text.Image
 import com.lowagie.text.ImgTemplate
 import com.lowagie.text.Paragraph
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHankealue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import java.time.ZonedDateTime
 import org.springframework.stereotype.Component
@@ -35,13 +37,7 @@ class HaittojenhallintasuunnitelmaPdfEncoder(private val mapGenerator: MapGenera
         document.subtitle(data.name)
 
         document.mapHeader("Alueiden sijainti", locationIcon)
-        // The image is better quality, if it's rendered at a higher resolution and then scaled down
-        // to fit in the PDF layout.
-        val bytes =
-            mapGenerator.mapWithAreas(data.areas!!, hanke.alueet, MAP_WIDTH * 2, MAP_HEIGHT * 2)
-        val image = Image.getInstance(bytes)
-        image.scaleToFit(pxToPt(MAP_WIDTH), pxToPt(MAP_HEIGHT))
-        document.add(image)
+        document.map(data.areas!!, hanke.alueet)
 
         val spacer = Paragraph(Chunk.NEWLINE)
         spacer.spacingBefore = 1f
@@ -68,6 +64,15 @@ class HaittojenhallintasuunnitelmaPdfEncoder(private val mapGenerator: MapGenera
             row("Työn alkupäivämäärä", data.startTime.format())
             row("Työn loppupäivämäärä", data.endTime.format())
         }
+    }
+
+    fun Document.map(areas: List<KaivuilmoitusAlue>, hankealueet: List<SavedHankealue>) {
+        // The image is better quality, if it's rendered at a higher resolution and then scaled down
+        // to fit in the PDF layout.
+        val bytes = mapGenerator.mapWithAreas(areas, hankealueet, MAP_WIDTH * 2, MAP_HEIGHT * 2)
+        val image = Image.getInstance(bytes)
+        image.scaleToFit(pxToPt(MAP_WIDTH), pxToPt(MAP_HEIGHT))
+        this.add(image)
     }
 
     companion object {
