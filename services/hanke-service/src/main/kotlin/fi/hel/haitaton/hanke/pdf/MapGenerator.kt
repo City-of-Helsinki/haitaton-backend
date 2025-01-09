@@ -108,12 +108,6 @@ class MapGenerator(private val wms: WebMapServer) {
     }
 
     companion object {
-        val blueish: Style by lazy { buildAreaStyle(Color(0, 98, 185)) }
-        val grayish: Style by lazy { buildAreaStyle(Color(176, 184, 191)) }
-        val reddish: Style by lazy { buildAreaStyle(Color(196, 18, 62)) }
-        val yellowish: Style by lazy { buildAreaStyle(Color(255, 218, 7)) }
-        val greenish: Style by lazy { buildAreaStyle(Color(0, 146, 70)) }
-
         const val KIINTEISTOKARTTA_LAYER_TITLE = "Kiinteistokartan_maastotiedot"
         const val KIINTEISTOKARTTA_STYLE = "default-style-avoindata:Kiinteistokartan_maastotiedot"
 
@@ -138,19 +132,8 @@ class MapGenerator(private val wms: WebMapServer) {
             return bounds.padded().fitToImage(imageWidth, imageHeight).squaredOff()
         }
 
-        fun selectColorStyle(tormaystarkasteluTulos: TormaystarkasteluTulos?): Style {
-            val maxHaitta = tormaystarkasteluTulos?.liikennehaittaindeksi?.indeksi
-
-            return when {
-                maxHaitta == null -> blueish
-                maxHaitta.isNaN() -> blueish
-                maxHaitta < 0f -> blueish
-                maxHaitta == 0f -> grayish
-                maxHaitta < 3f -> greenish
-                maxHaitta < 4f -> yellowish
-                else -> reddish
-            }
-        }
+        fun selectColorStyle(tormaystarkasteluTulos: TormaystarkasteluTulos?): Style =
+            NuisanceColor.selectColor(tormaystarkasteluTulos).style
 
         private fun readPolygon(polygon: JsonPolygon): SimpleFeatureCollection =
             readPolygons(listOf(polygon))
@@ -187,7 +170,7 @@ class MapGenerator(private val wms: WebMapServer) {
             return DataUtilities.collection(features)
         }
 
-        private fun buildAreaStyle(color: Color): Style {
+        fun buildAreaStyle(color: Color): Style {
             val builder = PolygonSymbolizerBuilder()
             builder.stroke().color(Color.BLACK).width(4.0)
             builder.fill().color(color).opacity(0.6)

@@ -269,7 +269,7 @@ class MapGeneratorTest {
         fun `returns blue when parameter is null`() {
             val result = MapGenerator.selectColorStyle(null)
 
-            assertThat(result).isSameInstanceAs(MapGenerator.blueish)
+            assertThat(result).isSameInstanceAs(NuisanceColor.BLUE.style)
         }
 
         @Test
@@ -281,7 +281,7 @@ class MapGeneratorTest {
 
             val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
 
-            assertThat(result).isSameInstanceAs(MapGenerator.blueish)
+            assertThat(result).isSameInstanceAs(NuisanceColor.BLUE.style)
         }
 
         @Test
@@ -291,7 +291,7 @@ class MapGeneratorTest {
 
             val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
 
-            assertThat(result).isSameInstanceAs(MapGenerator.blueish)
+            assertThat(result).isSameInstanceAs(NuisanceColor.BLUE.style)
         }
 
         @Test
@@ -300,7 +300,7 @@ class MapGeneratorTest {
 
             val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
 
-            assertThat(result).isSameInstanceAs(MapGenerator.grayish)
+            assertThat(result).isSameInstanceAs(NuisanceColor.GRAY.style)
         }
 
         @Test
@@ -312,7 +312,7 @@ class MapGeneratorTest {
 
             val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
 
-            assertThat(result).isSameInstanceAs(MapGenerator.greenish)
+            assertThat(result).isSameInstanceAs(NuisanceColor.GREEN.style)
         }
 
         @Test
@@ -322,7 +322,7 @@ class MapGeneratorTest {
 
             val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
 
-            assertThat(result).isSameInstanceAs(MapGenerator.greenish)
+            assertThat(result).isSameInstanceAs(NuisanceColor.GREEN.style)
         }
 
         @Test
@@ -332,7 +332,7 @@ class MapGeneratorTest {
 
             val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
 
-            assertThat(result).isSameInstanceAs(MapGenerator.yellowish)
+            assertThat(result).isSameInstanceAs(NuisanceColor.YELLOW.style)
         }
 
         @Test
@@ -344,7 +344,7 @@ class MapGeneratorTest {
 
             val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
 
-            assertThat(result).isSameInstanceAs(MapGenerator.yellowish)
+            assertThat(result).isSameInstanceAs(NuisanceColor.YELLOW.style)
         }
 
         @Test
@@ -354,7 +354,7 @@ class MapGeneratorTest {
 
             val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
 
-            assertThat(result).isSameInstanceAs(MapGenerator.reddish)
+            assertThat(result).isSameInstanceAs(NuisanceColor.RED.style)
         }
 
         @Test
@@ -364,7 +364,7 @@ class MapGeneratorTest {
 
             val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
 
-            assertThat(result).isSameInstanceAs(MapGenerator.reddish)
+            assertThat(result).isSameInstanceAs(NuisanceColor.RED.style)
         }
 
         @Test
@@ -374,7 +374,7 @@ class MapGeneratorTest {
 
             val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
 
-            assertThat(result).isSameInstanceAs(MapGenerator.reddish)
+            assertThat(result).isSameInstanceAs(NuisanceColor.RED.style)
         }
     }
 
