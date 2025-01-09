@@ -4,7 +4,6 @@ import com.lowagie.text.Chunk
 import com.lowagie.text.Document
 import com.lowagie.text.Element
 import com.lowagie.text.Font
-import com.lowagie.text.Image
 import com.lowagie.text.ImgTemplate
 import com.lowagie.text.PageSize
 import com.lowagie.text.Paragraph
@@ -145,18 +144,6 @@ fun Document.section(sectionTitle: String, addRows: PdfPTable.() -> Unit) {
     table.addRows()
     paragraph.add(table)
     this.add(paragraph)
-}
-
-/** Placeholder image before we get proper map rendering. */
-fun Document.placeholderImage() {
-    val placeholderImage = Image.getInstanceFromClasspath("pdf-assets/placeholder-map.png")
-    placeholderImage.scaleToFit(pxToPt(1110), pxToPt(400))
-    this.add(placeholderImage)
-
-    val spacer = Paragraph(Chunk.NEWLINE)
-    spacer.spacingBefore = 1f
-    spacer.spacingAfter = pxToPt(-16)
-    this.add(spacer)
 }
 
 fun createDocument(addContent: (Document, PdfWriter) -> Unit): ByteArray {

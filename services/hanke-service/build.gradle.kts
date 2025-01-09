@@ -8,8 +8,13 @@ group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
 
 val sentryVersion = "7.19.0"
+val geoToolsVersion = "32.1"
 
-repositories { mavenCentral() }
+repositories {
+    mavenCentral().content { excludeModule("javax.media", "jai_core") }
+    maven { url = uri("https://repo.osgeo.org/repository/release/") }
+    maven { url = uri("https://maven.geotoolkit.org") }
+}
 
 sourceSets {
     create("integrationTest") {
@@ -106,6 +111,12 @@ dependencies {
     // Pdf generation
     implementation("com.github.librepdf:openpdf:2.0.3")
     implementation("org.apache.xmlgraphics:fop:2.10")
+
+    // Geotools
+    implementation("org.geotools:gt-wms:$geoToolsVersion")
+    implementation("org.geotools:gt-brewer:$geoToolsVersion")
+    implementation("org.geotools:gt-epsg-hsql:$geoToolsVersion")
+    implementation("org.locationtech.jts.io:jts-io-common:1.19.0")
 
     // Testcontainers
     testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))

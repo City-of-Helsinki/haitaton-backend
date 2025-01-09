@@ -4,23 +4,45 @@ import assertk.all
 import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.doesNotContain
-import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.hakemus.ApplicationType
-import fi.hel.haitaton.hanke.hakemus.Hakemus
-import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
-import java.nio.file.Files
-import java.time.ZoneId
+import fi.hel.haitaton.hanke.getResourceAsBytes
+import io.mockk.checkUnnecessaryStub
+import io.mockk.clearAllMocks
+import io.mockk.confirmVerified
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verifySequence
 import java.time.ZonedDateTime
-import kotlin.io.path.Path
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class HaittojenhallintasuunnitelmaPdfEncoderTest {
+
+    private val mapGenerator: MapGenerator = mockk()
+
+    private val haittojenhallintasuunnitelmaPdfEncoder =
+        HaittojenhallintasuunnitelmaPdfEncoder(mapGenerator)
+
+    private val blankImage: ByteArray =
+        "/fi/hel/haitaton/hanke/pdf-test-data/blank.png".getResourceAsBytes()
+
+    @BeforeEach
+    fun clearMocks() {
+        clearAllMocks()
+        every { mapGenerator.mapWithAreas(any(), any(), any(), any()) } returns blankImage
+    }
+
+    @AfterEach
+    fun checkMocks() {
+        checkUnnecessaryStub()
+        confirmVerified(mapGenerator)
+    }
 
     @Nested
     inner class CreatePdf {
@@ -30,7 +52,7 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
         fun `created PDF contains title and section headers`() {
             val hakemusData = HakemusFactory.createKaivuilmoitusData()
 
-            val pdfData = HaittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 1f)
+            val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 1f)
 
             assertThat(getPdfAsText(pdfData))
                 .contains(
@@ -40,13 +62,14 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                     "Perustiedot",
                     "Alueet",
                 )
+            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
         }
 
         @Test
         fun `created PDF contains headers for basic information`() {
             val hakemusData = HakemusFactory.createKaivuilmoitusData(cableReportDone = false)
 
-            val pdfData = HaittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 1f)
+            val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 1f)
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Työn nimi")
@@ -57,6 +80,7 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                 contains("Sijoitussopimustunnukset")
                 contains("Työhön vaadittavat pätevyydet")
             }
+            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
         }
 
         @Test
@@ -82,7 +106,7 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                             ),
                 )
 
-            val pdfData = HaittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 1f)
+            val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 1f)
 
             val pdfText = getPdfAsText(pdfData)
             assertThat(pdfText).all {
@@ -99,6 +123,7 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                 contains("Sopimus1, Sopimus2")
                 contains("Kyllä")
             }
+            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
         }
 
         @Test
@@ -110,26 +135,28 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                     emergencyWork = false,
                 )
 
-            val pdfData = HaittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 1f)
+            val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 1f)
 
             assertThat(getPdfAsText(pdfData)).all {
                 doesNotContain("Uuden rakenteen tai johdon rakentamisesta")
                 doesNotContain("Olemassaolevan rakenteen kunnossapitotyöstä")
                 doesNotContain("välttämiseksi")
             }
+            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
         }
 
         @Test
         fun `created PDF contains headers for area information`() {
             val hakemusData = HakemusFactory.createKaivuilmoitusData()
 
-            val pdfData = HaittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 614f)
+            val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 614f)
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("Alueiden kokonaispinta-ala")
                 contains("Työn alkupäivämäärä")
                 contains("Työn loppupäivämäärä")
             }
+            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
         }
 
         @Test
@@ -141,81 +168,14 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                     areas = listOf(),
                 )
 
-            val pdfData = HaittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 614f)
+            val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 614f)
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("614,00 m²")
                 contains("18.11.2022")
                 contains("28.11.2022")
             }
+            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
         }
-    }
-
-    /**
-     * Writes a new Haittojenhallintasuunnitelma PDF to the local filesystem for manual inspection.
-     *
-     * This test should be removed when the HAI-375 story is completed.
-     */
-    @Test
-    fun `write to file to manually inspect content`() {
-        val data =
-            KaivuilmoitusData(
-                applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                name = "Lorem Ipsum",
-                workDescription =
-                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum",
-                constructionWork = false,
-                maintenanceWork = false,
-                emergencyWork = true,
-                cableReportDone = false,
-                rockExcavation = true,
-                cableReports = listOf("JS-2313241", "JS-21398"),
-                placementContracts = listOf("SL1029392"),
-                requiredCompetence = true,
-                startTime =
-                    ZonedDateTime.of(2021, 1, 1, 12, 12, 12, 0, ZoneId.of("Europe/Helsinki")),
-                endTime = ZonedDateTime.of(2022, 1, 1, 12, 12, 12, 0, ZoneId.of("Europe/Helsinki")),
-                areas = listOf(),
-                paperDecisionReceiver = null,
-                customerWithContacts = null,
-                contractorWithContacts = null,
-                propertyDeveloperWithContacts = null,
-                representativeWithContacts = null,
-                invoicingCustomer = null,
-                additionalInfo = null,
-            )
-
-        val hakemus =
-            Hakemus(
-                id = 0,
-                alluid = null,
-                alluStatus = null,
-                applicationIdentifier = null,
-                applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                applicationData = data,
-                hankeTunnus = "HAI-21389",
-                hankeId = 0,
-                valmistumisilmoitukset = mapOf(),
-            )
-
-        val hanke =
-            Hanke(
-                id = 0,
-                hankeTunnus = hakemus.hankeTunnus,
-                onYKTHanke = null,
-                nimi = "Hankkeen nimi",
-                kuvaus = null,
-                vaihe = null,
-                version = null,
-                createdBy = null,
-                createdAt = null,
-                modifiedBy = null,
-                modifiedAt = null,
-                status = null,
-                generated = false,
-            )
-
-        val bytes = HaittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, data, 500f)
-        Files.write(Path("hhs-pdf-test.pdf"), bytes)
     }
 }

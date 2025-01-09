@@ -1,0 +1,79 @@
+[
+  {
+    "name": "Hankealue 2",
+    "hankealueId": 104,
+    "tyoalueet": [
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25497250,
+                6672900
+              ],
+              [
+                25497300,
+                6672900
+              ],
+              [
+                25497300,
+                6673100
+              ],
+              [
+                25497250,
+                6673100
+              ],
+              [
+                25497250,
+                6672900
+              ]
+            ]
+          ]
+        },
+        "area": 20591.567851680044,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 2.3,
+            "haitanKesto": 3,
+            "katuluokka": 4,
+            "liikennemaara": 5,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 3,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 5,
+          "liikennehaittaindeksi": {
+            "indeksi": 5,
+            "tyyppi": "RAITIOLIIKENNEINDEKSI"
+          }
+        }
+      }
+    ],
+    "katuosoite": "Kaivokatu 12",
+    "tyonTarkoitukset": [
+      "SAHKO"
+    ],
+    "meluhaitta": "EI_MELUHAITTAA",
+    "polyhaitta": "EI_POLYHAITTAA",
+    "tarinahaitta": "EI_TARINAHAITTAA",
+    "kaistahaitta": "EI_VAIKUTA",
+    "kaistahaittojenPituus": "EI_VAIKUTA_KAISTAJARJESTELYIHIN",
+    "lisatiedot": "",
+    "haittojenhallintasuunnitelma": {
+      "MUUT": "Pystysuora",
+      "YLEINEN": "Pystysuora",
+      "AUTOLIIKENNE": "Pystysuora",
+      "PYORALIIKENNE": "Pystysuora",
+      "RAITIOLIIKENNE": "Pystysuora",
+      "LINJAAUTOLIIKENNE": ""
+    }
+  }
+]

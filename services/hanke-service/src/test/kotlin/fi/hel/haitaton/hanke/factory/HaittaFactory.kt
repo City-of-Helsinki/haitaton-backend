@@ -30,6 +30,9 @@ object HaittaFactory {
             1,
         )
 
+    val TORMAYSTARKASTELUTULOS_WITH_ZEROES =
+        tormaystarkasteluTulos(TORMAYSTARKASTELU_ZERO_AUTOLIIKENNELUOKITTELU, 0f, 0f, 0f)
+
     const val DEFAULT_HHS_YLEINEN = "Yleisten haittojen hallintasuunnitelma"
     const val DEFAULT_HHS_PYORALIIKENNE =
         "Pyöräliikenteelle koituvien haittojen hallintasuunnitelma"
