@@ -11,12 +11,16 @@ data class Point(val x: Double, val y: Double) {
     private fun fixedPoint(a: Double): String = String.format(Locale.UK, "%.3f", a)
 
     override fun toString(): String = "(x=${fixedPoint(x)}, y=${fixedPoint(y)})"
+
+    companion object {
+        fun center(a: Point, b: Point) = Point(y = (a.y + b.y) / 2.0, x = (a.x + b.x) / 2.0)
+    }
 }
 
 data class MapBounds(val min: Point, val max: Point) {
     val xSize: Double = max.x - min.x
     val ySize: Double = max.y - min.y
-    val center: Point = Point(y = (min.y + max.y) / 2.0, x = (min.x + max.x) / 2.0)
+    val center: Point = Point.center(min, max)
 
     fun padded(): MapBounds {
         val xPadding = max(xSize * PADDING_RATIO, MIN_PADDING)
