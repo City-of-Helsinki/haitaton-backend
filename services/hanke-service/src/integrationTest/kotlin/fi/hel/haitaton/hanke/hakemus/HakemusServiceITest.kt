@@ -1264,7 +1264,8 @@ class HakemusServiceITest(
                     expectedKaivuilmoitusDataAfterSend =
                         hakemusData
                             .copy(
-                                cableReports = listOf(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
+                                cableReports = listOf(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER),
+                                cableReportDone = true,
                             )
                             .setOrdererForRepresentative(currentUser.id)
                     expectedCableReportAlluRequest =
