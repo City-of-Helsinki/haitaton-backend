@@ -4,11 +4,15 @@ import assertk.all
 import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.doesNotContain
+import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -35,7 +39,7 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
     @BeforeEach
     fun clearMocks() {
         clearAllMocks()
-        every { mapGenerator.mapWithAreas(any(), any(), any(), any()) } returns blankImage
+        every { mapGenerator.mapWithAreas(any(), any(), any(), any(), any()) } returns blankImage
     }
 
     @AfterEach
@@ -46,11 +50,36 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
 
     @Nested
     inner class CreatePdf {
-        val hanke = HankeFactory.create()
+        private val hankealueId = 414
+        private val hankealueNimi = "Nimi hankealueelle"
+        private val hankealue = HankealueFactory.create(id = hankealueId, nimi = hankealueNimi)
+
+        private val hankealueId2 = 5256
+        private val hankealueNimi2 = "Nimi toiselle hankealueelle"
+        private val hankealue2 = HankealueFactory.create(id = hankealueId2, nimi = hankealueNimi2)
+
+        private val hankealueet = listOf(hankealue, hankealue2)
+        private val hanke =
+            HankeFactory.create().apply { alueet = mutableListOf(hankealue, hankealue2) }
+
+        private val hakemusalue =
+            ApplicationFactory.createExcavationNotificationArea(hankealueId = hankealueId)
+        private val haittojenhallintasuunnitelma2: Haittojenhallintasuunnitelma =
+            mapOf(
+                Haittojenhallintatyyppi.YLEINEN to "Yleiset toimet toiselle alueelle",
+                Haittojenhallintatyyppi.AUTOLIIKENNE to "Autoilun toimet toiselle alueelle",
+                Haittojenhallintatyyppi.PYORALIIKENNE to "Pyöräilyn toimet toiselle alueelle",
+            )
+        private val hakemusalue2 =
+            ApplicationFactory.createExcavationNotificationArea(
+                hankealueId = hankealueId2,
+                haittojenhallintasuunnitelma = haittojenhallintasuunnitelma2,
+            )
+        private val hakemusalueet = listOf(hakemusalue, hakemusalue2)
 
         @Test
         fun `created PDF contains title and section headers`() {
-            val hakemusData = HakemusFactory.createKaivuilmoitusData()
+            val hakemusData = HakemusFactory.createKaivuilmoitusData(areas = listOf())
 
             val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 1f)
 
@@ -62,12 +91,13 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                     "Perustiedot",
                     "Alueet",
                 )
-            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
+            verifySequence { mapGenerator.mapWithAreas(listOf(), listOf(), 2220, 800, any()) }
         }
 
         @Test
         fun `created PDF contains headers for basic information`() {
-            val hakemusData = HakemusFactory.createKaivuilmoitusData(cableReportDone = false)
+            val hakemusData =
+                HakemusFactory.createKaivuilmoitusData(areas = listOf(), cableReportDone = false)
 
             val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 1f)
 
@@ -80,13 +110,14 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                 contains("Sijoitussopimustunnukset")
                 contains("Työhön vaadittavat pätevyydet")
             }
-            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
+            verifySequence { mapGenerator.mapWithAreas(listOf(), listOf(), 2220, 800, any()) }
         }
 
         @Test
         fun `created PDF contains basic information`() {
             val hakemusData =
                 HakemusFactory.createKaivuilmoitusData(
+                    areas = listOf(),
                     constructionWork = true,
                     maintenanceWork = true,
                     emergencyWork = true,
@@ -123,13 +154,14 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                 contains("Sopimus1, Sopimus2")
                 contains("Kyllä")
             }
-            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
+            verifySequence { mapGenerator.mapWithAreas(listOf(), listOf(), 2220, 800, any()) }
         }
 
         @Test
         fun `created PDF doesn't have this work involves fields if none are selected`() {
             val hakemusData =
                 HakemusFactory.createKaivuilmoitusData(
+                    areas = listOf(),
                     constructionWork = false,
                     maintenanceWork = false,
                     emergencyWork = false,
@@ -142,12 +174,12 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                 doesNotContain("Olemassaolevan rakenteen kunnossapitotyöstä")
                 doesNotContain("välttämiseksi")
             }
-            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
+            verifySequence { mapGenerator.mapWithAreas(listOf(), listOf(), 2220, 800, any()) }
         }
 
         @Test
         fun `created PDF contains headers for area information`() {
-            val hakemusData = HakemusFactory.createKaivuilmoitusData()
+            val hakemusData = HakemusFactory.createKaivuilmoitusData(areas = listOf())
 
             val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 614f)
 
@@ -156,7 +188,7 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                 contains("Työn alkupäivämäärä")
                 contains("Työn loppupäivämäärä")
             }
-            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
+            verifySequence { mapGenerator.mapWithAreas(listOf(), listOf(), 2220, 800, any()) }
         }
 
         @Test
@@ -175,7 +207,80 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                 contains("18.11.2022")
                 contains("28.11.2022")
             }
-            verifySequence { mapGenerator.mapWithAreas(hakemusData.areas!!, listOf(), 2220, 800) }
+            verifySequence { mapGenerator.mapWithAreas(listOf(), listOf(), 2220, 800, any()) }
+        }
+
+        @Test
+        fun `contains headers for haittojenhallintasuunnitelma when hankealue matches with hakemusalue`() {
+            val hakemusData = HakemusFactory.createKaivuilmoitusData(areas = hakemusalueet)
+
+            val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 614f)
+
+            assertThat(getPdfAsText(pdfData).replace("\\s+".toRegex(), " ")).all {
+                contains("Toimet työalueiden haittojen hallintaan, $hankealueNimi")
+                contains("Linja-autojen paikallisliikenne, $hankealueNimi")
+                contains("Autoliikenteen ruuhkautuminen, $hankealueNimi")
+                contains("Pyöräliikenteen merkittävyys, $hankealueNimi")
+                contains("Raitiovaunuliikenne, $hankealueNimi")
+                contains("Muut haittojenhallintatoimet, $hankealueNimi")
+                contains("Toimet työalueiden haittojen hallintaan, $hankealueNimi2")
+                contains("Linja-autojen paikallisliikenne, $hankealueNimi2")
+                contains("Autoliikenteen ruuhkautuminen, $hankealueNimi2")
+                contains("Pyöräliikenteen merkittävyys, $hankealueNimi2")
+                contains("Raitiovaunuliikenne, $hankealueNimi2")
+                contains("Muut haittojenhallintatoimet, $hankealueNimi2")
+            }
+            verifySequence {
+                val hakemusalueet1 = listOf(hakemusalue)
+                val hankealueet1 = listOf(hankealue)
+                mapGenerator.mapWithAreas(hakemusalueet, hankealueet, 2220, 800, any())
+                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
+                val hakemusalueet2 = listOf(hakemusalue2)
+                val hankealueet2 = listOf(hankealue2)
+                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
+            }
+        }
+
+        @Test
+        fun `contains texts from haittojenhallintasuunnitelma when hankealue matches with hakemusalue`() {
+            val hakemusData =
+                HakemusFactory.createKaivuilmoitusData(areas = listOf(hakemusalue, hakemusalue2))
+
+            val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 614f)
+
+            assertThat(getPdfAsText(pdfData).replace("\\s+".toRegex(), " ")).all {
+                contains(HaittaFactory.DEFAULT_HHS_YLEINEN)
+                contains(HaittaFactory.DEFAULT_HHS_LINJAAUTOLIIKENNE)
+                contains(HaittaFactory.DEFAULT_HHS_AUTOLIIKENNE)
+                contains(HaittaFactory.DEFAULT_HHS_PYORALIIKENNE)
+                contains(HaittaFactory.DEFAULT_HHS_RAITIOLIIKENNE)
+                contains(HaittaFactory.DEFAULT_HHS_MUUT)
+                contains(haittojenhallintasuunnitelma2[Haittojenhallintatyyppi.YLEINEN]!!)
+                contains(haittojenhallintasuunnitelma2[Haittojenhallintatyyppi.AUTOLIIKENNE]!!)
+                contains(haittojenhallintasuunnitelma2[Haittojenhallintatyyppi.PYORALIIKENNE]!!)
+                contains("Haitaton ei ole tunnistanut hankealueelta tätä kohderyhmää")
+            }
+            verifySequence {
+                val hakemusalueet1 = listOf(hakemusalue)
+                val hankealueet1 = listOf(hankealue)
+                mapGenerator.mapWithAreas(hakemusalueet, hankealueet, 2220, 800, any())
+                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
+                val hakemusalueet2 = listOf(hakemusalue2)
+                val hankealueet2 = listOf(hankealue2)
+                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
+                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
+            }
         }
     }
 }

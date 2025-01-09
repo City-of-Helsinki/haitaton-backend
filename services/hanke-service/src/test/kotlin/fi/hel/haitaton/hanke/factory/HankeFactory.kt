@@ -209,6 +209,7 @@ class HankeFactory(
          * ```
          */
         fun Hanke.withHankealue(
+            id: Int = 1,
             nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
             haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
             haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
@@ -220,6 +221,7 @@ class HankeFactory(
             this.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
             val alue =
                 HankealueFactory.create(
+                    id = id,
                     hankeId = this.id,
                     nimi = nimi,
                     haittaAlkuPvm = haittaAlkuPvm,
