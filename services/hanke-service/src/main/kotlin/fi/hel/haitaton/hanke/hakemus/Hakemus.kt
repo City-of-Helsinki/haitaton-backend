@@ -86,12 +86,11 @@ private fun checkChangesInAreas(
     secondAreas: List<Hakemusalue>,
 ): List<String> {
     val changedElementsInFirst =
-        firstAreas
-            .withIndex()
-            .filter { (i, area) -> area != secondAreas.getOrNull(i) }
-            .map { it.index }
-    val elementsInSecondButNotFirst = secondAreas.indices.drop(firstAreas.size)
-    return (changedElementsInFirst + elementsInSecondButNotFirst).map { "areas[$it]" }
+        firstAreas.withIndex().mapNotNull { (i, area) ->
+            area.listChanges(i, secondAreas.getOrNull(i))
+        }
+    val elementsInSecondButNotFirst = secondAreas.indices.drop(firstAreas.size).map { "areas[$it]" }
+    return (changedElementsInFirst.flatten() + elementsInSecondButNotFirst)
 }
 
 sealed interface HakemusData {
@@ -266,11 +265,15 @@ data class KaivuilmoitusData(
         checkChange(KaivuilmoitusData::cableReports, other)?.let { changes.add(it) }
         checkChange(KaivuilmoitusData::placementContracts, other)?.let { changes.add(it) }
         checkChange(KaivuilmoitusData::requiredCompetence, other)?.let { changes.add(it) }
-        checkChange(KaivuilmoitusData::contractorWithContacts, other)?.let { changes.add(it) }
-        checkChange(KaivuilmoitusData::propertyDeveloperWithContacts, other)?.let {
+        checkChangeInYhteystieto(KaivuilmoitusData::contractorWithContacts, other)?.let {
             changes.add(it)
         }
-        checkChange(KaivuilmoitusData::representativeWithContacts, other)?.let { changes.add(it) }
+        checkChangeInYhteystieto(KaivuilmoitusData::propertyDeveloperWithContacts, other)?.let {
+            changes.add(it)
+        }
+        checkChangeInYhteystieto(KaivuilmoitusData::representativeWithContacts, other)?.let {
+            changes.add(it)
+        }
         checkChange(KaivuilmoitusData::invoicingCustomer, other)?.let { changes.add(it) }
         checkChange(KaivuilmoitusData::additionalInfo, other)?.let { changes.add(it) }
 
