@@ -6,6 +6,9 @@ import com.lowagie.text.Image
 import com.lowagie.text.ImgTemplate
 import com.lowagie.text.Paragraph
 import com.lowagie.text.Phrase
+import com.lowagie.text.Rectangle
+import com.lowagie.text.pdf.PdfPCell
+import com.lowagie.text.pdf.PdfPTable
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.SavedHankealue
@@ -13,6 +16,7 @@ import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import java.awt.Color
 import java.time.ZonedDateTime
 import org.springframework.stereotype.Component
 
@@ -77,12 +81,19 @@ class HaittojenhallintasuunnitelmaPdfEncoder(private val mapGenerator: MapGenera
             val worstIndexes = kaivuilmoitusalue.worstCasesInTormaystarkastelut()
 
             document.section(hankealue.nimi) {
-                row("Toimet työalueiden haittojen hallintaan, ${hankealue.nimi}", toimetTitle())
-                row("", nuisanceScore(worstIndexes?.liikennehaittaindeksi?.indeksi))
+                hankealueRow(
+                    hankealue,
+                    hankealue.tormaystarkasteluTulos?.liikennehaittaindeksi?.indeksi,
+                    Haittojenhallintatyyppi.YLEINEN,
+                    "Toimet työalueiden haittojen hallintaan, ${hankealue.nimi}",
+                )
+
+                row(toimetTitle())
+                row(nuisanceScore(worstIndexes?.liikennehaittaindeksi?.indeksi))
                 val toimet =
                     kaivuilmoitusalue.haittojenhallintasuunnitelma[Haittojenhallintatyyppi.YLEINEN]
-                row("", toimet(toimet))
-                row("", "")
+                row(toimet(toimet))
+                emptyRow()
             }
 
             document.section(null) {
@@ -90,13 +101,21 @@ class HaittojenhallintasuunnitelmaPdfEncoder(private val mapGenerator: MapGenera
                     "Linja-autojen paikallisliikenne, ${hankealue.nimi}",
                     map(kaivuilmoitusalue, hankealue) { it?.linjaautoliikenneindeksi },
                 )
-                row("", toimetTitle())
-                row("", nuisanceScore(worstIndexes?.linjaautoliikenneindeksi))
+
+                hankealueRow(
+                    hankealue,
+                    hankealue.tormaystarkasteluTulos?.linjaautoliikenneindeksi,
+                    Haittojenhallintatyyppi.LINJAAUTOLIIKENNE,
+                )
+                emptyRow()
+
+                row(toimetTitle())
+                row(nuisanceScore(worstIndexes?.linjaautoliikenneindeksi))
                 val toimet =
                     kaivuilmoitusalue.haittojenhallintasuunnitelma[
                             Haittojenhallintatyyppi.LINJAAUTOLIIKENNE]
-                row("", toimet(toimet))
-                row("", "")
+                row(toimet(toimet))
+                emptyRow()
             }
 
             document.section(null) {
@@ -104,13 +123,21 @@ class HaittojenhallintasuunnitelmaPdfEncoder(private val mapGenerator: MapGenera
                     "Autoliikenteen ruuhkautuminen, ${hankealue.nimi}",
                     map(kaivuilmoitusalue, hankealue) { it?.autoliikenne?.indeksi },
                 )
-                row("", toimetTitle())
-                row("", autoliikennehaitat(worstIndexes?.autoliikenne))
+
+                hankealueRow(
+                    hankealue,
+                    hankealue.tormaystarkasteluTulos?.autoliikenne?.indeksi,
+                    Haittojenhallintatyyppi.AUTOLIIKENNE,
+                )
+                emptyRow()
+
+                row(toimetTitle())
+                row(autoliikennehaitat(worstIndexes?.autoliikenne))
                 val toimet =
                     kaivuilmoitusalue.haittojenhallintasuunnitelma[
                             Haittojenhallintatyyppi.AUTOLIIKENNE]
-                row("", toimet(toimet))
-                row("", "")
+                row(toimet(toimet))
+                emptyRow()
             }
 
             document.section(null) {
@@ -118,13 +145,21 @@ class HaittojenhallintasuunnitelmaPdfEncoder(private val mapGenerator: MapGenera
                     "Pyöräliikenteen merkittävyys, ${hankealue.nimi}",
                     map(kaivuilmoitusalue, hankealue) { it?.pyoraliikenneindeksi },
                 )
-                row("", toimetTitle())
-                row("", nuisanceScore(worstIndexes?.pyoraliikenneindeksi))
+
+                hankealueRow(
+                    hankealue,
+                    hankealue.tormaystarkasteluTulos?.pyoraliikenneindeksi,
+                    Haittojenhallintatyyppi.PYORALIIKENNE,
+                )
+                emptyRow()
+
+                row(toimetTitle())
+                row(nuisanceScore(worstIndexes?.pyoraliikenneindeksi))
                 val toimet =
                     kaivuilmoitusalue.haittojenhallintasuunnitelma[
                             Haittojenhallintatyyppi.PYORALIIKENNE]
-                row("", toimet(toimet))
-                row("", "")
+                row(toimet(toimet))
+                emptyRow()
             }
 
             document.section(null) {
@@ -132,49 +167,77 @@ class HaittojenhallintasuunnitelmaPdfEncoder(private val mapGenerator: MapGenera
                     "Raitioliikenne, ${hankealue.nimi}",
                     map(kaivuilmoitusalue, hankealue) { it?.raitioliikenneindeksi },
                 )
-                row("", toimetTitle())
-                row("", nuisanceScore(worstIndexes?.raitioliikenneindeksi))
+
+                hankealueRow(
+                    hankealue,
+                    hankealue.tormaystarkasteluTulos?.raitioliikenneindeksi,
+                    Haittojenhallintatyyppi.RAITIOLIIKENNE,
+                )
+                emptyRow()
+
+                row(toimetTitle())
+                row(nuisanceScore(worstIndexes?.raitioliikenneindeksi))
                 val toimet =
                     kaivuilmoitusalue.haittojenhallintasuunnitelma[
                             Haittojenhallintatyyppi.RAITIOLIIKENNE]
-                row("", toimet(toimet))
-                row("", "")
+                row(toimet(toimet))
+                emptyRow()
             }
 
             document.section(null) {
-                row(
+                hankealueRow(
+                    hankealue,
+                    null,
+                    Haittojenhallintatyyppi.MUUT,
                     "Muut haittojenhallintatoimet, ${hankealue.nimi}",
-                    muutHaitat(kaivuilmoitusalue),
                 )
-                row("", toimetTitle())
+
+                row(muutHaitat(kaivuilmoitusalue))
+                row(toimetTitle())
                 val toimet =
                     kaivuilmoitusalue.haittojenhallintasuunnitelma[Haittojenhallintatyyppi.MUUT]
-                row("", toimet(toimet))
-                row("", "")
+                row(toimet(toimet))
+                emptyRow()
             }
         }
     }
 
+    private fun PdfPTable.hankealueRow(
+        hankealue: SavedHankealue,
+        indeksi: Float?,
+        ryhma: Haittojenhallintatyyppi,
+        rowTitle: String? = null,
+    ) {
+        if (rowTitle != null) {
+            addCell(Phrase(rowTitle, rowHeaderFont))
+        } else {
+            addCell(defaultCell)
+        }
+
+        val hankealueCell = PdfPCell(defaultCell)
+        hankealueCell.border = Rectangle.BOX
+        hankealueCell.borderWidth = pxToPt(1)
+        hankealueCell.borderColor = Color.BLACK
+        hankealueCell.backgroundColor = HANKEALUE_COLOR
+        hankealueCell.setPadding(pxToPt(16))
+        hankealueCell.isUseBorderPadding = false
+        hankealueCell.paddingTop = pxToPt(0)
+
+        hankealueCell.addElement(Phrase("Hankealueen haittojen hallinta", toimetFont))
+        hankealueCell.addElement(Phrase(pxToPt(16), Chunk.NEWLINE))
+
+        indeksi?.let {
+            hankealueCell.addElement(nuisanceScore(it, "Hankealueen haittaindeksi"))
+            hankealueCell.addElement(Phrase(pxToPt(16), Chunk.NEWLINE))
+        }
+
+        hankealueCell.addElement(toimet(hankealue.haittojenhallintasuunnitelma?.get(ryhma)))
+
+        addCell(hankealueCell)
+    }
+
     private fun toimetTitle(): Phrase =
         Phrase("Toimet työalueiden haittojen hallintaan", toimetFont)
-
-    private fun nuisanceScore(
-        index: Int?,
-        title: String = "Työalueen haittaindeksi",
-        color: NuisanceColor? = null,
-    ): Paragraph = nuisanceScore(index?.toFloat(), title, color)
-
-    private fun nuisanceScore(
-        index: Float?,
-        title: String = "Työalueen haittaindeksi",
-        color: NuisanceColor? = null,
-    ): Paragraph {
-        val p = Paragraph(title, blackNuisanceFont)
-        val horizontalSpacer = Chunk("     ", blackNuisanceFont)
-        p.add(horizontalSpacer)
-        p.add(indexChunk(index, color))
-        return p
-    }
 
     private fun toimet(toimet: String?): Paragraph {
         val kuvaus =
@@ -197,7 +260,7 @@ class HaittojenhallintasuunnitelmaPdfEncoder(private val mapGenerator: MapGenera
         p.add(nuisanceScore(haitat?.kaistapituushaitta, "Autoliikenteen kaistavaikutusten pituus"))
         p.add(Chunk.NEWLINE)
 
-        p.add(nuisanceScore(haitat?.haitanKesto, "Työn kesto"))
+        p.add(nuisanceScore(haitat?.haitanKesto?.toFloat(), "Työn kesto"))
         p.spacingAfter = 0f
 
         return p
@@ -259,5 +322,7 @@ class HaittojenhallintasuunnitelmaPdfEncoder(private val mapGenerator: MapGenera
 
         const val COLUMN_MAP_WIDTH = 860
         const val COLUMN_MAP_HEIGHT = 304
+
+        val HANKEALUE_COLOR = Color(0xFF, 0xF4, 0xD4)
     }
 }
