@@ -15,6 +15,7 @@ import kotlin.io.path.Path
 import org.geotools.http.HTTPClientFinder
 import org.geotools.http.LoggingHTTPClient
 import org.geotools.ows.wms.WebMapServer
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -26,6 +27,7 @@ import org.junit.jupiter.params.provider.MethodSource
  * This test should be removed when the HAI-375 story is completed.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Disabled
 class HhsManualTest {
 
     private val capabilityUrl =
