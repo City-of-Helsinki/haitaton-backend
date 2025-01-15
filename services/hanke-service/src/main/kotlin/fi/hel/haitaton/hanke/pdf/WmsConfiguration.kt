@@ -2,6 +2,8 @@ package fi.hel.haitaton.hanke.pdf
 
 import java.net.URI
 import java.net.URL
+import org.geotools.http.HTTPClientFinder
+import org.geotools.http.LoggingHTTPClient
 import org.geotools.ows.wms.WebMapServer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -16,6 +18,8 @@ class WmsConfiguration(
 
     @Bean
     fun wms(): WebMapServer {
-        return WebMapServer(url)
+        val httpClient = LoggingHTTPClient(HTTPClientFinder.createClient())
+        httpClient.isTryGzip = true
+        return WebMapServer(url, httpClient)
     }
 }

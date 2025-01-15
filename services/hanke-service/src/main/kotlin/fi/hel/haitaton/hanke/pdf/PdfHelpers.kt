@@ -85,14 +85,19 @@ fun PdfPTable.row(key: String, value: String?) {
     this.addCell(Phrase(value ?: "<Tyhjä>", textFont))
 }
 
-fun PdfPTable.row(key: String, value: Phrase) {
-    this.addCell(Phrase("$key ", rowHeaderFont))
+fun PdfPTable.row(value: Phrase) {
+    this.addCell(defaultCell)
     this.addCell(value)
 }
 
 fun PdfPTable.row(key: String, image: Image) {
     this.addCell(Phrase("$key ", rowHeaderFont))
     this.addCell(image)
+}
+
+fun PdfPTable.emptyRow() {
+    this.addCell("")
+    this.addCell("")
 }
 
 fun PdfPTable.rowIfNotBlank(title: String, content: String?) {
@@ -160,6 +165,18 @@ fun loadLocationIcon(writer: PdfWriter): ImgTemplate {
     g2.dispose()
 
     return ImgTemplate(template)
+}
+
+fun nuisanceScore(
+    index: Number?,
+    title: String = "Työalueen haittaindeksi",
+    color: NuisanceColor? = null,
+): Paragraph {
+    val p = Paragraph(title, blackNuisanceFont)
+    val horizontalSpacer = Chunk("     ", blackNuisanceFont)
+    p.add(horizontalSpacer)
+    p.add(indexChunk(index?.toFloat(), color))
+    return p
 }
 
 fun indexChunk(index: Float?, color: NuisanceColor? = null): Chunk {
