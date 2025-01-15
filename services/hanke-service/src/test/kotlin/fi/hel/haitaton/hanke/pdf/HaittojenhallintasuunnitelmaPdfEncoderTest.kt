@@ -221,13 +221,13 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                 contains("Linja-autojen paikallisliikenne, $hankealueNimi")
                 contains("Autoliikenteen ruuhkautuminen, $hankealueNimi")
                 contains("Pyöräliikenteen merkittävyys, $hankealueNimi")
-                contains("Raitiovaunuliikenne, $hankealueNimi")
+                contains("Raitioliikenne, $hankealueNimi")
                 contains("Muut haittojenhallintatoimet, $hankealueNimi")
                 contains("Toimet työalueiden haittojen hallintaan, $hankealueNimi2")
                 contains("Linja-autojen paikallisliikenne, $hankealueNimi2")
                 contains("Autoliikenteen ruuhkautuminen, $hankealueNimi2")
                 contains("Pyöräliikenteen merkittävyys, $hankealueNimi2")
-                contains("Raitiovaunuliikenne, $hankealueNimi2")
+                contains("Raitioliikenne, $hankealueNimi2")
                 contains("Muut haittojenhallintatoimet, $hankealueNimi2")
             }
             verifySequence {

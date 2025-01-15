@@ -129,7 +129,7 @@ class HaittojenhallintasuunnitelmaPdfEncoder(private val mapGenerator: MapGenera
 
             document.section(null) {
                 row(
-                    "Raitiovaunuliikenne, ${hankealue.nimi}",
+                    "Raitioliikenne, ${hankealue.nimi}",
                     map(kaivuilmoitusalue, hankealue) { it?.raitioliikenneindeksi },
                 )
                 row("", toimetTitle())
