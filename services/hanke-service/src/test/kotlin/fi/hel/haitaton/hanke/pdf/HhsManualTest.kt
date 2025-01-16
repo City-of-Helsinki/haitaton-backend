@@ -12,7 +12,10 @@ import java.nio.file.Files
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlin.io.path.Path
+import org.geotools.http.HTTPClientFinder
+import org.geotools.http.LoggingHTTPClient
 import org.geotools.ows.wms.WebMapServer
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -24,12 +27,16 @@ import org.junit.jupiter.params.provider.MethodSource
  * This test should be removed when the HAI-375 story is completed.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Disabled
 class HhsManualTest {
 
     private val capabilityUrl =
-        "https://kartta.hel.fi/ws/geoserver/avoindata/wms?REQUEST=GetCapabilities&SERVICE=WMS&VERSION=1.1.1"
+        "https://kartta.hel.fi/ws/geoserver/avoindata/wms?REQUEST=GetCapabilities&SERVICE=WMS"
 
-    private val mapGenerator = MapGenerator(WebMapServer(URI(capabilityUrl).toURL()))
+    private val httpClient =
+        LoggingHTTPClient(HTTPClientFinder.createClient()).apply { isTryGzip = true }
+    private val uri = URI(capabilityUrl).toURL()
+    private val mapGenerator = MapGenerator(WebMapServer(uri, httpClient))
     private val haittojenhallintasuunnitelmaPdfEncoder =
         HaittojenhallintasuunnitelmaPdfEncoder(mapGenerator)
 
@@ -48,12 +55,16 @@ class HhsManualTest {
     private val montaAluetta: List<KaivuilmoitusAlue> =
         "/fi/hel/haitaton/hanke/pdf-test-data/many-areas.json".asJsonResource()
 
+    private val montaHankealuetta: List<KaivuilmoitusAlue> =
+        "/fi/hel/haitaton/hanke/pdf-test-data/many-hankealue.json".asJsonResource()
+
     private fun alueet(): List<Arguments> =
         listOf(
             Arguments.of("pystysuora", pystysuora),
             Arguments.of("vaakasuora", vaakasuora),
             Arguments.of("pieniAlue", pieniAlue),
             Arguments.of("montaAluetta", montaAluetta),
+            Arguments.of("montaHankealuetta", montaHankealuetta),
         )
 
     @ParameterizedTest(name = "{displayName} {0}")

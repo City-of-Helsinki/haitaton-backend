@@ -446,5 +446,159 @@
       "RAITIOLIIKENNE": "Äiti kyllä koetti sekä nuhteilla että kurilla saattaa heitä työhön ja ahkeruuteen, mutta heidän uppiniskaisuutensa oli jäykkä vastus kaikille hänen yrityksillensä. Oli hän muutoin kelpo vaimo; tunnettu oli hänen suora ja vilpitön ehkä hieman jyrkkä mielensä. Kelpo mies oli myös hänen veljensä, poikien oiva eno, joka nuoruudessaan oli uljaana merimiehenä, purjehtinut kaukaiset meret, nähnyt monta kansaa ja kaupunkia; mutta näkönsäpä kadotti hän viimein, käyden umpisokeaksi, ja vietti ikänsä pimeät päivät Jukolan talossa. Hän silloin usein, veistellen tunteensa viittauksen mukaan kauhoja, lusikoita, kirvesvarsia, kurikkoja ja muita huoneessa tarpeellisia kaluja, kertoili sisarensa pojille tarinoita ja merkillisiä asioita sekä omasta maasta että vieraista valtakunnista, kertoili myös ihmeitä ja tapauksia raamatusta. Näitä hänen jutelmiansa kuultelivat pojat kaikella hartaudella ja painoivat lujasti muistoonsa. Mutta yhtä mieluisasti eivät he kuullelleetkaan äitinsä käskyjä ja nuhteita, vaan olivatpa kovakorvaisia vallan, huolimatta monestakaan pieksiäislöylystä. Useinpa kyllä, huomatessaan selkäsaunan lähestyvän, vilkasi veliparvi karkutielle, saattaen tämän kautta sekä äitillensä että muille murhetta ja kiusaa, ja sillä omaa asiaansa pahentaen.",
       "LINJAAUTOLIIKENNE": "Tässä olkoon kerrottu eräs tapaus veljesten lapsuudesta. He tiesivät kototalonsa riihen alla kananpesän, jonka omistaja oli eräs eukko, kutsuttu »Männistön muoriksi»; sillä hänen pieni mökkinsä seisoi männistössä lähellä Jukolaa. Johtui kerran veljesten mieleen paistetut munat, ja päättivät he lopulta riistää pesän ja lähteä metsään nauttimaan saaliistansa. He täyttivät myös päätöksensä, tyhjensivät pesän ja läksivät yksimielisesti metsään, kuusi veljestä; Eero pyöri silloin vielä äitinsä jalkain juurella. Mutta koska he ehtivät eräälle solisevalle ojalle pimeässä kuusistossa, rakensivat he valkean äyräälle, käärivät munat ryysyihin, kastoivat ne veteen ja panivat paistumaan kihisevään tuhkaan. Ja kun herkut olivat viimein kypsyneet, söivät he maittavan atrian ja astelivat siitä tyytyväisinä kotiansa taas. Mutta kotomäelle ehdittyä, kohtasi heitä hirmumyrsky; sillä olipa jo heidän tekonsa tullut ilmi. Männistön muori ärhenteli ja riehui, ja kiivaalla katsannolla kiirehti veljeksiä vastaan heidän äitinsä, kädessä vinkuva ruoska. Mutta eivätpä mielineetkään pojat käydä kohden tuota vihuria, vaan kääntyivät takaisin ja pakenivat jälleen metsien turvaan, huolimatta äitinsä huudoista."
     }
+  },
+  {
+    "name": "Hankealue 4",
+    "hankealueId": 106,
+    "tyoalueet": [
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25497473.99385086,
+                6673378.826759577
+              ],
+              [
+                25497474.784632027,
+                6673378.348939784
+              ],
+              [
+                25497475.573286522,
+                6673379.463177532
+              ],
+              [
+                25497474.421387173,
+                6673380.052215219
+              ],
+              [
+                25497473.99385086,
+                6673378.826759577
+              ]
+            ]
+          ]
+        },
+        "area": 1.4525061049297503,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 0,
+            "haitanKesto": 3,
+            "katuluokka": 0,
+            "liikennemaara": 0,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 0,
+            "tyyppi": "LINJAAUTOLIIKENNEINDEKSI"
+          }
+        }
+      }
+    ],
+    "katuosoite": "Kaivokatu 12",
+    "tyonTarkoitukset": [
+      "SAHKO"
+    ],
+    "meluhaitta": "EI_MELUHAITTAA",
+    "polyhaitta": "EI_POLYHAITTAA",
+    "tarinahaitta": "EI_TARINAHAITTAA",
+    "kaistahaitta": "EI_VAIKUTA",
+    "kaistahaittojenPituus": "EI_VAIKUTA_KAISTAJARJESTELYIHIN",
+    "lisatiedot": "",
+    "haittojenhallintasuunnitelma": {
+      "MUUT": "Ei täällä paljoa haittoja pääse syntymään.",
+      "YLEINEN": "Ei täällä paljoa haittoja pääse syntymään.",
+      "AUTOLIIKENNE": "",
+      "PYORALIIKENNE": "",
+      "RAITIOLIIKENNE": "",
+      "LINJAAUTOLIIKENNE": ""
+    }
+  },
+  {
+    "name": "Hankealue 1",
+    "hankealueId": 103,
+    "tyoalueet": [
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25496400,
+                6673000
+              ],
+              [
+                25496900,
+                6672950
+              ],
+              [
+                25497000,
+                6673100
+              ],
+              [
+                25496500,
+                6673150
+              ],
+              [
+                25496400,
+                6673000
+              ]
+            ]
+          ]
+        },
+        "area": 17435.08397593583,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 2.3,
+            "haitanKesto": 3,
+            "katuluokka": 4,
+            "liikennemaara": 5,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 3,
+          "linjaautoliikenneindeksi": 5,
+          "raitioliikenneindeksi": 5,
+          "liikennehaittaindeksi": {
+            "indeksi": 5,
+            "tyyppi": "LINJAAUTOLIIKENNEINDEKSI"
+          }
+        }
+      }
+    ],
+    "katuosoite": "Kaivokatu 12",
+    "tyonTarkoitukset": [
+      "SAHKO"
+    ],
+    "meluhaitta": "EI_MELUHAITTAA",
+    "polyhaitta": "EI_POLYHAITTAA",
+    "tarinahaitta": "EI_TARINAHAITTAA",
+    "kaistahaitta": "EI_VAIKUTA",
+    "kaistahaittojenPituus": "EI_VAIKUTA_KAISTAJARJESTELYIHIN",
+    "lisatiedot": "",
+    "haittojenhallintasuunnitelma": {
+      "MUUT": "Mieleni minun tekevi, aivoni ajattelevi lähteäni laulamahan, saa'ani sanelemahan, sukuvirttä suoltamahan, lajivirttä laulamahan. Sanat suussani sulavat, puhe'et putoelevat, kielelleni kerkiävät, hampahilleni hajoovat.",
+      "YLEINEN": "Veli kulta, veikkoseni, kaunis kasvinkumppalini! Lähe nyt kanssa laulamahan, saa kera sanelemahan yhtehen yhyttyämme, kahta'alta käytyämme! Harvoin yhtehen yhymme, saamme toinen toisihimme näillä raukoilla rajoilla, poloisilla Pohjan mailla.",
+      "AUTOLIIKENNE": "Lyökämme käsi kätehen, sormet sormien lomahan, lauloaksemme hyviä, parahia pannaksemme, kuulla noien kultaisien, tietä mielitehtoisien, nuorisossa nousevassa, kansassa kasuavassa: noita saamia sanoja, virsiä virittämiä vyöltä vanhan Väinämöisen, alta ahjon Ilmarisen, päästä kalvan Kaukomielen, Joukahaisen jousen tiestä, Pohjan peltojen periltä, Kalevalan kankahilta.",
+      "PYORALIIKENNE": "Niit' ennen isoni lauloi kirvesvartta vuollessansa; niitä äitini opetti väätessänsä värttinätä, minun lasna lattialla eessä polven pyöriessä, maitopartana pahaisna, piimäsuuna pikkaraisna. Sampo ei puuttunut sanoja eikä Louhi luottehia: vanheni sanoihin sampo, katoi Louhi luottehisin, virsihin Vipunen kuoli, Lemminkäinen leikkilöihin.",
+      "RAITIOLIIKENNE": "Viel' on muitaki sanoja, ongelmoita oppimia: tieohesta tempomia, kanervoista katkomia, risukoista riipomia, vesoista vetelemiä, päästä heinän hieromia, raitiolta ratkomia, paimenessa käyessäni, lasna karjanlaitumilla, metisillä mättähillä, kultaisilla kunnahilla, mustan Muurikin jälessä, Kimmon kirjavan keralla.",
+      "LINJAAUTOLIIKENNE": "Vilu mulle virttä virkkoi, sae saatteli runoja. Virttä toista tuulet toivat, meren aaltoset ajoivat. Linnut liitteli sanoja, puien latvat lausehia."
+    }
   }
 ]
