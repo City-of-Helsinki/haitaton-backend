@@ -5,15 +5,12 @@ import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
-import assertk.assertions.isSameInstanceAs
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.factory.HaittaFactory
+import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.getResourceAsText
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
-import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
 import net.pwall.mustache.Template
@@ -37,6 +34,8 @@ class MapGeneratorTest {
         "/fi/hel/haitaton/hanke/pdf-test-data/tall-area.json".asJsonResource()
     private val manyAreas: List<KaivuilmoitusAlue> =
         "/fi/hel/haitaton/hanke/pdf-test-data/many-areas.json".asJsonResource()
+    private val hankealueet: List<SavedHankealue> =
+        "/fi/hel/haitaton/hanke/pdf-test-data/hankealueet.json".asJsonResource()
 
     @Nested
     inner class MapWithAreas {
@@ -62,7 +61,7 @@ class MapGeneratorTest {
 
         @Test
         fun `calls the map server with the correct parameters`() {
-            mapGenerator.mapWithAreas(wideArea, listOf(), 1000, 500)
+            mapGenerator.mapWithAreas(wideArea, hankealueet, 1000, 500) { _ -> null }
 
             assertThat(mockWmsServer.requestCount).isEqualTo(2)
             val capabilityRequest = mockWmsServer.takeRequest()
@@ -100,7 +99,7 @@ class MapGeneratorTest {
 
         @Test
         fun `returns an image of the requested size`() {
-            val image = mapGenerator.mapWithAreas(wideArea, listOf(), 1000, 500)
+            val image = mapGenerator.mapWithAreas(wideArea, hankealueet, 1000, 500) { _ -> null }
 
             val png = ImageIO.read(ByteArrayInputStream(image))
             assertThat(png.width).isEqualTo(1000)
@@ -260,121 +259,6 @@ class MapGeneratorTest {
                     prop(Point::y).isEqualTo(6673183.0)
                 }
             }
-        }
-    }
-
-    @Nested
-    inner class SelectColorStyle {
-        @Test
-        fun `returns blue when parameter is null`() {
-            val result = MapGenerator.selectColorStyle(null)
-
-            assertThat(result).isSameInstanceAs(NuisanceColor.BLUE.style)
-        }
-
-        @Test
-        fun `returns blue when one of the indexes is NaN`() {
-            val tormaystarkasteluTulos =
-                HaittaFactory.TORMAYSTARKASTELUTULOS_WITH_ZEROES.copy(
-                    linjaautoliikenneindeksi = Float.NaN
-                )
-
-            val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
-
-            assertThat(result).isSameInstanceAs(NuisanceColor.BLUE.style)
-        }
-
-        @Test
-        fun `returns blue when all indexes are negative`() {
-            val tormaystarkasteluTulos =
-                TormaystarkasteluTulos(Autoliikenneluokittelu(-1f, 0, 0, 0, 0, 0), -3f, -2f, -1f)
-
-            val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
-
-            assertThat(result).isSameInstanceAs(NuisanceColor.BLUE.style)
-        }
-
-        @Test
-        fun `returns gray when all indexes are zero`() {
-            val tormaystarkasteluTulos = HaittaFactory.TORMAYSTARKASTELUTULOS_WITH_ZEROES
-
-            val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
-
-            assertThat(result).isSameInstanceAs(NuisanceColor.GRAY.style)
-        }
-
-        @Test
-        fun `returns green when highest index is just above zero`() {
-            val tormaystarkasteluTulos =
-                HaittaFactory.TORMAYSTARKASTELUTULOS_WITH_ZEROES.copy(
-                    linjaautoliikenneindeksi = 0.001f
-                )
-
-            val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
-
-            assertThat(result).isSameInstanceAs(NuisanceColor.GREEN.style)
-        }
-
-        @Test
-        fun `returns green when highest index is just below three`() {
-            val tormaystarkasteluTulos =
-                HaittaFactory.TORMAYSTARKASTELUTULOS_WITH_ZEROES.copy(pyoraliikenneindeksi = 2.99f)
-
-            val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
-
-            assertThat(result).isSameInstanceAs(NuisanceColor.GREEN.style)
-        }
-
-        @Test
-        fun `returns yellow when highest index is exactly three`() {
-            val tormaystarkasteluTulos =
-                HaittaFactory.TORMAYSTARKASTELUTULOS_WITH_ZEROES.copy(pyoraliikenneindeksi = 3f)
-
-            val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
-
-            assertThat(result).isSameInstanceAs(NuisanceColor.YELLOW.style)
-        }
-
-        @Test
-        fun `returns yellow when highest index is just below four`() {
-            val tormaystarkasteluTulos =
-                HaittaFactory.TORMAYSTARKASTELUTULOS_WITH_ZEROES.copy(
-                    raitioliikenneindeksi = 3.999f
-                )
-
-            val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
-
-            assertThat(result).isSameInstanceAs(NuisanceColor.YELLOW.style)
-        }
-
-        @Test
-        fun `returns red when highest index is exactly four`() {
-            val tormaystarkasteluTulos =
-                HaittaFactory.TORMAYSTARKASTELUTULOS_WITH_ZEROES.copy(pyoraliikenneindeksi = 4f)
-
-            val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
-
-            assertThat(result).isSameInstanceAs(NuisanceColor.RED.style)
-        }
-
-        @Test
-        fun `returns red when highest index is 5`() {
-            val tormaystarkasteluTulos =
-                HaittaFactory.TORMAYSTARKASTELUTULOS_WITH_ZEROES.copy(raitioliikenneindeksi = 5f)
-
-            val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
-
-            assertThat(result).isSameInstanceAs(NuisanceColor.RED.style)
-        }
-
-        @Test
-        fun `returns red when highest index is way above five`() {
-            val tormaystarkasteluTulos =
-                HaittaFactory.TORMAYSTARKASTELUTULOS_WITH_ZEROES.copy(raitioliikenneindeksi = 999f)
-
-            val result = MapGenerator.selectColorStyle(tormaystarkasteluTulos)
-
-            assertThat(result).isSameInstanceAs(NuisanceColor.RED.style)
         }
     }
 

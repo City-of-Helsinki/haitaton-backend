@@ -40,6 +40,7 @@ class MapGenerator(private val wms: WebMapServer) {
         hankealueet: List<SavedHankealue>,
         imageWidth: Int,
         imageHeight: Int,
+        getIndex: (TormaystarkasteluTulos?) -> Float?,
     ): ByteArray {
         val bounds = calculateBounds(areas, imageWidth, imageHeight)
 
@@ -47,32 +48,28 @@ class MapGenerator(private val wms: WebMapServer) {
             WMSUtils.getNamedLayers(wms.capabilities).find {
                 it.title == KIINTEISTOKARTTA_LAYER_TITLE
             }!!
-
         val mapLayer = WMSLayer(wms, layer, KIINTEISTOKARTTA_STYLE, "image/png")
 
         val map = MapContent()
         map.addLayer(mapLayer)
 
-        val hankealueIds = areas.map { it.hankealueId }.toSet()
-        hankealueet
-            .filter { hankealueIds.contains(it.id) }
-            .forEach { alue ->
-                val polygons =
-                    alue.geometriat
-                        ?.featureCollection
-                        ?.features
-                        ?.map { it.geometry }
-                        ?.filterIsInstance<JsonPolygon>() ?: listOf()
+        hankealueet.forEach { alue ->
+            val polygons =
+                alue.geometriat
+                    ?.featureCollection
+                    ?.features
+                    ?.map { it.geometry }
+                    ?.filterIsInstance<JsonPolygon>() ?: listOf()
 
-                val style = selectColorStyle(alue.tormaystarkasteluTulos)
-                val featureLayer = FeatureLayer(readPolygons(polygons), style)
-                map.addLayer(featureLayer)
-            }
+            val style = NuisanceColor.selectColor(getIndex(alue.tormaystarkasteluTulos)).style
+            val featureLayer = FeatureLayer(readPolygons(polygons), style)
+            map.addLayer(featureLayer)
+        }
 
         areas
             .flatMap { it.tyoalueet }
             .forEach {
-                val style = selectColorStyle(it.tormaystarkasteluTulos)
+                val style = NuisanceColor.selectColor(getIndex(it.tormaystarkasteluTulos)).style
                 val featureLayer = FeatureLayer(readPolygon(it.geometry), style)
                 map.addLayer(featureLayer)
             }
@@ -131,9 +128,6 @@ class MapGenerator(private val wms: WebMapServer) {
 
             return bounds.padded().fitToImage(imageWidth, imageHeight).squaredOff()
         }
-
-        fun selectColorStyle(tormaystarkasteluTulos: TormaystarkasteluTulos?): Style =
-            NuisanceColor.selectColor(tormaystarkasteluTulos).style
 
         private fun readPolygon(polygon: JsonPolygon): SimpleFeatureCollection =
             readPolygons(listOf(polygon))
