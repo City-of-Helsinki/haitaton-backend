@@ -122,11 +122,9 @@ private fun checkChangesInTyoalueet(
             val otherTyoalue = secondAreas.getOrNull(i)
             if (otherTyoalue == null) {
                 listOf("$workAreaPath[$i]")
-            } else {
-                if (tyoalue.checkChange(Tyoalue::geometry, otherTyoalue) != null) {
-                    listOf("$workAreaPath[$i]", "$workAreaPath[$i].geometry")
-                } else emptyList()
-            }
+            } else if (tyoalue.geometry != otherTyoalue.geometry) {
+                listOf("$workAreaPath[$i]", "$workAreaPath[$i].geometry")
+            } else emptyList()
         }
     val elementsInSecondButNotFirst =
         secondAreas.indices.drop(firstAreas.size).map { "$workAreaPath[$it]" }
