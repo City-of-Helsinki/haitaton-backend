@@ -5,6 +5,7 @@ import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.Temporal
+import kotlin.reflect.KProperty1
 import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
@@ -141,3 +142,9 @@ fun daysBetween(haittaAlkuPvm: Temporal?, haittaLoppuPvm: Temporal?): Int? =
 /** Helper function to calculate the duration between two dates, inclusive. */
 fun daysBetween(haittaAlkuPvm: Temporal, haittaLoppuPvm: Temporal): Int =
     ChronoUnit.DAYS.between(haittaAlkuPvm, haittaLoppuPvm).toInt() + 1
+
+/** Check whether a property has changed between two objects. */
+fun <T : Any> T.checkChange(property: KProperty1<T, Any?>, second: T): String? =
+    if (property.get(this) != property.get(second)) {
+        property.name
+    } else null

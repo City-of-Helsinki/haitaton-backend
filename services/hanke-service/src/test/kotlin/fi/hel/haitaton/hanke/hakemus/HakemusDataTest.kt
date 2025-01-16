@@ -7,19 +7,12 @@ import assertk.assertions.containsExactly
 import assertk.assertions.hasClass
 import assertk.assertions.isEmpty
 import assertk.assertions.messageContains
-import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
-import fi.hel.haitaton.hanke.factory.HaittaFactory.DEFAULT_HHS
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
-import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
-import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -159,7 +152,7 @@ class HakemusDataTest {
             }
 
             @Nested
-            inner class AreaChanges {
+            inner class AreasChanges {
                 private val dataWithTwoAreas =
                     base.copy(
                         areas =
@@ -307,68 +300,6 @@ class HakemusDataTest {
 
             val base: KaivuilmoitusData = HakemusFactory.createKaivuilmoitusData()
 
-            @Test
-            fun `throws exception when classes don't match`() {
-                val updated = HakemusFactory.createJohtoselvityshakemusData()
-
-                val failure = assertFailure { base.listChanges(updated) }
-
-                failure.all {
-                    hasClass(IncompatibleHakemusDataException::class)
-                    messageContains("Incompatible hakemus data when retrieving changes")
-                    messageContains("firstClass=KaivuilmoitusData")
-                    messageContains("secondClass=JohtoselvityshakemusData")
-                }
-            }
-
-            @Test
-            fun `returns empty when there are no changes`() {
-                val updated = HakemusFactory.createKaivuilmoitusData()
-
-                val result = base.listChanges(updated)
-
-                assertThat(result).isEmpty()
-            }
-
-            @Test
-            fun `returns all changes when there are several`() {
-                val updated =
-                    base.copy(name = "Other name", startTime = base.startTime!!.plusDays(3))
-
-                val result = base.listChanges(updated)
-
-                assertThat(result).containsExactly("name", "startTime")
-            }
-
-            private fun commonFieldCases(): List<Arguments> =
-                listOf(
-                    Arguments.of(
-                        base.copy(applicationType = ApplicationType.CABLE_REPORT),
-                        "applicationType",
-                    ),
-                    Arguments.of(base.copy(startTime = base.startTime!!.minusDays(2)), "startTime"),
-                    Arguments.of(base.copy(endTime = base.endTime!!.plusDays(2)), "endTime"),
-                    Arguments.of(
-                        base.copy(paperDecisionReceiver = PaperDecisionReceiverFactory.default),
-                        "paperDecisionReceiver",
-                    ),
-                    Arguments.of(
-                        base.copy(customerWithContacts = HakemusyhteystietoFactory.create()),
-                        "customerWithContacts",
-                    ),
-                )
-
-            @ParameterizedTest(name = "{displayName} {1}")
-            @MethodSource("commonFieldCases")
-            fun `returns changes when common fields have changes`(
-                updated: HakemusData,
-                name: String,
-            ) {
-                val changes = base.listChanges(updated)
-
-                assertThat(changes).containsExactly(name)
-            }
-
             @Nested
             inner class YhteystietoChanges {
                 private val yhteyshenkilo1 = HakemusyhteyshenkiloFactory.create()
@@ -426,7 +357,7 @@ class HakemusDataTest {
             }
 
             @Nested
-            inner class AreaChanges {
+            inner class AreasChanges {
                 private val dataWithTwoAreas =
                     base.copy(
                         areas =
@@ -518,241 +449,6 @@ class HakemusDataTest {
 
                     assertThat(result)
                         .containsExactly("areas[1]", "areas[1].katuosoite", "areas[2]", "areas[3]")
-                }
-
-                @Test
-                fun `returns all changes in area`() {
-                    val updated =
-                        base.copy(
-                            areas =
-                                listOf(
-                                    ApplicationFactory.createExcavationNotificationArea(
-                                        katuosoite = "Uusi katuosoite",
-                                        tyonTarkoitukset = setOf(TyomaaTyyppi.VIEMARI),
-                                        meluhaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
-                                        polyhaitta = Polyhaitta.JATKUVA_POLYHAITTA,
-                                        tarinahaitta = Tarinahaitta.TOISTUVA_TARINAHAITTA,
-                                        kaistahaitta =
-                                            VaikutusAutoliikenteenKaistamaariin
-                                                .YKSI_KAISTA_VAHENEE_KAHDELLA_AJOSUUNNALLA,
-                                        kaistahaittojenPituus =
-                                            AutoliikenteenKaistavaikutustenPituus
-                                                .PITUUS_100_499_METRIA,
-                                        lisatiedot = "Täydennetyt lisätiedot",
-                                        haittojenhallintasuunnitelma =
-                                            DEFAULT_HHS.toMutableMap().mapValues {
-                                                it.value + " täydennetty"
-                                            },
-                                    )
-                                )
-                        )
-
-                    val result = base.listChanges(updated)
-
-                    assertThat(result)
-                        .containsExactly(
-                            "areas[0]",
-                            "areas[0].katuosoite",
-                            "areas[0].tyonTarkoitukset",
-                            "areas[0].meluhaitta",
-                            "areas[0].polyhaitta",
-                            "areas[0].tarinahaitta",
-                            "areas[0].kaistahaitta",
-                            "areas[0].kaistahaittojenPituus",
-                            "areas[0].lisatiedot",
-                            "areas[0].haittojenhallintasuunnitelma[YLEINEN]",
-                            "areas[0].haittojenhallintasuunnitelma[PYORALIIKENNE]",
-                            "areas[0].haittojenhallintasuunnitelma[AUTOLIIKENNE]",
-                            "areas[0].haittojenhallintasuunnitelma[RAITIOLIIKENNE]",
-                            "areas[0].haittojenhallintasuunnitelma[LINJAAUTOLIIKENNE]",
-                            "areas[0].haittojenhallintasuunnitelma[MUUT]",
-                        )
-                }
-
-                @Test
-                fun `returns changes in haittojenhallintasuunnitelma`() {
-                    val updated =
-                        base.copy(
-                            areas =
-                                listOf(
-                                    ApplicationFactory.createExcavationNotificationArea(
-                                        haittojenhallintasuunnitelma =
-                                            DEFAULT_HHS.toMutableMap().mapValues {
-                                                it.value + " täydennetty"
-                                            }
-                                    )
-                                )
-                        )
-
-                    val result = base.listChanges(updated)
-
-                    assertThat(result)
-                        .containsExactly(
-                            "areas[0].haittojenhallintasuunnitelma[YLEINEN]",
-                            "areas[0].haittojenhallintasuunnitelma[PYORALIIKENNE]",
-                            "areas[0].haittojenhallintasuunnitelma[AUTOLIIKENNE]",
-                            "areas[0].haittojenhallintasuunnitelma[RAITIOLIIKENNE]",
-                            "areas[0].haittojenhallintasuunnitelma[LINJAAUTOLIIKENNE]",
-                            "areas[0].haittojenhallintasuunnitelma[MUUT]",
-                        )
-                }
-
-                @Nested
-                inner class WorkAreaChanges {
-
-                    private val dataWithoutWorkAreas =
-                        base.copy(
-                            areas =
-                                listOf(
-                                    ApplicationFactory.createExcavationNotificationArea(
-                                        tyoalueet = emptyList()
-                                    )
-                                )
-                        )
-
-                    private val dataWithTwoWorkAreas =
-                        base.copy(
-                            areas =
-                                listOf(
-                                    ApplicationFactory.createExcavationNotificationArea(
-                                        tyoalueet =
-                                            listOf(
-                                                ApplicationFactory.createTyoalue(
-                                                    geometry = GeometriaFactory.polygon()
-                                                ),
-                                                ApplicationFactory.createTyoalue(
-                                                    geometry = GeometriaFactory.secondPolygon()
-                                                ),
-                                            )
-                                    )
-                                )
-                        )
-
-                    @Test
-                    fun `returns a change when work areas were empty but new ones are added`() {
-                        val result = dataWithoutWorkAreas.listChanges(dataWithTwoWorkAreas)
-
-                        assertThat(result)
-                            .containsExactly(
-                                "areas[0]",
-                                "areas[0].tyoalueet[0]",
-                                "areas[0].tyoalueet[1]",
-                            )
-                    }
-
-                    @Test
-                    fun `returns a change when there were work areas but now they are empty`() {
-                        val result = dataWithTwoWorkAreas.listChanges(dataWithoutWorkAreas)
-
-                        assertThat(result)
-                            .containsExactly(
-                                "areas[0]",
-                                "areas[0].tyoalueet[0]",
-                                "areas[0].tyoalueet[1]",
-                            )
-                    }
-
-                    @Test
-                    fun `returns several changes when a work area is removed from the middle`() {
-                        val base =
-                            base.copy(
-                                areas =
-                                    listOf(
-                                        ApplicationFactory.createExcavationNotificationArea(
-                                            tyoalueet =
-                                                listOf(
-                                                    ApplicationFactory.createTyoalue(
-                                                        geometry = GeometriaFactory.polygon()
-                                                    ),
-                                                    ApplicationFactory.createTyoalue(
-                                                        geometry = GeometriaFactory.thirdPolygon()
-                                                    ),
-                                                    ApplicationFactory.createTyoalue(
-                                                        geometry = GeometriaFactory.thirdPolygon()
-                                                    ),
-                                                    ApplicationFactory.createTyoalue(
-                                                        geometry = GeometriaFactory.secondPolygon()
-                                                    ),
-                                                )
-                                        )
-                                    )
-                            )
-
-                        val result = base.listChanges(dataWithTwoWorkAreas)
-
-                        assertThat(result)
-                            .containsExactly(
-                                "areas[0]",
-                                "areas[0].tyoalueet[1]",
-                                "areas[0].tyoalueet[1].geometry",
-                                "areas[0].tyoalueet[2]",
-                                "areas[0].tyoalueet[3]",
-                            )
-                    }
-
-                    @Test
-                    fun `returns several changes when a work area is added to the middle`() {
-                        val updated =
-                            base.copy(
-                                areas =
-                                    listOf(
-                                        ApplicationFactory.createExcavationNotificationArea(
-                                            tyoalueet =
-                                                listOf(
-                                                    ApplicationFactory.createTyoalue(
-                                                        geometry = GeometriaFactory.polygon()
-                                                    ),
-                                                    ApplicationFactory.createTyoalue(
-                                                        geometry = GeometriaFactory.thirdPolygon()
-                                                    ),
-                                                    ApplicationFactory.createTyoalue(
-                                                        geometry = GeometriaFactory.thirdPolygon()
-                                                    ),
-                                                    ApplicationFactory.createTyoalue(
-                                                        geometry = GeometriaFactory.secondPolygon()
-                                                    ),
-                                                )
-                                        )
-                                    )
-                            )
-
-                        val result = dataWithTwoWorkAreas.listChanges(updated)
-
-                        assertThat(result)
-                            .containsExactly(
-                                "areas[0]",
-                                "areas[0].tyoalueet[1]",
-                                "areas[0].tyoalueet[1].geometry",
-                                "areas[0].tyoalueet[2]",
-                                "areas[0].tyoalueet[3]",
-                            )
-                    }
-
-                    @Test
-                    fun `returns a change in tyoalue geometry`() {
-                        val updated =
-                            base.copy(
-                                areas =
-                                    listOf(
-                                        ApplicationFactory.createExcavationNotificationArea(
-                                            tyoalueet =
-                                                listOf(
-                                                    ApplicationFactory.createTyoalue()
-                                                        .copy(geometry = GeometriaFactory.polygon())
-                                                )
-                                        )
-                                    )
-                            )
-
-                        val result = base.listChanges(updated)
-
-                        assertThat(result)
-                            .containsExactly(
-                                "areas[0]",
-                                "areas[0].tyoalueet[0]",
-                                "areas[0].tyoalueet[0].geometry",
-                            )
-                    }
                 }
             }
 

@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.checkChange
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
@@ -57,11 +58,6 @@ data class Hakemus(
         )
 }
 
-private fun <D : HakemusData> D.checkChange(property: KProperty1<D, Any?>, second: D): String? =
-    if (property.get(this) != property.get(second)) {
-        property.name
-    } else null
-
 private fun <D : HakemusData> D.checkChangeInYhteystieto(
     property: KProperty1<D, Hakemusyhteystieto?>,
     second: D,
@@ -86,11 +82,11 @@ private fun checkChangesInAreas(
     secondAreas: List<Hakemusalue>,
 ): List<String> {
     val changedElementsInFirst =
-        firstAreas.withIndex().mapNotNull { (i, area) ->
-            area.listChanges(i, secondAreas.getOrNull(i))
+        firstAreas.withIndex().flatMap { (i, area) ->
+            area.listChanges("areas[$i]", secondAreas.getOrNull(i))
         }
     val elementsInSecondButNotFirst = secondAreas.indices.drop(firstAreas.size).map { "areas[$it]" }
-    return (changedElementsInFirst.flatten() + elementsInSecondButNotFirst)
+    return (changedElementsInFirst + elementsInSecondButNotFirst)
 }
 
 sealed interface HakemusData {
