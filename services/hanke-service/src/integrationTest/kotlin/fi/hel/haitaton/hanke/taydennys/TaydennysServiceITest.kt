@@ -17,7 +17,6 @@ import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.HankealueEntity
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
@@ -101,7 +100,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.repository.CrudRepository
 
 class TaydennysServiceITest(
     @Autowired private val taydennysService: TaydennysService,
@@ -123,7 +121,6 @@ class TaydennysServiceITest(
     @Autowired private val taydennysFactory: TaydennysFactory,
     @Autowired private val attachmentFactory: TaydennysAttachmentFactory,
     @Autowired private val auditLogRepository: AuditLogRepository,
-    @Autowired private val hankealueRepository: HankealueRepository,
 ) : IntegrationTest() {
     private val alluId = 3464
 
@@ -626,19 +623,19 @@ class TaydennysServiceITest(
 
         @Test
         fun `sends attachment as changed field if there is a change to kaivuilmotus haittojenhallintasuunnitelma`() {
-            val builder =
-                taydennysFactory.builder(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
-            val hankealue = hankealueRepository.findAll().single()
             val area =
                 ApplicationFactory.createExcavationNotificationArea(
-                    hankealueId = hankealue.id,
                     haittojenhallintasuunnitelma =
                         HaittaFactory.createHaittojenhallintasuunnitelma(
                             Haittojenhallintatyyppi.PYORALIIKENNE to
                                 "$DEFAULT_HHS_PYORALIIKENNE. Täydennetty."
-                        ),
+                        )
                 )
-            val taydennys = builder.withAreas(listOf(area)).save()
+            val taydennys =
+                taydennysFactory
+                    .builder(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withAreas(listOf(area))
+                    .save()
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
             val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
             val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
@@ -663,20 +660,20 @@ class TaydennysServiceITest(
 
         @Test
         fun `sends geometry as changed field if there is a change to kaivuilmoitus work area`() {
-            val builder =
-                taydennysFactory.builder(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
-            val hankealue = hankealueRepository.findAll().single()
             val area =
                 ApplicationFactory.createExcavationNotificationArea(
-                    hankealueId = hankealue.id,
                     tyoalueet =
                         listOf(
                             ApplicationFactory.createTyoalue(
                                 geometry = GeometriaFactory.fourthPolygon()
                             )
-                        ),
+                        )
                 )
-            val taydennys = builder.withAreas(listOf(area)).save()
+            val taydennys =
+                taydennysFactory
+                    .builder(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withAreas(listOf(area))
+                    .save()
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
             val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
             val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
@@ -701,12 +698,8 @@ class TaydennysServiceITest(
 
         @Test
         fun `sends geometry as changed field if there are changes to kaivuilmoitus area properties`() {
-            val builder =
-                taydennysFactory.builder(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
-            val hankealue = hankealueRepository.findAll().single()
             val area =
                 ApplicationFactory.createExcavationNotificationArea(
-                    hankealueId = hankealue.id,
                     name = "Uusi nimi",
                     katuosoite = "Uusi katuosoite",
                     tyonTarkoitukset = setOf(TyomaaTyyppi.LIIKENNEVALO),
@@ -719,7 +712,11 @@ class TaydennysServiceITest(
                         AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
                     lisatiedot = "Uudet lisätiedot",
                 )
-            val taydennys = builder.withAreas(listOf(area)).save()
+            val taydennys =
+                taydennysFactory
+                    .builder(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withAreas(listOf(area))
+                    .save()
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
             val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
             val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
@@ -1152,5 +1149,3 @@ class TaydennysServiceITest(
             .hasSameElementsAs(hakemusalueet.map { it.geometry.coordinates })
     }
 }
-
-interface HankealueRepository : CrudRepository<HankealueEntity, Int>

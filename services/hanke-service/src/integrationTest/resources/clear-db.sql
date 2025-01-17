@@ -28,3 +28,4 @@ TRUNCATE TABLE
     ui_notification_banner,
     valmistumisilmoitus;
 UPDATE allu_status SET history_last_updated = '2017-01-01T00:00:00Z';
+ALTER SEQUENCE hankealue_id_seq RESTART WITH 1;
