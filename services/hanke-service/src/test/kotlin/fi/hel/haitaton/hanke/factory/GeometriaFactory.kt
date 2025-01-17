@@ -18,6 +18,9 @@ object GeometriaFactory {
     fun thirdPolygon(): Polygon =
         "/fi/hel/haitaton/hanke/geometria/kolmas_polygoni.json".asJsonResource()
 
+    fun fourthPolygon(): Polygon =
+        "/fi/hel/haitaton/hanke/geometria/neljas_polygoni.json".asJsonResource()
+
     fun collection(vararg polygon: Polygon = arrayOf(secondPolygon())): GeometryCollection =
         GeometryCollection().apply {
             polygon.forEach { add(it) }

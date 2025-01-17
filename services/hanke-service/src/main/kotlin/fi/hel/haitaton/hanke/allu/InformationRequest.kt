@@ -50,7 +50,14 @@ enum class InformationRequestFieldKey {
                 "invoicingCustomer" -> INVOICING_CUSTOMER
                 "attachment" -> ATTACHMENT
                 else -> {
-                    if (name.startsWith("areas")) GEOMETRY else null
+                    if (name.matches(Regex("areas\\[\\d+]"))) GEOMETRY
+                    else if (
+                        name.matches(
+                            Regex("areas\\[\\d+]\\.haittojenhallintasuunnitelma\\[[A-Z]+]")
+                        )
+                    )
+                        ATTACHMENT
+                    else null
                 }
             }
     }
