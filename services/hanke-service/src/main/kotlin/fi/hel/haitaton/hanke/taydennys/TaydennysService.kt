@@ -26,6 +26,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusService.Companion.toExistingYhteysti
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.TaydennysLoggingService
 import fi.hel.haitaton.hanke.logging.TaydennyspyyntoLoggingService
@@ -143,6 +144,8 @@ class TaydennysService(
         }
 
         taydennysRepository.findByApplicationId(application.id)?.also {
+            resetAreasIfHankeGenerated(it)
+
             logger.info { "A täydennys was found. Removing it." }
             attachmentService.deleteAllAttachments(it)
             taydennysLoggingService.logDeleteFromAllu(it.toDomain())
@@ -503,10 +506,29 @@ class TaydennysService(
     fun delete(id: UUID, currentUserId: String) {
         val taydennysEntity =
             taydennysRepository.findByIdOrNull(id) ?: throw TaydennysNotFoundException(id)
+
+        resetAreasIfHankeGenerated(taydennysEntity)
+
         attachmentService.deleteAllAttachments(taydennysEntity)
         val taydennys = taydennysEntity.toDomain()
         taydennysRepository.delete(taydennysEntity)
         taydennysLoggingService.logDelete(taydennys, currentUserId)
+    }
+
+    /**
+     * Check if the hanke this täydennys belongs to is a generated one. If it is, reset the areas to
+     * match the ones in the original application.
+     */
+    private fun resetAreasIfHankeGenerated(taydennysEntity: TaydennysEntity) {
+        val hakemus = hakemusRepository.getReferenceById(taydennysEntity.hakemusId())
+        val hanke = hakemus.hanke
+        val data = hakemus.hakemusEntityData
+        if (hanke.generated && data is JohtoselvityshakemusEntityData) {
+            logger.info {
+                "Täydennys was done to a generated hanke. Resetting the hanke areas to match the original hakemus. ${hanke.logString()} ${hakemus.logString()} ${taydennysEntity.logString()}"
+            }
+            hakemusService.updateHankealueet(hanke, data.areas, data.startTime, data.endTime)
+        }
     }
 
     companion object {
