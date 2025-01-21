@@ -1,7 +1,7 @@
-# Stage 1: Build application
-FROM registry.access.redhat.com/ubi9/openjdk-17 AS build
+# Uses different base images for build and run. RedHat Ubi stronger security policies prevent gradle builds.
 
-USER root
+# Stage 1: Build application
+FROM public.ecr.aws/docker/library/eclipse-temurin:17 AS build
 
 # Set the working directory, copy gradle and source code
 WORKDIR /app
@@ -14,7 +14,7 @@ COPY services/hanke-service/src ./services/hanke-service/src
 RUN ./gradlew clean :services:hanke-service:assemble --stacktrace
 
 # Stage 2: Create runtime image
-FROM registry.access.redhat.com/ubi9/openjdk-17-runtime
+FROM registry.redhat.io/ubi8/openjdk-17:latest
 VOLUME /tmp
 WORKDIR /app
 COPY --from=build /app/services/hanke-service/build/libs/hanke-service*SNAPSHOT.jar hanke-service.jar
