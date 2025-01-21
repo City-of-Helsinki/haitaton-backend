@@ -697,7 +697,7 @@ class TaydennysServiceITest(
         }
 
         @Test
-        fun `sends geometry as changed field if there are changes to kaivuilmoitus area properties`() {
+        fun `sends no changed field if there are changes to kaivuilmoitus area properties`() {
             val area =
                 ApplicationFactory.createExcavationNotificationArea(
                     name = "Uusi nimi",
@@ -732,7 +732,7 @@ class TaydennysServiceITest(
                     hakemus.alluid!!,
                     taydennyspyynto.alluId,
                     updatedTaydennysData.toAlluData(hakemus.hankeTunnus),
-                    setOf(InformationRequestFieldKey.GEOMETRY),
+                    emptySet(),
                 )
                 alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)

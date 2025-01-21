@@ -440,7 +440,14 @@ class TaydennysService(
         muutokset: List<String>,
     ) {
         val updatedFieldKeys =
-            muutokset.mapNotNull { InformationRequestFieldKey.fromHaitatonFieldName(it) }.toSet()
+            muutokset
+                .mapNotNull {
+                    InformationRequestFieldKey.fromHaitatonFieldName(
+                        it,
+                        taydennys.hakemusData.applicationType,
+                    )
+                }
+                .toSet()
 
         val alluData = taydennys.hakemusData.toAlluData(hankeTunnus)
 
