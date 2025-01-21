@@ -52,11 +52,39 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
     inner class CreatePdf {
         private val hankealueId = 414
         private val hankealueNimi = "Nimi hankealueelle"
-        private val hankealue = HankealueFactory.create(id = hankealueId, nimi = hankealueNimi)
+        private val hankealueenHaittojenhallintasuunnitelma =
+            mapOf(
+                Haittojenhallintatyyppi.YLEINEN to "Hankealueen yleiset toimet",
+                Haittojenhallintatyyppi.AUTOLIIKENNE to "Hankealueen autoilun toimet",
+                Haittojenhallintatyyppi.PYORALIIKENNE to "Hankealueen pyöräilyn toimet",
+                Haittojenhallintatyyppi.RAITIOLIIKENNE to "Hankealueen ratikoiden toimet",
+                Haittojenhallintatyyppi.LINJAAUTOLIIKENNE to "Hankealueen bussien toimet",
+                Haittojenhallintatyyppi.MUUT to "Hankealueen muut toimet",
+            )
+        private val hankealue =
+            HankealueFactory.create(
+                id = hankealueId,
+                nimi = hankealueNimi,
+                haittojenhallintasuunnitelma = hankealueenHaittojenhallintasuunnitelma,
+            )
 
         private val hankealueId2 = 5256
         private val hankealueNimi2 = "Nimi toiselle hankealueelle"
-        private val hankealue2 = HankealueFactory.create(id = hankealueId2, nimi = hankealueNimi2)
+        private val hankealueenHaittojenhallintasuunnitelma2 =
+            mapOf(
+                Haittojenhallintatyyppi.YLEINEN to "Toisen hankealueen toimet yleisesti",
+                Haittojenhallintatyyppi.AUTOLIIKENNE to "Toisen hankealueen toimet autoilulle",
+                Haittojenhallintatyyppi.PYORALIIKENNE to "Toisen hankealueen toimet pyörille",
+                Haittojenhallintatyyppi.RAITIOLIIKENNE to "Toisen hankealueen toimet ratikoille",
+                Haittojenhallintatyyppi.LINJAAUTOLIIKENNE to "Toisen hankealueen toimet busseille",
+                Haittojenhallintatyyppi.MUUT to "Toisen hankealueen toimet muille",
+            )
+        private val hankealue2 =
+            HankealueFactory.create(
+                id = hankealueId2,
+                nimi = hankealueNimi2,
+                haittojenhallintasuunnitelma = hankealueenHaittojenhallintasuunnitelma2,
+            )
 
         private val hankealueet = listOf(hankealue, hankealue2)
         private val hanke =
@@ -230,21 +258,7 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                 contains("Raitioliikenne, $hankealueNimi2")
                 contains("Muut haittojenhallintatoimet, $hankealueNimi2")
             }
-            verifySequence {
-                val hakemusalueet1 = listOf(hakemusalue)
-                val hankealueet1 = listOf(hankealue)
-                mapGenerator.mapWithAreas(hakemusalueet, hankealueet, 2220, 800, any())
-                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
-                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
-                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
-                mapGenerator.mapWithAreas(hakemusalueet1, hankealueet1, 1720, 608, any())
-                val hakemusalueet2 = listOf(hakemusalue2)
-                val hankealueet2 = listOf(hankealue2)
-                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
-                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
-                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
-                mapGenerator.mapWithAreas(hakemusalueet2, hankealueet2, 1720, 608, any())
-            }
+            verifyGeneratorCalls()
         }
 
         @Test
@@ -266,6 +280,25 @@ class HaittojenhallintasuunnitelmaPdfEncoderTest {
                 contains(haittojenhallintasuunnitelma2[Haittojenhallintatyyppi.PYORALIIKENNE]!!)
                 contains("Haitaton ei ole tunnistanut hankealueelta tätä kohderyhmää")
             }
+            verifyGeneratorCalls()
+        }
+
+        @Test
+        fun `contains texts from haittojenhallintasuunnitelma for hankealue when hankealue matches with hakemusalue`() {
+            val hakemusData =
+                HakemusFactory.createKaivuilmoitusData(areas = listOf(hakemusalue, hakemusalue2))
+
+            val pdfData = haittojenhallintasuunnitelmaPdfEncoder.createPdf(hanke, hakemusData, 614f)
+
+            assertThat(getPdfAsText(pdfData).replace("\\s+".toRegex(), " "))
+                .contains(
+                    hankealueenHaittojenhallintasuunnitelma.map { it.value } +
+                        hankealueenHaittojenhallintasuunnitelma2.map { it.value }
+                )
+            verifyGeneratorCalls()
+        }
+
+        private fun verifyGeneratorCalls() {
             verifySequence {
                 val hakemusalueet1 = listOf(hakemusalue)
                 val hankealueet1 = listOf(hankealue)
