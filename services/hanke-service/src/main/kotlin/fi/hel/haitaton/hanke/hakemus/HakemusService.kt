@@ -40,6 +40,7 @@ import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
@@ -815,7 +816,7 @@ class HakemusService(
         if (!hankeEntity.generated) {
             request.areas?.let { areas -> assertGeometryCompatibility(hankeEntity.id, areas) }
         } else if (request is JohtoselvityshakemusUpdateRequest) {
-            updateHankealueet(hankeEntity, request)
+            updateHankealueet(hankeEntity, request.areas, request.startTime, request.endTime)
         }
     }
 
@@ -847,16 +848,14 @@ class HakemusService(
     }
 
     /** Update the hanke areas based on the update request areas. */
-    private fun updateHankealueet(
+    fun updateHankealueet(
         hankeEntity: HankeEntity,
-        updateRequest: JohtoselvityshakemusUpdateRequest,
+        areas: List<JohtoselvitysHakemusalue>?,
+        startTime: ZonedDateTime?,
+        endTime: ZonedDateTime?,
     ) {
         val hankealueet =
-            HankealueService.createHankealueetFromApplicationAreas(
-                updateRequest.areas,
-                updateRequest.startTime,
-                updateRequest.endTime,
-            )
+            HankealueService.createHankealueetFromApplicationAreas(areas, startTime, endTime)
         hankeEntity.alueet.clear()
         hankeEntity.alueet.addAll(
             hankealueService.createAlueetFromCreateRequest(hankealueet, hankeEntity)

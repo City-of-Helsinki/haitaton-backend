@@ -16,6 +16,7 @@ import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
@@ -33,10 +34,12 @@ import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.TaydennysAttachmentFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
+import fi.hel.haitaton.hanke.factory.TaydennysFactory.Companion.toUpdateRequest
 import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
@@ -45,8 +48,11 @@ import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
+import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -78,6 +84,7 @@ import io.mockk.justRun
 import io.mockk.slot
 import io.mockk.verifySequence
 import java.util.UUID
+import org.geojson.Polygon
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -87,6 +94,7 @@ import org.springframework.beans.factory.annotation.Autowired
 class TaydennysServiceITest(
     @Autowired private val taydennysService: TaydennysService,
     @Autowired private val hakemusService: HakemusService,
+    @Autowired private val hankeService: HankeService,
     @Autowired private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
     @Autowired private val taydennysRepository: TaydennysRepository,
     @Autowired private val taydennysyhteystietoRepository: TaydennysyhteystietoRepository,
@@ -457,6 +465,37 @@ class TaydennysServiceITest(
             assertThat(attachmentRepository.findAll()).isEmpty()
             assertThat(taydennysRepository.findAll()).isEmpty()
             assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
+        }
+
+        @Test
+        fun `resets the hankealueet when the hanke is a generated one`() {
+            val hakemusEntity =
+                hakemusFactory
+                    .builderWithGeneratedHanke()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, 42)
+                    .withMandatoryFields()
+                    .saveEntity()
+            val hakemus = hakemusService.getById(hakemusEntity.id)
+            val taydennys = taydennysFactory.builder(hakemus.id, hakemus.hankeId).save()
+            val newAreas =
+                listOf(
+                    ApplicationFactory.createCableReportApplicationArea(
+                        geometry = GeometriaFactory.polygon()
+                    ),
+                    ApplicationFactory.createCableReportApplicationArea(
+                        geometry = GeometriaFactory.thirdPolygon()
+                    ),
+                )
+            val update = taydennys.toUpdateRequest() as JohtoselvityshakemusUpdateRequest
+            taydennysService.updateTaydennys(taydennys.id, update.copy(areas = newAreas), USERNAME)
+            assertHankeHasSameGeometryAsHakemus(hakemus.hankeTunnus, newAreas)
+
+            taydennysService.removeTaydennyspyyntoIfItExists(hakemusEntity)
+
+            assertHankeHasSameGeometryAsHakemus(
+                hakemus.hankeTunnus,
+                (hakemus.applicationData as JohtoselvityshakemusData).areas!!,
+            )
         }
     }
 
@@ -941,5 +980,44 @@ class TaydennysServiceITest(
             assertThat(taydennysRepository.findAll()).isEmpty()
             assertThat(taydennyspyyntoRepository.findAll()).hasSize(1)
         }
+
+        @Test
+        fun `resets the hankealueet when the hanke is a generated one`() {
+            val hakemus = hakemusFactory.builderWithGeneratedHanke().withMandatoryFields().save()
+            val taydennys = taydennysFactory.builder(hakemus.id, hakemus.hankeId).save()
+            val newAreas =
+                listOf(
+                    ApplicationFactory.createCableReportApplicationArea(
+                        geometry = GeometriaFactory.polygon()
+                    ),
+                    ApplicationFactory.createCableReportApplicationArea(
+                        geometry = GeometriaFactory.thirdPolygon()
+                    ),
+                )
+            val update = taydennys.toUpdateRequest() as JohtoselvityshakemusUpdateRequest
+            taydennysService.updateTaydennys(taydennys.id, update.copy(areas = newAreas), USERNAME)
+            assertHankeHasSameGeometryAsHakemus(hakemus.hankeTunnus, newAreas)
+
+            taydennysService.delete(taydennys.id, USERNAME)
+
+            assertHankeHasSameGeometryAsHakemus(
+                hakemus.hankeTunnus,
+                (hakemus.applicationData as JohtoselvityshakemusData).areas!!,
+            )
+        }
+    }
+
+    private fun assertHankeHasSameGeometryAsHakemus(
+        hanketunnus: String,
+        hakemusalueet: List<JohtoselvitysHakemusalue>,
+    ) {
+        val hanke = hankeService.loadHanke(hanketunnus)!!
+        val hankeCoordinates =
+            hanke.alueet
+                .flatMap { it.geometriat!!.featureCollection!!.features }
+                .map { it.geometry as Polygon }
+                .map { it.coordinates }
+        assertThat(hankeCoordinates)
+            .hasSameElementsAs(hakemusalueet.map { it.geometry.coordinates })
     }
 }
