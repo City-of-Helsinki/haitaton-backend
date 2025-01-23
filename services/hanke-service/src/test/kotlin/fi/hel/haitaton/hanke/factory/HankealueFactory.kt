@@ -17,8 +17,10 @@ import java.time.ZonedDateTime
 
 object HankealueFactory {
 
+    const val DEFAULT_HANKEALUE_ID = 1
+
     fun create(
-        id: Int? = 1,
+        id: Int? = DEFAULT_HANKEALUE_ID,
         hankeId: Int? = 2,
         haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
         haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),

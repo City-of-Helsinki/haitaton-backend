@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
+import fi.hel.haitaton.hanke.factory.HankealueFactory.DEFAULT_HANKEALUE_ID
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
@@ -90,7 +91,7 @@ class ApplicationFactory(
 
         fun createExcavationNotificationArea(
             name: String = "Alue",
-            hankealueId: Int = 0,
+            hankealueId: Int = DEFAULT_HANKEALUE_ID,
             tyoalueet: List<Tyoalue> = listOf(createTyoalue()),
             katuosoite: String = "Katu 1",
             tyonTarkoitukset: Set<TyomaaTyyppi> = setOf(TyomaaTyyppi.VESI),
