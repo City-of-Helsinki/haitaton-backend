@@ -203,3 +203,9 @@ databaseChangeLog:
       file: db/changelog/changesets/086-change-car-lane-nuisance-enum.sql
   - include:
       file: db/changelog/changesets/087-create-table-for-taydennys-attachment.sql
+  - include:
+      file: db/changelog/changesets/094-create-table-johtoselvitys-historia.yml
+  - include:
+      file: db/changelog/changesets/095-add-trigger-adding-johtoselvitys-historia-lines-for-applications.sql
+  - include:
+      file: db/changelog/changesets/096-add-trigger-adding-johtoselvitys-historia-lines-for-hakemusyhteystieto.sql
