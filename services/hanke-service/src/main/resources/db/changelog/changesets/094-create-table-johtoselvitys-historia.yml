@@ -68,6 +68,12 @@ databaseChangeLog:
                   name: asianhoitaja
                   type: TEXT
               - column:
+                  name: pinta_ala
+                  type: NUMERIC
+              - column:
+                  name: geometria
+                  type: GEOMETRY
+              - column:
                   name: muutosaika
                   type: TIMESTAMP
               - column:
