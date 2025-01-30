@@ -1050,8 +1050,7 @@ class TaydennysServiceITest(
                     status = ApplicationStatus.HANDLING,
                 )
             val attachments = mutableListOf<Attachment>()
-            every { alluClient.addAttachment(hakemus.alluid!!, capture(attachments)) } throws
-                AlluException()
+            justRun { alluClient.addAttachment(hakemus.alluid!!, capture(attachments)) }
 
             taydennysService.sendTaydennys(taydennys.id, USERNAME)
 
@@ -1088,7 +1087,7 @@ class TaydennysServiceITest(
                     hakemus.alluid!!,
                     status = ApplicationStatus.HANDLING,
                 )
-            justRun { alluClient.addAttachment(hakemus.alluid!!, any()) }
+            every { alluClient.addAttachment(hakemus.alluid!!, any()) } throws AlluException()
 
             val response = taydennysService.sendTaydennys(taydennys.id, USERNAME)
 
