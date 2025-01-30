@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.taydennys
 
+import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Attachment
@@ -43,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional
 private val logger = KotlinLogging.logger {}
 
 const val FORM_DATA_PDF_FILENAME = "haitaton-form-data-taydennys.pdf"
+const val HHS_PDF_FILENAME = "haitaton-haittojenhallintasuunnitelma-taydennys.pdf"
 
 @Service
 class TaydennysService(
@@ -215,7 +217,7 @@ class TaydennysService(
 
         sendAttachments(attachments, hakemus)
 
-        sendTaydennysToAllu(taydennys, hakemus, taydennyspyyntoId, hanke.hankeTunnus, changes)
+        sendTaydennysToAllu(taydennys, hakemus, taydennyspyyntoId, hanke, changes)
 
         if (hanke.generated) {
             hanke.nimi = taydennys.hakemusData.name
@@ -436,7 +438,7 @@ class TaydennysService(
         taydennys: Taydennys,
         hakemus: HakemusIdentifier,
         taydennyspyyntoAlluId: Int,
-        hankeTunnus: String,
+        hanke: HankeEntity,
         muutokset: List<String>,
     ) {
         val updatedFieldKeys =
@@ -449,7 +451,7 @@ class TaydennysService(
                 }
                 .toSet()
 
-        val alluData = taydennys.hakemusData.toAlluData(hankeTunnus)
+        val alluData = taydennys.hakemusData.toAlluData(hanke.hankeTunnus)
 
         disclosureLogService.withDisclosureLogging(hakemus.id, alluData) {
             alluClient.respondToInformationRequest(
@@ -459,7 +461,8 @@ class TaydennysService(
                 updatedFieldKeys,
             )
         }
-        uploadFormDataPdf(hakemus, hankeTunnus, taydennys.hakemusData)
+        uploadFormDataPdf(hakemus, hanke.hankeTunnus, taydennys.hakemusData)
+        uploadHaittojenhallintasuunnitelmaPdf(hakemus, hanke, taydennys.hakemusData)
     }
 
     private fun uploadFormDataPdf(
@@ -492,6 +495,36 @@ class TaydennysService(
             )
         return pdf.copy(metadata = newMetadata)
     }
+
+    private fun uploadHaittojenhallintasuunnitelmaPdf(
+        hakemus: HakemusIdentifier,
+        hanke: HankeEntity,
+        data: HakemusData,
+    ) {
+        createHaittojenhallintasuunnitelmaPdf(hanke, data)?.let {
+            try {
+                alluClient.addAttachment(hakemus.alluid!!, it)
+            } catch (e: Exception) {
+                logger.error(e) {
+                    "Error while uploading haittojenhallintasuunnitelma PDF attachment for täydennys. Continuing anyway. ${hakemus.logString()}"
+                }
+            }
+        }
+    }
+
+    private fun createHaittojenhallintasuunnitelmaPdf(
+        hanke: HankeEntity,
+        data: HakemusData,
+    ): Attachment? =
+        hakemusService.getHaittojenhallintasuunnitelmaPdf(hanke, data)?.let {
+            val newMetadata =
+                it.metadata.copy(
+                    name = HHS_PDF_FILENAME,
+                    description =
+                        "Haittojenhallintasuunnitelma from Haitaton taydennys, dated ${LocalDateTime.now()}.",
+                )
+            it.copy(metadata = newMetadata)
+        }
 
     private fun sendInformationRequestCanceledEmails(hakemus: HakemusEntity) {
         hakemus
