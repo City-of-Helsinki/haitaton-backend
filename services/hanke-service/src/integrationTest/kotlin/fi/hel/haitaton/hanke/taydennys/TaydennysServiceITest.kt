@@ -41,6 +41,7 @@ import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HaittaFactory.DEFAULT_HHS_PYORALIIKENNE
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.TaydennysAttachmentFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory.Companion.toUpdateRequest
@@ -117,6 +118,7 @@ class TaydennysServiceITest(
     @Autowired private val alluClient: AlluClient,
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val hakemusFactory: HakemusFactory,
+    @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
     @Autowired private val taydennysFactory: TaydennysFactory,
     @Autowired private val attachmentFactory: TaydennysAttachmentFactory,
@@ -657,6 +659,7 @@ class TaydennysServiceITest(
                     setOf(InformationRequestFieldKey.ATTACHMENT),
                 )
                 alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -698,6 +701,7 @@ class TaydennysServiceITest(
                     setOf(InformationRequestFieldKey.GEOMETRY),
                 )
                 alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -744,6 +748,7 @@ class TaydennysServiceITest(
                     emptySet(),
                 )
                 alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -1023,6 +1028,77 @@ class TaydennysServiceITest(
             verifySequence {
                 alluClient.respondToInformationRequest(any(), any(), any(), any())
                 alluClient.addAttachment(hakemus.alluid!!, withName(FORM_DATA_PDF_FILENAME))
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
+        fun `sends a new haittojenhallintasuunnitelma to Allu when the hakemus is a kaivuilmoitus`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+            val hankeEntity = hankeRepository.getReferenceById(hanke.id)
+            val hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankealue = hanke.alueet.single())
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).withStartTime(startTime).save()
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            every { alluClient.getApplicationInformation(any()) } returns
+                AlluFactory.createAlluApplicationResponse(
+                    hakemus.alluid!!,
+                    status = ApplicationStatus.HANDLING,
+                )
+            val attachments = mutableListOf<Attachment>()
+            every { alluClient.addAttachment(hakemus.alluid!!, capture(attachments)) } throws
+                AlluException()
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            val attachmentMetadata =
+                attachments
+                    .map { it.metadata }
+                    .first { it.name == "haitaton-haittojenhallintasuunnitelma-taydennys.pdf" }
+            assertThat(attachmentMetadata)
+                .prop(AttachmentMetadata::description)
+                .isNotNull()
+                .contains("Haittojenhallintasuunnitelma from Haitaton taydennys, dated ")
+            verifySequence {
+                alluClient.respondToInformationRequest(any(), any(), any(), any())
+                alluClient.addAttachment(hakemus.alluid!!, withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(hakemus.alluid!!, withName(HHS_PDF_FILENAME))
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
+        fun `updates the Allu status even when sending the haittojenhallintasuunnitelma attachment fails`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+            val hankeEntity = hankeRepository.getReferenceById(hanke.id)
+            val hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankealue = hanke.alueet.single())
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).withStartTime(startTime).save()
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            every { alluClient.getApplicationInformation(any()) } returns
+                AlluFactory.createAlluApplicationResponse(
+                    hakemus.alluid!!,
+                    status = ApplicationStatus.HANDLING,
+                )
+            justRun { alluClient.addAttachment(hakemus.alluid!!, any()) }
+
+            val response = taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            assertThat(response.alluStatus).isEqualTo(ApplicationStatus.HANDLING)
+            val updatedHakemus = hakemusService.getById(hakemus.id)
+            assertThat(updatedHakemus.alluStatus).isEqualTo(ApplicationStatus.HANDLING)
+            verifySequence {
+                alluClient.respondToInformationRequest(any(), any(), any(), any())
+                alluClient.addAttachment(hakemus.alluid!!, withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(hakemus.alluid!!, withName(HHS_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }

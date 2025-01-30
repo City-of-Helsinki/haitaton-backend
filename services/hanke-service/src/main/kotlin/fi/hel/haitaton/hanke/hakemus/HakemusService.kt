@@ -703,7 +703,7 @@ class HakemusService(
         }
     }
 
-    private fun getHaittojenhallintasuunnitelmaPdf(
+    fun getHaittojenhallintasuunnitelmaPdf(
         hankeEntity: HankeEntity,
         data: HakemusData,
     ): Attachment? {
