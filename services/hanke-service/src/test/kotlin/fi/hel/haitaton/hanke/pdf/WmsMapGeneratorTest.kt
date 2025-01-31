@@ -26,7 +26,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class MapGeneratorTest {
+class WmsMapGeneratorTest {
 
     private val wideArea: List<KaivuilmoitusAlue> =
         "/fi/hel/haitaton/hanke/pdf-test-data/wide-area.json".asJsonResource()
@@ -42,7 +42,7 @@ class MapGeneratorTest {
         private lateinit var mockWmsServer: MockWebServer
 
         private lateinit var wms: WebMapServer
-        private lateinit var mapGenerator: MapGenerator
+        private lateinit var mapGenerator: WmsMapGenerator
 
         @BeforeEach
         fun setup() {
@@ -51,7 +51,7 @@ class MapGeneratorTest {
             mockWmsServer.dispatcher = GeoserverDispatcher(mockWmsServer.url(""))
 
             wms = WebMapServer(mockWmsServer.url("/capabilities").toUrl())
-            mapGenerator = MapGenerator(wms)
+            mapGenerator = WmsMapGenerator(wms)
         }
 
         @AfterEach
@@ -115,7 +115,7 @@ class MapGeneratorTest {
             val kaivuilmoitusalueet: List<KaivuilmoitusAlue> =
                 "/fi/hel/haitaton/hanke/pdf-test-data/wide-area.json".asJsonResource()
 
-            val result = MapGenerator.calculateBounds(kaivuilmoitusalueet, 1000, 500)
+            val result = WmsMapGenerator.calculateBounds(kaivuilmoitusalueet, 1000, 500)
 
             assertThat(result).all {
                 prop(MapBounds::xSize).isEqualTo(720.0)
@@ -144,7 +144,7 @@ class MapGeneratorTest {
 
         @Test
         fun `returns correct bounds when fitting a wide area to a tall image`() {
-            val result = MapGenerator.calculateBounds(wideArea, 500, 1000)
+            val result = WmsMapGenerator.calculateBounds(wideArea, 500, 1000)
 
             assertThat(result).all {
                 // The area is wide. With padding, it's 720 wide.
@@ -174,7 +174,7 @@ class MapGeneratorTest {
 
         @Test
         fun `returns correct bounds when fitting a tall area to a wide image`() {
-            val result = MapGenerator.calculateBounds(tallArea, 1000, 500)
+            val result = WmsMapGenerator.calculateBounds(tallArea, 1000, 500)
 
             assertThat(result).all {
                 // The area is tall. With padding, it's 260 tall.
@@ -204,7 +204,7 @@ class MapGeneratorTest {
 
         @Test
         fun `returns correct bounds when fitting a tall area to a tall image`() {
-            val result = MapGenerator.calculateBounds(tallArea, 500, 1000)
+            val result = WmsMapGenerator.calculateBounds(tallArea, 500, 1000)
 
             assertThat(result).all {
                 prop(MapBounds::xSize).isEqualTo(260.0)
@@ -233,7 +233,7 @@ class MapGeneratorTest {
 
         @Test
         fun `returns correct bounds when there are many areas`() {
-            val result = MapGenerator.calculateBounds(manyAreas, 1000, 500)
+            val result = WmsMapGenerator.calculateBounds(manyAreas, 1000, 500)
 
             assertThat(result).all {
                 // Y-direction is the one dictating the image scale. The height of the extremes
