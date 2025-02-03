@@ -68,10 +68,7 @@ class HankeService(
         hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
 
     @Transactional
-    fun createHanke(
-        request: CreateHankeRequest,
-        securityContext: SecurityContext,
-    ): Hanke {
+    fun createHanke(request: CreateHankeRequest, securityContext: SecurityContext): Hanke {
         val entity = createNewEntity(request.nimi, false, securityContext.userId())
 
         return saveCreatedHanke(entity, request.perustaja, securityContext)
@@ -125,8 +122,10 @@ class HankeService(
         entity.status = decideNewHankeStatus(entity)
 
         logger.debug { "Saving Hanke ${entity.logString()}." }
-        val savedHankeEntity = hankeRepository.save(entity)
+        val savedHankeEntity = hankeRepository.saveAndFlush(entity)
         logger.debug { "Saved Hanke ${entity.logString()}." }
+
+        assertHakemusCompatibility(entity)
 
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
@@ -142,7 +141,8 @@ class HankeService(
 
         if (anyNonCancelledHakemusProcessingInAllu(hakemukset)) {
             throw HankeAlluConflictException(
-                "Hanke ${hanke.hankeTunnus} has hakemus in Allu processing. Cannot delete.")
+                "Hanke ${hanke.hankeTunnus} has hakemus in Allu processing. Cannot delete."
+            )
         }
 
         hakemukset.forEach { hakemus -> hakemusService.delete(hakemus.id, userId) }
@@ -160,6 +160,14 @@ class HankeService(
                 !hakemusService.isCancelled(it.alluStatus)
         }
 
+    private fun assertHakemusCompatibility(entity: HankeEntity) {
+        val hakemusalueet =
+            hakemusService.hankkeenHakemukset(entity.hankeTunnus).flatMap {
+                it.applicationData.areas ?: listOf()
+            }
+        hakemusService.assertGeometryCompatibility(entity.id, hakemusalueet)
+    }
+
     private fun updateTormaystarkastelut(alueet: List<HankealueEntity>) {
         for (alue in alueet) {
             hankealueService.updateTormaystarkastelu(alue)
@@ -169,7 +177,8 @@ class HankeService(
     private fun decideNewHankeStatus(entity: HankeEntity): HankeStatus {
         val validationResult =
             HankePublicValidator.validateHankeHasMandatoryFields(
-                createHankeDomainObjectFromEntity(entity))
+                createHankeDomainObjectFromEntity(entity)
+            )
 
         return when (val status = entity.status) {
             HankeStatus.DRAFT ->
@@ -193,11 +202,13 @@ class HankeService(
                         }"
                     }
                     throw HankeArgumentException(
-                        "A public hanke didn't have all mandatory fields filled.")
+                        "A public hanke didn't have all mandatory fields filled."
+                    )
                 }
             else ->
                 throw HankeArgumentException(
-                    "A hanke cannot be updated when in status $status. hankeTunnus=${entity.hankeTunnus}")
+                    "A hanke cannot be updated when in status $status. hankeTunnus=${entity.hankeTunnus}"
+                )
         }
     }
 
@@ -230,7 +241,8 @@ class HankeService(
     ): MutableMap<Int, HankeYhteystietoEntity> {
         if (hankeEntity.yhteystiedot.any { it.id == null }) {
             throw DatabaseStateException(
-                "A persisted HankeYhteystietoEntity somehow missing id, Hanke id ${hankeEntity.id}")
+                "A persisted HankeYhteystietoEntity somehow missing id, Hanke id ${hankeEntity.id}"
+            )
         }
         return hankeEntity.yhteystiedot.associateBy { it.id!! }.toMutableMap()
     }
@@ -244,7 +256,7 @@ class HankeService(
         entity: HankeEntity,
         userid: String,
         loggingEntryHolder: YhteystietoLoggingEntryHolder,
-        existingYTs: MutableMap<Int, HankeYhteystietoEntity>
+        existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
     ) {
         // Note, if the incoming data indicates it is an already saved yhteystieto (id-field is
         // set), should try to transfer the business fields to the same old corresponding entity.
@@ -254,7 +266,13 @@ class HankeService(
 
         hanke.yhteystiedotByType().forEach { (type, yhteystiedot) ->
             processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-                yhteystiedot, entity, type, userid, existingYTs, loggingEntryHolder)
+                yhteystiedot,
+                entity,
+                type,
+                userid,
+                existingYTs,
+                loggingEntryHolder,
+            )
         }
 
         // If there is anything left in the existingYTs map, they have been removed in the incoming
@@ -277,7 +295,7 @@ class HankeService(
         contactType: ContactType,
         userid: String,
         existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
-        loggingEntryHolder: YhteystietoLoggingEntryHolder
+        loggingEntryHolder: YhteystietoLoggingEntryHolder,
     ) {
         for (hankeYht in yhteystiedot) {
             // Is the incoming Yhteystieto new (does not have id, create new) or old (has id, update
@@ -291,7 +309,12 @@ class HankeService(
             } else {
                 // Should be an existing Yhteystieto
                 processUpdateYhteystieto(
-                    hankeYht, existingYTs, userid, hankeEntity, loggingEntryHolder)
+                    hankeYht,
+                    existingYTs,
+                    userid,
+                    hankeEntity,
+                    loggingEntryHolder,
+                )
             }
         }
     }
@@ -300,7 +323,7 @@ class HankeService(
         hankeYht: ModifyHankeYhteystietoRequest,
         contactType: ContactType,
         userid: String,
-        hankeEntity: HankeEntity
+        hankeEntity: HankeEntity,
     ) {
         val hankeYhtEntity =
             HankeYhteystietoEntity.fromDomain(hankeYht, contactType, userid, hankeEntity)
@@ -318,7 +341,7 @@ class HankeService(
         existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
         userid: String,
         hanke: HankeIdentifier,
-        loggingEntryHolder: YhteystietoLoggingEntryHolder
+        loggingEntryHolder: YhteystietoLoggingEntryHolder,
     ) {
         val incomingId: Int = request.id!!
         val existingYT: HankeYhteystietoEntity =
@@ -393,7 +416,7 @@ class HankeService(
 
     private fun areEqualIncomingVsExistingYhteystietos(
         incoming: Yhteystieto,
-        existing: HankeYhteystietoEntity
+        existing: HankeYhteystietoEntity,
     ): Boolean {
         if (incoming.nimi != existing.nimi) return false
         if (incoming.email != existing.email) return false
@@ -420,7 +443,7 @@ class HankeService(
     private fun postProcessAndSaveLogging(
         loggingEntryHolder: YhteystietoLoggingEntryHolder,
         savedHankeEntity: HankeEntity,
-        userid: String
+        userid: String,
     ) {
         // It would be possible to process all operation types the same way afterward like for
         // creating new yhteystietos, but that would cause some (relatively) minor extra work, and,
