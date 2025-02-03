@@ -203,3 +203,8 @@ databaseChangeLog:
       file: db/changelog/changesets/086-change-car-lane-nuisance-enum.sql
   - include:
       file: db/changelog/changesets/087-create-table-for-taydennys-attachment.sql
+  - include:
+      file: db/changelog/changesets/088-create-table-hanke-historia.yml
+  - include:
+      file: db/changelog/changesets/089-add-trigger-adding-hanke-historia-lines-for-hanke.sql
+
