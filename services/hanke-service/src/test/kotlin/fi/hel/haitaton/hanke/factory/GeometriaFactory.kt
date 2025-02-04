@@ -37,5 +37,14 @@ object GeometriaFactory {
             .asJsonResource<Geometriat>()
             .copy(id = id)
 
+    fun create(id: Int = 1, geometria: Polygon): Geometriat {
+        val geometriat = create(id)
+        geometriat.featureCollection?.apply {
+            val feature = features.first()
+            feature.geometry = geometria
+        }
+        return geometriat
+    }
+
     fun createNew(): NewGeometriat = NewGeometriat(create().featureCollection)
 }
