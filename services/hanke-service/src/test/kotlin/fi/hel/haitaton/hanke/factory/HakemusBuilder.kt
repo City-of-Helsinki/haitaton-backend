@@ -1,10 +1,12 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.Hakemus
@@ -28,6 +30,8 @@ import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import java.security.InvalidParameterException
 import java.time.ZonedDateTime
+import org.geojson.Crs
+import org.geojson.Polygon
 
 data class HakemusBuilder(
     private var hakemusEntity: HakemusEntity,
@@ -97,18 +101,30 @@ data class HakemusBuilder(
         return this
     }
 
-    fun withArea(hankealueId: Int? = null) =
-        updateApplicationData(
-            { copy(areas = (areas ?: listOf()).plus(createCableReportApplicationArea())) },
+    fun withArea(hankealueId: Int? = null, geometry: Polygon? = null): HakemusBuilder {
+        val polygon = geometry ?: GeometriaFactory.secondPolygon()
+        return updateApplicationData(
             {
                 copy(
                     areas =
                         (areas ?: listOf()).plus(
-                            createExcavationNotificationArea(hankealueId = hankealueId ?: 0)
+                            createCableReportApplicationArea(geometry = polygon)
+                        )
+                )
+            },
+            {
+                copy(
+                    areas =
+                        (areas ?: listOf()).plus(
+                            createExcavationNotificationArea(
+                                hankealueId = hankealueId ?: 0,
+                                tyoalueet = listOf(createTyoalue(geometry = polygon)),
+                            )
                         )
                 )
             },
         )
+    }
 
     fun withStartTime(time: ZonedDateTime? = DateFactory.getStartDatetime()) =
         updateApplicationData({ copy(startTime = time) }, { copy(startTime = time) })
@@ -186,14 +202,17 @@ data class HakemusBuilder(
     }
 
     /** Set all the fields that need to be set for the application to be valid for sending. */
-    fun withMandatoryFields(hankealue: SavedHankealue? = null): HakemusBuilder =
-        when (hakemusEntity.hakemusEntityData) {
+    fun withMandatoryFields(hankealue: SavedHankealue? = null): HakemusBuilder {
+        val polygon =
+            hankealue?.geometriat?.featureCollection?.features?.single()?.geometry as Polygon?
+        polygon?.crs = Crs().apply { properties = mapOf(Pair("name", COORDINATE_SYSTEM_URN)) }
+        return when (hakemusEntity.hakemusEntityData) {
             is JohtoselvityshakemusEntityData ->
                 withName(ApplicationFactory.DEFAULT_APPLICATION_NAME)
                     .withWorkDescription(ApplicationFactory.DEFAULT_WORK_DESCRIPTION)
                     .withStartTime()
                     .withEndTime()
-                    .withArea()
+                    .withArea(geometry = polygon)
                     .withRockExcavation(false)
                     .hakija()
                     .tyonSuorittaja(founder())
@@ -202,7 +221,7 @@ data class HakemusBuilder(
                     .withWorkDescription(ApplicationFactory.DEFAULT_WORK_DESCRIPTION)
                     .withStartTime()
                     .withEndTime()
-                    .withArea(hankealue?.id)
+                    .withArea(hankealue?.id, polygon)
                     .withCableReports(
                         listOf(ApplicationFactory.DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER)
                     )
@@ -212,6 +231,7 @@ data class HakemusBuilder(
                     .tyonSuorittaja(founder())
                     .withInvoicingCustomer()
         }
+    }
 
     /**
      * Make the hakemus appear like it has been just sent. I.e. it has mandatory fields and allu

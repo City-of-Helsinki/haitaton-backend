@@ -33,6 +33,7 @@ import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HaittaFactory
+import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeBuilder.Companion.toModifyRequest
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
@@ -44,6 +45,8 @@ import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
+import fi.hel.haitaton.hanke.hakemus.HakemusGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -90,6 +93,7 @@ class UpdateHankeITests(
     @Autowired private val auditLogRepository: AuditLogRepository,
     @Autowired private val hankeYhteyshenkiloRepository: HankeYhteyshenkiloRepository,
     @Autowired private val hankeFactory: HankeFactory,
+    @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val jdbcTemplate: JdbcTemplate,
 ) : IntegrationTest() {
@@ -966,6 +970,102 @@ class UpdateHankeITests(
                 }
             }
         }
+    }
+
+    @Test
+    fun `throws exception when removing a hankealue with a johtoselvityshakemus on it`() {
+        val firstArea = HankealueFactory.create(nimi = "Alue hakemuksella")
+        val geometriat = GeometriaFactory.create(geometria = GeometriaFactory.fourthPolygon())
+        val secondArea = HankealueFactory.create(nimi = "Ilman hakemusta", geometriat = geometriat)
+        val hankeEntity =
+            hankeFactory.builder().withHankealue(firstArea).withHankealue(secondArea).saveEntity()
+        val hanke = hankeService.loadHanke(hankeEntity.hankeTunnus)!!
+        val hakemus =
+            hakemusFactory
+                .builder(hankeEntity)
+                .withMandatoryFields(
+                    hankealue = hanke.alueet.first { it.nimi == "Alue hakemuksella" }
+                )
+                .save()
+        hanke.alueet.removeIf { it.nimi == "Alue hakemuksella" }
+        val request = hanke.toModifyRequest()
+
+        val failure = assertFailure { hankeService.updateHanke(hanke.hankeTunnus, request) }
+
+        failure.all {
+            hasClass(HakemusGeometryNotInsideHankeException::class)
+            messageContains("Hakemus geometry doesn't match any hankealue")
+            messageContains(
+                "hakemus geometry=${hakemus.applicationData.areas!!.single().geometries().single().toJsonString()}"
+            )
+        }
+    }
+
+    @Test
+    fun `throws exception when removing a hankealue with a kaivuilmoitus on it`() {
+        val firstArea = HankealueFactory.create(nimi = "Alue hakemuksella")
+        val geometriat = GeometriaFactory.create(geometria = GeometriaFactory.fourthPolygon())
+        val secondArea = HankealueFactory.create(nimi = "Ilman hakemusta", geometriat = geometriat)
+        val hankeEntity =
+            hankeFactory.builder().withHankealue(firstArea).withHankealue(secondArea).saveEntity()
+        val hanke = hankeService.loadHanke(hankeEntity.hankeTunnus)!!
+        val hankealueWithHakemus = hanke.alueet.first { it.nimi == "Alue hakemuksella" }
+        val hakemus =
+            hakemusFactory
+                .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                .withMandatoryFields(hankealue = hankealueWithHakemus)
+                .save()
+        hanke.alueet.remove(hankealueWithHakemus)
+        val request = hanke.toModifyRequest()
+
+        val failure = assertFailure { hankeService.updateHanke(hanke.hankeTunnus, request) }
+
+        failure.all {
+            hasClass(HakemusGeometryNotInsideHankeException::class)
+            messageContains("Hakemus geometry is outside the associated hankealue")
+            messageContains("hankealue=${hankealueWithHakemus.id}")
+            messageContains(
+                "hakemus geometry=${hakemus.applicationData.areas!!.single().geometries().single().toJsonString()}"
+            )
+        }
+    }
+
+    @Test
+    fun `accepts the update when removing an area with no hakemus`() {
+        val firstArea = HankealueFactory.create(nimi = "Alue johtoselvityshakemuksella")
+        val geometriat1 = GeometriaFactory.create(geometria = GeometriaFactory.fourthPolygon())
+        val secondArea = HankealueFactory.create(nimi = "Ilman hakemusta", geometriat = geometriat1)
+        val geometriat2 = GeometriaFactory.create(geometria = GeometriaFactory.polygon())
+        val thirdArea =
+            HankealueFactory.create(nimi = "Alue kaivuilmoituksella", geometriat = geometriat2)
+        val hankeEntity =
+            hankeFactory
+                .builder()
+                .withHankealue(firstArea)
+                .withHankealue(secondArea)
+                .withHankealue(thirdArea)
+                .saveEntity()
+        val hanke = hankeService.loadHanke(hankeEntity.hankeTunnus)!!
+        hakemusFactory
+            .builder(hankeEntity)
+            .withMandatoryFields(
+                hankealue = hanke.alueet.first { it.nimi == "Alue johtoselvityshakemuksella" }
+            )
+            .save()
+        hakemusFactory
+            .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+            .withMandatoryFields(
+                hankealue = hanke.alueet.first { it.nimi == "Alue kaivuilmoituksella" }
+            )
+            .save()
+        hanke.alueet.removeIf { it.nimi == "Ilman hakemusta" }
+        val request = hanke.toModifyRequest()
+
+        val updatedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
+
+        assertThat(updatedHanke.alueet)
+            .extracting(SavedHankealue::nimi)
+            .containsExactlyInAnyOrder("Alue johtoselvityshakemuksella", "Alue kaivuilmoituksella")
     }
 
     private fun assertFeaturePropertiesIsReset(hanke: Hanke, propertiesWanted: Map<String, Any?>) {
