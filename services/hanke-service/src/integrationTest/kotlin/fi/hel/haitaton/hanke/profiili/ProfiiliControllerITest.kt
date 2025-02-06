@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.security.JwtClaims
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.Called
 import io.mockk.Runs
@@ -70,6 +71,17 @@ class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : Contro
         fun `returns 404 when profiili client throws expected exception`() {
             every { profiiliService.getVerifiedName(any()) } throws
                 VerifiedNameNotFound("Because of reasons.")
+
+            get(url).andExpect(MockMvcResultMatchers.status().isNotFound)
+
+            verifyAll { profiiliService.getVerifiedName(any()) }
+            verify { disclosureLogService wasNot Called }
+        }
+
+        @Test
+        fun `returns 404 when name is not found from AD-token`() {
+            every { profiiliService.getVerifiedName(any()) } throws
+                NameClaimNotFound(JwtClaims.FAMILY_NAME)
 
             get(url).andExpect(MockMvcResultMatchers.status().isNotFound)
 
