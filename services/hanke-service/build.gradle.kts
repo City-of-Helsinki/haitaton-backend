@@ -116,7 +116,7 @@ dependencies {
     implementation("org.geotools:gt-wms:$geoToolsVersion")
     implementation("org.geotools:gt-brewer:$geoToolsVersion")
     implementation("org.geotools:gt-epsg-hsql:$geoToolsVersion")
-    implementation("org.locationtech.jts.io:jts-io-common:1.19.0")
+    implementation("org.locationtech.jts.io:jts-io-common:1.20.0")
 
     // Testcontainers
     testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
