@@ -22,6 +22,7 @@ AS '
     pintaAlaNew numeric;
     pintaAlaHist numeric;
     myId integer;
+    oldData johtoselvitys_historia%rowtype;
   BEGIN
     IF (TG_OP = ''INSERT'' AND NEW.applicationtype=''CABLE_REPORT'') THEN
         -- Handle insert logic here
@@ -71,8 +72,14 @@ AS '
             ''INSERT'', CURRENT_TIMESTAMP, CURRENT_USER);
     ELSIF (TG_OP = ''UPDATE'' AND NEW.applicationtype=''CABLE_REPORT'') THEN
         -- Handle update logic here
-        select a.id, st_multi(st_union(ST_GeomFromGeoJSON((geom_json->''geometry'')))), round(st_area(st_multi(st_union(ST_GeomFromGeoJSON((geom_json->''geometry'')))))) into myId, geomNew, pintaAlaNew
-            from applications a left join lateral jsonb_array_elements(a.applicationdata->''areas'') as geom_json on true where a.applicationtype=''CABLE_REPORT'' and a.id=NEW.id group by 1 order by id;
+        begin
+            select a.id, st_multi(st_union(ST_GeomFromGeoJSON((geom_json->''geometry'')))), round(st_area(st_multi(st_union(ST_GeomFromGeoJSON((geom_json->''geometry'')))))) into myId, geomNew, pintaAlaNew
+                from applications a left join lateral jsonb_array_elements(a.applicationdata->''areas'') as geom_json on true where a.applicationtype=''CABLE_REPORT'' and a.id=NEW.id group by 1 order by id;
+            exception
+                when others then
+                    pintaAlaNew:=null;
+                    geomNew:=null;
+        end;
 
         select coalesce(array_agg(h4.tyyppi),array[]::text[]) into tallentajaNew from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.id;
         select case when tyyppi=''PERSON'' then ''YKSITYISHENKILO'' else nimi end into tyostaVastaavaNew from hakemusyhteystieto where application_id=NEW.id and rooli=''HAKIJA'';
@@ -152,8 +159,7 @@ AS '
         END IF;
     ELSIF (TG_OP = ''DELETE'' AND OLD.applicationtype=''CABLE_REPORT'') THEN
         -- Handle delete logic here
-        select a.id, st_multi(st_union(ST_GeomFromGeoJSON((geom_json->''geometry'')))), round(st_area(st_multi(st_union(ST_GeomFromGeoJSON((geom_json->''geometry'')))))) into myId, geomNew, pintaAlaNew
-            from applications a left join lateral jsonb_array_elements(a.applicationdata->''areas'') as geom_json on true where a.applicationtype=''CABLE_REPORT'' and a.id=OLD.id group by 1 order by id;
+        select hh.* into oldData from johtoselvitys_historia hh where hh.dml_id=(select max(dml_id) from johtoselvitys_historia where hakemuksen_id=OLD.id);
         INSERT INTO johtoselvitys_historia (
             hanketunnus,
             hakemuksen_id, hakemuksen_tunnus, hakemuksen_tila,
@@ -177,7 +183,7 @@ AS '
             tallentaja_taho,
             dml_type, dml_timestamp, dml_created_by)
         VALUES (
-            (select hanke.hanketunnus from hanke where id=OLD.hanke_id),
+            oldData.hanketunnus,
             OLD.id, OLD.applicationidentifier, OLD.allustatus,
             OLD.applicationdata ->> ''name'',
             trim(OLD.applicationdata -> ''postalAddress'' -> ''streetAddress'' ->> ''streetName''),
@@ -189,14 +195,14 @@ AS '
             OLD.applicationdata ->> ''workDescription'',
             to_timestamp(cast(OLD.applicationdata ->> ''startTime'' as decimal)),
             to_timestamp(cast(OLD.applicationdata ->> ''endTime'' as decimal)),
-            (select case when tyyppi=''PERSON'' then ''YKSITYISHENKILO'' else nimi end AS rakennuttajat from hakemusyhteystieto where application_id=OLD.id and rooli=''HAKIJA''),
-            (select case when tyyppi=''PERSON'' then ''YKSITYISHENKILO'' else nimi end AS rakennuttajat from hakemusyhteystieto where application_id=OLD.id and rooli=''TYON_SUORITTAJA''),
-            (select case when tyyppi=''PERSON'' then ''YKSITYISHENKILO'' else nimi end AS rakennuttajat from hakemusyhteystieto where application_id=OLD.id and rooli=''RAKENNUTTAJA''),
-            (select case when tyyppi=''PERSON'' then ''YKSITYISHENKILO'' else nimi end AS rakennuttajat from hakemusyhteystieto where application_id=OLD.id and rooli=''ASIANHOITAJA''),
-            pintaAlaNew,
-            geomNew,
+            oldData.tyosta_vastaava,
+            oldData.tyon_suorittaja,
+            oldData.rakennuttaja,
+            oldData.asianhoitaja,
+            oldData.pinta_ala,
+            oldData.geometria,
             CURRENT_TIMESTAMP,
-            (select array_agg(h4.tyyppi) from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=OLD.id),
+            oldData.tallentaja_taho,
             ''DELETE'', CURRENT_TIMESTAMP, CURRENT_USER);
     END IF;
     RETURN NEW;
