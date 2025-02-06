@@ -215,9 +215,3 @@ databaseChangeLog:
       file: db/changelog/changesets/092-add-trigger-adding-hankealue-historia-lines-for-hankegeometria.sql
   - include:
       file: db/changelog/changesets/093-add-trigger-adding-hankealue-historia-lines-for-tormaystarkastelutulos.sql
-  - include:
-      file: db/changelog/changesets/094-create-table-johtoselvitys-historia.yml
-  - include:
-      file: db/changelog/changesets/095-add-trigger-adding-johtoselvitys-historia-lines-for-applications.sql
-  - include:
-      file: db/changelog/changesets/096-add-trigger-adding-johtoselvitys-historia-lines-for-hakemusyhteystieto.sql
