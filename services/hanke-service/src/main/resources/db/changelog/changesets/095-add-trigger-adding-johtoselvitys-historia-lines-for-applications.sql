@@ -74,7 +74,7 @@ AS '
         -- Handle update logic here
         begin
             select a.id, st_multi(st_union(ST_GeomFromGeoJSON((geom_json->''geometry'')))), round(st_area(st_multi(st_union(ST_GeomFromGeoJSON((geom_json->''geometry'')))))) into myId, geomNew, pintaAlaNew
-                from applications a left join lateral jsonb_array_elements(a.applicationdata->''areas'') as geom_json on true where a.applicationtype=''CABLE_REPORT'' and a.id=NEW.id group by 1 order by id;
+                from applications a left join lateral jsonb_array_elements(jsonb_strip_nulls(a.applicationdata->''areas'')) as geom_json on true where a.applicationtype=''CABLE_REPORT'' and a.id=NEW.id group by 1 order by id;
             exception
                 when others then
                     pintaAlaNew:=null;
