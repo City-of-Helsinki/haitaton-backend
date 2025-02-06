@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.checkChange
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
@@ -57,11 +58,6 @@ data class Hakemus(
         )
 }
 
-private fun <D : HakemusData> D.checkChange(property: KProperty1<D, Any?>, second: D): String? =
-    if (property.get(this) != property.get(second)) {
-        property.name
-    } else null
-
 private fun <D : HakemusData> D.checkChangeInYhteystieto(
     property: KProperty1<D, Hakemusyhteystieto?>,
     second: D,
@@ -86,12 +82,11 @@ private fun checkChangesInAreas(
     secondAreas: List<Hakemusalue>,
 ): List<String> {
     val changedElementsInFirst =
-        firstAreas
-            .withIndex()
-            .filter { (i, area) -> area != secondAreas.getOrNull(i) }
-            .map { it.index }
-    val elementsInSecondButNotFirst = secondAreas.indices.drop(firstAreas.size)
-    return (changedElementsInFirst + elementsInSecondButNotFirst).map { "areas[$it]" }
+        firstAreas.withIndex().flatMap { (i, area) ->
+            area.listChanges("areas[$i]", secondAreas.getOrNull(i))
+        }
+    val elementsInSecondButNotFirst = secondAreas.indices.drop(firstAreas.size).map { "areas[$it]" }
+    return (changedElementsInFirst + elementsInSecondButNotFirst)
 }
 
 sealed interface HakemusData {
@@ -266,11 +261,15 @@ data class KaivuilmoitusData(
         checkChange(KaivuilmoitusData::cableReports, other)?.let { changes.add(it) }
         checkChange(KaivuilmoitusData::placementContracts, other)?.let { changes.add(it) }
         checkChange(KaivuilmoitusData::requiredCompetence, other)?.let { changes.add(it) }
-        checkChange(KaivuilmoitusData::contractorWithContacts, other)?.let { changes.add(it) }
-        checkChange(KaivuilmoitusData::propertyDeveloperWithContacts, other)?.let {
+        checkChangeInYhteystieto(KaivuilmoitusData::contractorWithContacts, other)?.let {
             changes.add(it)
         }
-        checkChange(KaivuilmoitusData::representativeWithContacts, other)?.let { changes.add(it) }
+        checkChangeInYhteystieto(KaivuilmoitusData::propertyDeveloperWithContacts, other)?.let {
+            changes.add(it)
+        }
+        checkChangeInYhteystieto(KaivuilmoitusData::representativeWithContacts, other)?.let {
+            changes.add(it)
+        }
         checkChange(KaivuilmoitusData::invoicingCustomer, other)?.let { changes.add(it) }
         checkChange(KaivuilmoitusData::additionalInfo, other)?.let { changes.add(it) }
 

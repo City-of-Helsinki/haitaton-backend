@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.taydennys
 
+import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Attachment
@@ -26,6 +27,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusService.Companion.toExistingYhteysti
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.TaydennysLoggingService
 import fi.hel.haitaton.hanke.logging.TaydennyspyyntoLoggingService
@@ -42,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional
 private val logger = KotlinLogging.logger {}
 
 const val FORM_DATA_PDF_FILENAME = "haitaton-form-data-taydennys.pdf"
+const val HHS_PDF_FILENAME = "haitaton-haittojenhallintasuunnitelma-taydennys.pdf"
 
 @Service
 class TaydennysService(
@@ -143,6 +146,8 @@ class TaydennysService(
         }
 
         taydennysRepository.findByApplicationId(application.id)?.also {
+            resetAreasIfHankeGenerated(it)
+
             logger.info { "A täydennys was found. Removing it." }
             attachmentService.deleteAllAttachments(it)
             taydennysLoggingService.logDeleteFromAllu(it.toDomain())
@@ -212,7 +217,7 @@ class TaydennysService(
 
         sendAttachments(attachments, hakemus)
 
-        sendTaydennysToAllu(taydennys, hakemus, taydennyspyyntoId, hanke.hankeTunnus, changes)
+        sendTaydennysToAllu(taydennys, hakemus, taydennyspyyntoId, hanke, changes)
 
         if (hanke.generated) {
             hanke.nimi = taydennys.hakemusData.name
@@ -433,13 +438,20 @@ class TaydennysService(
         taydennys: Taydennys,
         hakemus: HakemusIdentifier,
         taydennyspyyntoAlluId: Int,
-        hankeTunnus: String,
+        hanke: HankeEntity,
         muutokset: List<String>,
     ) {
         val updatedFieldKeys =
-            muutokset.mapNotNull { InformationRequestFieldKey.fromHaitatonFieldName(it) }.toSet()
+            muutokset
+                .mapNotNull {
+                    InformationRequestFieldKey.fromHaitatonFieldName(
+                        it,
+                        taydennys.hakemusData.applicationType,
+                    )
+                }
+                .toSet()
 
-        val alluData = taydennys.hakemusData.toAlluData(hankeTunnus)
+        val alluData = taydennys.hakemusData.toAlluData(hanke.hankeTunnus)
 
         disclosureLogService.withDisclosureLogging(hakemus.id, alluData) {
             alluClient.respondToInformationRequest(
@@ -449,7 +461,8 @@ class TaydennysService(
                 updatedFieldKeys,
             )
         }
-        uploadFormDataPdf(hakemus, hankeTunnus, taydennys.hakemusData)
+        uploadFormDataPdf(hakemus, hanke.hankeTunnus, taydennys.hakemusData)
+        uploadHaittojenhallintasuunnitelmaPdf(hakemus, hanke, taydennys.hakemusData)
     }
 
     private fun uploadFormDataPdf(
@@ -483,6 +496,36 @@ class TaydennysService(
         return pdf.copy(metadata = newMetadata)
     }
 
+    private fun uploadHaittojenhallintasuunnitelmaPdf(
+        hakemus: HakemusIdentifier,
+        hanke: HankeEntity,
+        data: HakemusData,
+    ) {
+        createHaittojenhallintasuunnitelmaPdf(hanke, data)?.let {
+            try {
+                alluClient.addAttachment(hakemus.alluid!!, it)
+            } catch (e: Exception) {
+                logger.error(e) {
+                    "Error while uploading haittojenhallintasuunnitelma PDF attachment for täydennys. Continuing anyway. ${hakemus.logString()}"
+                }
+            }
+        }
+    }
+
+    private fun createHaittojenhallintasuunnitelmaPdf(
+        hanke: HankeEntity,
+        data: HakemusData,
+    ): Attachment? =
+        hakemusService.getHaittojenhallintasuunnitelmaPdf(hanke, data)?.let {
+            val newMetadata =
+                it.metadata.copy(
+                    name = HHS_PDF_FILENAME,
+                    description =
+                        "Haittojenhallintasuunnitelma from Haitaton taydennys, dated ${LocalDateTime.now()}.",
+                )
+            it.copy(metadata = newMetadata)
+        }
+
     private fun sendInformationRequestCanceledEmails(hakemus: HakemusEntity) {
         hakemus
             .allContactUsers()
@@ -503,10 +546,29 @@ class TaydennysService(
     fun delete(id: UUID, currentUserId: String) {
         val taydennysEntity =
             taydennysRepository.findByIdOrNull(id) ?: throw TaydennysNotFoundException(id)
+
+        resetAreasIfHankeGenerated(taydennysEntity)
+
         attachmentService.deleteAllAttachments(taydennysEntity)
         val taydennys = taydennysEntity.toDomain()
         taydennysRepository.delete(taydennysEntity)
         taydennysLoggingService.logDelete(taydennys, currentUserId)
+    }
+
+    /**
+     * Check if the hanke this täydennys belongs to is a generated one. If it is, reset the areas to
+     * match the ones in the original application.
+     */
+    private fun resetAreasIfHankeGenerated(taydennysEntity: TaydennysEntity) {
+        val hakemus = hakemusRepository.getReferenceById(taydennysEntity.hakemusId())
+        val hanke = hakemus.hanke
+        val data = hakemus.hakemusEntityData
+        if (hanke.generated && data is JohtoselvityshakemusEntityData) {
+            logger.info {
+                "Täydennys was done to a generated hanke. Resetting the hanke areas to match the original hakemus. ${hanke.logString()} ${hakemus.logString()} ${taydennysEntity.logString()}"
+            }
+            hakemusService.updateHankealueet(hanke, data.areas, data.startTime, data.endTime)
+        }
     }
 
     companion object {

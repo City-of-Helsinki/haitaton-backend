@@ -2,12 +2,16 @@ package fi.hel.haitaton.hanke.pdf
 
 import java.net.URI
 import java.net.URL
+import org.geotools.http.HTTPClientFinder
+import org.geotools.http.LoggingHTTPClient
 import org.geotools.ows.wms.WebMapServer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 
 @Configuration
+@Profile("!test")
 class WmsConfiguration(
     @Value("\${haitaton.map-service.capability-url}") private val mapServiceUrl: String
 ) {
@@ -16,6 +20,8 @@ class WmsConfiguration(
 
     @Bean
     fun wms(): WebMapServer {
-        return WebMapServer(url)
+        val httpClient = LoggingHTTPClient(HTTPClientFinder.createClient())
+        httpClient.isTryGzip = true
+        return WebMapServer(url, httpClient)
     }
 }
