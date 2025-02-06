@@ -46,4 +46,13 @@ class ProfiiliController(private val profiiliService: ProfiiliService) {
         Sentry.captureException(ex)
         return HankeError.HAI4005
     }
+
+    @ExceptionHandler(NameClaimNotFound::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun claimNameNotFound(ex: NameClaimNotFound): HankeError {
+        logger.error { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI4005
+    }
 }
