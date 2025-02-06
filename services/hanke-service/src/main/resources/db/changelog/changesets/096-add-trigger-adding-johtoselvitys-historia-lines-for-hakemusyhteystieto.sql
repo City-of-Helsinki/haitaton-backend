@@ -11,12 +11,18 @@ AS '
     applicationTypeCheck varchar(40);
     tallentajaNew text[];
     tallentajaHist text[];
+    geomNew geometry;
+    geomHist geometry;
+    pintaAlaNew numeric;
+    pintaAlaHist numeric;
+    myId integer;
   BEGIN
     applicationTypeCheck:=NULL;
     IF (TG_OP = ''INSERT'') THEN
         -- Handle insert logic here
         select applicationtype into applicationTypeCheck from applications where id=NEW.application_id;
         IF (applicationTypeCheck=''CABLE_REPORT'') THEN
+
             select hh.* into oldData from johtoselvitys_historia hh where hh.dml_id=(select max(dml_id) from johtoselvitys_historia where hakemuksen_id=NEW.application_id);
             select coalesce(array_agg(h4.tyyppi),array[]::text[]) into tallentajaNew from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.application_id;
             IF NEW.tyyppi=''PERSON'' THEN
@@ -60,6 +66,8 @@ AS '
                         tyon_suorittaja,
                         rakennuttaja,
                         asianhoitaja,
+                        pinta_ala,
+                        geometria,
                         muutosaika,
                         tallentaja_taho,
                         dml_type, dml_timestamp, dml_created_by)
@@ -80,6 +88,8 @@ AS '
                         oldData.tyon_suorittaja,
                         oldData.rakennuttaja,
                         oldData.asianhoitaja,
+                        oldData.pinta_ala,
+                        oldData.geometria,
                         oldData.muutosaika,
                         oldData.tallentaja_taho,
                         oldData.dml_type, oldData.dml_timestamp, oldData.dml_created_by);
@@ -132,6 +142,8 @@ AS '
                         tyon_suorittaja,
                         rakennuttaja,
                         asianhoitaja,
+                        pinta_ala,
+                        geometria,
                         muutosaika,
                         tallentaja_taho,
                         dml_type, dml_timestamp, dml_created_by)
@@ -152,6 +164,8 @@ AS '
                         oldData.tyon_suorittaja,
                         oldData.rakennuttaja,
                         oldData.asianhoitaja,
+                        oldData.pinta_ala,
+                        oldData.geometria,
                         oldData.muutosaika,
                         oldData.tallentaja_taho,
                         oldData.dml_type, oldData.dml_timestamp, oldData.dml_created_by);
@@ -196,6 +210,8 @@ AS '
                 tyon_suorittaja,
                 rakennuttaja,
                 asianhoitaja,
+                pinta_ala,
+                geometria,
                 muutosaika,
                 tallentaja_taho,
                 dml_type, dml_timestamp, dml_created_by)
@@ -216,6 +232,8 @@ AS '
                 oldData.tyon_suorittaja,
                 oldData.rakennuttaja,
                 oldData.asianhoitaja,
+                oldData.pinta_ala,
+                oldData.geometria,
                 oldData.muutosaika,
                 oldData.tallentaja_taho,
                 oldData.dml_type, oldData.dml_timestamp, oldData.dml_created_by);

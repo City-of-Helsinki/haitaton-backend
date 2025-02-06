@@ -25,8 +25,6 @@ AS '
   BEGIN
     IF (TG_OP = ''INSERT'' AND NEW.applicationtype=''CABLE_REPORT'') THEN
         -- Handle insert logic here
-        select a.id, st_multi(st_union(ST_GeomFromGeoJSON((geom_json->''geometry'')))), round(st_area(st_multi(st_union(ST_GeomFromGeoJSON((geom_json->''geometry'')))))) into myId, geomNew, pintaAlaNew
-            from applications a left join lateral jsonb_array_elements(a.applicationdata->''areas'') as geom_json on true where a.applicationtype=''CABLE_REPORT'' and a.id=NEW.id group by 1 order by id;
         INSERT INTO johtoselvitys_historia (
             hanketunnus,
             hakemuksen_id, hakemuksen_tunnus, hakemuksen_tila,
@@ -66,8 +64,8 @@ AS '
             (select case when tyyppi=''PERSON'' then ''YKSITYISHENKILO'' else nimi end from hakemusyhteystieto where application_id=NEW.id and rooli=''TYON_SUORITTAJA''),
             (select case when tyyppi=''PERSON'' then ''YKSITYISHENKILO'' else nimi end from hakemusyhteystieto where application_id=NEW.id and rooli=''RAKENNUTTAJA''),
             (select case when tyyppi=''PERSON'' then ''YKSITYISHENKILO'' else nimi end from hakemusyhteystieto where application_id=NEW.id and rooli=''ASIANHOITAJA''),
-            pintaAlaNew,
-            geomNew,
+            null,
+            null,
             CURRENT_TIMESTAMP,
             (select array_agg(h4.tyyppi) from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.id),
             ''INSERT'', CURRENT_TIMESTAMP, CURRENT_USER);
