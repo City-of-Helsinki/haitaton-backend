@@ -207,4 +207,11 @@ databaseChangeLog:
       file: db/changelog/changesets/088-create-table-hanke-historia.yml
   - include:
       file: db/changelog/changesets/089-add-trigger-adding-hanke-historia-lines-for-hanke.sql
-
+  - include:
+      file: db/changelog/changesets/090-create-table-hankealue-historia.yml
+  - include:
+      file: db/changelog/changesets/091-add-trigger-adding-hankealue-historia-lines-for-hankealue.sql
+  - include:
+      file: db/changelog/changesets/092-add-trigger-adding-hankealue-historia-lines-for-hankegeometria.sql
+  - include:
+      file: db/changelog/changesets/093-add-trigger-adding-hankealue-historia-lines-for-tormaystarkastelutulos.sql
