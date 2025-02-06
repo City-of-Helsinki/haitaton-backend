@@ -3,39 +3,24 @@ package fi.hel.haitaton.hanke.pdf
 import com.lowagie.text.Chunk
 import com.lowagie.text.Document
 import com.lowagie.text.Element
-import com.lowagie.text.Font
+import com.lowagie.text.Image
 import com.lowagie.text.ImgTemplate
 import com.lowagie.text.PageSize
 import com.lowagie.text.Paragraph
 import com.lowagie.text.Phrase
 import com.lowagie.text.Rectangle
-import com.lowagie.text.pdf.BaseFont
 import com.lowagie.text.pdf.PdfContentByte
 import com.lowagie.text.pdf.PdfPTable
 import com.lowagie.text.pdf.PdfTemplate
 import com.lowagie.text.pdf.PdfWriter
 import com.lowagie.text.pdf.draw.VerticalPositionMark
 import fi.hel.haitaton.hanke.getResource
-import java.awt.Color
 import java.awt.Graphics2D
 import java.awt.print.PageFormat
 import java.awt.print.Paper
 import java.io.ByteArrayOutputStream
 import org.apache.batik.transcoder.TranscoderInput
 import org.apache.batik.transcoder.print.PrintTranscoder
-
-private val baseRegularFont =
-    BaseFont.createFont(
-        "pdf-assets/liberation-sans/LiberationSans-Regular.ttf",
-        BaseFont.IDENTITY_H,
-        BaseFont.EMBEDDED,
-    )
-private val baseBoldFont =
-    BaseFont.createFont(
-        "pdf-assets/liberation-sans/LiberationSans-Bold.ttf",
-        BaseFont.IDENTITY_H,
-        BaseFont.EMBEDDED,
-    )
 
 /**
  * A4 paper size in figma is 1190 x 1684 px.
@@ -45,23 +30,6 @@ private val baseBoldFont =
  * So when converting px to pt, we need to multiply by 595/1190 = 0.5 = 842/1684.
  */
 const val PX_TO_PT = 0.5f
-
-/**
- * Font used for the top header of document, text above the main title. The biggest title we have.
- */
-private val headerFont = Font(baseBoldFont, pxToPt(18), Font.NORMAL, Color.BLACK)
-
-/** Font used for the main title of document. The biggest title we have. */
-private val titleFont = Font(baseRegularFont, pxToPt(32), Font.NORMAL, Color.BLACK)
-/** Font used for subtitle under the main title. */
-private val subtitleFont = Font(baseRegularFont, pxToPt(20), Font.NORMAL, Color.BLACK)
-/** Font used for the title of a section of data. */
-private val sectionTitleFont = Font(baseBoldFont, pxToPt(20), Font.NORMAL, Color.BLACK)
-
-/** Font used for the left header column of a data section. */
-private val rowHeaderFont = Font(baseBoldFont, pxToPt(14), Font.NORMAL, Color.BLACK)
-/** Font used for the left header column of a data section. */
-private val textFont = Font(baseRegularFont, pxToPt(14), Font.NORMAL, Color.BLACK)
 
 fun pxToPt(px: Int): Float = px * PX_TO_PT
 
@@ -117,17 +85,35 @@ fun PdfPTable.row(key: String, value: String?) {
     this.addCell(Phrase(value ?: "<Tyhjä>", textFont))
 }
 
+fun PdfPTable.row(value: Phrase) {
+    this.addCell(defaultCell)
+    this.addCell(value)
+}
+
+fun PdfPTable.row(key: String, image: Image) {
+    this.addCell(Phrase("$key ", rowHeaderFont))
+    this.addCell(image)
+}
+
+fun PdfPTable.emptyRow() {
+    this.addCell("")
+    this.addCell("")
+}
+
 fun PdfPTable.rowIfNotBlank(title: String, content: String?) {
     if (!content.isNullOrBlank()) {
         row(title, content)
     }
 }
 
-fun Document.section(sectionTitle: String, addRows: PdfPTable.() -> Unit) {
+fun Document.section(sectionTitle: String?, addRows: PdfPTable.() -> Unit) {
     val paragraph = Paragraph()
     paragraph.keepTogether = true
     paragraph.spacingBefore = pxToPt(-39)
-    paragraph.add(Paragraph(sectionTitle, sectionTitleFont))
+
+    if (!sectionTitle.isNullOrBlank()) {
+        paragraph.add(Paragraph(sectionTitle, sectionTitleFont))
+    }
 
     val table = PdfPTable(2)
     table.widthPercentage = 100f
@@ -140,6 +126,8 @@ fun Document.section(sectionTitle: String, addRows: PdfPTable.() -> Unit) {
     // Set line spacing to 24px
     table.defaultCell.setLeading(pxToPt(24), 0f)
     table.setSpacingBefore(-12f)
+    table.isSplitRows = false
+    table.isSplitLate = true
 
     table.addRows()
     paragraph.add(table)
@@ -149,7 +137,7 @@ fun Document.section(sectionTitle: String, addRows: PdfPTable.() -> Unit) {
 fun createDocument(addContent: (Document, PdfWriter) -> Unit): ByteArray {
     val outputStream = ByteArrayOutputStream()
     val padding = pxToPt(40)
-    val document = Document(PageSize.A4, padding, padding, padding / 2, padding)
+    val document = Document(PageSize.A4, padding, padding, padding, padding)
     val writer = PdfWriter.getInstance(document, outputStream)
     document.open()
     addContent(document, writer)
@@ -177,4 +165,29 @@ fun loadLocationIcon(writer: PdfWriter): ImgTemplate {
     g2.dispose()
 
     return ImgTemplate(template)
+}
+
+fun nuisanceScore(
+    index: Number?,
+    title: String = "Työalueen haittaindeksi",
+    color: NuisanceColor? = null,
+): Paragraph {
+    val p = Paragraph(title, blackNuisanceFont)
+    val horizontalSpacer = Chunk("     ", blackNuisanceFont)
+    p.add(horizontalSpacer)
+    p.add(indexChunk(index?.toFloat(), color))
+    return p
+}
+
+fun indexChunk(index: Float?, color: NuisanceColor? = null): Chunk {
+    val formatted =
+        if (index == null) "-"
+        else if (index % 1.0 != 0.0) String.format("%s", index) else String.format("%.0f", index)
+
+    val nuisanceColor = color ?: NuisanceColor.selectColor(index)
+
+    val chunk = Chunk(formatted, nuisanceColor.font)
+    chunk.setBackground(nuisanceColor.color, pxToPt(15), pxToPt(5), pxToPt(15), pxToPt(5))
+    chunk.horizontalScaling
+    return chunk
 }

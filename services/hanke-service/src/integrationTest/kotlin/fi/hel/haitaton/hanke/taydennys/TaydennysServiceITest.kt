@@ -16,6 +16,7 @@ import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
@@ -30,23 +31,34 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory.DEFAULT_HHS_PYORALIIKENNE
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.TaydennysAttachmentFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
+import fi.hel.haitaton.hanke.factory.TaydennysFactory.Companion.toUpdateRequest
 import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory
 import fi.hel.haitaton.hanke.findByType
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
+import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -70,6 +82,11 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -78,6 +95,7 @@ import io.mockk.justRun
 import io.mockk.slot
 import io.mockk.verifySequence
 import java.util.UUID
+import org.geojson.Polygon
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -87,6 +105,7 @@ import org.springframework.beans.factory.annotation.Autowired
 class TaydennysServiceITest(
     @Autowired private val taydennysService: TaydennysService,
     @Autowired private val hakemusService: HakemusService,
+    @Autowired private val hankeService: HankeService,
     @Autowired private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
     @Autowired private val taydennysRepository: TaydennysRepository,
     @Autowired private val taydennysyhteystietoRepository: TaydennysyhteystietoRepository,
@@ -99,6 +118,7 @@ class TaydennysServiceITest(
     @Autowired private val alluClient: AlluClient,
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val hakemusFactory: HakemusFactory,
+    @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
     @Autowired private val taydennysFactory: TaydennysFactory,
     @Autowired private val attachmentFactory: TaydennysAttachmentFactory,
@@ -458,6 +478,37 @@ class TaydennysServiceITest(
             assertThat(taydennysRepository.findAll()).isEmpty()
             assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
         }
+
+        @Test
+        fun `resets the hankealueet when the hanke is a generated one`() {
+            val hakemusEntity =
+                hakemusFactory
+                    .builderWithGeneratedHanke()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, 42)
+                    .withMandatoryFields()
+                    .saveEntity()
+            val hakemus = hakemusService.getById(hakemusEntity.id)
+            val taydennys = taydennysFactory.builder(hakemus.id, hakemus.hankeId).save()
+            val newAreas =
+                listOf(
+                    ApplicationFactory.createCableReportApplicationArea(
+                        geometry = GeometriaFactory.polygon()
+                    ),
+                    ApplicationFactory.createCableReportApplicationArea(
+                        geometry = GeometriaFactory.thirdPolygon()
+                    ),
+                )
+            val update = taydennys.toUpdateRequest() as JohtoselvityshakemusUpdateRequest
+            taydennysService.updateTaydennys(taydennys.id, update.copy(areas = newAreas), USERNAME)
+            assertHankeHasSameGeometryAsHakemus(hakemus.hankeTunnus, newAreas)
+
+            taydennysService.removeTaydennyspyyntoIfItExists(hakemusEntity)
+
+            assertHankeHasSameGeometryAsHakemus(
+                hakemus.hankeTunnus,
+                (hakemus.applicationData as JohtoselvityshakemusData).areas!!,
+            )
+        }
     }
 
     @Nested
@@ -568,6 +619,136 @@ class TaydennysServiceITest(
                     ),
                 )
                 alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
+        fun `sends attachment as changed field if there is a change to kaivuilmoitus haittojenhallintasuunnitelma`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(
+                            Haittojenhallintatyyppi.PYORALIIKENNE to
+                                "$DEFAULT_HHS_PYORALIIKENNE. Täydennetty."
+                        ),
+                )
+            val taydennys = taydennysFactory.builder(hakemus, alluId).withAreas(listOf(area)).save()
+            val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
+            val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+            every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            verifySequence {
+                alluClient.respondToInformationRequest(
+                    hakemus.alluid!!,
+                    taydennyspyynto.alluId,
+                    updatedTaydennysData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.ATTACHMENT),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
+        fun `sends geometry as changed field if there is a change to kaivuilmoitus work area`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    tyoalueet =
+                        listOf(
+                            ApplicationFactory.createTyoalue(
+                                geometry = GeometriaFactory.fourthPolygon()
+                            )
+                        ),
+                )
+            val taydennys = taydennysFactory.builder(hakemus, alluId).withAreas(listOf(area)).save()
+            val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
+            val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+            every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            verifySequence {
+                alluClient.respondToInformationRequest(
+                    hakemus.alluid!!,
+                    taydennyspyynto.alluId,
+                    updatedTaydennysData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.GEOMETRY),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
+        fun `sends no changed field if there are changes only to kaivuilmoitus area properties`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    name = "Uusi nimi",
+                    katuosoite = "Uusi katuosoite",
+                    tyonTarkoitukset = setOf(TyomaaTyyppi.LIIKENNEVALO),
+                    meluhaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
+                    polyhaitta = Polyhaitta.JATKUVA_POLYHAITTA,
+                    tarinahaitta = Tarinahaitta.EI_TARINAHAITTAA,
+                    kaistahaitta =
+                        VaikutusAutoliikenteenKaistamaariin.YKSI_AJOSUUNTA_POISTUU_KAYTOSTA,
+                    kaistahaittojenPituus =
+                        AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
+                    lisatiedot = "Uudet lisätiedot",
+                )
+            val taydennys = taydennysFactory.builder(hakemus, alluId).withAreas(listOf(area)).save()
+            val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
+            val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+            every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            verifySequence {
+                alluClient.respondToInformationRequest(
+                    hakemus.alluid!!,
+                    taydennyspyynto.alluId,
+                    updatedTaydennysData.toAlluData(hakemus.hanke.hankeTunnus),
+                    emptySet(),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
@@ -850,6 +1031,76 @@ class TaydennysServiceITest(
                 alluClient.getApplicationInformation(hakemus.alluid!!)
             }
         }
+
+        @Test
+        fun `sends a new haittojenhallintasuunnitelma to Allu when the hakemus is a kaivuilmoitus`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+            val hankeEntity = hankeRepository.getReferenceById(hanke.id)
+            val hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankealue = hanke.alueet.single())
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).withStartTime(startTime).save()
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            every { alluClient.getApplicationInformation(any()) } returns
+                AlluFactory.createAlluApplicationResponse(
+                    hakemus.alluid!!,
+                    status = ApplicationStatus.HANDLING,
+                )
+            val attachments = mutableListOf<Attachment>()
+            justRun { alluClient.addAttachment(hakemus.alluid!!, capture(attachments)) }
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            val attachmentMetadata =
+                attachments
+                    .map { it.metadata }
+                    .first { it.name == "haitaton-haittojenhallintasuunnitelma-taydennys.pdf" }
+            assertThat(attachmentMetadata)
+                .prop(AttachmentMetadata::description)
+                .isNotNull()
+                .contains("Haittojenhallintasuunnitelma from Haitaton taydennys, dated ")
+            verifySequence {
+                alluClient.respondToInformationRequest(any(), any(), any(), any())
+                alluClient.addAttachment(hakemus.alluid!!, withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(hakemus.alluid!!, withName(HHS_PDF_FILENAME))
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
+        fun `updates the Allu status even when sending the haittojenhallintasuunnitelma attachment fails`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+            val hankeEntity = hankeRepository.getReferenceById(hanke.id)
+            val hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankealue = hanke.alueet.single())
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
+                    .saveEntity()
+            val taydennys = taydennysFactory.builder(hakemus).withStartTime(startTime).save()
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            every { alluClient.getApplicationInformation(any()) } returns
+                AlluFactory.createAlluApplicationResponse(
+                    hakemus.alluid!!,
+                    status = ApplicationStatus.HANDLING,
+                )
+            every { alluClient.addAttachment(hakemus.alluid!!, any()) } throws AlluException()
+
+            val response = taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            assertThat(response.alluStatus).isEqualTo(ApplicationStatus.HANDLING)
+            val updatedHakemus = hakemusService.getById(hakemus.id)
+            assertThat(updatedHakemus.alluStatus).isEqualTo(ApplicationStatus.HANDLING)
+            verifySequence {
+                alluClient.respondToInformationRequest(any(), any(), any(), any())
+                alluClient.addAttachment(hakemus.alluid!!, withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(hakemus.alluid!!, withName(HHS_PDF_FILENAME))
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
     }
 
     @Nested
@@ -941,5 +1192,44 @@ class TaydennysServiceITest(
             assertThat(taydennysRepository.findAll()).isEmpty()
             assertThat(taydennyspyyntoRepository.findAll()).hasSize(1)
         }
+
+        @Test
+        fun `resets the hankealueet when the hanke is a generated one`() {
+            val hakemus = hakemusFactory.builderWithGeneratedHanke().withMandatoryFields().save()
+            val taydennys = taydennysFactory.builder(hakemus.id, hakemus.hankeId).save()
+            val newAreas =
+                listOf(
+                    ApplicationFactory.createCableReportApplicationArea(
+                        geometry = GeometriaFactory.polygon()
+                    ),
+                    ApplicationFactory.createCableReportApplicationArea(
+                        geometry = GeometriaFactory.thirdPolygon()
+                    ),
+                )
+            val update = taydennys.toUpdateRequest() as JohtoselvityshakemusUpdateRequest
+            taydennysService.updateTaydennys(taydennys.id, update.copy(areas = newAreas), USERNAME)
+            assertHankeHasSameGeometryAsHakemus(hakemus.hankeTunnus, newAreas)
+
+            taydennysService.delete(taydennys.id, USERNAME)
+
+            assertHankeHasSameGeometryAsHakemus(
+                hakemus.hankeTunnus,
+                (hakemus.applicationData as JohtoselvityshakemusData).areas!!,
+            )
+        }
+    }
+
+    private fun assertHankeHasSameGeometryAsHakemus(
+        hanketunnus: String,
+        hakemusalueet: List<JohtoselvitysHakemusalue>,
+    ) {
+        val hanke = hankeService.loadHanke(hanketunnus)!!
+        val hankeCoordinates =
+            hanke.alueet
+                .flatMap { it.geometriat!!.featureCollection!!.features }
+                .map { it.geometry as Polygon }
+                .map { it.coordinates }
+        assertThat(hankeCoordinates)
+            .hasSameElementsAs(hakemusalueet.map { it.geometry.coordinates })
     }
 }
