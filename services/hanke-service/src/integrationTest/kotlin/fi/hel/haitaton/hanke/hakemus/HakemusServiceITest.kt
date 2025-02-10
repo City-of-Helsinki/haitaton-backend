@@ -714,12 +714,12 @@ class HakemusServiceITest(
             val hanke = hankeRepository.findAll().single()
             hankeRepository.save(hanke.apply { alueet = mutableListOf() })
             assertThat(
-                    geometriatDao.isInsideHankeAlueet(
+                    geometriatDao.matchingHankealueet(
                         hanke.id,
                         areas.single().geometries().single(),
                     )
                 )
-                .isFalse()
+                .isEmpty()
             every { alluClient.create(any()) } returns alluId
             justRun { alluClient.addAttachment(alluId, any()) }
             every { alluClient.getApplicationInformation(alluId) } returns

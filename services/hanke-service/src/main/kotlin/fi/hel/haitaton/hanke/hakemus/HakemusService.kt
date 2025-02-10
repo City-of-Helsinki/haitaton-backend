@@ -832,7 +832,7 @@ class HakemusService(
 
     /** For cable report we check that the geometry is inside any of the hanke areas. */
     private fun assertGeometryCompatibility(hankeId: Int, area: JohtoselvitysHakemusalue) {
-        if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
+        if (geometriatDao.matchingHankealueet(hankeId, area.geometry).isEmpty())
             throw HakemusGeometryNotInsideHankeException(area.geometry)
     }
 

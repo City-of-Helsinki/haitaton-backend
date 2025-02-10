@@ -28,7 +28,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
                     arrayOf(
                         geometriat.id!!,
                         feature.geometry.toJsonString(),
-                        feature.properties?.toJsonString() ?: "null"
+                        feature.properties?.toJsonString() ?: "null",
                     )
                 }
             val argumentTypes = intArrayOf(Types.INTEGER, Types.VARCHAR, Types.OTHER)
@@ -54,7 +54,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
                     """
                         .trimIndent(),
                     arguments,
-                    argumentTypes
+                    argumentTypes,
                 )
             }
         }
@@ -86,7 +86,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
                 if (geometriat.modifiedAt != null) {
                     ps.setTimestamp(
                         3,
-                        Timestamp(geometriat.modifiedAt!!.toInstant().toEpochMilli())
+                        Timestamp(geometriat.modifiedAt!!.toInstant().toEpochMilli()),
                     )
                 } else {
                     ps.setNull(3, Types.TIMESTAMP)
@@ -145,7 +145,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
                         Timestamp(geometriat.modifiedAt!!.toInstant().toEpochMilli())
                     } else {
                         null
-                    }
+                    },
                 )
             geometriat.id = id
             saveHankeGeometriaRows(geometriat, this)
@@ -175,10 +175,10 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
                                 createdByUserId = rs.getString(3),
                                 createdAt = rs.getTimestamp(4).toInstant().atZone(TZ_UTC),
                                 modifiedByUserId = rs.getString(5),
-                                modifiedAt = rs.getTimestamp(6)?.toInstant()?.atZone(TZ_UTC)
+                                modifiedAt = rs.getTimestamp(6)?.toInstant()?.atZone(TZ_UTC),
                             )
                         },
-                        id
+                        id,
                     )
                     .getOrNull(0)
             return geometriat?.withFeatureCollection(
@@ -199,15 +199,12 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
                 detailQuery,
                 { rs, _ ->
                     if (!rs.getBoolean("valid")) {
-                        InvalidDetail(
-                            rs.getString("reason"),
-                            rs.getString("location"),
-                        )
+                        InvalidDetail(rs.getString("reason"), rs.getString("location"))
                     } else {
                         null
                     }
                 },
-                geometria.toJsonString()
+                geometria.toJsonString(),
             )[0]
     }
 
@@ -225,20 +222,27 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
     fun validateGeometriat(geometriat: List<GeoJsonObject>): InvalidDetail? =
         geometriat.firstNotNullOfOrNull { validateGeometria(it) }
 
-    /** Check if the given geometry is inside any hankealue of the given hanke. */
-    fun isInsideHankeAlueet(hankeId: Int, geometria: GeoJsonObject): Boolean {
+    /**
+     * Returns all the hankealueet that cover the given geometry. I.e. every hankealue where the
+     * given geometry is inside the hankealue.
+     */
+    fun matchingHankealueet(hankeId: Int, geometria: GeoJsonObject): List<Int> {
         val query =
             """
-            SELECT ST_Covers(hg.geometria, ST_GeomFromGeoJSON(?))
+            SELECT ha.id
             FROM hankealue ha
             INNER JOIN hankegeometria hg ON hg.hankegeometriatid = ha.geometriat
             WHERE ha.hankeid = ?
+            AND ST_Covers(hg.geometria, ST_GeomFromGeoJSON(?))
             """
                 .trimIndent()
 
-        return jdbcOperations
-            .queryForList(query, Boolean::class.java, geometria.toJsonString(), hankeId)
-            .any { it }
+        return jdbcOperations.queryForList(
+            query,
+            Int::class.java,
+            hankeId,
+            geometria.toJsonString(),
+        )
     }
 
     /** Check if the given geometry is inside the given hankealue. */
@@ -260,11 +264,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
     fun calculateArea(geometria: GeoJsonObject): Float? {
         val areaQuery = "select ST_Area(ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID))"
 
-        return jdbcOperations.queryForObject(
-            areaQuery,
-            Float::class.java,
-            geometria.toJsonString(),
-        )
+        return jdbcOperations.queryForObject(areaQuery, Float::class.java, geometria.toJsonString())
     }
 
     fun calculateCombinedArea(geometriat: List<Polygon>): Float? {
@@ -281,7 +281,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
 
     private fun retrieveHankeGeometriaRows(
         geometriatId: Int,
-        jdbcOperations: JdbcOperations
+        jdbcOperations: JdbcOperations,
     ): List<Feature> {
         return jdbcOperations.query(
             """
@@ -302,7 +302,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
                     paramjson?.let { properties = OBJECT_MAPPER.readValue(paramjson) }
                 }
             },
-            geometriatId
+            geometriatId,
         )
     }
 
