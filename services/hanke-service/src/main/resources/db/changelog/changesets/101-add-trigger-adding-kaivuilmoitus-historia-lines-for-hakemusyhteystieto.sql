@@ -19,7 +19,7 @@ AS '
         IF (applicationTypeCheck=''EXCAVATION_NOTIFICATION'') THEN
 
             select hh.* into oldData from kaivuilmoitus_historia hh where hh.dml_id=(select max(dml_id) from kaivuilmoitus_historia where hakemuksen_id=NEW.application_id);
-            select coalesce(array_agg(h4.tyyppi),array[]::text[]) into tallentajaNew from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.application_id;
+            select coalesce(array_agg(h4.rooli),array[]::text[]) into tallentajaNew from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.application_id;
             IF NEW.tyyppi=''PERSON'' THEN
                 NEW.nimi:=''YKSITYISHENKILO'';
             END IF;
@@ -103,7 +103,7 @@ AS '
         select applicationtype into applicationTypeCheck from applications where id=NEW.application_id;
         IF (applicationTypeCheck=''EXCAVATION_NOTIFICATION'') THEN
             select hh.* into oldData from kaivuilmoitus_historia hh where hh.dml_id=(select max(dml_id) from kaivuilmoitus_historia where hakemuksen_id=NEW.application_id);
-            select coalesce(array_agg(h4.tyyppi),array[]::text[]) into tallentajaNew from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.application_id;
+            select coalesce(array_agg(h4.rooli),array[]::text[]) into tallentajaNew from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.application_id;
             IF NEW.tyyppi=''PERSON'' THEN
                 NEW.nimi:=''YKSITYISHENKILO'';
             END IF;
@@ -187,7 +187,7 @@ AS '
         select applicationtype into applicationTypeCheck from applications where id=OLD.application_id;
         IF (applicationTypeCheck=''EXCAVATION_NOTIFICATION'') THEN
             select hh.* into oldData from kaivuilmoitus_historia hh where hh.dml_id=(select max(dml_id) from kaivuilmoitus_historia where hakemuksen_id=OLD.application_id);
-            select coalesce(array_agg(h4.tyyppi),array[]::text[]) into tallentajaNew from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=OLD.application_id;
+            select coalesce(array_agg(h4.rooli),array[]::text[]) into tallentajaNew from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=OLD.application_id;
             IF OLD.tyyppi=''PERSON'' THEN
                 OLD.nimi:=''YKSITYISHENKILO'';
             END IF;

@@ -81,7 +81,7 @@ AS '
                 end
             ),
             CURRENT_TIMESTAMP,
-            (select array_agg(h4.tyyppi) from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.id),
+            (select array_agg(h4.rooli) from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.id),
             ''INSERT'', CURRENT_TIMESTAMP, CURRENT_USER);
     ELSIF (TG_OP = ''UPDATE'' AND NEW.applicationtype=''EXCAVATION_NOTIFICATION'') THEN
         -- Handle update logic here
@@ -182,7 +182,7 @@ AS '
                 end
             ),
             CURRENT_TIMESTAMP,
-            (select array_agg(h4.tyyppi) from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.id),
+            (select array_agg(h4.rooli) from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.id),
             ''UPDATE'', CURRENT_TIMESTAMP, CURRENT_USER);
         END IF;
     ELSIF (TG_OP = ''DELETE'' AND OLD.applicationtype=''EXCAVATION_NOTIFICATION'') THEN
