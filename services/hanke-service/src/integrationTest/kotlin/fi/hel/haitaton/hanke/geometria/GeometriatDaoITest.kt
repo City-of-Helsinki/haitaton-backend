@@ -2,12 +2,12 @@ package fi.hel.haitaton.hanke.geometria
 
 import assertk.assertAll
 import assertk.assertThat
+import assertk.assertions.containsExactly
 import assertk.assertions.isCloseTo
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
-import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
@@ -107,50 +107,58 @@ internal class GeometriatDaoITest : IntegrationTest() {
     }
 
     @Test
-    fun `isInsideHankeAlueet returns false if there's no hanke with that id`() {
-        val result = geometriatDao.isInsideHankeAlueet(5, aleksanterinPatsas)
+    fun `matchingHankealueet returns empty if there's no hanke with that id`() {
+        val result = geometriatDao.matchingHankealueet(5, aleksanterinPatsas)
 
-        assertThat(result).isFalse()
+        assertThat(result).isEmpty()
     }
 
     @Test
     @Sql("/sql/alueeton-hanke.sql")
-    fun `isInsideHankeAlueet returns false if hanke has no alueet`() {
-        val result = geometriatDao.isInsideHankeAlueet(5, aleksanterinPatsas)
+    fun `matchingHankealueet returns empty if hanke has no alueet`() {
+        val result = geometriatDao.matchingHankealueet(5, aleksanterinPatsas)
 
-        assertThat(result).isFalse()
+        assertThat(result).isEmpty()
     }
 
     @Test
     @Sql("/sql/senaatintorin-hanke.sql")
-    fun `isInsideHankeAlueet returns true when the object is inside a hanke alue`() {
-        val result = geometriatDao.isInsideHankeAlueet(5, aleksanterinPatsas)
+    fun `matchingHankealueet returns hankealue id when the object is inside a hanke alue`() {
+        val result = geometriatDao.matchingHankealueet(5, aleksanterinPatsas)
 
-        assertThat(result).isTrue()
+        assertThat(result).containsExactly(23)
     }
 
     @Test
     @Sql("/sql/senaatintorin-hanke.sql")
-    fun `isInsideHankeAlueet returns false when the object is outside all hanke alueet`() {
-        val result = geometriatDao.isInsideHankeAlueet(5, havisAmanda)
+    fun `matchingHankealueet returns empty when the object is outside all hanke alueet`() {
+        val result = geometriatDao.matchingHankealueet(5, havisAmanda)
 
-        assertThat(result).isFalse()
+        assertThat(result).isEmpty()
     }
 
     @Test
     @Sql("/sql/senaatintorin-hanke.sql")
-    fun `isInsideHankeAlueet returns false when the object is partly outside every hanke alue`() {
-        val result = geometriatDao.isInsideHankeAlueet(5, tuomiokirkonPortaat)
+    fun `matchingHankealueet returns empty when the object is partly outside every hanke alue`() {
+        val result = geometriatDao.matchingHankealueet(5, tuomiokirkonPortaat)
 
-        assertThat(result).isFalse()
+        assertThat(result).isEmpty()
     }
 
     @Test
     @Sql("/sql/senaatintorin-hanke.sql")
-    fun `isInsideHankeAlueet returns true when the object perfectly matches a hanke alue`() {
-        val result = geometriatDao.isInsideHankeAlueet(5, senaatintori)
+    fun `matchingHankealueet returns hankealue id when the object perfectly matches a hanke alue`() {
+        val result = geometriatDao.matchingHankealueet(5, senaatintori)
 
-        assertThat(result).isTrue()
+        assertThat(result).containsExactly(23)
+    }
+
+    @Test
+    @Sql("/sql/monen-alueen-hanke.sql")
+    fun `matchingHankealueet returns all matching hankealue id when there are several hankealue`() {
+        val result = geometriatDao.matchingHankealueet(5, aleksanterinPatsas)
+
+        assertThat(result).containsExactly(23, 24)
     }
 
     private fun getGeometriaCount(): Int? =
