@@ -221,3 +221,11 @@ databaseChangeLog:
       file: db/changelog/changesets/095-add-trigger-adding-johtoselvitys-historia-lines-for-applications.sql
   - include:
       file: db/changelog/changesets/096-add-trigger-adding-johtoselvitys-historia-lines-for-hakemusyhteystieto.sql
+  - include:
+      file: db/changelog/changesets/099-create-table-kaivuilmoitus-historia.yml
+  - include:
+      file: db/changelog/changesets/100-add-trigger-adding-kaivuilmoitus-historia-lines-for-applications.sql
+  - include:
+      file: db/changelog/changesets/101-add-trigger-adding-kaivuilmoitus-historia-lines-for-hakemusyhteystieto.sql
+  - include:
+      file: db/changelog/changesets/102-add-trigger-adding-kaivuilmoitus-historia-lines-for-valmistumisilmoitus.sql
