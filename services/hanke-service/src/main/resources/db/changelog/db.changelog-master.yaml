@@ -221,3 +221,5 @@ databaseChangeLog:
       file: db/changelog/changesets/095-add-trigger-adding-johtoselvitys-historia-lines-for-applications.sql
   - include:
       file: db/changelog/changesets/096-add-trigger-adding-johtoselvitys-historia-lines-for-hakemusyhteystieto.sql
+  - include:
+      file: db/changelog/changesets/097-create-tables-for-muutosilmoitus.sql
