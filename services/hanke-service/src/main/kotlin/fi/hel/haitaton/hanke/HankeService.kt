@@ -9,9 +9,15 @@ import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.Yhteystieto
+import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusMetaData
 import fi.hel.haitaton.hanke.hakemus.HakemusService
+import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
@@ -35,6 +41,7 @@ class HankeService(
     private val hakemusService: HakemusService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val hankeAttachmentService: HankeAttachmentService,
+    private val geometriatDao: GeometriatDao,
 ) {
 
     @Transactional(readOnly = true)
@@ -161,11 +168,107 @@ class HankeService(
         }
 
     private fun assertHakemusCompatibility(entity: HankeEntity) {
-        val hakemusalueet =
-            hakemusService.hankkeenHakemukset(entity.hankeTunnus).flatMap {
-                it.applicationData.areas ?: listOf()
-            }
+        val hakemukset = hakemusService.hankkeenHakemukset(entity.hankeTunnus)
+        val hakemusalueet = hakemukset.flatMap { it.applicationData.areas ?: listOf() }
+
         hakemusService.assertGeometryCompatibility(entity.id, hakemusalueet)
+        assertDateCompatibility(entity, hakemukset)
+    }
+
+    /** Assert that the hakemus dates are compatible with the hanke area geometries. */
+    private fun assertDateCompatibility(entity: HankeEntity, hakemukset: List<Hakemus>) =
+        hakemukset.forEach { hakemus ->
+            when (val data = hakemus.applicationData) {
+                is JohtoselvityshakemusData -> {
+                    data.areas?.let { assertDateCompatibility(entity, data, hakemus, it) }
+                }
+                is KaivuilmoitusData -> {
+                    data.areas?.let { assertDateCompatibility(entity, data, hakemus, it) }
+                }
+            }
+        }
+
+    private fun assertDateCompatibility(
+        hanke: HankeEntity,
+        hakemusData: KaivuilmoitusData,
+        hakemus: Hakemus,
+        alueet: List<KaivuilmoitusAlue>,
+    ) {
+        val hankealueet = hanke.alueet.associateBy { it.id }
+        val hakemusStartDate = hakemusData.startTime?.toLocalDate()
+        val hakemusEndDate = hakemusData.endTime?.toLocalDate()
+
+        alueet.forEachIndexed { i, hakemusalue ->
+            val hankealue =
+                hankealueet[hakemusalue.hankealueId]
+                    ?: throw InvalidHakemusDataException(listOf("areas[$i].hankealueId"))
+            hakemusStartDate?.let {
+                if (hankealue.haittaAlkuPvm?.isAfter(it) == true) {
+                    throw HankeArgumentException(
+                        "Hankealue doesn't cover the hakemus dates. " +
+                            "Hakemusalue $i: $it - $hakemusEndDate. " +
+                            "Hankealue ${hankealue.id}: ${hankealue.haittaAlkuPvm} - ${hankealue.haittaLoppuPvm}. " +
+                            "${hanke.logString()}, ${hakemus.logString()}"
+                    )
+                }
+            }
+            hakemusEndDate?.let {
+                if (hankealue.haittaLoppuPvm?.isBefore(it) == true) {
+                    throw HankeArgumentException(
+                        "Hankealue doesn't cover the hakemus dates. " +
+                            "Hakemusalue $i: $hakemusStartDate - $it. " +
+                            "Hankealue ${hankealue.id}: ${hankealue.haittaAlkuPvm} - ${hankealue.haittaLoppuPvm}. " +
+                            "${hanke.logString()}, ${hakemus.logString()}"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Passes if for each hakemusalue there's at least one hankealue that covers it both spatially
+     * and temporally.
+     */
+    private fun assertDateCompatibility(
+        hanke: HankeEntity,
+        hakemusData: JohtoselvityshakemusData,
+        hakemus: Hakemus,
+        alueet: List<JohtoselvitysHakemusalue>,
+    ) {
+        val hankealueet = hanke.alueet.associateBy { it.id }
+        val hakemusStartDate = hakemusData.startTime?.toLocalDate()
+        val hakemusEndDate = hakemusData.endTime?.toLocalDate()
+
+        alueet.forEachIndexed { i, hakemusalue ->
+            val matchingHankealueet =
+                geometriatDao.matchingHankealueet(hanke.id, hakemusalue.geometry).mapNotNull {
+                    hankealueet[it]
+                }
+
+            val noDateMatch =
+                matchingHankealueet.all { hankealue ->
+                    val hankealueStartsAfterHakemus =
+                        hakemusStartDate != null &&
+                            hankealue.haittaAlkuPvm?.isAfter(hakemusStartDate) == true
+                    val hankealueEndsBeforeHakemus =
+                        hakemusEndDate != null &&
+                            hankealue.haittaLoppuPvm?.isBefore(hakemusEndDate) == true
+                    hankealueStartsAfterHakemus || hankealueEndsBeforeHakemus
+                }
+
+            if (noDateMatch) {
+                val hakemusDates = "$hakemusStartDate - $hakemusEndDate"
+                val hankealueDates =
+                    matchingHankealueet.joinToString {
+                        "${it.id}: ${it.haittaAlkuPvm} - ${it.haittaLoppuPvm}"
+                    }
+                throw HankeArgumentException(
+                    "No hankealue covers the hakemusalue. Hakemusalue $i: $hakemusDates. " +
+                        "Hankealueet $hankealueDates. " +
+                        "${hanke.logString()}, ${hakemus.logString()}"
+                )
+            }
+        }
     }
 
     private fun updateTormaystarkastelut(alueet: List<HankealueEntity>) {
