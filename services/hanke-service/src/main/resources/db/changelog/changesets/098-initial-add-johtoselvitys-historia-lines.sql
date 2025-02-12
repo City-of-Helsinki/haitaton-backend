@@ -1,0 +1,56 @@
+--liquibase formatted sql
+--changeset Petri Timlin:098-initial-add-johtoselvitys-historia-lines
+--comment: Add johtoselvitys_historia lines for already existing johtoselvitys
+
+insert into johtoselvitys_historia (
+    hanketunnus,
+    hakemuksen_id,
+    hakemuksen_tunnus,
+    hakemuksen_tila,
+    tyon_nimi,
+    katuosoite,
+    uuden_rakenteen_tai_johdon_rakentamisesta,
+    olemassaolevan_rakenteen_kunnossapitotyosta,
+    kiinteistoliittymien_rakentamisesta,
+    kaivutyo_on_aloitettu_ennen_johtoselvityksen_tilaamista,
+    louhitaanko,
+    tyon_kuvaus,
+    arvioitu_alkupaiva,
+    arvioitu_loppupaiva,
+    tyosta_vastaava,
+    tyon_suorittaja,
+    rakennuttaja,
+    asianhoitaja,
+    pinta_ala,
+    geometria,
+    muutosaika,
+    tallentaja_taho,
+    dml_type,
+    dml_timestamp,
+    dml_created_by)
+select
+    (select hanketunnus from hanke where id=NEW.hanke_id),
+    NEW.id,
+    NEW.applicationidentifier,
+    NEW.allustatus,
+    NEW.applicationdata ->> 'name',
+    trim(NEW.applicationdata -> 'postalAddress' -> 'streetAddress' ->> 'streetName'),
+    NEW.applicationdata ->> 'constructionWork',
+    NEW.applicationdata ->> 'maintenanceWork',
+    NEW.applicationdata ->> 'propertyConnectivity',
+    NEW.applicationdata ->> 'emergencyWork',
+    NEW.applicationdata ->> 'rockExcavation',
+    NEW.applicationdata ->> 'workDescription',
+    to_timestamp(cast(NEW.applicationdata ->> 'startTime' as decimal)),
+    to_timestamp(cast(NEW.applicationdata ->> 'endTime' as decimal)),
+    (select case when tyyppi='PERSON' then 'YKSITYISHENKILO' else nimi end from hakemusyhteystieto where application_id=NEW.id and rooli='HAKIJA'),
+    (select case when tyyppi='PERSON' then 'YKSITYISHENKILO' else nimi end from hakemusyhteystieto where application_id=NEW.id and rooli='TYON_SUORITTAJA'),
+    (select case when tyyppi='PERSON' then 'YKSITYISHENKILO' else nimi end from hakemusyhteystieto where application_id=NEW.id and rooli='RAKENNUTTAJA'),
+    (select case when tyyppi='PERSON' then 'YKSITYISHENKILO' else nimi end from hakemusyhteystieto where application_id=NEW.id and rooli='ASIANHOITAJA'),
+    round(st_area(st_multi(st_union(ST_GeomFromGeoJSON((geom_json->'geometry')))))),
+    st_multi(st_union(ST_GeomFromGeoJSON((geom_json->'geometry')))),
+    CURRENT_TIMESTAMP,
+    (select array_agg(h4.tyyppi) from hankekayttaja h2 left join hakemusyhteyshenkilo h3 on h2.id=h3.hankekayttaja_id left join hakemusyhteystieto h4 on h3.hakemusyhteystieto_id=h4.id where h4.application_id=NEW.id),
+    'INITIAL_ADD', CURRENT_TIMESTAMP, CURRENT_USER
+from applications NEW left join lateral jsonb_array_elements(jsonb_strip_nulls(NEW.applicationdata)->'areas') as geom_json on true
+where NEW.applicationtype = 'CABLE_REPORT' and new.id not in (select hakemuksen_id from johtoselvitys_historia) group by NEW.id;
