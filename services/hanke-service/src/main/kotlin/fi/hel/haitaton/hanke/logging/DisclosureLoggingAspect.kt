@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusDeletionResultDto
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusWithExtrasResponse
 import fi.hel.haitaton.hanke.hakemus.HankkeenHakemuksetResponse
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusResponse
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaController
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaResponse
@@ -57,6 +58,8 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
                 disclosureLogService.saveForHankeKayttaja(result, currentUserId())
             is HankeKayttajaResponse ->
                 disclosureLogService.saveForHankeKayttajat(result.kayttajat, currentUserId())
+            is MuutosilmoitusResponse ->
+                disclosureLogService.saveForMuutosilmoitus(result, currentUserId())
             is Names -> disclosureLogService.saveForProfiiliNimi(result, currentUserId())
             is TaydennysResponse -> disclosureLogService.saveForTaydennys(result, currentUserId())
 
