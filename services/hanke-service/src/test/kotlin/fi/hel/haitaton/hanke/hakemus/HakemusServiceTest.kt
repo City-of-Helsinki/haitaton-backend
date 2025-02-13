@@ -160,7 +160,7 @@ class HakemusServiceTest {
             every { alluClient.create(any()) } returns alluId
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse()
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+            every { geometriatDao.matchingHankealueet(1, any()) } returns listOf(1)
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
             every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
@@ -250,7 +250,7 @@ class HakemusServiceTest {
 
             verifySequence {
                 hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
+                geometriatDao.matchingHankealueet(1, any())
                 attachmentService.getMetadataList(applicationEntity.id)
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
@@ -272,14 +272,14 @@ class HakemusServiceTest {
             every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { alluClient.create(any()) } throws AlluException()
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+            every { geometriatDao.matchingHankealueet(1, any()) } returns listOf(1)
             callRealWrapper()
 
             assertThrows<AlluException> { hakemusService.sendHakemus(3, null, USERNAME) }
 
             verifySequence {
                 hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
+                geometriatDao.matchingHankealueet(1, any())
                 attachmentService.getMetadataList(applicationEntity.id)
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
@@ -298,7 +298,7 @@ class HakemusServiceTest {
         fun `does not save disclosure logs when allu login fails`() {
             val applicationEntity = applicationEntity()
             every { hakemusRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(any(), any()) } returns true
+            every { geometriatDao.matchingHankealueet(1, any()) } returns listOf(1)
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
             every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
@@ -309,7 +309,7 @@ class HakemusServiceTest {
 
             verifySequence {
                 hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(any(), any())
+                geometriatDao.matchingHankealueet(any(), any())
                 attachmentService.getMetadataList(applicationEntity.id)
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
@@ -331,7 +331,7 @@ class HakemusServiceTest {
                 )
             every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { hakemusRepository.save(any()) } answers { firstArg() }
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+            every { geometriatDao.matchingHankealueet(1, any()) } returns listOf(1)
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
             every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
@@ -351,7 +351,7 @@ class HakemusServiceTest {
             assertThat(sent.clientApplicationKind).isEqualTo(expectedDescription)
             verifySequence {
                 hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
+                geometriatDao.matchingHankealueet(1, any())
                 attachmentService.getMetadataList(applicationEntity.id)
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())

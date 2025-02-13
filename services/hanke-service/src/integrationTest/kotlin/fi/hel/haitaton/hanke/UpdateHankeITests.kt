@@ -28,6 +28,8 @@ import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.DateFactory
@@ -78,6 +80,9 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.EnumSource
 import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
@@ -1066,6 +1071,159 @@ class UpdateHankeITests(
         assertThat(updatedHanke.alueet)
             .extracting(SavedHankealue::nimi)
             .containsExactlyInAnyOrder("Alue johtoselvityshakemuksella", "Alue kaivuilmoituksella")
+    }
+
+    @ParameterizedTest
+    @CsvSource("6,20", "5,21", ",20", ",21", "5,", "6,")
+    fun `accepts the updated when the hankealue date covers the johtoselvityshakemus dates`(
+        newStartDay: Int?,
+        newEndDay: Int?,
+    ) {
+        val (hanketunnus, request) =
+            setupDateTest(newStartDay, newEndDay, ApplicationType.CABLE_REPORT)
+
+        val updatedHanke = hankeService.updateHanke(hanketunnus, request)
+
+        assertThat(updatedHanke.alueet[0]).all {
+            prop(Hankealue::haittaAlkuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::getDayOfMonth)
+                .isEqualTo(newStartDay ?: 6)
+            prop(Hankealue::haittaLoppuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::getDayOfMonth)
+                .isEqualTo(newEndDay ?: 20)
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource("7,20", "6,19", "7,19", ",19", "7,")
+    fun `throws an exception when new hankealue dates don't cover johtoselvityshakemus dates`(
+        newStartDay: Int?,
+        newEndDay: Int?,
+    ) {
+        val (hanketunnus, request) =
+            setupDateTest(newStartDay, newEndDay, ApplicationType.CABLE_REPORT)
+
+        val failure = assertFailure { hankeService.updateHanke(hanketunnus, request) }
+
+        failure.all {
+            hasClass(HankeArgumentException::class)
+            messageContains("No hankealue covers the hakemusalue")
+            messageContains("Hakemusalue 0: 2025-02-06 - 2025-02-20")
+            val hankealueId = request.alueet[0].id
+            // Nulls in the request means "no update"
+            val loggedStartDay = newStartDay ?: 6
+            val loggedEndDay = newEndDay ?: 20
+            messageContains(
+                "Hankealueet $hankealueId: 2025-02-0$loggedStartDay - 2025-02-$loggedEndDay"
+            )
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource("6,20", "5,21", ",20", ",21", "5,", "6,")
+    fun `accepts the updated when the hankealue date covers the kaivuilmoitus dates`(
+        newStartDay: Int?,
+        newEndDay: Int?,
+    ) {
+        val (hanketunnus, request) =
+            setupDateTest(newStartDay, newEndDay, ApplicationType.EXCAVATION_NOTIFICATION)
+
+        val updatedHanke = hankeService.updateHanke(hanketunnus, request)
+
+        assertThat(updatedHanke.alueet[0]).all {
+            prop(Hankealue::haittaAlkuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::getDayOfMonth)
+                .isEqualTo(newStartDay ?: 6)
+            prop(Hankealue::haittaLoppuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::getDayOfMonth)
+                .isEqualTo(newEndDay ?: 20)
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource("6,19", "7,19", ",19", "7,", "7,20")
+    fun `throws an exception when new hankealue dates don't cover kaivuilmoitus dates`(
+        newStartDay: Int?,
+        newEndDay: Int?,
+    ) {
+        val (hanketunnus, request) =
+            setupDateTest(newStartDay, newEndDay, ApplicationType.EXCAVATION_NOTIFICATION)
+
+        val failure = assertFailure { hankeService.updateHanke(hanketunnus, request) }
+
+        failure.all {
+            hasClass(HankeArgumentException::class)
+            messageContains("Hankealue doesn't cover the hakemus dates")
+            messageContains("Hakemusalue 0: 2025-02-06 - 2025-02-20")
+            val hankealueId = request.alueet[0].id
+            // Nulls in the request means "no update"
+            val loggedStartDay = newStartDay ?: 6
+            val loggedEndDay = newEndDay ?: 20
+            messageContains(
+                "Hankealue $hankealueId: 2025-02-0$loggedStartDay - 2025-02-$loggedEndDay"
+            )
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationType::class)
+    fun `accepts the updated when the hakemus dates are nulls`(applicationType: ApplicationType) {
+        val startDate = ZonedDateTime.parse("2025-02-06T12:00:00Z")
+        val endDate = ZonedDateTime.parse("2025-02-20T12:00:00Z")
+        val hankealue = HankealueFactory.create(haittaAlkuPvm = startDate, haittaLoppuPvm = endDate)
+        val hankeEntity = hankeFactory.builder().withHankealue(hankealue).saveEntity()
+        val hanke = hankeService.loadHanke(hankeEntity.hankeTunnus)!!
+        hakemusFactory
+            .builder(hankeEntity, applicationType)
+            .withMandatoryFields(hanke.alueet[0])
+            .withStartTime(null)
+            .withEndTime(null)
+            .save()
+        val newStartDate = ZonedDateTime.parse("2025-02-07T12:00:00Z")
+        val newEndDate = ZonedDateTime.parse("2025-02-19T12:00:00Z")
+        hanke.alueet[0].haittaAlkuPvm = newStartDate
+        hanke.alueet[0].haittaLoppuPvm = newEndDate
+        val request = hanke.toModifyRequest()
+
+        val updatedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
+
+        assertThat(updatedHanke.alueet[0]).all {
+            prop(Hankealue::haittaAlkuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::toLocalDate)
+                .isEqualTo(newStartDate.toLocalDate())
+            prop(Hankealue::haittaLoppuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::toLocalDate)
+                .isEqualTo(newEndDate.toLocalDate())
+        }
+    }
+
+    private fun setupDateTest(
+        newStartDay: Int?,
+        newEndDay: Int?,
+        applicationType: ApplicationType,
+    ): Pair<String, ModifyHankeRequest> {
+        val startDate = ZonedDateTime.parse("2025-02-06T12:00:00Z")
+        val endDate = ZonedDateTime.parse("2025-02-20T12:00:00Z")
+        val hankealue = HankealueFactory.create(haittaAlkuPvm = startDate, haittaLoppuPvm = endDate)
+        val hankeEntity = hankeFactory.builder().withHankealue(hankealue).saveEntity()
+        val hanke = hankeService.loadHanke(hankeEntity.hankeTunnus)!!
+        hakemusFactory
+            .builder(hankeEntity, applicationType)
+            .withMandatoryFields(hanke.alueet[0])
+            .withStartTime(startDate)
+            .withEndTime(endDate)
+            .save()
+        val newStartDate = newStartDay?.let { ZonedDateTime.parse("2025-02-0${it}T12:00:00Z") }
+        val newEndDate = newEndDay?.let { ZonedDateTime.parse("2025-02-${it}T12:00:00Z") }
+        hanke.alueet[0].haittaAlkuPvm = newStartDate
+        hanke.alueet[0].haittaLoppuPvm = newEndDate
+        return Pair(hanke.hankeTunnus, hanke.toModifyRequest())
     }
 
     private fun assertFeaturePropertiesIsReset(hanke: Hanke, propertiesWanted: Map<String, Any?>) {
