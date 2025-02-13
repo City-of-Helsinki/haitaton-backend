@@ -61,8 +61,8 @@ AS '
             NEW.applicationdata ->> ''constructionWork'',
             NEW.applicationdata ->> ''maintenanceWork'',
             NEW.applicationdata ->> ''emergencyWork'',
-            array_to_string(array(select jsonb_array_elements_text(NEW.applicationdata->''cableReports'')),'',''),
-            array_to_string(array(select jsonb_array_elements_text(NEW.applicationdata->''placementContracts'')),'',''),
+            array_to_string(array(select jsonb_array_elements_text(jsonb_strip_nulls(NEW.applicationdata)->''cableReports'')),'',''),
+            array_to_string(array(select jsonb_array_elements_text(jsonb_strip_nulls(NEW.applicationdata)->''placementContracts'')),'',''),
             to_timestamp(cast(NEW.applicationdata ->> ''startTime'' as decimal)),
             to_timestamp(cast(NEW.applicationdata ->> ''endTime'' as decimal)),
             (select date_reported from valmistumisilmoitus where application_id=NEW.id and type=''TOIMINNALLINEN_KUNTO''),
@@ -111,8 +111,8 @@ AS '
             OLD.applicationdata -> ''endTime'' IS DISTINCT FROM NEW.applicationdata -> ''endTime'' OR
             toiminnallisen_kunnon_ilmoitettu_paivaHist IS DISTINCT FROM toiminnallisen_kunnon_ilmoitettu_paivaNew OR
             tyo_valmis_ilmoitettu_paivaHist IS DISTINCT FROM tyo_valmis_ilmoitettu_paivaNew OR
-            array_to_string(array(select jsonb_array_elements_text(OLD.applicationdata->''cableReports'')),'','') IS DISTINCT FROM array_to_string(array(select jsonb_array_elements_text(NEW.applicationdata->''cableReports'')),'','') OR
-            array_to_string(array(select jsonb_array_elements_text(OLD.applicationdata->''placementContracts'')),'','') IS DISTINCT FROM array_to_string(array(select jsonb_array_elements_text(NEW.applicationdata->''placementContracts'')),'','') OR
+            array_to_string(array(select jsonb_array_elements_text(jsonb_strip_nulls(OLD.applicationdata)->''cableReports'')),'','') IS DISTINCT FROM array_to_string(array(select jsonb_array_elements_text(jsonb_strip_nulls(NEW.applicationdata)->''cableReports'')),'','') OR
+            array_to_string(array(select jsonb_array_elements_text(jsonb_strip_nulls(OLD.applicationdata)->''placementContracts'')),'','') IS DISTINCT FROM array_to_string(array(select jsonb_array_elements_text(jsonb_strip_nulls(NEW.applicationdata)->''placementContracts'')),'','') OR
             tyostaVastaavaNew IS DISTINCT FROM tyostaVastaavaHist OR
             tyonSuorittajaNew IS DISTINCT FROM tyonSuorittajaHist OR
             rakennuttajaNew IS DISTINCT FROM rakennuttajaHist OR
@@ -162,8 +162,8 @@ AS '
             NEW.applicationdata ->> ''constructionWork'',
             NEW.applicationdata ->> ''maintenanceWork'',
             NEW.applicationdata ->> ''emergencyWork'',
-            array_to_string(array(select jsonb_array_elements_text(NEW.applicationdata->''cableReports'')),'',''),
-            array_to_string(array(select jsonb_array_elements_text(NEW.applicationdata->''placementContracts'')),'',''),
+            array_to_string(array(select jsonb_array_elements_text(jsonb_strip_nulls(NEW.applicationdata)->''cableReports'')),'',''),
+            array_to_string(array(select jsonb_array_elements_text(jsonb_strip_nulls(NEW.applicationdata)->''placementContracts'')),'',''),
             to_timestamp(cast(NEW.applicationdata ->> ''startTime'' as decimal)),
             to_timestamp(cast(NEW.applicationdata ->> ''endTime'' as decimal)),
             (select date_reported from valmistumisilmoitus where application_id=NEW.id and type=''TOIMINNALLINEN_KUNTO''),
@@ -222,8 +222,8 @@ AS '
             OLD.applicationdata ->> ''constructionWork'',
             OLD.applicationdata ->> ''maintenanceWork'',
             OLD.applicationdata ->> ''emergencyWork'',
-            array_to_string(array(select jsonb_array_elements_text(OLD.applicationdata->''cableReports'')),'',''),
-            array_to_string(array(select jsonb_array_elements_text(OLD.applicationdata->''placementContracts'')),'',''),
+            array_to_string(array(select jsonb_array_elements_text(jsonb_strip_nulls(OLD.applicationdata)->''cableReports'')),'',''),
+            array_to_string(array(select jsonb_array_elements_text(jsonb_strip_nulls(OLD.applicationdata)->''placementContracts'')),'',''),
             to_timestamp(cast(OLD.applicationdata ->> ''startTime'' as decimal)),
             to_timestamp(cast(OLD.applicationdata ->> ''endTime'' as decimal)),
             oldData.toiminnallisen_kunnon_ilmoitettu_paiva,
