@@ -64,4 +64,24 @@ class TestDataControllerDisabledITest(@Autowired override val mockMvc: MockMvc) 
             verify { testDataService wasNot Called }
         }
     }
+
+    @Nested
+    inner class TriggerAlluUpdates {
+        private val url = "$BASE_URL/trigger-allu"
+
+        @Test
+        @WithAnonymousUser
+        fun `Without user ID returns 404`() {
+            get(url).andExpect(MockMvcResultMatchers.status().isNotFound)
+
+            verify { testDataService wasNot Called }
+        }
+
+        @Test
+        fun `With valid user returns 404`() {
+            get(url).andExpect(MockMvcResultMatchers.status().isNotFound)
+
+            verify { testDataService wasNot Called }
+        }
+    }
 }
