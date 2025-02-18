@@ -18,6 +18,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.DisclosureLoggingAspect
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusService
 import fi.hel.haitaton.hanke.paatos.PaatosAuthorizer
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaAuthorizer
@@ -97,6 +98,8 @@ class IntegrationTestConfiguration {
     @Bean fun hanketunnusService(): HanketunnusService = mockk()
 
     @Bean fun jdbcOperations(): JdbcOperations = mockk()
+
+    @Bean fun muutosilmoitusService(): MuutosilmoitusService = mockk()
 
     @Bean fun paatosAuthorizer(): PaatosAuthorizer = mockk()
 

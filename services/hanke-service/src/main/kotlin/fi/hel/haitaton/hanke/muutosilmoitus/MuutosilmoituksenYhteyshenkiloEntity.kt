@@ -19,7 +19,7 @@ class MuutosilmoituksenYhteyshenkiloEntity(
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "muutosilmoituksen_yhteystieto_id", nullable = false)
-    var muutosilmoituksenYhteystieto: MuutosilmoituksenYhteystietoEntity,
+    var yhteystieto: MuutosilmoituksenYhteystietoEntity,
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "hankekayttaja_id", nullable = false)
