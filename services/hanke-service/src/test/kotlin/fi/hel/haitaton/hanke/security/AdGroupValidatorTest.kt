@@ -86,7 +86,7 @@ class AdGroupValidatorTest {
         useAdFilter: Boolean,
         familyName: String?,
     ) {
-        val validator = validator(true)
+        val validator = validator(useAdFilter)
         val jwt =
             AuthenticationMocks.adJwt(
                 adGroups = AuthenticationMocks.DEFAULT_AD_GROUPS,
