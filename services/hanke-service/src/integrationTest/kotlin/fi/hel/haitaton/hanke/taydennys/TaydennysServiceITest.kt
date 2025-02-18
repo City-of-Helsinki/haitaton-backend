@@ -48,16 +48,13 @@ import fi.hel.haitaton.hanke.factory.TaydennysFactory.Companion.toUpdateRequest
 import fi.hel.haitaton.hanke.factory.TaydennyspyyntoFactory
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
-import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusService
-import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
-import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -82,6 +79,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
+import fi.hel.haitaton.hanke.test.resetCustomerIds
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
@@ -256,8 +254,6 @@ class TaydennysServiceITest(
 
     @Nested
     inner class Create {
-        private val fixedUUID = UUID.fromString("789b38cf-5345-4889-a5b8-2711c47559c8")
-
         private fun builder() =
             hakemusFactory
                 .builder()
@@ -329,10 +325,7 @@ class TaydennysServiceITest(
 
             val taydennysData = response.hakemusData.resetCustomerIds()
             val hakemusData = hakemus.applicationData.resetCustomerIds()
-            assertThat(response)
-                .isNotNull()
-                .prop(Taydennys::taydennyspyyntoId)
-                .isEqualTo(taydennyspyynto.id)
+            assertThat(response).prop(Taydennys::taydennyspyyntoId).isEqualTo(taydennyspyynto.id)
             assertThat(taydennysData).isEqualTo(hakemusData)
         }
 
@@ -356,44 +349,6 @@ class TaydennysServiceITest(
                 }
             }
         }
-
-        /**
-         * The created entities for customers and contacts are in a different table in the database,
-         * so the IDs cannot be the same for the taydennys and hakemus.
-         *
-         * Otherwise, the data should be identical, so the easiest way to compare them is to reset
-         * all the IDs in both of them to a known fixed value and them see if they're equal.
-         */
-        private fun HakemusData.resetCustomerIds(): HakemusData {
-            val customer = customerWithContacts?.resetIds()
-            return when (this) {
-                is JohtoselvityshakemusData -> {
-                    val contractor = contractorWithContacts?.resetIds()
-                    val representative = representativeWithContacts?.resetIds()
-                    val developer = propertyDeveloperWithContacts?.resetIds()
-                    copy(
-                        customerWithContacts = customer,
-                        contractorWithContacts = contractor,
-                        representativeWithContacts = representative,
-                        propertyDeveloperWithContacts = developer,
-                    )
-                }
-                is KaivuilmoitusData -> {
-                    val contractor = contractorWithContacts?.resetIds()
-                    val representative = representativeWithContacts?.resetIds()
-                    val developer = propertyDeveloperWithContacts?.resetIds()
-                    copy(
-                        customerWithContacts = customer,
-                        contractorWithContacts = contractor,
-                        representativeWithContacts = representative,
-                        propertyDeveloperWithContacts = developer,
-                    )
-                }
-            }
-        }
-
-        private fun Hakemusyhteystieto.resetIds() =
-            copy(id = fixedUUID, yhteyshenkilot = yhteyshenkilot.map { it.copy(id = fixedUUID) })
     }
 
     @Nested
