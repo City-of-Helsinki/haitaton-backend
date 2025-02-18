@@ -136,7 +136,7 @@ class EmailSenderServiceITest : IntegrationTest() {
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa"
+                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Beslut om grävningsanmälan KP2300001 kan laddas ner / The decision concerning an excavation notification KP2300001 can be downloaded"
                 )
         }
 
@@ -476,7 +476,7 @@ class EmailSenderServiceITest : IntegrationTest() {
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö"
+                    "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Din ansökan har fått en begäran om komplettering / There is a request for supplementary information for your application"
                 )
         }
 
@@ -493,12 +493,8 @@ class EmailSenderServiceITest : IntegrationTest() {
                 contains(
                     "Käy vastaamassa siihen Haitattomassa: http://localhost:3001/fi/hakemus/13"
                 )
-                contains(
-                    "Käy vastaamassa siihen Haitattomassa: http://localhost:3001/sv/ansokan/13"
-                )
-                contains(
-                    "Käy vastaamassa siihen Haitattomassa: http://localhost:3001/en/application/13"
-                )
+                contains("Svara på den i Haitaton: http://localhost:3001/sv/ansokan/13")
+                contains("Please reply to it in Haitaton: http://localhost:3001/en/application/13")
             }
             assertThat(htmlBody).all {
                 contains(
@@ -508,10 +504,10 @@ class EmailSenderServiceITest : IntegrationTest() {
                     """Käy vastaamassa siihen Haitattomassa: <a href="http://localhost:3001/fi/hakemus/13">http://localhost:3001/fi/hakemus/13</a>"""
                 )
                 contains(
-                    """Käy vastaamassa siihen Haitattomassa: <a href="http://localhost:3001/sv/ansokan/13">http://localhost:3001/sv/ansokan/13</a>"""
+                    """Svara på den i Haitaton: <a href="http://localhost:3001/sv/ansokan/13">http://localhost:3001/sv/ansokan/13</a>"""
                 )
                 contains(
-                    """Käy vastaamassa siihen Haitattomassa: <a href="http://localhost:3001/en/application/13">http://localhost:3001/en/application/13</a>"""
+                    """Please reply to it in Haitaton: <a href="http://localhost:3001/en/application/13">http://localhost:3001/en/application/13</a>"""
                 )
             }
         }
