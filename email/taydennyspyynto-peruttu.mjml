@@ -7,8 +7,8 @@
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Hakemustasi koskeva täydennyspyyntö on peruttu / Hakemustasi koskeva täydennyspyyntö on peruttu /
-                    Hakemustasi koskeva täydennyspyyntö on peruttu
+                    Hakemustasi koskeva täydennyspyyntö on peruttu / Begäran om komplettering som gäller din ansökan har återtagits /
+                    The request for supplementary information concerning your application has been cancelled
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     Hakemuksellesi {{hakemusNimi}} ({{hakemustunnus}}) tehty täydennyspyyntö on peruttu käsittelijän
@@ -21,20 +21,22 @@
                 <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
-                    Hakemuksellesi {{hakemusNimi}} ({{hakemustunnus}}) tehty täydennyspyyntö on peruttu käsittelijän
-                    toimesta. Mahdollinen täydennyspyynnön luonnos on poistettu Haitattomasta ja hakemuksesi on muutettu
-                    takaisin käsittelyssä tilaiseksi:
-                    <a href="{{baseUrl}}/fi/hakemus/{{hakemusId}}">{{baseUrl}}/sv/ansokan/{{hakemusId}}</a>
+                    Begäran om komplettering i din ansökan {{hakemusNimi}}
+                    ({{hakemustunnus}}) har återtagits av handläggaren. Ett eventuellt utkast till begäran
+                    om komplettering har tagits bort från Haitaton och statusen för din ansökan har
+                    ändrats tillbaka till Handläggning pågår:
+                    <a href="{{baseUrl}}/sv/ansokan/{{hakemusId}}">{{baseUrl}}/sv/ansokan/{{hakemusId}}</a>
                 </mj-text>
                 <mj-include path="common/signature-sv.partial"/>
 
                 <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
-                    Hakemuksellesi {{hakemusNimi}} ({{hakemustunnus}}) tehty täydennyspyyntö on peruttu käsittelijän
-                    toimesta. Mahdollinen täydennyspyynnön luonnos on poistettu Haitattomasta ja hakemuksesi on muutettu
-                    takaisin käsittelyssä tilaiseksi:
-                    <a href="{{baseUrl}}/fi/hakemus/{{hakemusId}}">{{baseUrl}}/en/application/{{hakemusId}}</a>
+                    The request for supplementary information for your application
+                    {{hakemusNimi}} ({{hakemustunnus}}) has been cancelled by the processor.
+                    Possible draft request for supplementary information has been removed from
+                    Haitaton and your application has been returned to preparation:
+                    <a href="{{baseUrl}}/en/application/{{hakemusId}}">{{baseUrl}}/en/application/{{hakemusId}}</a>
                 </mj-text>
                 <mj-include path="common/signature-en.partial"/>
             </mj-column>

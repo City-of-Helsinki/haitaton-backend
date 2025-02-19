@@ -253,7 +253,7 @@ class HakemusHistoryServiceITest(
             assertThat(email.allRecipients[0].toString()).isEqualTo(hakija.sahkoposti)
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa"
+                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Beslut om grävningsanmälan KP2300001 kan laddas ner / The decision concerning an excavation notification KP2300001 can be downloaded"
                 )
             verifyAlluDownload(applicationStatus)
             verify { alluClient.getApplicationInformation(alluId) }
@@ -345,7 +345,7 @@ class HakemusHistoryServiceITest(
             assertThat(emails).each {
                 it.prop(MimeMessage::getSubject)
                     .isEqualTo(
-                        "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö"
+                        "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Din ansökan har fått en begäran om komplettering / There is a request for supplementary information for your application"
                     )
             }
             verifySequence { alluClient.getInformationRequest(alluId) }
@@ -470,7 +470,7 @@ class HakemusHistoryServiceITest(
             assertThat(emails).each {
                 it.prop(MimeMessage::getSubject)
                     .isEqualTo(
-                        "Haitaton: Hakemustasi koskeva täydennyspyyntö on peruttu / Hakemustasi koskeva täydennyspyyntö on peruttu / Hakemustasi koskeva täydennyspyyntö on peruttu"
+                        "Haitaton: Hakemustasi koskeva täydennyspyyntö on peruttu / Begäran om komplettering som gäller din ansökan har återtagits / The request for supplementary information concerning your application has been cancelled"
                     )
             }
         }
