@@ -54,6 +54,7 @@ import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
+import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.factory.TaydennysAttachmentFactory
@@ -77,6 +78,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
+import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
 import fi.hel.haitaton.hanke.paatos.PaatosTila
 import fi.hel.haitaton.hanke.pdf.withName
 import fi.hel.haitaton.hanke.pdf.withNames
@@ -142,6 +144,7 @@ class HakemusServiceITest(
     @Autowired private val paatosFactory: PaatosFactory,
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val alluClient: AlluClient,
+    @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
     @Autowired private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
     @Autowired private val taydennysFactory: TaydennysFactory,
     @Autowired private val taydennysAttachmentFactory: TaydennysAttachmentFactory,
@@ -343,6 +346,28 @@ class HakemusServiceITest(
             assertThat(response.taydennys).isNotNull().prop(TaydennysWithExtras::liitteet).all {
                 hasSize(2)
                 extracting { it.fileName }.containsExactlyInAnyOrder("First", "Second")
+            }
+        }
+
+        @Test
+        fun `returns muutosilmoitus when it exists`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val muutosilmoitus = muutosilmoitusFactory.builder(hakemus).save()
+
+            val response = hakemusService.getWithExtras(hakemus.id)
+
+            assertThat(response.muutosilmoitus).isNotNull().all {
+                prop(Muutosilmoitus::id).isEqualTo(muutosilmoitus.id)
+                prop(Muutosilmoitus::hakemusData).isInstanceOf(KaivuilmoitusData::class).all {
+                    prop(HakemusData::name).isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_NAME)
+                    prop(HakemusData::startTime).isEqualTo(DateFactory.getStartDatetime())
+                    prop(HakemusData::yhteystiedot).hasSize(2)
+                }
             }
         }
     }

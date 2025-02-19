@@ -130,7 +130,7 @@ class MuutosilmoitusServiceITest(
 
         @Test
         fun `creates the muutosilmoitus in the database`() {
-            val hakemus = builder().save()
+            val hakemus = builder().withMandatoryFields().save()
 
             muutosilmoitusService.create(hakemus.id, USERNAME)
 
