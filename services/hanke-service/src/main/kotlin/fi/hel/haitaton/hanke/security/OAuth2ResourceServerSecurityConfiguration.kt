@@ -1,6 +1,8 @@
 package fi.hel.haitaton.hanke.security
 
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
+import mu.KotlinLogging
+import mu.withLoggingContext
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
@@ -20,6 +22,8 @@ import org.springframework.security.oauth2.jwt.JwtDecoders
 import org.springframework.security.oauth2.jwt.JwtValidators
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.web.SecurityFilterChain
+
+private val logger = KotlinLogging.logger {}
 
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
@@ -130,7 +134,7 @@ class OAuth2ResourceServerSecurityConfiguration(
             if (jwt.getClaimAsStringList(JwtClaims.AMR).contains(AmrValues.SUOMI_FI)) {
                 OAuth2TokenValidatorResult.success()
             } else if (jwt.getClaimAsStringList(JwtClaims.AMR).contains(AmrValues.AD)) {
-                validateAdGroups(jwt)
+                validateAdGroups(jwt).let { if (it.hasErrors()) it else validateNames(jwt) }
             } else {
                 val error =
                     OAuth2Error(
@@ -153,5 +157,24 @@ class OAuth2ResourceServerSecurityConfiguration(
                 OAuth2TokenValidatorResult.failure(error)
             }
         }
+
+        private fun validateNames(jwt: Jwt): OAuth2TokenValidatorResult {
+            // An empty error list is considered a success.
+            val errors =
+                checkClaim(jwt, JwtClaims.GIVEN_NAME) + checkClaim(jwt, JwtClaims.FAMILY_NAME)
+            return OAuth2TokenValidatorResult.failure(errors)
+        }
+
+        private fun checkClaim(jwt: Jwt, claim: String): List<OAuth2Error> =
+            if (jwt.getClaimAsString(claim).isNullOrBlank()) {
+                withLoggingContext("userId" to jwt.subject) {
+                    logger.error {
+                        "Claim $claim not found from token even though the token is with Helsinki AD authentication."
+                    }
+                }
+                listOf(OAuth2Error("invalid_token", "Missing $claim", null))
+            } else {
+                listOf()
+            }
     }
 }
