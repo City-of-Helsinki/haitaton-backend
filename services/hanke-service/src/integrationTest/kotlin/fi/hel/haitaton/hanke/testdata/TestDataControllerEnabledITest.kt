@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
+import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -61,6 +62,26 @@ class TestDataControllerEnabledITest(@Autowired override val mockMvc: MockMvc) :
             post(url).andExpect(MockMvcResultMatchers.status().isOk)
 
             verifyAll { testDataService.unlinkApplicationsFromAllu() }
+        }
+    }
+
+    @Nested
+    inner class TriggerAlluUpdates {
+        private val url = "$BASE_URL/trigger-allu"
+
+        @Test
+        @WithAnonymousUser
+        fun `Without user ID calls service normally`() {
+            get(url, MediaType.TEXT_PLAIN).andExpect(MockMvcResultMatchers.status().isOk)
+
+            verifyAll { testDataService.triggerAlluUpdates() }
+        }
+
+        @Test
+        fun `With valid user calls service`() {
+            get(url, MediaType.TEXT_PLAIN).andExpect(MockMvcResultMatchers.status().isOk)
+
+            verifyAll { testDataService.triggerAlluUpdates() }
         }
     }
 }
