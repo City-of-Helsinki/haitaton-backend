@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContent
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.FileClient
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
+import fi.hel.haitaton.hanke.hakemus.AlluUpdateService
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.paatos.PaatosEntity
 import fi.hel.haitaton.hanke.paatos.PaatosRepository
@@ -24,6 +25,7 @@ class TestDataService(
     private val paatosRepository: PaatosRepository,
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val fileClient: FileClient,
+    private val alluUpdateService: AlluUpdateService,
 ) {
     @Transactional
     fun unlinkApplicationsFromAllu() {
@@ -43,6 +45,12 @@ class TestDataService(
 
         logger.warn { "Removing all päätökset and täydennykset." }
         paatosRepository.findAll().forEach { deletePaatosWithAttachments(it) }
+    }
+
+    fun triggerAlluUpdates() {
+        logger.info { "Manually triggered Allu updates..." }
+        alluUpdateService.checkApplicationStatuses()
+        logger.info { "Manual Allu updates done." }
     }
 
     private fun deletePaatosWithAttachments(paatosEntity: PaatosEntity) {

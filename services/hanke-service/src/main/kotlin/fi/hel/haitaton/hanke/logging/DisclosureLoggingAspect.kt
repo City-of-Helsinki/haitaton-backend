@@ -86,6 +86,9 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
             is List<*> -> logResultList(result.filterNotNull())
             is Map<*, *> -> logResultList(result.values.filterNotNull())
 
+            // Used for returning system info. Won't contain personal information.
+            is String -> return
+
             // Throw an exception if nothing matches. This will ensure we specify whether a new
             // response type can contain personal information or not.
             else -> throw UnknownResponseTypeException(result::class)
