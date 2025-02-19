@@ -24,6 +24,7 @@ import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.PaperDecisionReceiver
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
+import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
 import fi.hel.haitaton.hanke.paatos.Paatos
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.taydennys.TaydennysWithExtras
@@ -247,7 +248,8 @@ class HakemusFactory(
             paatokset: List<Paatos> = listOf(),
             taydennyspyynto: Taydennyspyynto? = null,
             taydennys: TaydennysWithExtras? = null,
-        ) = HakemusWithExtras(this, paatokset, taydennyspyynto, taydennys)
+            muutosilmoitus: Muutosilmoitus? = null,
+        ) = HakemusWithExtras(this, paatokset, taydennyspyynto, taydennys, muutosilmoitus)
 
         fun hakemusDataForRegistryKeyTest(tyyppi: CustomerType): KaivuilmoitusData {
             val hakija =

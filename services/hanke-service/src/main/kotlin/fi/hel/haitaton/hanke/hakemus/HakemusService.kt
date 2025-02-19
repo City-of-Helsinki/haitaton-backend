@@ -24,6 +24,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.pdf.EnrichedKaivuilmoitusalue
 import fi.hel.haitaton.hanke.pdf.HaittojenhallintasuunnitelmaPdfEncoder
@@ -66,6 +67,7 @@ private const val PAPER_DECISION_MSG =
 class HakemusService(
     private val hakemusRepository: HakemusRepository,
     private val hankeRepository: HankeRepository,
+    private val muutosilmoitusRepository: MuutosilmoitusRepository,
     private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
     private val taydennysRepository: TaydennysRepository,
     private val geometriatDao: GeometriatDao,
@@ -96,8 +98,9 @@ class HakemusService(
                 val liitteet = taydennysAttachmentService.getMetadataList(it.id)
                 it.toDomain().withExtras(hakemus.applicationData, liitteet)
             }
+        val muutosilmoitus = muutosilmoitusRepository.findByHakemusId(hakemusId)?.toDomain()
 
-        return HakemusWithExtras(hakemus, paatokset, taydennyspyynto, taydennys)
+        return HakemusWithExtras(hakemus, paatokset, taydennyspyynto, taydennys, muutosilmoitus)
     }
 
     @Transactional(readOnly = true)
