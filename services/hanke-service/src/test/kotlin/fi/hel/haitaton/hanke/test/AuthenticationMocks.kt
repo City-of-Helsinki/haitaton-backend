@@ -28,15 +28,22 @@ object AuthenticationMocks {
         every { credentials } returns adJwt(userId)
     }
 
-    fun adJwt(userId: String = USERNAME, adGroups: Collection<String> = DEFAULT_AD_GROUPS): Jwt =
-        Jwt.withTokenValue(TOKEN_VALUE)
-            .header("alg", "none")
-            .subject(userId)
-            .claim(JwtClaims.AMR, listOf(AmrValues.AD))
-            .claim(JwtClaims.GIVEN_NAME, DEFAULT_GIVEN_NAME)
-            .claim(JwtClaims.FAMILY_NAME, DEFAULT_LAST_NAME)
-            .claim(JwtClaims.AD_GROUPS, adGroups)
-            .build()
+    fun adJwt(
+        userId: String = USERNAME,
+        adGroups: Collection<String> = DEFAULT_AD_GROUPS,
+        givenName: String? = DEFAULT_GIVEN_NAME,
+        familyName: String? = DEFAULT_LAST_NAME,
+    ): Jwt {
+        val builder =
+            Jwt.withTokenValue(TOKEN_VALUE)
+                .header("alg", "none")
+                .subject(userId)
+                .claim(JwtClaims.AMR, listOf(AmrValues.AD))
+                .claim(JwtClaims.AD_GROUPS, adGroups)
+        if (givenName != null) builder.claim(JwtClaims.GIVEN_NAME, givenName)
+        if (familyName != null) builder.claim(JwtClaims.FAMILY_NAME, familyName)
+        return builder.build()
+    }
 
     /** When using this, you have to mock ProfiiliClient.getVerifiedName as well. */
     fun suomiFiLoginMock(userId: String = USERNAME): SecurityContext = mockk {

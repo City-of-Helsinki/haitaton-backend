@@ -26,10 +26,10 @@ class ProfiiliService(private val profiiliClient: ProfiiliClient) {
 
     private fun nameFromToken(credentials: Jwt): Names {
         val given: String =
-            credentials.getClaim(JwtClaims.GIVEN_NAME)
+            credentials.getClaim<String?>(JwtClaims.GIVEN_NAME)?.ifBlank { null }
                 ?: throw NameClaimNotFound(JwtClaims.GIVEN_NAME)
         val family: String =
-            credentials.getClaim(JwtClaims.FAMILY_NAME)
+            credentials.getClaim<String?>(JwtClaims.FAMILY_NAME)?.ifBlank { null }
                 ?: throw NameClaimNotFound(JwtClaims.FAMILY_NAME)
         return Names(given, family, given)
     }
