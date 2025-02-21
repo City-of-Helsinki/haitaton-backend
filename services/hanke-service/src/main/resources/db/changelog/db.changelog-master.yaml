@@ -233,3 +233,5 @@ databaseChangeLog:
       file: db/changelog/changesets/101-add-trigger-adding-kaivuilmoitus-historia-lines-for-hakemusyhteystieto.sql
   - include:
       file: db/changelog/changesets/102-add-trigger-adding-kaivuilmoitus-historia-lines-for-valmistumisilmoitus.sql
+  - include:
+      file: db/changelog/changesets/103-replace-function-check-kaivuilmoitus-changes-to-fix-toiminnallinen-kunto-and-tyo-valmis-dates.sql
