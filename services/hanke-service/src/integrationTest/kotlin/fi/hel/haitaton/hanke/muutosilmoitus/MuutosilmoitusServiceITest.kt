@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
+import fi.hel.haitaton.hanke.hakemus.WrongHakemusTypeException
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
@@ -36,6 +37,8 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 
 class MuutosilmoitusServiceITest(
@@ -124,6 +127,33 @@ class MuutosilmoitusServiceITest(
                 messageContains("Hakemus is in the wrong status for this operation")
                 messageContains("status=HANDLING")
                 messageContains("allowed statuses=DECISION, OPERATIONAL_CONDITION")
+                messageContains("id=${hakemus.id}")
+            }
+        }
+
+        @ParameterizedTest
+        @EnumSource(
+            value = ApplicationType::class,
+            names = ["EXCAVATION_NOTIFICATION"],
+            mode = EnumSource.Mode.EXCLUDE,
+        )
+        fun `throws exception when the hakemus not a kaivuilmoitus`(
+            applicationType: ApplicationType
+        ) {
+            val hakemus =
+                hakemusFactory
+                    .builder(applicationType)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .save()
+
+            val failure = assertFailure { muutosilmoitusService.create(hakemus.id, USERNAME) }
+
+            failure.all {
+                hasClass(WrongHakemusTypeException::class)
+                messageContains("Wrong application type for this action")
+                messageContains("type=CABLE_REPORT")
+                messageContains("allowed types=EXCAVATION_NOTIFICATION")
                 messageContains("id=${hakemus.id}")
             }
         }
