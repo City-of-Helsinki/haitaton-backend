@@ -9,6 +9,8 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
+import fi.hel.haitaton.hanke.security.AmrValues
+import fi.hel.haitaton.hanke.security.JwtClaims
 import fi.hel.haitaton.hanke.test.AuthenticationMocks
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -21,6 +23,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.NullAndEmptySource
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.oauth2.jwt.Jwt
@@ -129,13 +134,16 @@ class ProfiiliServiceTest {
             }
         }
 
-        @Test
-        fun `throws an exception when given name not found in token`() {
+        @ParameterizedTest
+        @ValueSource(strings = [" ", " \t "])
+        @NullAndEmptySource
+        fun `throws an exception when given name not found in token`(givenName: String?) {
             val jwt =
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
-                    .claim(ProfiiliService.AMR_CLAIM, listOf("helsinkiad"))
-                    .claim(ProfiiliService.FAMILY_NAME_CLAIM, ProfiiliFactory.DEFAULT_LAST_NAME)
+                    .claim(JwtClaims.AMR, listOf(AmrValues.AD))
+                    .claim(JwtClaims.GIVEN_NAME, givenName)
+                    .claim(JwtClaims.FAMILY_NAME, ProfiiliFactory.DEFAULT_LAST_NAME)
                     .build()
             val authentication: Authentication = mockk()
             every { authentication.credentials } returns jwt
@@ -155,13 +163,16 @@ class ProfiiliServiceTest {
             }
         }
 
-        @Test
-        fun `throws an exception when family name not found in token`() {
+        @ParameterizedTest
+        @ValueSource(strings = [" ", " \t "])
+        @NullAndEmptySource
+        fun `throws an exception when family name not found in token`(familyName: String?) {
             val jwt =
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
-                    .claim(ProfiiliService.AMR_CLAIM, listOf("helsinkiad"))
-                    .claim(ProfiiliService.GIVEN_NAME_CLAIM, ProfiiliFactory.DEFAULT_GIVEN_NAME)
+                    .claim(JwtClaims.AMR, listOf(AmrValues.AD))
+                    .claim(JwtClaims.GIVEN_NAME, ProfiiliFactory.DEFAULT_GIVEN_NAME)
+                    .claim(JwtClaims.FAMILY_NAME, familyName)
                     .build()
             val authentication: Authentication = mockk()
             every { authentication.credentials } returns jwt

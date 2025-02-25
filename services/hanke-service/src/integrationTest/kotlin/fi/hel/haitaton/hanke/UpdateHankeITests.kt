@@ -28,10 +28,14 @@ import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory
+import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeBuilder.Companion.toModifyRequest
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
@@ -42,8 +46,9 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
-import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
+import fi.hel.haitaton.hanke.hakemus.HakemusGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -75,6 +80,9 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.EnumSource
 import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
@@ -90,6 +98,7 @@ class UpdateHankeITests(
     @Autowired private val auditLogRepository: AuditLogRepository,
     @Autowired private val hankeYhteyshenkiloRepository: HankeYhteyshenkiloRepository,
     @Autowired private val hankeFactory: HankeFactory,
+    @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val jdbcTemplate: JdbcTemplate,
 ) : IntegrationTest() {
@@ -626,7 +635,7 @@ class UpdateHankeITests(
         assertThat(hankealue.haittojenhallintasuunnitelma!![Haittojenhallintatyyppi.YLEINEN])
             .isEqualTo("Yleisten haittojen hallintasuunnitelma")
         hankealue.haittojenhallintasuunnitelma =
-            createHaittojenhallintasuunnitelma(
+            HaittaFactory.createHaittojenhallintasuunnitelma(
                 Haittojenhallintatyyppi.YLEINEN to "Uusi yleisten haittojen hallintasuunnitelma"
             )
         val request = createdHanke.toModifyRequest()
@@ -646,7 +655,9 @@ class UpdateHankeITests(
         val hankealue = createdHanke.alueet[0]
         assertThat(hankealue.haittojenhallintasuunnitelma!!.size).isEqualTo(6)
         hankealue.haittojenhallintasuunnitelma =
-            createHaittojenhallintasuunnitelma(Haittojenhallintatyyppi.YLEINEN to null)
+            HaittaFactory.createHaittojenhallintasuunnitelma(
+                Haittojenhallintatyyppi.YLEINEN to null
+            )
         val request = createdHanke.toModifyRequest()
 
         val updateHankeResult = hankeService.updateHanke(createdHanke.hankeTunnus, request)
@@ -664,7 +675,9 @@ class UpdateHankeITests(
                 .builder(USERNAME)
                 .withHankealue(
                     haittojenhallintasuunnitelma =
-                        createHaittojenhallintasuunnitelma(Haittojenhallintatyyppi.YLEINEN to null)
+                        HaittaFactory.createHaittojenhallintasuunnitelma(
+                            Haittojenhallintatyyppi.YLEINEN to null
+                        )
                 )
                 .save()
         val hankealue = createdHanke.alueet[0]
@@ -672,7 +685,7 @@ class UpdateHankeITests(
         assertThat(hankealue.haittojenhallintasuunnitelma!![Haittojenhallintatyyppi.YLEINEN])
             .isNull()
         hankealue.haittojenhallintasuunnitelma =
-            createHaittojenhallintasuunnitelma(
+            HaittaFactory.createHaittojenhallintasuunnitelma(
                 Haittojenhallintatyyppi.YLEINEN to "Uusi yleisten haittojen hallintasuunnitelma"
             )
         val request = createdHanke.toModifyRequest()
@@ -896,7 +909,8 @@ class UpdateHankeITests(
         auditLogRepository.deleteAll()
         assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
-        hanke.alueet[0].haittojenhallintasuunnitelma = createHaittojenhallintasuunnitelma()
+        hanke.alueet[0].haittojenhallintasuunnitelma =
+            HaittaFactory.createHaittojenhallintasuunnitelma()
         val request = hanke.toModifyRequest()
 
         val updatedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
@@ -961,6 +975,255 @@ class UpdateHankeITests(
                 }
             }
         }
+    }
+
+    @Test
+    fun `throws exception when removing a hankealue with a johtoselvityshakemus on it`() {
+        val firstArea = HankealueFactory.create(nimi = "Alue hakemuksella")
+        val geometriat = GeometriaFactory.create(geometria = GeometriaFactory.fourthPolygon())
+        val secondArea = HankealueFactory.create(nimi = "Ilman hakemusta", geometriat = geometriat)
+        val hankeEntity =
+            hankeFactory.builder().withHankealue(firstArea).withHankealue(secondArea).saveEntity()
+        val hanke = hankeService.loadHanke(hankeEntity.hankeTunnus)!!
+        val hakemus =
+            hakemusFactory
+                .builder(hankeEntity)
+                .withMandatoryFields(
+                    hankealue = hanke.alueet.first { it.nimi == "Alue hakemuksella" }
+                )
+                .save()
+        hanke.alueet.removeIf { it.nimi == "Alue hakemuksella" }
+        val request = hanke.toModifyRequest()
+
+        val failure = assertFailure { hankeService.updateHanke(hanke.hankeTunnus, request) }
+
+        failure.all {
+            hasClass(HakemusGeometryNotInsideHankeException::class)
+            messageContains("Hakemus geometry doesn't match any hankealue")
+            messageContains(
+                "hakemus geometry=${hakemus.applicationData.areas!!.single().geometries().single().toJsonString()}"
+            )
+        }
+    }
+
+    @Test
+    fun `throws exception when removing a hankealue with a kaivuilmoitus on it`() {
+        val firstArea = HankealueFactory.create(nimi = "Alue hakemuksella")
+        val geometriat = GeometriaFactory.create(geometria = GeometriaFactory.fourthPolygon())
+        val secondArea = HankealueFactory.create(nimi = "Ilman hakemusta", geometriat = geometriat)
+        val hankeEntity =
+            hankeFactory.builder().withHankealue(firstArea).withHankealue(secondArea).saveEntity()
+        val hanke = hankeService.loadHanke(hankeEntity.hankeTunnus)!!
+        val hankealueWithHakemus = hanke.alueet.first { it.nimi == "Alue hakemuksella" }
+        val hakemus =
+            hakemusFactory
+                .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                .withMandatoryFields(hankealue = hankealueWithHakemus)
+                .save()
+        hanke.alueet.remove(hankealueWithHakemus)
+        val request = hanke.toModifyRequest()
+
+        val failure = assertFailure { hankeService.updateHanke(hanke.hankeTunnus, request) }
+
+        failure.all {
+            hasClass(HakemusGeometryNotInsideHankeException::class)
+            messageContains("Hakemus geometry is outside the associated hankealue")
+            messageContains("hankealue=${hankealueWithHakemus.id}")
+            messageContains(
+                "hakemus geometry=${hakemus.applicationData.areas!!.single().geometries().single().toJsonString()}"
+            )
+        }
+    }
+
+    @Test
+    fun `accepts the update when removing an area with no hakemus`() {
+        val firstArea = HankealueFactory.create(nimi = "Alue johtoselvityshakemuksella")
+        val geometriat1 = GeometriaFactory.create(geometria = GeometriaFactory.fourthPolygon())
+        val secondArea = HankealueFactory.create(nimi = "Ilman hakemusta", geometriat = geometriat1)
+        val geometriat2 = GeometriaFactory.create(geometria = GeometriaFactory.polygon())
+        val thirdArea =
+            HankealueFactory.create(nimi = "Alue kaivuilmoituksella", geometriat = geometriat2)
+        val hankeEntity =
+            hankeFactory
+                .builder()
+                .withHankealue(firstArea)
+                .withHankealue(secondArea)
+                .withHankealue(thirdArea)
+                .saveEntity()
+        val hanke = hankeService.loadHanke(hankeEntity.hankeTunnus)!!
+        hakemusFactory
+            .builder(hankeEntity)
+            .withMandatoryFields(
+                hankealue = hanke.alueet.first { it.nimi == "Alue johtoselvityshakemuksella" }
+            )
+            .save()
+        hakemusFactory
+            .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+            .withMandatoryFields(
+                hankealue = hanke.alueet.first { it.nimi == "Alue kaivuilmoituksella" }
+            )
+            .save()
+        hanke.alueet.removeIf { it.nimi == "Ilman hakemusta" }
+        val request = hanke.toModifyRequest()
+
+        val updatedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
+
+        assertThat(updatedHanke.alueet)
+            .extracting(SavedHankealue::nimi)
+            .containsExactlyInAnyOrder("Alue johtoselvityshakemuksella", "Alue kaivuilmoituksella")
+    }
+
+    @ParameterizedTest
+    @CsvSource("6,20", "5,21", ",20", ",21", "5,", "6,")
+    fun `accepts the updated when the hankealue date covers the johtoselvityshakemus dates`(
+        newStartDay: Int?,
+        newEndDay: Int?,
+    ) {
+        val (hanketunnus, request) =
+            setupDateTest(newStartDay, newEndDay, ApplicationType.CABLE_REPORT)
+
+        val updatedHanke = hankeService.updateHanke(hanketunnus, request)
+
+        assertThat(updatedHanke.alueet[0]).all {
+            prop(Hankealue::haittaAlkuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::getDayOfMonth)
+                .isEqualTo(newStartDay ?: 6)
+            prop(Hankealue::haittaLoppuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::getDayOfMonth)
+                .isEqualTo(newEndDay ?: 20)
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource("7,20", "6,19", "7,19", ",19", "7,")
+    fun `throws an exception when new hankealue dates don't cover johtoselvityshakemus dates`(
+        newStartDay: Int?,
+        newEndDay: Int?,
+    ) {
+        val (hanketunnus, request) =
+            setupDateTest(newStartDay, newEndDay, ApplicationType.CABLE_REPORT)
+
+        val failure = assertFailure { hankeService.updateHanke(hanketunnus, request) }
+
+        failure.all {
+            hasClass(HankeArgumentException::class)
+            messageContains("No hankealue covers the hakemusalue")
+            messageContains("Hakemusalue 0: 2025-02-06 - 2025-02-20")
+            val hankealueId = request.alueet[0].id
+            // Nulls in the request means "no update"
+            val loggedStartDay = newStartDay ?: 6
+            val loggedEndDay = newEndDay ?: 20
+            messageContains(
+                "Hankealueet $hankealueId: 2025-02-0$loggedStartDay - 2025-02-$loggedEndDay"
+            )
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource("6,20", "5,21", ",20", ",21", "5,", "6,")
+    fun `accepts the updated when the hankealue date covers the kaivuilmoitus dates`(
+        newStartDay: Int?,
+        newEndDay: Int?,
+    ) {
+        val (hanketunnus, request) =
+            setupDateTest(newStartDay, newEndDay, ApplicationType.EXCAVATION_NOTIFICATION)
+
+        val updatedHanke = hankeService.updateHanke(hanketunnus, request)
+
+        assertThat(updatedHanke.alueet[0]).all {
+            prop(Hankealue::haittaAlkuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::getDayOfMonth)
+                .isEqualTo(newStartDay ?: 6)
+            prop(Hankealue::haittaLoppuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::getDayOfMonth)
+                .isEqualTo(newEndDay ?: 20)
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource("6,19", "7,19", ",19", "7,", "7,20")
+    fun `throws an exception when new hankealue dates don't cover kaivuilmoitus dates`(
+        newStartDay: Int?,
+        newEndDay: Int?,
+    ) {
+        val (hanketunnus, request) =
+            setupDateTest(newStartDay, newEndDay, ApplicationType.EXCAVATION_NOTIFICATION)
+
+        val failure = assertFailure { hankeService.updateHanke(hanketunnus, request) }
+
+        failure.all {
+            hasClass(HankeArgumentException::class)
+            messageContains("Hankealue doesn't cover the hakemus dates")
+            messageContains("Hakemusalue 0: 2025-02-06 - 2025-02-20")
+            val hankealueId = request.alueet[0].id
+            // Nulls in the request means "no update"
+            val loggedStartDay = newStartDay ?: 6
+            val loggedEndDay = newEndDay ?: 20
+            messageContains(
+                "Hankealue $hankealueId: 2025-02-0$loggedStartDay - 2025-02-$loggedEndDay"
+            )
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationType::class)
+    fun `accepts the updated when the hakemus dates are nulls`(applicationType: ApplicationType) {
+        val startDate = ZonedDateTime.parse("2025-02-06T12:00:00Z")
+        val endDate = ZonedDateTime.parse("2025-02-20T12:00:00Z")
+        val hankealue = HankealueFactory.create(haittaAlkuPvm = startDate, haittaLoppuPvm = endDate)
+        val hankeEntity = hankeFactory.builder().withHankealue(hankealue).saveEntity()
+        val hanke = hankeService.loadHanke(hankeEntity.hankeTunnus)!!
+        hakemusFactory
+            .builder(hankeEntity, applicationType)
+            .withMandatoryFields(hanke.alueet[0])
+            .withStartTime(null)
+            .withEndTime(null)
+            .save()
+        val newStartDate = ZonedDateTime.parse("2025-02-07T12:00:00Z")
+        val newEndDate = ZonedDateTime.parse("2025-02-19T12:00:00Z")
+        hanke.alueet[0].haittaAlkuPvm = newStartDate
+        hanke.alueet[0].haittaLoppuPvm = newEndDate
+        val request = hanke.toModifyRequest()
+
+        val updatedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
+
+        assertThat(updatedHanke.alueet[0]).all {
+            prop(Hankealue::haittaAlkuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::toLocalDate)
+                .isEqualTo(newStartDate.toLocalDate())
+            prop(Hankealue::haittaLoppuPvm)
+                .isNotNull()
+                .prop(ZonedDateTime::toLocalDate)
+                .isEqualTo(newEndDate.toLocalDate())
+        }
+    }
+
+    private fun setupDateTest(
+        newStartDay: Int?,
+        newEndDay: Int?,
+        applicationType: ApplicationType,
+    ): Pair<String, ModifyHankeRequest> {
+        val startDate = ZonedDateTime.parse("2025-02-06T12:00:00Z")
+        val endDate = ZonedDateTime.parse("2025-02-20T12:00:00Z")
+        val hankealue = HankealueFactory.create(haittaAlkuPvm = startDate, haittaLoppuPvm = endDate)
+        val hankeEntity = hankeFactory.builder().withHankealue(hankealue).saveEntity()
+        val hanke = hankeService.loadHanke(hankeEntity.hankeTunnus)!!
+        hakemusFactory
+            .builder(hankeEntity, applicationType)
+            .withMandatoryFields(hanke.alueet[0])
+            .withStartTime(startDate)
+            .withEndTime(endDate)
+            .save()
+        val newStartDate = newStartDay?.let { ZonedDateTime.parse("2025-02-0${it}T12:00:00Z") }
+        val newEndDate = newEndDay?.let { ZonedDateTime.parse("2025-02-${it}T12:00:00Z") }
+        hanke.alueet[0].haittaAlkuPvm = newStartDate
+        hanke.alueet[0].haittaLoppuPvm = newEndDate
+        return Pair(hanke.hankeTunnus, hanke.toModifyRequest())
     }
 
     private fun assertFeaturePropertiesIsReset(hanke: Hanke, propertiesWanted: Map<String, Any?>) {

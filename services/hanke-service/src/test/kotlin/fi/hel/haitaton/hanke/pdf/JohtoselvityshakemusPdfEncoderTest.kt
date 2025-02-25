@@ -4,8 +4,6 @@ import assertk.all
 import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.doesNotContain
-import com.lowagie.text.pdf.PdfReader
-import com.lowagie.text.pdf.parser.PdfTextExtractor
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
@@ -32,7 +30,12 @@ class JohtoselvityshakemusPdfEncoderTest {
 
             assertThat(getPdfAsText(pdfData))
                 .contains(
-                    "Johtoselvityshakemus", "Perustiedot", "Alueet", "Yhteystiedot", "Liitteet")
+                    "Johtoselvityshakemus",
+                    "Perustiedot",
+                    "Alueet",
+                    "Yhteystiedot",
+                    "Liitteet",
+                )
         }
 
         @Test
@@ -90,7 +93,8 @@ class JohtoselvityshakemusPdfEncoderTest {
                 contains("Kiinteistöliittymien rakentamisesta")
                 contains(ApplicationFactory.DEFAULT_WORK_DESCRIPTION)
                 contains(
-                    "${HakemusyhteyshenkiloFactory.DEFAULT_ETUNIMI} ${HakemusyhteyshenkiloFactory.DEFAULT_SUKUNIMI}")
+                    "${HakemusyhteyshenkiloFactory.DEFAULT_ETUNIMI} ${HakemusyhteyshenkiloFactory.DEFAULT_SUKUNIMI}"
+                )
                 contains(HakemusyhteyshenkiloFactory.DEFAULT_SAHKOPOSTI)
                 contains(HakemusyhteyshenkiloFactory.DEFAULT_PUHELIN)
             }
@@ -143,11 +147,16 @@ class JohtoselvityshakemusPdfEncoderTest {
                             JohtoselvitysHakemusalue("Ensimmäinen työalue", Polygon()),
                             JohtoselvitysHakemusalue("Toinen alue", Polygon()),
                             JohtoselvitysHakemusalue("", Polygon()),
-                        ))
+                        ),
+                )
 
             val pdfData =
                 JohtoselvityshakemusPdfEncoder.createPdf(
-                    hakemusData, 614f, listOf(185f, 231f, 198f), listOf())
+                    hakemusData,
+                    614f,
+                    listOf(185f, 231f, 198f),
+                    listOf(),
+                )
 
             assertThat(getPdfAsText(pdfData)).all {
                 contains("18.11.2022")
@@ -171,7 +180,8 @@ class JohtoselvityshakemusPdfEncoderTest {
                     representativeWithContacts =
                         HakemusyhteystietoFactory.createPerson().withYhteyshenkilo(),
                     propertyDeveloperWithContacts =
-                        HakemusyhteystietoFactory.create().withYhteyshenkilo())
+                        HakemusyhteystietoFactory.create().withYhteyshenkilo(),
+                )
 
             val pdfData =
                 JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 1f, listOf(), listOf())
@@ -255,7 +265,8 @@ class JohtoselvityshakemusPdfEncoderTest {
         fun `created PDF contains paper decision receiver when present on the application`() {
             val hakemusData =
                 HakemusFactory.createJohtoselvityshakemusData(
-                    paperDecisionReceiver = PaperDecisionReceiverFactory.default)
+                    paperDecisionReceiver = PaperDecisionReceiverFactory.default
+                )
 
             val pdfData =
                 JohtoselvityshakemusPdfEncoder.createPdf(hakemusData, 614f, listOf(), listOf())
@@ -285,7 +296,8 @@ class JohtoselvityshakemusPdfEncoderTest {
                 HakemusFactory.createJohtoselvityshakemusData(
                     startTime = ZonedDateTime.parse("2022-11-17T22:00:00.000Z"),
                     endTime = ZonedDateTime.parse("2022-11-28T21:59:59.999Z"),
-                    areas = listOf())
+                    areas = listOf(),
+                )
             val attachments =
                 listOf(
                     ApplicationAttachmentFactory.create(fileName = "first.pdf"),
@@ -302,13 +314,6 @@ class JohtoselvityshakemusPdfEncoderTest {
                 contains("third.gt")
             }
         }
-    }
-
-    private fun getPdfAsText(pdfData: ByteArray): String {
-        val reader = PdfReader(pdfData)
-        val pages = reader.numberOfPages
-        val textExtractor = PdfTextExtractor(reader)
-        return (1..pages).joinToString("\n") { textExtractor.getTextFromPage(it) }
     }
 
     companion object {

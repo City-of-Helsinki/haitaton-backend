@@ -201,3 +201,37 @@ databaseChangeLog:
       file: db/changelog/changesets/085-create-tables-for-taydennys.sql
   - include:
       file: db/changelog/changesets/086-change-car-lane-nuisance-enum.sql
+  - include:
+      file: db/changelog/changesets/087-create-table-for-taydennys-attachment.sql
+  - include:
+      file: db/changelog/changesets/088-create-table-hanke-historia.yml
+  - include:
+      file: db/changelog/changesets/089-add-trigger-adding-hanke-historia-lines-for-hanke.sql
+  - include:
+      file: db/changelog/changesets/090-create-table-hankealue-historia.yml
+  - include:
+      file: db/changelog/changesets/091-add-trigger-adding-hankealue-historia-lines-for-hankealue.sql
+  - include:
+      file: db/changelog/changesets/092-add-trigger-adding-hankealue-historia-lines-for-hankegeometria.sql
+  - include:
+      file: db/changelog/changesets/093-add-trigger-adding-hankealue-historia-lines-for-tormaystarkastelutulos.sql
+  - include:
+      file: db/changelog/changesets/094-create-table-johtoselvitys-historia.yml
+  - include:
+      file: db/changelog/changesets/095-add-trigger-adding-johtoselvitys-historia-lines-for-applications.sql
+  - include:
+      file: db/changelog/changesets/096-add-trigger-adding-johtoselvitys-historia-lines-for-hakemusyhteystieto.sql
+  - include:
+      file: db/changelog/changesets/097-create-tables-for-muutosilmoitus.sql
+  - include:
+      file: db/changelog/changesets/098-initial-add-johtoselvitys-historia-lines.sql
+  - include:
+      file: db/changelog/changesets/099-create-table-kaivuilmoitus-historia.yml
+  - include:
+      file: db/changelog/changesets/100-add-trigger-adding-kaivuilmoitus-historia-lines-for-applications.sql
+  - include:
+      file: db/changelog/changesets/101-add-trigger-adding-kaivuilmoitus-historia-lines-for-hakemusyhteystieto.sql
+  - include:
+      file: db/changelog/changesets/102-add-trigger-adding-kaivuilmoitus-historia-lines-for-valmistumisilmoitus.sql
+  - include:
+      file: db/changelog/changesets/103-replace-function-check-kaivuilmoitus-changes-to-fix-toiminnallinen-kunto-and-tyo-valmis-dates.sql

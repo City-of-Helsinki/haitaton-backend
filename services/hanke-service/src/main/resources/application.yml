@@ -1,4 +1,9 @@
 haitaton:
+  ad:
+    filter:
+      use: ${HAITATON_USE_AD_FILTER:false}
+      # List of allowed groups, seperated by ;
+      allowed-groups: ${HAITATON_ALLOWED_AD_GROUPS:}
   allu:
     baseUrl: ${ALLU_BASEURL:/}
     concurrentUploads: ${ALLU_CONCURRENT_UPLOADS:1}
@@ -45,6 +50,8 @@ haitaton:
     issuer: ${HAITATON_OAUTH2_ISSUER:http://gdpr-api-tester:8888/}
     delete-scope: gdprdelete
     query-scope: gdprquery
+  map-service:
+    capability-url: https://kartta.hel.fi/ws/geoserver/avoindata/wms?REQUEST=GetCapabilities&SERVICE=WMS
   profiili-api:
     graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
     audience: ${PROFIILI_AUDIENCE:profile-api-test}
@@ -85,6 +92,9 @@ sentry:
     minimum-event-level: error
 
 server:
+  # Increase the header size to accommodate the Helsinki staff JWT with all of their AD groups.
+  # https://docs.spring.io/spring-boot/appendix/application-properties/index.html#application-properties.server.server.max-http-request-header-size
+  max-http-request-header-size: 64KB
   forward-headers-strategy: FRAMEWORK
 
 spring:

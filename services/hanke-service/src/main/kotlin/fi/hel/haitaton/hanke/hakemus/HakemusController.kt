@@ -65,7 +65,8 @@ class HakemusController(
                     responseCode = "404",
                     content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ])
+            ]
+    )
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
     fun getById(@PathVariable(name = "id") id: Long): HakemusWithExtrasResponse {
         logger.info { "Finding application $id" }
@@ -89,7 +90,8 @@ class HakemusController(
                     responseCode = "404",
                     content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ])
+            ]
+    )
     @PreAuthorize("@hakemusAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankkeenHakemukset(
         @PathVariable hankeTunnus: String,
@@ -110,7 +112,8 @@ class HakemusController(
         val hakemukset = hakemusService.hankkeenHakemukset(hankeTunnus)
         logger.info { "Found ${hakemukset.size} applications for hanke $hankeTunnus" }
         return HankkeenHakemuksetResponse(
-            hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus, areas) })
+            hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus, areas) }
+        )
     }
 
     @PostMapping("/hakemukset")
@@ -129,7 +132,8 @@ class HakemusController(
                     responseCode = "400",
                     content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ])
+            ]
+    )
     @PreAuthorize("@hakemusAuthorizer.authorizeCreate(#createHakemusRequest)")
     fun create(
         @ValidCreateHakemusRequest @RequestBody createHakemusRequest: CreateHakemusRequest
@@ -156,7 +160,8 @@ class HakemusController(
                     responseCode = "400",
                     content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ])
+            ]
+    )
     fun createWithGeneratedHanke(
         @ValidCreateHankeRequest @RequestBody request: CreateHankeRequest,
         @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext,
@@ -206,7 +211,8 @@ class HakemusController(
                                             value = "{hankeError: 'HAI2002'}",
                                         ),
                                     ],
-                            )],
+                            )
+                        ],
                 ),
                 ApiResponse(
                     description = "An application was not found with the given id",
@@ -219,7 +225,8 @@ class HakemusController(
                     responseCode = "409",
                     content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ])
+            ]
+    )
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun update(
         @PathVariable(name = "id") id: Long,
@@ -234,7 +241,8 @@ class HakemusController(
                If the application hasn't been sent to Allu, delete it directly.
                If the application is pending in Allu, cancel it in Allu before deleting it locally.
                If the application has proceeded beyond pending in Allu, refuse to delete it.
-            """)
+            """,
+    )
     @ApiResponses(
         value =
             [
@@ -242,13 +250,16 @@ class HakemusController(
                 ApiResponse(
                     description = "An application was not found with the given id",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description =
                         "The application is already processing in Allu and can't be deleted",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
-            ])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun delete(@PathVariable(name = "id") id: Long): HakemusDeletionResultDto {
         val userId = currentUserId()
@@ -282,22 +293,28 @@ The id needs to reference an excavation notification.
         value =
             [
                 ApiResponse(
-                    description = "Operational condition reported, no body", responseCode = "200"),
+                    description = "Operational condition reported, no body",
+                    responseCode = "200",
+                ),
                 ApiResponse(
                     description =
                         "The date is malformed, the date isn't in the allowed bounds " +
                             "or the application not an excavation notification",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description = "An application was not found with the given id",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description = "The application is not in one of the allowed states",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
-            ])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun reportOperationalCondition(
         @PathVariable(name = "id") id: Long,
@@ -341,16 +358,20 @@ The id needs to reference an excavation notification.
                         "The date is malformed, the date isn't in the allowed bounds " +
                             "or the application not an excavation notification",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description = "An application was not found with the given id",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description = "The application is not in one of the allowed states",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
-            ])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun reportWorkFinished(
         @PathVariable(name = "id") id: Long,
@@ -373,7 +394,8 @@ The id needs to reference an excavation notification.
                - The caller needs to be a contact on the application for at least one customer.
 
                Request body is optional. Can be used to request a paper copy of the decision to be sent to the address provided.
-            """)
+            """,
+    )
     @ApiResponses(
         value =
             [
@@ -381,16 +403,20 @@ The id needs to reference an excavation notification.
                 ApiResponse(
                     description = "Application contains invalid data",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeErrorDetail::class))]),
+                    content = [Content(schema = Schema(implementation = HankeErrorDetail::class))],
+                ),
                 ApiResponse(
                     description = "An application was not found with the given id",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description = "The application has been sent already",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
-            ])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'EDIT_APPLICATIONS')")
     fun sendHakemus(
         @PathVariable(name = "id") id: Long,
@@ -417,7 +443,8 @@ The id needs to reference an excavation notification.
                     responseCode = "404",
                     content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
-            ])
+            ]
+    )
     @PreAuthorize("@hakemusAuthorizer.authorizeHakemusId(#id, 'VIEW')")
     fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
         val userId = currentUserId()
@@ -489,14 +516,6 @@ The id needs to reference an excavation notification.
     fun hakemusNotYetInAlluException(ex: HakemusNotYetInAlluException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2013
-    }
-
-    @ExceptionHandler(WrongHakemusTypeException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @Hidden
-    fun wrongHakemusTypeException(ex: WrongHakemusTypeException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2002
     }
 
     @ExceptionHandler(CompletionDateException::class)

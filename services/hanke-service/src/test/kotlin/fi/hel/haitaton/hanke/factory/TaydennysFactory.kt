@@ -1,56 +1,77 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
-import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.parseJson
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import fi.hel.haitaton.hanke.taydennys.Taydennys
 import fi.hel.haitaton.hanke.taydennys.TaydennysEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
-import fi.hel.haitaton.hanke.taydennys.TaydennysWithMuutokset
+import fi.hel.haitaton.hanke.taydennys.TaydennysService
+import fi.hel.haitaton.hanke.taydennys.TaydennysWithExtras
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteyshenkiloEntity
+import fi.hel.haitaton.hanke.taydennys.TaydennysyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennysyhteystietoEntity
-import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import java.util.UUID
 import org.springframework.stereotype.Component
 
 @Component
 class TaydennysFactory(
+    private val taydennysService: TaydennysService,
     private val taydennysRepository: TaydennysRepository,
     private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
+    private val taydennysyhteyshenkiloRepository: TaydennysyhteyshenkiloRepository,
     private val hakemusFactory: HakemusFactory,
+    private val hankeKayttajaFactory: HankeKayttajaFactory,
 ) {
-    fun save(
-        applicationId: Long? = null,
-        taydennyspyynto: TaydennyspyyntoEntity =
-            applicationId?.let { taydennyspyyntoFactory.saveEntity(it) }
-                ?: throw RuntimeException(),
-        hakemusData: HakemusEntityData = ApplicationFactory.createCableReportApplicationData(),
-    ): Taydennys =
-        TaydennysEntity(taydennyspyynto = taydennyspyynto, hakemusData = hakemusData)
-            .let { taydennysRepository.save(it) }
-            .toDomain()
+    fun builder(
+        applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
+        alluId: Int = TaydennyspyyntoFactory.DEFAULT_ALLU_ID,
+    ): TaydennysBuilder {
+        val hakemusEntity: HakemusEntity =
+            hakemusFactory
+                .builder(applicationType)
+                .withMandatoryFields()
+                .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
+                .saveEntity()
+        return builder(hakemusEntity, alluId)
+    }
 
-    fun saveForHakemus(
+    fun builder(hakemusId: Long, hankeId: Int): TaydennysBuilder {
+        val taydennysEntity =
+            createEntity(taydennyspyynto = taydennyspyyntoFactory.saveEntity(hakemusId))
+        return builder(taydennysEntity, hankeId)
+    }
+
+    private fun builder(taydennysEntity: TaydennysEntity, hankeId: Int): TaydennysBuilder =
+        TaydennysBuilder(
+            taydennysEntity,
+            hankeId,
+            taydennysService,
+            taydennysRepository,
+            hankeKayttajaFactory,
+            taydennysyhteyshenkiloRepository,
+        )
+
+    fun builder(
         hakemus: HakemusEntity,
-        mutator: HakemusEntityData.() -> HakemusEntityData = { this },
-    ): Taydennys {
-        val taydennyspyynto = taydennyspyyntoFactory.saveEntity(hakemus.id)
+        taydennyspyyntoAlluId: Int = TaydennyspyyntoFactory.DEFAULT_ALLU_ID,
+    ): TaydennysBuilder {
+        val taydennyspyynto = taydennyspyyntoFactory.saveEntity(hakemus.id, taydennyspyyntoAlluId)
         val entity =
             TaydennysEntity(
                 taydennyspyynto = taydennyspyynto,
-                hakemusData = mutator(hakemus.hakemusEntityData),
+                hakemusData = hakemus.hakemusEntityData,
             )
         entity.yhteystiedot =
             hakemus.yhteystiedot
@@ -79,46 +100,19 @@ class TaydennysFactory(
                     taydennysyhteystieto
                 }
                 .toMutableMap()
-        return taydennysRepository.save(entity).toDomain()
+        return builder(entity, hakemus.hanke.id)
     }
 
-    fun saveWithHakemus(
-        type: ApplicationType = ApplicationType.CABLE_REPORT,
-        hanke: HankeEntity? = null,
-        f: (HakemusBuilder) -> Unit = {},
+    fun save(
+        applicationId: Long? = null,
+        hakemusData: HakemusEntityData = ApplicationFactory.createCableReportApplicationData(),
     ): Taydennys {
-        val hakemusBuilder =
-            if (hanke != null) hakemusFactory.builder(USERNAME, hanke, type)
-            else {
-                hakemusFactory.builder(type)
-            }
-        val hakemus =
-            hakemusBuilder
-                .withStatus(ApplicationStatus.WAITING_INFORMATION)
-                .apply { f(this) }
-                .saveEntity()
-        return saveForHakemus(hakemus)
+        val taydennyspyynto =
+            applicationId?.let { taydennyspyyntoFactory.saveEntity(it) } ?: throw RuntimeException()
+        return TaydennysEntity(taydennyspyynto = taydennyspyynto, hakemusData = hakemusData)
+            .let { taydennysRepository.save(it) }
+            .toDomain()
     }
-
-    /** Returns updated data */
-    fun updateTaydennys(
-        taydennys: Taydennys,
-        f: HakemusEntityData.() -> HakemusEntityData,
-    ): Taydennys {
-        val entity = taydennysRepository.getReferenceById(taydennys.id)
-        entity.hakemusData = entity.hakemusData.f()
-        return taydennysRepository.save(entity).toDomain()
-    }
-
-    /** Returns updated data */
-    fun updateJohtoselvitysTaydennys(
-        taydennys: Taydennys,
-        f: JohtoselvityshakemusEntityData.() -> JohtoselvityshakemusEntityData,
-    ): Taydennys =
-        updateTaydennys(taydennys) {
-            this as JohtoselvityshakemusEntityData
-            f()
-        }
 
     companion object {
         val DEFAULT_ID: UUID = UUID.fromString("49ee9168-a1e3-45a1-8fe0-9330cd5475d3")
@@ -127,8 +121,9 @@ class TaydennysFactory(
             id: UUID = DEFAULT_ID,
             taydennyspyyntoId: UUID = TaydennyspyyntoFactory.DEFAULT_ID,
             hakemusType: ApplicationType = ApplicationType.CABLE_REPORT,
+            hakemusId: Long = 1L,
             hakemusData: HakemusData = HakemusFactory.createHakemusData(hakemusType),
-        ) = Taydennys(id, taydennyspyyntoId, hakemusData)
+        ) = Taydennys(id, taydennyspyyntoId, hakemusId, hakemusData)
 
         fun createEntity(
             id: UUID = DEFAULT_ID,
@@ -141,8 +136,10 @@ class TaydennysFactory(
         fun Taydennys.toUpdateRequest(): HakemusUpdateRequest =
             this.toResponse().applicationData.toJsonString().parseJson()
 
-        fun Taydennys.withMuutokset(muutokset: List<String>) =
-            TaydennysWithMuutokset(id, taydennyspyyntoId, hakemusData, muutokset)
+        fun Taydennys.withExtras(
+            muutokset: List<String> = listOf(),
+            liitteet: List<TaydennysAttachmentMetadata> = listOf(),
+        ) = TaydennysWithExtras(id, taydennyspyyntoId, hakemusData, muutokset, liitteet)
 
         fun createYhteystietoEntity(
             taydennys: TaydennysEntity,

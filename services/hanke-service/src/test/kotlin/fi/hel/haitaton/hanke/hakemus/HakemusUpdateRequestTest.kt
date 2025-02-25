@@ -7,10 +7,10 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
+import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
-import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -99,7 +99,8 @@ class HakemusUpdateRequestTest {
             val original = blankOriginal
             val request =
                 createJohtoselvityshakemusUpdateRequestWithCustomerWithContacts(
-                    "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f")
+                    "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f"
+                )
 
             assertThat(request.hasChanges(original)).isTrue()
         }
@@ -108,7 +109,8 @@ class HakemusUpdateRequestTest {
         fun `returns true when new customer contact is added`() {
             val original =
                 createHakemusDataWithYhteystiedot(
-                    Pair("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f", true))
+                    Pair("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f", true)
+                )
             val request =
                 createJohtoselvityshakemusUpdateRequestWithCustomerWithContacts(
                     "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f",
@@ -198,7 +200,7 @@ class HakemusUpdateRequestTest {
     private fun createHakemusDataWithTormaystarkastelu(): HakemusData {
         val tormaystarkasteluTulos =
             TormaystarkasteluTulos(
-                TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
+                HaittaFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
                 3.0f,
                 5.0f,
                 5.0f,

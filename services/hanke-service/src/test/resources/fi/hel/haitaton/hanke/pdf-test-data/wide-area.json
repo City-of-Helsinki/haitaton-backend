@@ -1,0 +1,79 @@
+[
+  {
+    "name": "Hankealue 1",
+    "hankealueId": 103,
+    "tyoalueet": [
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25496400,
+                6673000
+              ],
+              [
+                25496900,
+                6672950
+              ],
+              [
+                25497000,
+                6673100
+              ],
+              [
+                25496500,
+                6673150
+              ],
+              [
+                25496400,
+                6673000
+              ]
+            ]
+          ]
+        },
+        "area": 17435.08397593583,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 2.3,
+            "haitanKesto": 3,
+            "katuluokka": 4,
+            "liikennemaara": 5,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 3,
+          "linjaautoliikenneindeksi": 5,
+          "raitioliikenneindeksi": 5,
+          "liikennehaittaindeksi": {
+            "indeksi": 5,
+            "tyyppi": "LINJAAUTOLIIKENNEINDEKSI"
+          }
+        }
+      }
+    ],
+    "katuosoite": "Kaivokatu 12",
+    "tyonTarkoitukset": [
+      "SAHKO"
+    ],
+    "meluhaitta": "EI_MELUHAITTAA",
+    "polyhaitta": "EI_POLYHAITTAA",
+    "tarinahaitta": "EI_TARINAHAITTAA",
+    "kaistahaitta": "EI_VAIKUTA",
+    "kaistahaittojenPituus": "EI_VAIKUTA_KAISTAJARJESTELYIHIN",
+    "lisatiedot": "",
+    "haittojenhallintasuunnitelma": {
+      "MUUT": "Vaakasuora",
+      "YLEINEN": "Vaakasuora",
+      "AUTOLIIKENNE": "Vaakasuora",
+      "PYORALIIKENNE": "Vaakasuora",
+      "RAITIOLIIKENNE": "Vaakasuora",
+      "LINJAAUTOLIIKENNE": "Vaakasuora"
+    }
+  }
+]

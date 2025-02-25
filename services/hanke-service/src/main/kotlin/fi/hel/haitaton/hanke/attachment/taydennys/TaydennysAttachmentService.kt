@@ -1,0 +1,139 @@
+package fi.hel.haitaton.hanke.attachment.taydennys
+
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
+import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
+import fi.hel.haitaton.hanke.attachment.common.FileScanClient
+import fi.hel.haitaton.hanke.attachment.common.FileScanInput
+import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadataDto
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
+import fi.hel.haitaton.hanke.attachment.common.hasInfected
+import fi.hel.haitaton.hanke.taydennys.TaydennysIdentifier
+import fi.hel.haitaton.hanke.taydennys.TaydennysNotFoundException
+import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
+import java.util.UUID
+import mu.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
+import org.springframework.http.MediaType
+import org.springframework.stereotype.Service
+import org.springframework.web.multipart.MultipartFile
+
+private val logger = KotlinLogging.logger {}
+
+@Service
+class TaydennysAttachmentService(
+    private val metadataService: TaydennysAttachmentMetadataService,
+    private val taydennysRepository: TaydennysRepository,
+    private val attachmentContentService: ApplicationAttachmentContentService,
+    private val scanClient: FileScanClient,
+) {
+    fun getMetadataList(taydennysId: UUID): List<TaydennysAttachmentMetadata> =
+        metadataService.getMetadataList(taydennysId)
+
+    fun getContent(attachmentId: UUID): AttachmentContent {
+        val attachment = metadataService.findAttachment(attachmentId)
+
+        if (attachment.attachmentType == ApplicationAttachmentType.VALTAKIRJA) {
+            throw ValtakirjaForbiddenException(attachmentId)
+        }
+
+        val content = attachmentContentService.find(attachment.blobLocation, attachment.id)
+
+        return AttachmentContent(attachment.fileName, attachment.contentType, content)
+    }
+
+    fun addAttachment(
+        taydennysId: UUID,
+        attachmentType: ApplicationAttachmentType,
+        attachment: MultipartFile,
+    ): TaydennysAttachmentMetadataDto {
+        logger.info {
+            "Adding attachment to täydennys, taydennysId = $taydennysId, " +
+                "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}, " +
+                "content type = ${attachment.contentType}"
+        }
+        AttachmentValidator.validateSize(attachment.bytes.size)
+        val filename = AttachmentValidator.validFilename(attachment.originalFilename)
+        AttachmentValidator.validateExtensionForType(filename, attachmentType)
+        val taydennys = findTaydennys(taydennysId)
+
+        val contentType = AttachmentValidator.ensureMediaType(attachment.contentType)
+        scanAttachment(filename, attachment.bytes)
+        metadataService.ensureRoomForAttachment(taydennys)
+
+        val newAttachment =
+            saveAttachment(taydennys, attachment.bytes, filename, contentType, attachmentType)
+
+        return newAttachment.toDto()
+    }
+
+    private fun findTaydennys(taydennysId: UUID): TaydennysIdentifier =
+        taydennysRepository.findByIdOrNull(taydennysId)
+            ?: throw TaydennysNotFoundException(taydennysId)
+
+    private fun scanAttachment(filename: String, content: ByteArray) {
+        val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))
+        if (scanResult.hasInfected()) {
+            throw AttachmentInvalidException("Infected file detected, see previous logs.")
+        }
+    }
+
+    private fun saveAttachment(
+        taydennys: TaydennysIdentifier,
+        content: ByteArray,
+        filename: String,
+        contentType: MediaType,
+        attachmentType: ApplicationAttachmentType,
+    ): TaydennysAttachmentMetadata {
+        logger.info { "Saving attachment content for täydennys. ${taydennys.logString()}" }
+        val blobPath =
+            attachmentContentService.upload(filename, contentType, content, taydennys.hakemusId())
+        logger.info { "Saving attachment metadata for täydennys. ${taydennys.logString()}" }
+        val newAttachment =
+            try {
+                metadataService.create(
+                    filename,
+                    contentType.toString(),
+                    content.size.toLong(),
+                    blobPath,
+                    attachmentType,
+                    taydennys.id,
+                )
+            } catch (e: Exception) {
+                logger.error(e) {
+                    "Attachment metadata save failed, deleting attachment content $blobPath"
+                }
+                attachmentContentService.delete(blobPath)
+                throw e
+            }
+        logger.info {
+            "Added attachment metadata ${newAttachment.id} and content $blobPath for täydennys. ${taydennys.logString()}"
+        }
+        return newAttachment
+    }
+
+    fun deleteAttachment(attachmentId: UUID) {
+        val attachment = metadataService.findAttachment(attachmentId)
+        logger.info { "Deleting attachment metadata ${attachment.id}" }
+        metadataService.deleteAttachmentById(attachment.id)
+        logger.info { "Deleting attachment content at ${attachment.blobLocation}" }
+        attachmentContentService.delete(attachment.blobLocation)
+        logger.info { "Deleted attachment $attachmentId from täydennys ${attachment.taydennysId}" }
+    }
+
+    fun deleteAllAttachments(taydennys: TaydennysIdentifier) {
+        logger.info { "Deleting all attachments from täydennys. ${taydennys.logString()}" }
+        val paths = metadataService.deleteAllAttachments(taydennys)
+        try {
+            paths.forEach(attachmentContentService::delete)
+        } catch (e: Exception) {
+            logger.error(e) {
+                "Failed to delete all attachment content for täydennys. Continuing with täydennys deletion regardless of error. ${taydennys.logString()}"
+            }
+        }
+        logger.info { "Deleted all attachments from täydennys. ${taydennys.logString()}" }
+    }
+}

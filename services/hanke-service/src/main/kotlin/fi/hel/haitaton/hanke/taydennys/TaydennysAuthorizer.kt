@@ -1,6 +1,8 @@
 package fi.hel.haitaton.hanke.taydennys
 
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusAuthorizer
 import fi.hel.haitaton.hanke.permissions.Authorizer
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -15,6 +17,7 @@ class TaydennysAuthorizer(
     hankeRepository: HankeRepository,
     private val taydennysRepository: TaydennysRepository,
     private val hakemusAuthorizer: HakemusAuthorizer,
+    private val attachmentRepository: TaydennysAttachmentRepository,
 ) : Authorizer(permissionService, hankeRepository) {
 
     @Transactional(readOnly = true)
@@ -26,4 +29,18 @@ class TaydennysAuthorizer(
             hakemusAuthorizer.authorizeHakemusId(it, permissionCode)
         }
     }
+
+    @Transactional(readOnly = true)
+    fun authorizeAttachment(
+        taydennysId: UUID,
+        attachmentId: UUID,
+        permissionCode: String,
+    ): Boolean {
+        authorize(taydennysId, permissionCode)
+        return findTaydennysIdForAttachment(attachmentId) == taydennysId ||
+            throw AttachmentNotFoundException(attachmentId)
+    }
+
+    private fun findTaydennysIdForAttachment(attachmentId: UUID): UUID? =
+        attachmentRepository.findByIdOrNull(attachmentId)?.taydennysId
 }
