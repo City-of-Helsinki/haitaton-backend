@@ -35,7 +35,7 @@ class MuutosilmoituksenYhteystietoEntity(
     var muutosilmoitus: MuutosilmoitusEntity,
     @OneToMany(
         fetch = FetchType.LAZY,
-        mappedBy = "muutosilmoituksenYhteystieto",
+        mappedBy = "yhteystieto",
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )

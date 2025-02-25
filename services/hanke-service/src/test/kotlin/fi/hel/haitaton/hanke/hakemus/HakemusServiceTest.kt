@@ -35,6 +35,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.pdf.HaittojenhallintasuunnitelmaPdfEncoder
 import fi.hel.haitaton.hanke.pdf.withName
@@ -75,6 +76,7 @@ class HakemusServiceTest {
     private val hankeRepository: HankeRepository = mockk()
     private val taydennysRepository: TaydennysRepository = mockk()
     private val taydennyspyyntoRepository: TaydennyspyyntoRepository = mockk()
+    private val muutosilmoitusRepository: MuutosilmoitusRepository = mockk()
     private val geometriatDao: GeometriatDao = mockk()
     private val hankealueService: HankealueService = mockk()
     private val loggingService: HakemusLoggingService = mockk(relaxUnitFun = true)
@@ -94,6 +96,7 @@ class HakemusServiceTest {
         HakemusService(
             hakemusRepository,
             hankeRepository,
+            muutosilmoitusRepository,
             taydennyspyyntoRepository,
             taydennysRepository,
             geometriatDao,

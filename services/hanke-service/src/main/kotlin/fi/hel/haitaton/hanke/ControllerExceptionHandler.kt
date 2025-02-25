@@ -14,6 +14,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteyshenkiloException
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteystietoException
 import fi.hel.haitaton.hanke.hakemus.InvalidHiddenRegistryKey
+import fi.hel.haitaton.hanke.hakemus.WrongHakemusTypeException
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -186,6 +187,14 @@ class ControllerExceptionHandler {
     fun invalidHakemusyhteyshenkiloException(ex: InvalidHakemusyhteyshenkiloException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2011
+    }
+
+    @ExceptionHandler(WrongHakemusTypeException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun wrongHakemusTypeException(ex: WrongHakemusTypeException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2002
     }
 
     @ExceptionHandler(InvalidHiddenRegistryKey::class)

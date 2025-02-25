@@ -1,6 +1,8 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped
+import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusResponse
 import fi.hel.haitaton.hanke.paatos.Paatos
 import fi.hel.haitaton.hanke.paatos.PaatosResponse
 import fi.hel.haitaton.hanke.taydennys.TaydennysWithExtras
@@ -13,6 +15,7 @@ data class HakemusWithExtras(
     val paatokset: List<Paatos>,
     val taydennyspyynto: Taydennyspyynto?,
     val taydennys: TaydennysWithExtras?,
+    val muutosilmoitus: Muutosilmoitus?,
 ) {
     fun toResponse(): HakemusWithExtrasResponse =
         HakemusWithExtrasResponse(
@@ -20,6 +23,7 @@ data class HakemusWithExtras(
             paatokset.map { it.toResponse() }.groupBy { it.hakemustunnus },
             taydennyspyynto?.toResponse(),
             taydennys?.toResponse(),
+            muutosilmoitus?.toResponse(),
         )
 }
 
@@ -28,4 +32,5 @@ data class HakemusWithExtrasResponse(
     val paatokset: Map<String, List<PaatosResponse>>,
     val taydennyspyynto: TaydennyspyyntoResponse?,
     val taydennys: TaydennysWithExtrasResponse?,
+    val muutosilmoitus: MuutosilmoitusResponse?,
 )

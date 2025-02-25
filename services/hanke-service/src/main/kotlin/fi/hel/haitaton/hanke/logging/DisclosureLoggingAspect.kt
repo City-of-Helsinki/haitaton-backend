@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusDeletionResultDto
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusWithExtrasResponse
 import fi.hel.haitaton.hanke.hakemus.HankkeenHakemuksetResponse
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusResponse
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaController
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaResponse
@@ -51,12 +52,17 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
                 result.taydennys?.let {
                     disclosureLogService.saveForTaydennys(it.taydennys, currentUserId())
                 }
+                result.muutosilmoitus?.let {
+                    disclosureLogService.saveForMuutosilmoitus(it, currentUserId())
+                }
             }
             is Hanke -> disclosureLogService.saveForHanke(result, currentUserId())
             is HankeKayttajaDto ->
                 disclosureLogService.saveForHankeKayttaja(result, currentUserId())
             is HankeKayttajaResponse ->
                 disclosureLogService.saveForHankeKayttajat(result.kayttajat, currentUserId())
+            is MuutosilmoitusResponse ->
+                disclosureLogService.saveForMuutosilmoitus(result, currentUserId())
             is Names -> disclosureLogService.saveForProfiiliNimi(result, currentUserId())
             is TaydennysResponse -> disclosureLogService.saveForTaydennys(result, currentUserId())
 
@@ -79,6 +85,9 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
             is ResponseEntity<*> -> result.body?.let { logResult(it) }
             is List<*> -> logResultList(result.filterNotNull())
             is Map<*, *> -> logResultList(result.values.filterNotNull())
+
+            // Used for returning system info. Won't contain personal information.
+            is String -> return
 
             // Throw an exception if nothing matches. This will ensure we specify whether a new
             // response type can contain personal information or not.

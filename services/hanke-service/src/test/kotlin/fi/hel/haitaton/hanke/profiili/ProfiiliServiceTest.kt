@@ -23,6 +23,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.NullAndEmptySource
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.oauth2.jwt.Jwt
@@ -131,12 +134,15 @@ class ProfiiliServiceTest {
             }
         }
 
-        @Test
-        fun `throws an exception when given name not found in token`() {
+        @ParameterizedTest
+        @ValueSource(strings = [" ", " \t "])
+        @NullAndEmptySource
+        fun `throws an exception when given name not found in token`(givenName: String?) {
             val jwt =
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
                     .claim(JwtClaims.AMR, listOf(AmrValues.AD))
+                    .claim(JwtClaims.GIVEN_NAME, givenName)
                     .claim(JwtClaims.FAMILY_NAME, ProfiiliFactory.DEFAULT_LAST_NAME)
                     .build()
             val authentication: Authentication = mockk()
@@ -157,13 +163,16 @@ class ProfiiliServiceTest {
             }
         }
 
-        @Test
-        fun `throws an exception when family name not found in token`() {
+        @ParameterizedTest
+        @ValueSource(strings = [" ", " \t "])
+        @NullAndEmptySource
+        fun `throws an exception when family name not found in token`(familyName: String?) {
             val jwt =
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
                     .claim(JwtClaims.AMR, listOf(AmrValues.AD))
                     .claim(JwtClaims.GIVEN_NAME, ProfiiliFactory.DEFAULT_GIVEN_NAME)
+                    .claim(JwtClaims.FAMILY_NAME, familyName)
                     .build()
             val authentication: Authentication = mockk()
             every { authentication.credentials } returns jwt

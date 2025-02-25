@@ -19,6 +19,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.InvoicingCustomerResponse
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusDataResponse
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusDataResponse
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusResponse
 import fi.hel.haitaton.hanke.paatos.PaatosMetadata
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.profiili.Names
@@ -122,6 +123,25 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
                 )
 
         saveDisclosureLogs(userId, UserRole.USER, entries)
+    }
+
+    /**
+     * Save disclosure logs for when a user accesses a muutosilmoitus. Write disclosure log entries
+     * for the customers and contacts in the muutosilmoitus.
+     */
+    fun saveForMuutosilmoitus(response: MuutosilmoitusResponse, currentUserId: String) {
+        val entries =
+            auditLogEntriesForHakemusDataResponseCustomers(
+                response.id,
+                response.applicationData,
+                ObjectType.MUUTOSILMOITUS_CUSTOMER,
+            ) +
+                auditLogEntriesForHakemusDataResponseContacts(
+                    response.id,
+                    response.applicationData,
+                    ObjectType.MUUTOSILMOITUS_CONTACT,
+                )
+        saveDisclosureLogs(currentUserId, UserRole.USER, entries)
     }
 
     /**

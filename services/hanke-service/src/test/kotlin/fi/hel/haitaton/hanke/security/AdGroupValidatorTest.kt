@@ -12,12 +12,16 @@ import fi.hel.haitaton.hanke.test.AuthenticationMocks.TOKEN_VALUE
 import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.security.oauth2.core.OAuth2Error
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult
 import org.springframework.security.oauth2.jwt.Jwt
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AdGroupValidatorTest {
 
     @ParameterizedTest
@@ -57,6 +61,47 @@ class AdGroupValidatorTest {
 
         assertThat(result).isSuccess()
     }
+
+    @ParameterizedTest
+    @MethodSource("emptyNames")
+    fun `fails when AD token has no given name information`(
+        useAdFilter: Boolean,
+        givenName: String?,
+    ) {
+        val validator = validator(useAdFilter)
+        val jwt =
+            AuthenticationMocks.adJwt(
+                adGroups = AuthenticationMocks.DEFAULT_AD_GROUPS,
+                givenName = givenName,
+            )
+
+        val result = validator.validate(jwt)
+
+        assertThat(result).hasError("Missing given_name")
+    }
+
+    @ParameterizedTest
+    @MethodSource("emptyNames")
+    fun `fails when AD token has no family name information`(
+        useAdFilter: Boolean,
+        familyName: String?,
+    ) {
+        val validator = validator(useAdFilter)
+        val jwt =
+            AuthenticationMocks.adJwt(
+                adGroups = AuthenticationMocks.DEFAULT_AD_GROUPS,
+                familyName = familyName,
+            )
+
+        val result = validator.validate(jwt)
+
+        assertThat(result).hasError("Missing family_name")
+    }
+
+    private fun emptyNames(): List<Arguments> =
+        setOf(null, "", " ", " \t ").flatMap { name ->
+            listOf(Arguments.of(true, name), Arguments.of(false, name))
+        }
 
     @Nested
     inner class WithFilterEnabled {
