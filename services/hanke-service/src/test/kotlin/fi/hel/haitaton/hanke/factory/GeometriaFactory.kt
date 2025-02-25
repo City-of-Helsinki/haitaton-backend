@@ -18,6 +18,9 @@ object GeometriaFactory {
     fun thirdPolygon(): Polygon =
         "/fi/hel/haitaton/hanke/geometria/kolmas_polygoni.json".asJsonResource()
 
+    fun fourthPolygon(): Polygon =
+        "/fi/hel/haitaton/hanke/geometria/neljas_polygoni.json".asJsonResource()
+
     fun collection(vararg polygon: Polygon = arrayOf(secondPolygon())): GeometryCollection =
         GeometryCollection().apply {
             polygon.forEach { add(it) }
@@ -33,6 +36,15 @@ object GeometriaFactory {
         "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
             .asJsonResource<Geometriat>()
             .copy(id = id)
+
+    fun create(id: Int = 1, geometria: Polygon): Geometriat {
+        val geometriat = create(id)
+        geometriat.featureCollection?.apply {
+            val feature = features.first()
+            feature.geometry = geometria
+        }
+        return geometriat
+    }
 
     fun createNew(): NewGeometriat = NewGeometriat(create().featureCollection)
 }

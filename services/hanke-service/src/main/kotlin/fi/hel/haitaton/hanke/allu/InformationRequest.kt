@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.allu
 
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
+
 data class InformationRequest(
     val applicationId: Int,
     val informationRequestId: Int,
@@ -31,7 +33,10 @@ enum class InformationRequestFieldKey {
     OTHER;
 
     companion object {
-        fun fromHaitatonFieldName(name: String): InformationRequestFieldKey? =
+        fun fromHaitatonFieldName(
+            name: String,
+            applicationType: ApplicationType,
+        ): InformationRequestFieldKey? =
             when (name) {
                 "name" -> null
                 "postalAddress" -> POSTAL_ADDRESS
@@ -48,8 +53,17 @@ enum class InformationRequestFieldKey {
                 "propertyDeveloperWithContacts" -> PROPERTY_DEVELOPER
                 "representativeWithContacts" -> REPRESENTATIVE
                 "invoicingCustomer" -> INVOICING_CUSTOMER
+                "attachment" -> ATTACHMENT
                 else -> {
-                    if (name.startsWith("areas")) GEOMETRY else null
+                    when {
+                        name.matches(Regex("areas\\[\\d+]")) &&
+                            applicationType == ApplicationType.CABLE_REPORT -> GEOMETRY
+                        name.matches(Regex("areas\\[\\d+]\\.tyoalueet\\[\\d+]")) -> GEOMETRY
+                        name.matches(
+                            Regex("areas\\[\\d+]\\.haittojenhallintasuunnitelma\\[[A-Z]+]")
+                        ) -> ATTACHMENT
+                        else -> null
+                    }
                 }
             }
     }

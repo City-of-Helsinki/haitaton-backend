@@ -24,9 +24,10 @@ import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.PaperDecisionReceiver
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
+import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
 import fi.hel.haitaton.hanke.paatos.Paatos
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.taydennys.TaydennysWithMuutokset
+import fi.hel.haitaton.hanke.taydennys.TaydennysWithExtras
 import fi.hel.haitaton.hanke.taydennys.Taydennyspyynto
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
@@ -53,6 +54,9 @@ class HakemusFactory(
             createEntity(userId = userId, hanke = hankeEntity, applicationType = applicationType)
         return builder(userId, applicationEntity, hankeEntity.id)
     }
+
+    fun builder(hankeEntity: HankeEntity, applicationType: ApplicationType): HakemusBuilder =
+        builder(USERNAME, hankeEntity, applicationType)
 
     fun builder(
         hankeEntity: HankeEntity = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
@@ -243,8 +247,9 @@ class HakemusFactory(
         fun Hakemus.withExtras(
             paatokset: List<Paatos> = listOf(),
             taydennyspyynto: Taydennyspyynto? = null,
-            taydennys: TaydennysWithMuutokset? = null,
-        ) = HakemusWithExtras(this, paatokset, taydennyspyynto, taydennys)
+            taydennys: TaydennysWithExtras? = null,
+            muutosilmoitus: Muutosilmoitus? = null,
+        ) = HakemusWithExtras(this, paatokset, taydennyspyynto, taydennys, muutosilmoitus)
 
         fun hakemusDataForRegistryKeyTest(tyyppi: CustomerType): KaivuilmoitusData {
             val hakija =

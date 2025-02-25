@@ -28,7 +28,7 @@ import org.hibernate.annotations.Type
 @Table(name = "taydennys")
 class TaydennysEntity(
     @Id override var id: UUID = UUID.randomUUID(),
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.EAGER, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "taydennyspyynto_id", nullable = false)
     var taydennyspyynto: TaydennyspyyntoEntity,
@@ -46,6 +46,7 @@ class TaydennysEntity(
     var yhteystiedot: MutableMap<ApplicationContactType, TaydennysyhteystietoEntity> =
         mutableMapOf(),
 ) : TaydennysIdentifier {
+
     fun toDomain(): Taydennys {
         val yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto> =
             yhteystiedot.mapValues { it.value.toDomain() }
@@ -59,6 +60,7 @@ class TaydennysEntity(
         return Taydennys(
             id = id,
             taydennyspyyntoId = taydennyspyynto.id,
+            hakemusId = taydennyspyynto.applicationId,
             hakemusData = applicationData,
         )
     }

@@ -22,6 +22,7 @@ import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentMetadataService
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
@@ -34,7 +35,10 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.paatos.PaatosService
+import fi.hel.haitaton.hanke.pdf.HaittojenhallintasuunnitelmaPdfEncoder
+import fi.hel.haitaton.hanke.pdf.withName
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
@@ -72,6 +76,7 @@ class HakemusServiceTest {
     private val hankeRepository: HankeRepository = mockk()
     private val taydennysRepository: TaydennysRepository = mockk()
     private val taydennyspyyntoRepository: TaydennyspyyntoRepository = mockk()
+    private val muutosilmoitusRepository: MuutosilmoitusRepository = mockk()
     private val geometriatDao: GeometriatDao = mockk()
     private val hankealueService: HankealueService = mockk()
     private val loggingService: HakemusLoggingService = mockk(relaxUnitFun = true)
@@ -79,15 +84,19 @@ class HakemusServiceTest {
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
     private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
     private val attachmentService: ApplicationAttachmentService = mockk()
+    private val taydennysAttachmentService: TaydennysAttachmentMetadataService = mockk()
     private val alluClient: AlluClient = mockk()
     private val paatosService: PaatosService = mockk()
     private val publisher: ApplicationEventPublisher = mockk()
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService = mockk()
+    private val haittojenhallintasuunnitelmaPdfEncoder: HaittojenhallintasuunnitelmaPdfEncoder =
+        mockk()
 
     private val hakemusService =
         HakemusService(
             hakemusRepository,
             hankeRepository,
+            muutosilmoitusRepository,
             taydennyspyyntoRepository,
             taydennysRepository,
             geometriatDao,
@@ -97,10 +106,12 @@ class HakemusServiceTest {
             disclosureLogService,
             hankeKayttajaService,
             attachmentService,
+            taydennysAttachmentService,
             alluClient,
             paatosService,
             publisher,
             tormaystarkasteluLaskentaService,
+            haittojenhallintasuunnitelmaPdfEncoder,
         )
 
     @BeforeEach
@@ -121,9 +132,11 @@ class HakemusServiceTest {
             disclosureLogService,
             hankeKayttajaService,
             attachmentService,
+            taydennysAttachmentService,
             alluClient,
             paatosService,
             publisher,
+            haittojenhallintasuunnitelmaPdfEncoder,
         )
     }
 
@@ -150,7 +163,7 @@ class HakemusServiceTest {
             every { alluClient.create(any()) } returns alluId
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse()
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+            every { geometriatDao.matchingHankealueet(1, any()) } returns listOf(1)
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
             every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
@@ -240,14 +253,14 @@ class HakemusServiceTest {
 
             verifySequence {
                 hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
+                geometriatDao.matchingHankealueet(1, any())
                 attachmentService.getMetadataList(applicationEntity.id)
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
                 disclosureLogService.withDisclosureLogging<Int>(applicationEntity.id, any(), any())
                 alluClient.create(any())
                 disclosureLogService.saveForAllu(3, any(), Status.SUCCESS)
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
                 hakemusRepository.save(any())
@@ -262,14 +275,14 @@ class HakemusServiceTest {
             every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { alluClient.create(any()) } throws AlluException()
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+            every { geometriatDao.matchingHankealueet(1, any()) } returns listOf(1)
             callRealWrapper()
 
             assertThrows<AlluException> { hakemusService.sendHakemus(3, null, USERNAME) }
 
             verifySequence {
                 hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
+                geometriatDao.matchingHankealueet(1, any())
                 attachmentService.getMetadataList(applicationEntity.id)
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
@@ -288,7 +301,7 @@ class HakemusServiceTest {
         fun `does not save disclosure logs when allu login fails`() {
             val applicationEntity = applicationEntity()
             every { hakemusRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.isInsideHankeAlueet(any(), any()) } returns true
+            every { geometriatDao.matchingHankealueet(1, any()) } returns listOf(1)
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
             every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
@@ -299,7 +312,7 @@ class HakemusServiceTest {
 
             verifySequence {
                 hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(any(), any())
+                geometriatDao.matchingHankealueet(any(), any())
                 attachmentService.getMetadataList(applicationEntity.id)
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
@@ -321,7 +334,7 @@ class HakemusServiceTest {
                 )
             every { hakemusRepository.findOneById(3) } returns applicationEntity
             every { hakemusRepository.save(any()) } answers { firstArg() }
-            every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+            every { geometriatDao.matchingHankealueet(1, any()) } returns listOf(1)
             every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
             every { geometriatDao.calculateArea(any()) } returns 11.0f
             every { attachmentService.getMetadataList(applicationEntity.id) } returns listOf()
@@ -341,14 +354,14 @@ class HakemusServiceTest {
             assertThat(sent.clientApplicationKind).isEqualTo(expectedDescription)
             verifySequence {
                 hakemusRepository.findOneById(3)
-                geometriatDao.isInsideHankeAlueet(1, any())
+                geometriatDao.matchingHankealueet(1, any())
                 attachmentService.getMetadataList(applicationEntity.id)
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
                 disclosureLogService.withDisclosureLogging<Int>(applicationEntity.id, any(), any())
                 alluClient.create(any())
                 disclosureLogService.saveForAllu(3, any(), Status.SUCCESS)
-                alluClient.addAttachment(alluId, any())
+                alluClient.addAttachment(alluId, withName(FORM_DATA_PDF_FILENAME))
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
                 hakemusRepository.save(any())

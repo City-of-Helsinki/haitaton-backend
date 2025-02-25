@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WMS_Capabilities xmlns:inspire_vs="http://inspire.ec.europa.eu/schemas/inspire_vs/1.0"
+                  xmlns:inspire_common="http://inspire.ec.europa.eu/schemas/common/1.0" version="1.3.0"
+                  updateSequence="28537" xmlns="http://www.opengis.net/wms" xmlns:xlink="http://www.w3.org/1999/xlink"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://www.opengis.net/wms https://kartta.hel.fi/ws/geoserver/schemas/wms/1.3.0/capabilities_1_3_0.xsd http://inspire.ec.europa.eu/schemas/inspire_vs/1.0 https://inspire.ec.europa.eu/schemas/inspire_vs/1.0/inspire_vs.xsd">
+    <Service>
+        <Name>WMS</Name>
+        <Title>Helsinki_WMS</Title>
+        <Abstract>Helsingin kaupunkimittauspalveluiden ylläpitämä WMS-rajapintapalvelu internet-käyttäjille.</Abstract>
+        <KeywordList/>
+        <OnlineResource xlink:type="simple" xlink:href="{{baseUrl}}"/>
+        <ContactInformation>
+            <ContactPersonPrimary>
+                <ContactPerson>Kaupunkimittauspalvelut</ContactPerson>
+                <ContactOrganization>Helsingin kaupunki</ContactOrganization>
+            </ContactPersonPrimary>
+            <ContactPosition/>
+            <ContactAddress>
+                <AddressType/>
+                <Address/>
+                <City>Helsinki</City>
+                <StateOrProvince/>
+                <PostCode/>
+                <Country>Finland</Country>
+            </ContactAddress>
+            <ContactVoiceTelephone/>
+            <ContactFacsimileTelephone/>
+            <ContactElectronicMailAddress>paikkatieto@hel.fi</ContactElectronicMailAddress>
+        </ContactInformation>
+        <Fees>NONE</Fees>
+        <AccessConstraints>NONE</AccessConstraints>
+    </Service>
+    <Capability>
+        <Request>
+            <GetCapabilities>
+                <Format>text/xml</Format>
+                <DCPType>
+                    <HTTP>
+                        <Get>
+                            <OnlineResource xlink:type="simple" xlink:href="{{baseUrl}}capabilities"/>
+                        </Get>
+                        <Post>
+                            <OnlineResource xlink:type="simple" xlink:href="{{baseUrl}}capabilities"/>
+                        </Post>
+                    </HTTP>
+                </DCPType>
+            </GetCapabilities>
+            <GetMap>
+                <Format>image/png</Format>
+                <Format>application/atom+xml</Format>
+                <Format>application/json;type=geojson</Format>
+                <Format>application/json;type=topojson</Format>
+                <Format>application/json;type=utfgrid</Format>
+                <Format>application/pdf</Format>
+                <Format>application/rss+xml</Format>
+                <Format>application/vnd.google-earth.kml+xml</Format>
+                <Format>application/vnd.google-earth.kml+xml;mode=networklink</Format>
+                <Format>application/vnd.google-earth.kmz</Format>
+                <Format>application/vnd.mapbox-vector-tile</Format>
+                <Format>image/geotiff</Format>
+                <Format>image/geotiff8</Format>
+                <Format>image/gif</Format>
+                <Format>image/jpeg</Format>
+                <Format>image/png; mode=8bit</Format>
+                <Format>image/svg+xml</Format>
+                <Format>image/tiff</Format>
+                <Format>image/tiff8</Format>
+                <Format>image/vnd.jpeg-png</Format>
+                <Format>image/vnd.jpeg-png8</Format>
+                <Format>text/html; subtype=openlayers</Format>
+                <Format>text/html; subtype=openlayers2</Format>
+                <Format>text/html; subtype=openlayers3</Format>
+                <DCPType>
+                    <HTTP>
+                        <Get>
+                            <OnlineResource xlink:type="simple" xlink:href="{{baseUrl}}image"/>
+                        </Get>
+                    </HTTP>
+                </DCPType>
+            </GetMap>
+            <GetFeatureInfo>
+                <Format>text/plain</Format>
+                <Format>application/vnd.ogc.gml</Format>
+                <Format>text/xml</Format>
+                <Format>application/vnd.ogc.gml/3.1.1</Format>
+                <Format>text/xml; subtype=gml/3.1.1</Format>
+                <Format>text/html</Format>
+                <Format>text/javascript</Format>
+                <Format>application/json</Format>
+                <DCPType>
+                    <HTTP>
+                        <Get>
+                            <OnlineResource xlink:type="simple" xlink:href="{{baseUrl}}/capabilities"/>
+                        </Get>
+                    </HTTP>
+                </DCPType>
+            </GetFeatureInfo>
+        </Request>
+        <Exception>
+            <Format>XML</Format>
+            <Format>INIMAGE</Format>
+            <Format>BLANK</Format>
+            <Format>JSON</Format>
+            <Format>JSONP</Format>
+        </Exception>
+        <inspire_vs:ExtendedCapabilities>
+            <inspire_common:MetadataUrl>
+                <inspire_common:URL>
+                    http://www.paikkatietohakemisto.fi/geonetwork/srv/fin/catalog.search#/metadata/5db8b2fd-3a05-422f-b008-0d86bda2d17a
+                </inspire_common:URL>
+                <inspire_common:MediaType>application/vnd.iso.19139+xml</inspire_common:MediaType>
+            </inspire_common:MetadataUrl>
+            <inspire_common:SupportedLanguages>
+                <inspire_common:DefaultLanguage>
+                    <inspire_common:Language>fin</inspire_common:Language>
+                </inspire_common:DefaultLanguage>
+            </inspire_common:SupportedLanguages>
+            <inspire_common:ResponseLanguage>
+                <inspire_common:Language>fin</inspire_common:Language>
+            </inspire_common:ResponseLanguage>
+        </inspire_vs:ExtendedCapabilities>
+        <Layer>
+            <Title>Helsinki_WMS</Title>
+            <Abstract>Helsingin kaupunkimittauspalveluiden ylläpitämä WMS-rajapintapalvelu internet-käyttäjille.
+            </Abstract>
+            <!--Limited list of EPSG projections:-->
+            <CRS>EPSG:3067</CRS>
+            <CRS>EPSG:3857</CRS>
+            <CRS>EPSG:3873</CRS>
+            <CRS>EPSG:3874</CRS>
+            <CRS>EPSG:3875</CRS>
+            <CRS>EPSG:3876</CRS>
+            <CRS>EPSG:3877</CRS>
+            <CRS>EPSG:3878</CRS>
+            <CRS>EPSG:3879</CRS>
+            <CRS>EPSG:3880</CRS>
+            <CRS>EPSG:3881</CRS>
+            <CRS>EPSG:3882</CRS>
+            <CRS>EPSG:3883</CRS>
+            <CRS>EPSG:3884</CRS>
+            <CRS>EPSG:3885</CRS>
+            <CRS>EPSG:4258</CRS>
+            <CRS>EPSG:4123</CRS>
+            <CRS>EPSG:3386</CRS>
+            <CRS>EPSG:2391</CRS>
+            <CRS>EPSG:2392</CRS>
+            <CRS>EPSG:2393</CRS>
+            <CRS>EPSG:2394</CRS>
+            <CRS>EPSG:3387</CRS>
+            <CRS>EPSG:3046</CRS>
+            <CRS>EPSG:3047</CRS>
+            <CRS>EPSG:3048</CRS>
+            <CRS>EPSG:4326</CRS>
+            <CRS>CRS:84</CRS>
+            <EX_GeographicBoundingBox>
+                <westBoundLongitude>24.080259974026852</westBoundLongitude>
+                <eastBoundLongitude>25.695412558717038</eastBoundLongitude>
+                <southBoundLatitude>59.78091399811141</southBoundLatitude>
+                <northBoundLatitude>68.90073337242026</northBoundLatitude>
+            </EX_GeographicBoundingBox>
+            <BoundingBox CRS="CRS:84" minx="24.080259974026852" miny="59.78091399811141" maxx="25.695412558717038"
+                         maxy="68.90073337242026"/>
+            <BoundingBox CRS="EPSG:3067" minx="336103.09899301047" miny="6627733.086387456" maxx="447592.18118158204"
+                         maxy="7646081.755250268"/>
+            <BoundingBox CRS="EPSG:3857" minx="2680602.2784783165" miny="8351121.502456157" maxx="2860400.2417594674"
+                         maxy="1.0720020799195908E7"/>
+            <BoundingBox CRS="EPSG:3873" minx="6640599.6010635765" miny="1.9703980380894028E7" maxx="7661016.938530726"
+                         maxy="1.987564807238939E7"/>
+            <BoundingBox CRS="EPSG:3874" minx="6636717.451598384" miny="2.0663885367709804E7" maxx="7656964.251120876"
+                         maxy="2.0819642582085054E7"/>
+            <BoundingBox CRS="EPSG:3875" minx="6633683.538726752" miny="2.162375330162458E7" maxx="7653565.262067171"
+                         maxy="2.176358864250169E7"/>
+            <BoundingBox CRS="EPSG:3876" minx="6631497.382714189" miny="2.2583593279967096E7" maxx="7650820.207703208"
+                         maxy="2.2707494868050087E7"/>
+            <BoundingBox CRS="EPSG:3877" minx="6630158.636447657" miny="2.3543414386408716E7" maxx="7648729.276967105"
+                         maxy="2.365136981097918E7"/>
+            <BoundingBox CRS="EPSG:3878" minx="6629667.086773351" miny="2.450322569537686E7" maxx="7647292.612619041"
+                         maxy="2.4595221974591028E7"/>
+            <BoundingBox CRS="EPSG:3879" minx="6629669.686984285" miny="2.5448340651057247E7" maxx="7646628.869042509"
+                         maxy="2.5539059826472912E7"/>
+            <BoundingBox CRS="EPSG:3880" minx="6629703.652956304" miny="2.6392180978119437E7" maxx="7647557.967466996"
+                         maxy="2.6487758492033582E7"/>
+            <BoundingBox CRS="EPSG:3881" minx="6630385.240483649" miny="2.733603751399861E7" maxx="7649141.411814992"
+                         maxy="2.7447571209665447E7"/>
+            <BoundingBox CRS="EPSG:3882" minx="6631914.060714412" miny="2.8279918733141918E7" maxx="7651379.094491227"
+                         maxy="2.8407395759838086E7"/>
+            <BoundingBox CRS="EPSG:3883" minx="6634290.356942721" miny="2.922383314868087E7" maxx="7654270.862467574"
+                         maxy="2.93672412186672E7"/>
+            <BoundingBox CRS="EPSG:3884" minx="6637514.506167144" miny="3.0167789325659957E7" maxx="7657816.51629"
+                         maxy="3.032711667250498E7"/>
+            <BoundingBox CRS="EPSG:3885" minx="6641587.017635935" miny="3.1111795894247238E7" maxx="7662015.808796192"
+                         maxy="3.1287031222346604E7"/>
+            <BoundingBox CRS="EPSG:4258" minx="59.780914026554676" miny="24.080259974026852" maxx="68.90073338578844"
+                         maxy="25.69541255871704"/>
+            <BoundingBox CRS="EPSG:4123" minx="59.78073994768126" miny="24.083427137674768" maxx="68.90020881792411"
+                         maxy="25.699806906480127"/>
+            <BoundingBox CRS="EPSG:3386" minx="6645487.642684629" miny="744228.3270134563" maxx="7665884.032963664"
+                         maxy="931792.6598794889"/>
+            <BoundingBox CRS="EPSG:2391" minx="6633831.908128089" miny="1623943.8872623902" maxx="7653716.744004112"
+                         maxy="1763776.090235121"/>
+            <BoundingBox CRS="EPSG:2392" minx="6629807.193741066" miny="2503407.3813386243" maxx="7647435.008070391"
+                         maxy="2595400.38071758"/>
+            <BoundingBox CRS="EPSG:2393" minx="6630517.013175873" miny="3336206.466488517" maxx="7649275.252053146"
+                         maxy="3447743.743109936"/>
+            <BoundingBox CRS="EPSG:2394" minx="6637638.818498987" miny="4167948.8503129054" maxx="7657942.12354327"
+                         maxy="4327279.545671172"/>
+            <BoundingBox CRS="EPSG:3387" minx="6652397.057781731" miny="5000145.0004546475" maxx="7672491.882667637"
+                         maxy="5207166.986628769"/>
+            <BoundingBox CRS="EPSG:3046" minx="6631030.065311261" miny="623703.8003039313" maxx="7650503.835962344"
+                         maxy="763483.2070446879"/>
+            <BoundingBox CRS="EPSG:3047" minx="6627733.086387456" miny="336103.09899301047" maxx="7646081.755250268"
+                         maxy="447592.18118158204"/>
+            <BoundingBox CRS="EPSG:3048" minx="6649618.901223448" miny="195.13358361530118" maxx="7669305.12332765"
+                         maxy="207131.30775550823"/>
+            <BoundingBox CRS="EPSG:4326" minx="59.78091399811141" miny="24.080259974026852" maxx="68.90073337242026"
+                         maxy="25.695412558717038"/>
+            <Layer queryable="0">
+                <Title>Kiinteistokartat</Title>
+                <Abstract/>
+                <KeywordList/>
+                <CRS>EPSG:3879</CRS>
+                <EX_GeographicBoundingBox>
+                    <westBoundLongitude>24.76473294586304</westBoundLongitude>
+                    <eastBoundLongitude>25.289558715996222</eastBoundLongitude>
+                    <southBoundLatitude>59.90927901305111</southBoundLatitude>
+                    <northBoundLatitude>60.32245988225446</northBoundLatitude>
+                </EX_GeographicBoundingBox>
+                <BoundingBox CRS="CRS:84" minx="24.76473294586304" miny="59.90927901305111" maxx="25.289558715996222"
+                             maxy="60.32245988225446"/>
+                <BoundingBox CRS="EPSG:3879" minx="6644000.0" miny="2.5487E7" maxx="6690000.0" maxy="2.5516E7"/>
+                <BoundingBox CRS="EPSG:3067" minx="375160.59029987425" miny="6642548.627883546" maxx="405531.7569803877"
+                             maxy="6689393.357339721"/>
+                <BoundingBox CRS="EPSG:3857" minx="2756797.4611648796" miny="8379567.499220554" maxx="2815220.798651293"
+                             maxy="8471882.617399383"/>
+                <BoundingBox CRS="EPSG:3873" minx="6658037.23698809" miny="1.9818264198845077E7" maxx="6706545.80938645"
+                             maxy="1.9851364640135292E7"/>
+                <BoundingBox CRS="EPSG:3874" minx="6653583.112060864" miny="2.0763127341007654E7"
+                             maxx="6701690.811589465" maxy="2.079555465381494E7"/>
+                <BoundingBox CRS="EPSG:3875" minx="6649975.433284244" miny="2.1707949402868755E7"
+                             maxx="6697675.402446661" maxy="2.173969957712071E7"/>
+                <BoundingBox CRS="EPSG:3876" minx="6647213.645161787" miny="2.2652739074079968E7"
+                             maxx="6694499.011542221" maxy="2.268380802993342E7"/>
+                <BoundingBox CRS="EPSG:3877" minx="6645297.3202377865" miny="2.3597504996536028E7"
+                             maxx="6692161.1847760435" maxy="2.3627888575949267E7"/>
+                <BoundingBox CRS="EPSG:3878" minx="6644226.160789668" miny="2.454225577704257E7"
+                             maxx="6690661.586310463" maxy="2.4571949735768467E7"/>
+                <BoundingBox CRS="EPSG:3880" minx="6644180.857681604" miny="2.643105009678652E7" maxx="6690616.09170107"
+                             maxy="2.646074393135028E7"/>
+                <BoundingBox CRS="EPSG:3881" minx="6645206.710567772" miny="2.7375110634553697E7"
+                             maxx="6692070.185413886" maxy="2.7405493954562213E7"/>
+                <BoundingBox CRS="EPSG:3882" minx="6647077.718437549" miny="2.8319190102700364E7"
+                             maxx="6694362.490750048" maxy="2.8350258653156962E7"/>
+                <BoundingBox CRS="EPSG:3883" minx="6649794.172026073" miny="2.926329701991334E7" maxx="6697493.33707349"
+                             maxy="2.929504663237211E7"/>
+                <BoundingBox CRS="EPSG:3884" minx="6653356.491880381" miny="3.0207439947272856E7"
+                             maxx="6701463.172098708" maxy="3.0239866531846397E7"/>
+                <BoundingBox CRS="EPSG:3885" minx="6657765.226694986" miny="3.1151627501341984E7"
+                             maxx="6706272.559972211" maxy="3.1184727038288567E7"/>
+                <BoundingBox CRS="EPSG:4258" minx="59.90927898645568" miny="24.764732945863038" maxx="60.32245985633322"
+                             maxy="25.289558715996222"/>
+                <BoundingBox CRS="EPSG:4123" minx="59.90911047677146" miny="24.767922084365882" maxx="60.3222814671616"
+                             maxy="25.292720011952706"/>
+                <BoundingBox CRS="EPSG:3386" minx="6663495.419576919" miny="873547.4897570191" maxx="6712398.095486409"
+                             maxy="907317.0362286485"/>
+                <BoundingBox CRS="EPSG:2391" minx="6650123.663075671" miny="1708136.945217831" maxx="6697823.66535184"
+                             maxy="1739887.004288468"/>
+                <BoundingBox CRS="EPSG:2392" minx="6644366.108816597" miny="2542434.33711934" maxx="6690801.519123528"
+                             maxy="2572128.1459143255"/>
+                <BoundingBox CRS="EPSG:2393" minx="6645338.6340343375" miny="3375279.729668856" maxx="6692202.344008033"
+                             maxy="3405663.338353092"/>
+                <BoundingBox CRS="EPSG:2394" minx="6653480.93949166" miny="4207599.576874549" maxx="6701587.809184584"
+                             maxy="4240026.418064004"/>
+                <BoundingBox CRS="EPSG:3387" minx="6669242.125071954" miny="5040321.247553563" maxx="6718530.321868267"
+                             maxy="5074755.085850674"/>
+                <BoundingBox CRS="EPSG:3046" minx="6647315.443110933" miny="707866.2231076066" maxx="6694996.3322856845"
+                             maxy="739603.6972898629"/>
+                <BoundingBox CRS="EPSG:3047" minx="6642548.627883548" miny="375160.5902998742" maxx="6689393.357339723"
+                             maxy="405531.7569803877"/>
+                <BoundingBox CRS="EPSG:3048" minx="6666457.113156079" miny="40355.2431376892" maxx="6715725.452720861"
+                             maxy="74775.0881451518"/>
+                <BoundingBox CRS="EPSG:4326" minx="59.90927901305111" miny="24.76473294586304" maxx="60.32245988225446"
+                             maxy="25.289558715996222"/>
+                <Style>
+                    <Name>default-style-avoindata:02_kiinteistokartat</Name>
+                    <Title>avoindata:02_kiinteistokartat style</Title>
+                    <Abstract>Default style for avoindata:02_kiinteistokartat layer</Abstract>
+                    <LegendURL width="20" height="20">
+                        <Format>image/png</Format>
+                        <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple"
+                                        xlink:href="https://kartta.hel.fi/ws/geoserver/avoindata/ows?service=WMS&amp;version=1.3.0&amp;request=GetLegendGraphic&amp;format=image%2Fpng&amp;width=20&amp;height=20&amp;layer=avoindata%3A02_kiinteistokartat"/>
+                    </LegendURL>
+                </Style>
+                <Layer queryable="0">
+                    <Name>avoindata:Kiinteistokartan_maastotiedot</Name>
+                    <Title>Kiinteistokartan_maastotiedot</Title>
+                    <Abstract/>
+                    <KeywordList/>
+                    <CRS>EPSG:3879</CRS>
+                    <EX_GeographicBoundingBox>
+                        <westBoundLongitude>24.76473294586304</westBoundLongitude>
+                        <eastBoundLongitude>25.289558715996222</eastBoundLongitude>
+                        <southBoundLatitude>59.90927901305111</southBoundLatitude>
+                        <northBoundLatitude>60.32245988225446</northBoundLatitude>
+                    </EX_GeographicBoundingBox>
+                    <BoundingBox CRS="CRS:84" minx="24.76473294586304" miny="59.90927901305111"
+                                 maxx="25.289558715996222" maxy="60.32245988225446"/>
+                    <BoundingBox CRS="EPSG:3879" minx="6644000.0" miny="2.5487E7" maxx="6690000.0" maxy="2.5516E7"/>
+                    <BoundingBox CRS="EPSG:3067" minx="375160.59029987425" miny="6642548.627883546"
+                                 maxx="405531.7569803877" maxy="6689393.357339721"/>
+                    <BoundingBox CRS="EPSG:3857" minx="2756797.4611648796" miny="8379567.499220554"
+                                 maxx="2815220.798651293" maxy="8471882.617399383"/>
+                    <BoundingBox CRS="EPSG:3873" minx="6658037.23698809" miny="1.9818264198845077E7"
+                                 maxx="6706545.80938645" maxy="1.9851364640135292E7"/>
+                    <BoundingBox CRS="EPSG:3874" minx="6653583.112060864" miny="2.0763127341007654E7"
+                                 maxx="6701690.811589465" maxy="2.079555465381494E7"/>
+                    <BoundingBox CRS="EPSG:3875" minx="6649975.433284244" miny="2.1707949402868755E7"
+                                 maxx="6697675.402446661" maxy="2.173969957712071E7"/>
+                    <BoundingBox CRS="EPSG:3876" minx="6647213.645161787" miny="2.2652739074079968E7"
+                                 maxx="6694499.011542221" maxy="2.268380802993342E7"/>
+                    <BoundingBox CRS="EPSG:3877" minx="6645297.3202377865" miny="2.3597504996536028E7"
+                                 maxx="6692161.1847760435" maxy="2.3627888575949267E7"/>
+                    <BoundingBox CRS="EPSG:3878" minx="6644226.160789668" miny="2.454225577704257E7"
+                                 maxx="6690661.586310463" maxy="2.4571949735768467E7"/>
+                    <BoundingBox CRS="EPSG:3880" minx="6644180.857681604" miny="2.643105009678652E7"
+                                 maxx="6690616.09170107" maxy="2.646074393135028E7"/>
+                    <BoundingBox CRS="EPSG:3881" minx="6645206.710567772" miny="2.7375110634553697E7"
+                                 maxx="6692070.185413886" maxy="2.7405493954562213E7"/>
+                    <BoundingBox CRS="EPSG:3882" minx="6647077.718437549" miny="2.8319190102700364E7"
+                                 maxx="6694362.490750048" maxy="2.8350258653156962E7"/>
+                    <BoundingBox CRS="EPSG:3883" minx="6649794.172026073" miny="2.926329701991334E7"
+                                 maxx="6697493.33707349" maxy="2.929504663237211E7"/>
+                    <BoundingBox CRS="EPSG:3884" minx="6653356.491880381" miny="3.0207439947272856E7"
+                                 maxx="6701463.172098708" maxy="3.0239866531846397E7"/>
+                    <BoundingBox CRS="EPSG:3885" minx="6657765.226694986" miny="3.1151627501341984E7"
+                                 maxx="6706272.559972211" maxy="3.1184727038288567E7"/>
+                    <BoundingBox CRS="EPSG:4258" minx="59.90927898645568" miny="24.764732945863038"
+                                 maxx="60.32245985633322" maxy="25.289558715996222"/>
+                    <BoundingBox CRS="EPSG:4123" minx="59.90911047677146" miny="24.767922084365882"
+                                 maxx="60.3222814671616" maxy="25.292720011952706"/>
+                    <BoundingBox CRS="EPSG:3386" minx="6663495.419576919" miny="873547.4897570191"
+                                 maxx="6712398.095486409" maxy="907317.0362286485"/>
+                    <BoundingBox CRS="EPSG:2391" minx="6650123.663075671" miny="1708136.945217831"
+                                 maxx="6697823.66535184" maxy="1739887.004288468"/>
+                    <BoundingBox CRS="EPSG:2392" minx="6644366.108816597" miny="2542434.33711934"
+                                 maxx="6690801.519123528" maxy="2572128.1459143255"/>
+                    <BoundingBox CRS="EPSG:2393" minx="6645338.6340343375" miny="3375279.729668856"
+                                 maxx="6692202.344008033" maxy="3405663.338353092"/>
+                    <BoundingBox CRS="EPSG:2394" minx="6653480.93949166" miny="4207599.576874549"
+                                 maxx="6701587.809184584" maxy="4240026.418064004"/>
+                    <BoundingBox CRS="EPSG:3387" minx="6669242.125071954" miny="5040321.247553563"
+                                 maxx="6718530.321868267" maxy="5074755.085850674"/>
+                    <BoundingBox CRS="EPSG:3046" minx="6647315.443110933" miny="707866.2231076066"
+                                 maxx="6694996.3322856845" maxy="739603.6972898629"/>
+                    <BoundingBox CRS="EPSG:3047" minx="6642548.627883548" miny="375160.5902998742"
+                                 maxx="6689393.357339723" maxy="405531.7569803877"/>
+                    <BoundingBox CRS="EPSG:3048" minx="6666457.113156079" miny="40355.2431376892"
+                                 maxx="6715725.452720861" maxy="74775.0881451518"/>
+                    <BoundingBox CRS="EPSG:4326" minx="59.90927901305111" miny="24.76473294586304"
+                                 maxx="60.32245988225446" maxy="25.289558715996222"/>
+                    <MetadataURL type="other">
+                        <Format>text/plain</Format>
+                        <OnlineResource xlink:type="simple"
+                                        xlink:href="https://kartta.hel.fi/paikkatietohakemisto/metadata/?id=222"/>
+                    </MetadataURL>
+                    <Style>
+                        <Name>default-style-avoindata:Kiinteistokartan_maastotiedot</Name>
+                        <Title>avoindata:Kiinteistokartan_maastotiedot style</Title>
+                        <Abstract>Default style for avoindata:Kiinteistokartan_maastotiedot layer</Abstract>
+                        <LegendURL width="20" height="20">
+                            <Format>image/png</Format>
+                            <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple"
+                                            xlink:href="https://kartta.hel.fi/ws/geoserver/avoindata/ows?service=WMS&amp;version=1.3.0&amp;request=GetLegendGraphic&amp;format=image%2Fpng&amp;width=20&amp;height=20&amp;layer=avoindata%3AKiinteistokartan_maastotiedot"/>
+                        </LegendURL>
+                    </Style>
+                </Layer>
+            </Layer>
+        </Layer>
+    </Capability>
+</WMS_Capabilities>

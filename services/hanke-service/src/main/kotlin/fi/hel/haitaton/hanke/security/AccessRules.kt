@@ -26,6 +26,7 @@ object AccessRules {
                         "/swagger-ui.html",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
+                        "/testdata/trigger-allu",
                     )
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/testdata/unlink-applications")

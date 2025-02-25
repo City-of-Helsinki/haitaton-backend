@@ -12,7 +12,6 @@ import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.attachment.common.hasInfected
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
-import fi.hel.haitaton.hanke.hakemus.HakemusMetaData
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import java.util.UUID
@@ -55,7 +54,7 @@ class ApplicationAttachmentService(
     fun addAttachment(
         applicationId: Long,
         attachmentType: ApplicationAttachmentType,
-        attachment: MultipartFile
+        attachment: MultipartFile,
     ): ApplicationAttachmentMetadataDto {
         logger.info {
             "Adding attachment to application, applicationId = $applicationId, " +
@@ -74,7 +73,7 @@ class ApplicationAttachmentService(
             throw ApplicationInAlluException(hakemus.id, hakemus.alluid)
         }
 
-        val contentType = ensureContentTypeIsValid(attachment.contentType)
+        val contentType = AttachmentValidator.ensureMediaType(attachment.contentType)
         scanAttachment(filename, attachment.bytes)
         metadataService.ensureRoomForAttachment(applicationId)
 
@@ -85,11 +84,11 @@ class ApplicationAttachmentService(
     }
 
     fun saveAttachment(
-        hakemus: HakemusMetaData,
+        hakemus: HakemusIdentifier,
         content: ByteArray,
         filename: String,
         contentType: MediaType,
-        attachmentType: ApplicationAttachmentType
+        attachmentType: ApplicationAttachmentType,
     ): ApplicationAttachmentMetadata {
         logger.info { "Saving attachment content for application. ${hakemus.logString()}" }
         val blobPath = attachmentContentService.upload(filename, contentType, content, hakemus.id)
@@ -102,7 +101,8 @@ class ApplicationAttachmentService(
                     content.size.toLong(),
                     blobPath,
                     attachmentType,
-                    hakemus.id)
+                    hakemus.id,
+                )
             } catch (e: Exception) {
                 logger.error(e) {
                     "Attachment metadata save failed, deleting attachment content $blobPath"
@@ -159,7 +159,7 @@ class ApplicationAttachmentService(
         alluClient.addAttachments(alluId, attachments) { attachmentContentService.find(it) }
     }
 
-    private fun findHakemus(applicationId: Long): HakemusMetaData =
+    private fun findHakemus(applicationId: Long): HakemusIdentifier =
         hakemusRepository.findByIdOrNull(applicationId)?.toMetadata()
             ?: throw HakemusNotFoundException(applicationId)
 
@@ -170,9 +170,5 @@ class ApplicationAttachmentService(
         }
     }
 
-    private fun ensureContentTypeIsValid(contentType: String?): MediaType =
-        contentType?.let { MediaType.parseMediaType(it) }
-            ?: throw AttachmentInvalidException("Content-type was not set")
-
-    private fun isInAllu(hakemus: HakemusMetaData): Boolean = hakemus.alluid != null
+    private fun isInAllu(hakemus: HakemusIdentifier): Boolean = hakemus.alluid != null
 }

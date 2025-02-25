@@ -9,9 +9,15 @@ import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.Yhteystieto
+import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusMetaData
 import fi.hel.haitaton.hanke.hakemus.HakemusService
+import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
@@ -35,6 +41,7 @@ class HankeService(
     private val hakemusService: HakemusService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val hankeAttachmentService: HankeAttachmentService,
+    private val geometriatDao: GeometriatDao,
 ) {
 
     @Transactional(readOnly = true)
@@ -68,10 +75,7 @@ class HankeService(
         hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
 
     @Transactional
-    fun createHanke(
-        request: CreateHankeRequest,
-        securityContext: SecurityContext,
-    ): Hanke {
+    fun createHanke(request: CreateHankeRequest, securityContext: SecurityContext): Hanke {
         val entity = createNewEntity(request.nimi, false, securityContext.userId())
 
         return saveCreatedHanke(entity, request.perustaja, securityContext)
@@ -125,8 +129,10 @@ class HankeService(
         entity.status = decideNewHankeStatus(entity)
 
         logger.debug { "Saving Hanke ${entity.logString()}." }
-        val savedHankeEntity = hankeRepository.save(entity)
+        val savedHankeEntity = hankeRepository.saveAndFlush(entity)
         logger.debug { "Saved Hanke ${entity.logString()}." }
+
+        assertHakemusCompatibility(entity)
 
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
@@ -142,7 +148,8 @@ class HankeService(
 
         if (anyNonCancelledHakemusProcessingInAllu(hakemukset)) {
             throw HankeAlluConflictException(
-                "Hanke ${hanke.hankeTunnus} has hakemus in Allu processing. Cannot delete.")
+                "Hanke ${hanke.hankeTunnus} has hakemus in Allu processing. Cannot delete."
+            )
         }
 
         hakemukset.forEach { hakemus -> hakemusService.delete(hakemus.id, userId) }
@@ -160,6 +167,110 @@ class HankeService(
                 !hakemusService.isCancelled(it.alluStatus)
         }
 
+    private fun assertHakemusCompatibility(entity: HankeEntity) {
+        val hakemukset = hakemusService.hankkeenHakemukset(entity.hankeTunnus)
+        val hakemusalueet = hakemukset.flatMap { it.applicationData.areas ?: listOf() }
+
+        hakemusService.assertGeometryCompatibility(entity.id, hakemusalueet)
+        assertDateCompatibility(entity, hakemukset)
+    }
+
+    /** Assert that the hakemus dates are compatible with the hanke area geometries. */
+    private fun assertDateCompatibility(entity: HankeEntity, hakemukset: List<Hakemus>) =
+        hakemukset.forEach { hakemus ->
+            when (val data = hakemus.applicationData) {
+                is JohtoselvityshakemusData -> {
+                    data.areas?.let { assertDateCompatibility(entity, data, hakemus, it) }
+                }
+                is KaivuilmoitusData -> {
+                    data.areas?.let { assertDateCompatibility(entity, data, hakemus, it) }
+                }
+            }
+        }
+
+    private fun assertDateCompatibility(
+        hanke: HankeEntity,
+        hakemusData: KaivuilmoitusData,
+        hakemus: Hakemus,
+        alueet: List<KaivuilmoitusAlue>,
+    ) {
+        val hankealueet = hanke.alueet.associateBy { it.id }
+        val hakemusStartDate = hakemusData.startTime?.toLocalDate()
+        val hakemusEndDate = hakemusData.endTime?.toLocalDate()
+
+        alueet.forEachIndexed { i, hakemusalue ->
+            val hankealue =
+                hankealueet[hakemusalue.hankealueId]
+                    ?: throw InvalidHakemusDataException(listOf("areas[$i].hankealueId"))
+            hakemusStartDate?.let {
+                if (hankealue.haittaAlkuPvm?.isAfter(it) == true) {
+                    throw HankeArgumentException(
+                        "Hankealue doesn't cover the hakemus dates. " +
+                            "Hakemusalue $i: $it - $hakemusEndDate. " +
+                            "Hankealue ${hankealue.id}: ${hankealue.haittaAlkuPvm} - ${hankealue.haittaLoppuPvm}. " +
+                            "${hanke.logString()}, ${hakemus.logString()}"
+                    )
+                }
+            }
+            hakemusEndDate?.let {
+                if (hankealue.haittaLoppuPvm?.isBefore(it) == true) {
+                    throw HankeArgumentException(
+                        "Hankealue doesn't cover the hakemus dates. " +
+                            "Hakemusalue $i: $hakemusStartDate - $it. " +
+                            "Hankealue ${hankealue.id}: ${hankealue.haittaAlkuPvm} - ${hankealue.haittaLoppuPvm}. " +
+                            "${hanke.logString()}, ${hakemus.logString()}"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Passes if for each hakemusalue there's at least one hankealue that covers it both spatially
+     * and temporally.
+     */
+    private fun assertDateCompatibility(
+        hanke: HankeEntity,
+        hakemusData: JohtoselvityshakemusData,
+        hakemus: Hakemus,
+        alueet: List<JohtoselvitysHakemusalue>,
+    ) {
+        val hankealueet = hanke.alueet.associateBy { it.id }
+        val hakemusStartDate = hakemusData.startTime?.toLocalDate()
+        val hakemusEndDate = hakemusData.endTime?.toLocalDate()
+
+        alueet.forEachIndexed { i, hakemusalue ->
+            val matchingHankealueet =
+                geometriatDao.matchingHankealueet(hanke.id, hakemusalue.geometry).mapNotNull {
+                    hankealueet[it]
+                }
+
+            val noDateMatch =
+                matchingHankealueet.all { hankealue ->
+                    val hankealueStartsAfterHakemus =
+                        hakemusStartDate != null &&
+                            hankealue.haittaAlkuPvm?.isAfter(hakemusStartDate) == true
+                    val hankealueEndsBeforeHakemus =
+                        hakemusEndDate != null &&
+                            hankealue.haittaLoppuPvm?.isBefore(hakemusEndDate) == true
+                    hankealueStartsAfterHakemus || hankealueEndsBeforeHakemus
+                }
+
+            if (noDateMatch) {
+                val hakemusDates = "$hakemusStartDate - $hakemusEndDate"
+                val hankealueDates =
+                    matchingHankealueet.joinToString {
+                        "${it.id}: ${it.haittaAlkuPvm} - ${it.haittaLoppuPvm}"
+                    }
+                throw HankeArgumentException(
+                    "No hankealue covers the hakemusalue. Hakemusalue $i: $hakemusDates. " +
+                        "Hankealueet $hankealueDates. " +
+                        "${hanke.logString()}, ${hakemus.logString()}"
+                )
+            }
+        }
+    }
+
     private fun updateTormaystarkastelut(alueet: List<HankealueEntity>) {
         for (alue in alueet) {
             hankealueService.updateTormaystarkastelu(alue)
@@ -169,7 +280,8 @@ class HankeService(
     private fun decideNewHankeStatus(entity: HankeEntity): HankeStatus {
         val validationResult =
             HankePublicValidator.validateHankeHasMandatoryFields(
-                createHankeDomainObjectFromEntity(entity))
+                createHankeDomainObjectFromEntity(entity)
+            )
 
         return when (val status = entity.status) {
             HankeStatus.DRAFT ->
@@ -193,11 +305,13 @@ class HankeService(
                         }"
                     }
                     throw HankeArgumentException(
-                        "A public hanke didn't have all mandatory fields filled.")
+                        "A public hanke didn't have all mandatory fields filled."
+                    )
                 }
             else ->
                 throw HankeArgumentException(
-                    "A hanke cannot be updated when in status $status. hankeTunnus=${entity.hankeTunnus}")
+                    "A hanke cannot be updated when in status $status. hankeTunnus=${entity.hankeTunnus}"
+                )
         }
     }
 
@@ -230,7 +344,8 @@ class HankeService(
     ): MutableMap<Int, HankeYhteystietoEntity> {
         if (hankeEntity.yhteystiedot.any { it.id == null }) {
             throw DatabaseStateException(
-                "A persisted HankeYhteystietoEntity somehow missing id, Hanke id ${hankeEntity.id}")
+                "A persisted HankeYhteystietoEntity somehow missing id, Hanke id ${hankeEntity.id}"
+            )
         }
         return hankeEntity.yhteystiedot.associateBy { it.id!! }.toMutableMap()
     }
@@ -244,7 +359,7 @@ class HankeService(
         entity: HankeEntity,
         userid: String,
         loggingEntryHolder: YhteystietoLoggingEntryHolder,
-        existingYTs: MutableMap<Int, HankeYhteystietoEntity>
+        existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
     ) {
         // Note, if the incoming data indicates it is an already saved yhteystieto (id-field is
         // set), should try to transfer the business fields to the same old corresponding entity.
@@ -254,7 +369,13 @@ class HankeService(
 
         hanke.yhteystiedotByType().forEach { (type, yhteystiedot) ->
             processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-                yhteystiedot, entity, type, userid, existingYTs, loggingEntryHolder)
+                yhteystiedot,
+                entity,
+                type,
+                userid,
+                existingYTs,
+                loggingEntryHolder,
+            )
         }
 
         // If there is anything left in the existingYTs map, they have been removed in the incoming
@@ -277,7 +398,7 @@ class HankeService(
         contactType: ContactType,
         userid: String,
         existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
-        loggingEntryHolder: YhteystietoLoggingEntryHolder
+        loggingEntryHolder: YhteystietoLoggingEntryHolder,
     ) {
         for (hankeYht in yhteystiedot) {
             // Is the incoming Yhteystieto new (does not have id, create new) or old (has id, update
@@ -291,7 +412,12 @@ class HankeService(
             } else {
                 // Should be an existing Yhteystieto
                 processUpdateYhteystieto(
-                    hankeYht, existingYTs, userid, hankeEntity, loggingEntryHolder)
+                    hankeYht,
+                    existingYTs,
+                    userid,
+                    hankeEntity,
+                    loggingEntryHolder,
+                )
             }
         }
     }
@@ -300,7 +426,7 @@ class HankeService(
         hankeYht: ModifyHankeYhteystietoRequest,
         contactType: ContactType,
         userid: String,
-        hankeEntity: HankeEntity
+        hankeEntity: HankeEntity,
     ) {
         val hankeYhtEntity =
             HankeYhteystietoEntity.fromDomain(hankeYht, contactType, userid, hankeEntity)
@@ -318,7 +444,7 @@ class HankeService(
         existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
         userid: String,
         hanke: HankeIdentifier,
-        loggingEntryHolder: YhteystietoLoggingEntryHolder
+        loggingEntryHolder: YhteystietoLoggingEntryHolder,
     ) {
         val incomingId: Int = request.id!!
         val existingYT: HankeYhteystietoEntity =
@@ -393,7 +519,7 @@ class HankeService(
 
     private fun areEqualIncomingVsExistingYhteystietos(
         incoming: Yhteystieto,
-        existing: HankeYhteystietoEntity
+        existing: HankeYhteystietoEntity,
     ): Boolean {
         if (incoming.nimi != existing.nimi) return false
         if (incoming.email != existing.email) return false
@@ -420,7 +546,7 @@ class HankeService(
     private fun postProcessAndSaveLogging(
         loggingEntryHolder: YhteystietoLoggingEntryHolder,
         savedHankeEntity: HankeEntity,
-        userid: String
+        userid: String,
     ) {
         // It would be possible to process all operation types the same way afterward like for
         // creating new yhteystietos, but that would cause some (relatively) minor extra work, and,

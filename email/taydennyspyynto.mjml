@@ -7,8 +7,7 @@
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi
-                    on tullut täydennyspyyntö
+                    Hakemuksellesi on tullut täydennyspyyntö / Din ansökan har fått en begäran om komplettering / There is a request for supplementary information for your application
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     Hakemuksellesi {{hakemusNimi}} ({{hakemusTunnus}}) on tullut täydennyspyyntö. Käy vastaamassa siihen
@@ -20,19 +19,19 @@
                 <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
-                    Hakemuksellesi {{hakemusNimi}} ({{hakemusTunnus}}) on tullut täydennyspyyntö. Käy vastaamassa siihen
-                    Haitattomassa:
-                    <a href="{{baseUrl}}/sv/ansokan/{{hakemusTunnus}}">{{baseUrl}}/sv/ansokan/{{hakemusTunnus}}</a>.
+                    Din ansökan {{hakemusNimi}} ({{hakemusTunnus}}) har fått en begäran om komplettering. Svara på den
+                    i Haitaton:
+                    <a href="{{baseUrl}}/sv/ansokan/{{hakemusId}}">{{baseUrl}}/sv/ansokan/{{hakemusId}}</a>.
                 </mj-text>
                 <mj-include path="common/signature-sv.partial"/>
 
                 <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
-                    Hakemuksellesi {{hakemusNimi}} ({{hakemusTunnus}}) on tullut täydennyspyyntö. Käy vastaamassa siihen
-                    Haitattomassa:
-                    <a href="{{baseUrl}}/en/application/{{hakemusTunnus}}">
-                        {{baseUrl}}/en/application/{{hakemusTunnus}}</a>.
+                    There is a request for supplementary information for your application
+                    {{hakemusNimi}} ({{hakemusTunnus}}). Please reply to it
+                    in Haitaton:
+                    <a href="{{baseUrl}}/en/application/{{hakemusId}}">{{baseUrl}}/en/application/{{hakemusId}}</a>.
                 </mj-text>
                 <mj-include path="common/signature-en.partial"/>
             </mj-column>

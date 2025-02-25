@@ -1,0 +1,79 @@
+[
+  {
+    "name": "Hankealue 4",
+    "hankealueId": 106,
+    "tyoalueet": [
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25497473.99385086,
+                6673378.826759577
+              ],
+              [
+                25497474.784632027,
+                6673378.348939784
+              ],
+              [
+                25497475.573286522,
+                6673379.463177532
+              ],
+              [
+                25497474.421387173,
+                6673380.052215219
+              ],
+              [
+                25497473.99385086,
+                6673378.826759577
+              ]
+            ]
+          ]
+        },
+        "area": 1.4525061049297503,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 0,
+            "haitanKesto": 3,
+            "katuluokka": 0,
+            "liikennemaara": 0,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 0,
+            "tyyppi": "LINJAAUTOLIIKENNEINDEKSI"
+          }
+        }
+      }
+    ],
+    "katuosoite": "Kaivokatu 12",
+    "tyonTarkoitukset": [
+      "SAHKO"
+    ],
+    "meluhaitta": "EI_MELUHAITTAA",
+    "polyhaitta": "EI_POLYHAITTAA",
+    "tarinahaitta": "EI_TARINAHAITTAA",
+    "kaistahaitta": "EI_VAIKUTA",
+    "kaistahaittojenPituus": "EI_VAIKUTA_KAISTAJARJESTELYIHIN",
+    "lisatiedot": "",
+    "haittojenhallintasuunnitelma": {
+      "MUUT": "Pieni alue",
+      "YLEINEN": "Pieni alue",
+      "AUTOLIIKENNE": "",
+      "PYORALIIKENNE": "",
+      "RAITIOLIIKENNE": "",
+      "LINJAAUTOLIIKENNE": ""
+    }
+  }
+]

@@ -45,7 +45,8 @@ class EmailSenderServiceITest : IntegrationTest() {
         @Test
         fun `sendJohtoselvitysCompleteEmail sends email with correct recipient`() {
             emailSenderService.sendJohtoselvitysCompleteEmail(
-                JohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER))
+                JohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER)
+            )
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
@@ -55,7 +56,8 @@ class EmailSenderServiceITest : IntegrationTest() {
         @Test
         fun `sendJohtoselvitysCompleteEmail sends email with sender from properties`() {
             emailSenderService.sendJohtoselvitysCompleteEmail(
-                JohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER))
+                JohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER)
+            )
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.from).hasSize(1)
@@ -65,18 +67,21 @@ class EmailSenderServiceITest : IntegrationTest() {
         @Test
         fun `sendJohtoselvitysCompleteEmail sends email with correct subject`() {
             emailSenderService.sendJohtoselvitysCompleteEmail(
-                JohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER))
+                JohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER)
+            )
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Johtoselvitys JS2300001 / Ledningsutredning JS2300001 / Cable report JS2300001")
+                    "Haitaton: Johtoselvitys JS2300001 / Ledningsutredning JS2300001 / Cable report JS2300001"
+                )
         }
 
         @Test
         fun `sendJohtoselvitysCompleteEmail sends email with parametrized hybrid body`() {
             emailSenderService.sendJohtoselvitysCompleteEmail(
-                JohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER))
+                JohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER)
+            )
 
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = email.bodies()
@@ -103,7 +108,8 @@ class EmailSenderServiceITest : IntegrationTest() {
         @Test
         fun `sends email with correct recipient`() {
             emailSenderService.sendKaivuilmoitusDecisionEmail(
-                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS)
+            )
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
@@ -113,7 +119,8 @@ class EmailSenderServiceITest : IntegrationTest() {
         @Test
         fun `sends email with sender from properties`() {
             emailSenderService.sendKaivuilmoitusDecisionEmail(
-                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS)
+            )
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.from).hasSize(1)
@@ -123,18 +130,21 @@ class EmailSenderServiceITest : IntegrationTest() {
         @Test
         fun `sends email with correct subject`() {
             emailSenderService.sendKaivuilmoitusDecisionEmail(
-                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS)
+            )
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa")
+                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Beslut om grävningsanmälan KP2300001 kan laddas ner / The decision concerning an excavation notification KP2300001 can be downloaded"
+                )
         }
 
         @Test
         fun `sends email with parametrized hybrid body`() {
             emailSenderService.sendKaivuilmoitusDecisionEmail(
-                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS))
+                KaivuilmoitusDecisionEmail(TEST_EMAIL, 13L, KAIVUILMOITUS_TUNNUS)
+            )
 
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = email.bodies()
@@ -195,7 +205,8 @@ class EmailSenderServiceITest : IntegrationTest() {
                 .isEqualTo(
                     "Haitaton: Sinut on kutsuttu hankkeelle HAI24-1 " +
                         "/ Du har blivit inbjuden till projektet HAI24-1 " +
-                        "/ You have been invited to project HAI24-1")
+                        "/ You have been invited to project HAI24-1"
+                )
         }
 
         @Test
@@ -206,7 +217,8 @@ class EmailSenderServiceITest : IntegrationTest() {
             val (textBody, htmlBody) = email.bodies()
             assertThat(textBody).all {
                 contains(
-                    "${notification.inviterName} (${notification.inviterEmail}) on kutsunut sinut")
+                    "${notification.inviterName} (${notification.inviterEmail}) on kutsunut sinut"
+                )
                 contains("hankkeelle ${notification.hankeNimi} (${notification.hankeTunnus}).")
                 contains("http://localhost:3001/fi/kutsu?id=${notification.invitationToken}")
             }
@@ -214,9 +226,11 @@ class EmailSenderServiceITest : IntegrationTest() {
                 val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
                 contains("$htmlEscapedName (${notification.inviterEmail})")
                 contains(
-                    "hankkeelle <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>.")
+                    "hankkeelle <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>."
+                )
                 contains(
-                    """<a href="http://localhost:3001/fi/kutsu?id=${notification.invitationToken}">""")
+                    """<a href="http://localhost:3001/fi/kutsu?id=${notification.invitationToken}">"""
+                )
             }
         }
     }
@@ -260,7 +274,8 @@ class EmailSenderServiceITest : IntegrationTest() {
                 .isEqualTo(
                     "Haitaton: Sinut on lisätty hakemukselle " +
                         "/ Du har lagts till i en ansökan " +
-                        "/ You have been added to an application")
+                        "/ You have been added to an application"
+                )
         }
 
         @Test
@@ -272,14 +287,16 @@ class EmailSenderServiceITest : IntegrationTest() {
             assertThat(textBody).all {
                 contains("${notification.senderName} (${notification.senderEmail}) on")
                 contains(
-                    "laatimassa johtoselvityshakemusta hankkeelle \"${notification.hankeNimi}\" (${notification.hankeTunnus})")
+                    "laatimassa johtoselvityshakemusta hankkeelle \"${notification.hankeNimi}\" (${notification.hankeTunnus})"
+                )
                 contains("Tarkastele hakemusta Haitattomassa: http://localhost:3001")
             }
             assertThat(htmlBody).all {
                 val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
                 contains("$htmlEscapedName (${notification.senderEmail})")
                 contains(
-                    "laatimassa johtoselvityshakemusta hankkeelle <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>")
+                    "laatimassa johtoselvityshakemusta hankkeelle <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>"
+                )
                 contains("""<a href="http://localhost:3001">""")
             }
         }
@@ -322,7 +339,8 @@ class EmailSenderServiceITest : IntegrationTest() {
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Käyttöoikeustasoasi on muutettu (HAI24-1) / Dina användarrättigheter har förändrats (HAI24-1) / Your access right level has been changed (HAI24-1)")
+                    "Haitaton: Käyttöoikeustasoasi on muutettu (HAI24-1) / Dina användarrättigheter har förändrats (HAI24-1) / Your access right level has been changed (HAI24-1)"
+                )
         }
 
         @Test
@@ -334,21 +352,28 @@ class EmailSenderServiceITest : IntegrationTest() {
             assertThat(textBody).all {
                 contains("${notification.updatedByName} (${notification.updatedByEmail}) on")
                 contains(
-                    "muuttanut käyttöoikeustasoasi hankkeella \"${notification.hankeNimi}\" (${notification.hankeTunnus})")
+                    "muuttanut käyttöoikeustasoasi hankkeella \"${notification.hankeNimi}\" (${notification.hankeTunnus})"
+                )
                 contains(
-                    "Uusi käyttöoikeutesi on \"${notification.newAccessRights.translations().fi}\"")
+                    "Uusi käyttöoikeutesi on \"${notification.newAccessRights.translations().fi}\""
+                )
                 contains(
-                    "Tarkastele hanketta täällä: http://localhost:3001/fi/hankesalkku/${notification.hankeTunnus}")
+                    "Tarkastele hanketta täällä: http://localhost:3001/fi/hankesalkku/${notification.hankeTunnus}"
+                )
             }
             assertThat(htmlBody).all {
                 contains(
-                    "${StringEscapeUtils.escapeHtml4(notification.updatedByName)} (${notification.updatedByEmail}) on")
+                    "${StringEscapeUtils.escapeHtml4(notification.updatedByName)} (${notification.updatedByEmail}) on"
+                )
                 contains(
-                    "muuttanut käyttöoikeustasoasi hankkeella <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>")
+                    "muuttanut käyttöoikeustasoasi hankkeella <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>"
+                )
                 contains(
-                    "Uusi käyttöoikeutesi on <b>${notification.newAccessRights.translations().fi}</b>")
+                    "Uusi käyttöoikeutesi on <b>${notification.newAccessRights.translations().fi}</b>"
+                )
                 contains(
-                    "Tarkastele hanketta täällä: <a href=\"http://localhost:3001/fi/hankesalkku/${notification.hankeTunnus}\">http://localhost:3001/fi/hankesalkku/${notification.hankeTunnus}</a>")
+                    "Tarkastele hanketta täällä: <a href=\"http://localhost:3001/fi/hankesalkku/${notification.hankeTunnus}\">http://localhost:3001/fi/hankesalkku/${notification.hankeTunnus}</a>"
+                )
             }
         }
     }
@@ -389,7 +414,8 @@ class EmailSenderServiceITest : IntegrationTest() {
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on poistettu hankkeelta (HAI24-1) / Du har tagits bort från projektet (HAI24-1) / You have been removed from the project (HAI24-1)")
+                    "Haitaton: Sinut on poistettu hankkeelta (HAI24-1) / Du har tagits bort från projektet (HAI24-1) / You have been removed from the project (HAI24-1)"
+                )
         }
 
         @Test
@@ -401,13 +427,16 @@ class EmailSenderServiceITest : IntegrationTest() {
             assertThat(textBody).all {
                 contains("${notification.deletedByName} (${notification.deletedByEmail}) on")
                 contains(
-                    "poistanut sinut hankkeelta \"${notification.hankeNimi}\" (${notification.hankeTunnus})")
+                    "poistanut sinut hankkeelta \"${notification.hankeNimi}\" (${notification.hankeTunnus})"
+                )
             }
             assertThat(htmlBody).all {
                 contains(
-                    "${StringEscapeUtils.escapeHtml4(notification.deletedByName)} (${notification.deletedByEmail}) on")
+                    "${StringEscapeUtils.escapeHtml4(notification.deletedByName)} (${notification.deletedByEmail}) on"
+                )
                 contains(
-                    "poistanut sinut hankkeelta <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>")
+                    "poistanut sinut hankkeelta <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>"
+                )
             }
         }
     }
@@ -447,7 +476,8 @@ class EmailSenderServiceITest : IntegrationTest() {
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö")
+                    "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Din ansökan har fått en begäran om komplettering / There is a request for supplementary information for your application"
+                )
         }
 
         @Test
@@ -458,15 +488,27 @@ class EmailSenderServiceITest : IntegrationTest() {
             val (textBody, htmlBody) = email.bodies()
             assertThat(textBody).all {
                 contains(
-                    "Hakemuksellesi $HANKE_NIMI ($APPLICATION_IDENTIFIER) on tullut täydennyspyyntö")
+                    "Hakemuksellesi $HANKE_NIMI ($APPLICATION_IDENTIFIER) on tullut täydennyspyyntö"
+                )
                 contains(
-                    "Käy vastaamassa siihen Haitattomassa: http://localhost:3001/fi/hakemus/13")
+                    "Käy vastaamassa siihen Haitattomassa: http://localhost:3001/fi/hakemus/13"
+                )
+                contains("Svara på den i Haitaton: http://localhost:3001/sv/ansokan/13")
+                contains("Please reply to it in Haitaton: http://localhost:3001/en/application/13")
             }
             assertThat(htmlBody).all {
                 contains(
-                    "Hakemuksellesi $HANKE_NIMI ($APPLICATION_IDENTIFIER) on tullut täydennyspyyntö")
+                    "Hakemuksellesi $HANKE_NIMI ($APPLICATION_IDENTIFIER) on tullut täydennyspyyntö"
+                )
                 contains(
-                    """Käy vastaamassa siihen Haitattomassa: <a href="http://localhost:3001/fi/hakemus/13">http://localhost:3001/fi/hakemus/13</a>""")
+                    """Käy vastaamassa siihen Haitattomassa: <a href="http://localhost:3001/fi/hakemus/13">http://localhost:3001/fi/hakemus/13</a>"""
+                )
+                contains(
+                    """Svara på den i Haitaton: <a href="http://localhost:3001/sv/ansokan/13">http://localhost:3001/sv/ansokan/13</a>"""
+                )
+                contains(
+                    """Please reply to it in Haitaton: <a href="http://localhost:3001/en/application/13">http://localhost:3001/en/application/13</a>"""
+                )
             }
         }
     }

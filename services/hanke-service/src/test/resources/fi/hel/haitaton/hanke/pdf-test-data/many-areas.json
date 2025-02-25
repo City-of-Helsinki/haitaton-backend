@@ -1,0 +1,450 @@
+[
+  {
+    "name": "Hankealue 3",
+    "hankealueId": 105,
+    "tyoalueet": [
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25496842,
+                6672974
+              ],
+              [
+                25496855,
+                6672974
+              ],
+              [
+                25496855,
+                6672992
+              ],
+              [
+                25496842,
+                6672992
+              ],
+              [
+                25496842,
+                6672974
+              ]
+            ]
+          ]
+        },
+        "area": 250.9791226760525,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 0.7,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 0,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 0.7,
+            "tyyppi": "AUTOLIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25496867,
+                6672804
+              ],
+              [
+                25496877,
+                6672804
+              ],
+              [
+                25496877,
+                6672818
+              ],
+              [
+                25496867,
+                6672818
+              ],
+              [
+                25496867,
+                6672804
+              ]
+            ]
+          ]
+        },
+        "area": 148.5957615267796,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 0,
+            "haitanKesto": 3,
+            "katuluokka": 0,
+            "liikennemaara": 0,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 0,
+            "tyyppi": "LINJAAUTOLIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25496978,
+                6672808
+              ],
+              [
+                25496996,
+                6672808
+              ],
+              [
+                25496996,
+                6672817
+              ],
+              [
+                25496978,
+                6672817
+              ],
+              [
+                25496978,
+                6672808
+              ]
+            ]
+          ]
+        },
+        "area": 159.521427118922,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 0.7,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 0,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 3,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 3,
+            "tyyppi": "PYORALIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25497185,
+                6672820
+              ],
+              [
+                25497202,
+                6672820
+              ],
+              [
+                25497202,
+                6672846
+              ],
+              [
+                25497185,
+                6672846
+              ],
+              [
+                25497185,
+                6672820
+              ]
+            ]
+          ]
+        },
+        "area": 431.1831230811498,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 1.5,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 3,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 1.5,
+            "tyyppi": "AUTOLIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25496961,
+                6672760
+              ],
+              [
+                25496999,
+                6672760
+              ],
+              [
+                25496999,
+                6672771
+              ],
+              [
+                25496961,
+                6672771
+              ],
+              [
+                25496961,
+                6672760
+              ]
+            ]
+          ]
+        },
+        "area": 430.7122447388991,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 2.1,
+            "haitanKesto": 3,
+            "katuluokka": 4,
+            "liikennemaara": 4,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 3,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 3,
+            "tyyppi": "PYORALIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25497041,
+                6672880
+              ],
+              [
+                25497071,
+                6672880
+              ],
+              [
+                25497071,
+                6672902
+              ],
+              [
+                25497041,
+                6672902
+              ],
+              [
+                25497041,
+                6672880
+              ]
+            ]
+          ]
+        },
+        "area": 654.9746946369295,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 1.2,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 2,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 5,
+          "liikennehaittaindeksi": {
+            "indeksi": 5,
+            "tyyppi": "RAITIOLIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25497170,
+                6672937
+              ],
+              [
+                25497189,
+                6672937
+              ],
+              [
+                25497189,
+                6672961
+              ],
+              [
+                25497170,
+                6672961
+              ],
+              [
+                25497170,
+                6672937
+              ]
+            ]
+          ]
+        },
+        "area": 434.7214573028518,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 1.5,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 3,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 1.5,
+            "tyyppi": "AUTOLIIKENNEINDEKSI"
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Polygon",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "coordinates": [
+            [
+              [
+                25497030,
+                6672977
+              ],
+              [
+                25497059,
+                6672977
+              ],
+              [
+                25497059,
+                6673002
+              ],
+              [
+                25497030,
+                6673002
+              ],
+              [
+                25497030,
+                6672977
+              ]
+            ]
+          ]
+        },
+        "area": 742.3960700839747,
+        "tormaystarkasteluTulos": {
+          "autoliikenne": {
+            "indeksi": 1.5,
+            "haitanKesto": 3,
+            "katuluokka": 2,
+            "liikennemaara": 3,
+            "kaistahaitta": 0,
+            "kaistapituushaitta": 0
+          },
+          "pyoraliikenneindeksi": 0,
+          "linjaautoliikenneindeksi": 0,
+          "raitioliikenneindeksi": 0,
+          "liikennehaittaindeksi": {
+            "indeksi": 1.5,
+            "tyyppi": "AUTOLIIKENNEINDEKSI"
+          }
+        }
+      }
+    ],
+    "katuosoite": "Kaivokatu 12",
+    "tyonTarkoitukset": [
+      "SAHKO"
+    ],
+    "meluhaitta": "EI_MELUHAITTAA",
+    "polyhaitta": "EI_POLYHAITTAA",
+    "tarinahaitta": "EI_TARINAHAITTAA",
+    "kaistahaitta": "EI_VAIKUTA",
+    "kaistahaittojenPituus": "EI_VAIKUTA_KAISTAJARJESTELYIHIN",
+    "lisatiedot": "",
+    "haittojenhallintasuunnitelma": {
+      "MUUT": "Meni nyt päivä, meni vielä toinen, mutta karkureita ei kuulunut; ja tämä heidän viipymisensä saattoi äitin lopulta kovin levottomaksi; ja vihansa muuttui pian murheeksi ja säälin kyyneleiksi. Hän läksi heitä etsimään, etsi metsät ristiin rastiin, mutta löytämättä lapsiansa. Saipa asia yhä kamalamman muodon ja vaati viimein kruununmiehiä käymään asiaan käsiksi. Sana saatettiin jahtivoudille, joka viipymättä kokoonkutsui koko Toukolan kylän ja sen ympäristön. Ja nyt läksi joukko sekä nuoria että vanhoja, naisia niinkuin miehiäkin, jahtivoudin johtamana, pitkänä rivinä urkkimaan ympäri metsää. Ensimmäisenä päivänä etsivät he läheisimmillä tienoilla, mutta ilman toivottua seurausta; toisena päivänä siirtyivät he kauemmas, ja koska astuivat korkealle mäelle, näkivät he etäältä erään suon partaalta sinisen savupatsaan kiertoilevan ylös ilmaan. Tarkasti merkitsivät he suunnan, josta savu suitsusi, ja sitä kohden jatkoivat he retkensä taas. Viimein likemmin jouduttuansa kuulivat he äänen, joka lauloi seuraavalla tavalla:",
+      "YLEINEN": "Jukolan talo, eteläisessä Hämeessä, seisoo erään mäen pohjoisella rinteellä, liki Toukolan kylää. Sen läheisin ympäristö on kivinen tanner, mutta alempana alkaa pellot, joissa, ennenkuin talo oli häviöön mennyt, aaltoili teräinen vilja. Peltojen alla on niittu, apilaäyräinen, halkileikkaama monipolvisen ojan; ja runsaasti antoi se heiniä, ennenkuin joutui laitumeksi kylän karjalle. Muutoin on talolla avaria metsiä, soita ja erämaita, jotka, tämän tilustan ensimmäisen perustajan oivallisen toiminnan kautta, olivat langenneet sille osaksi jo ison jaon käydessä entisinä aikoina. Silloinpa Jukolan isäntä, pitäen enemmän huolta jälkeentulevainsa edusta kuin omasta parhaastansa, otti vastaan osaksensa kulon polttaman metsän ja sai sillä keinolla seitsemän vertaa enemmän kuin toiset naapurinsa. Mutta kaikki kulovalkean jäljet olivat jo kadonneet hänen piiristänsä ja tuuhea metsä kasvanut sijaan. - Ja tämä on niiden seitsemän veljen koto, joiden elämänvaiheita tässä nyt käyn kertoilemaan.",
+      "AUTOLIIKENNE": "Veljesten nimet vanhimmasta nuorimpaan ovat: Juhani, Tuomas, Aapo, Simeoni, Timo, Lauri ja Eero. Ovat heistä Tuomas ja Aapo kaksoispari ja samoin Timo ja Lauri. Juhanin, vanhimman veljen, ikä on kaksikymmentä ja viisi vuotta, mutta Eero, nuorin heistä, on tuskin nähnyt kahdeksantoista auringon kierrosta. Ruumiin vartalo heillä on tukeva ja harteva, pituus kohtalainen, paitsi Eeron, joka vielä on kovin lyhyt. Pisin heistä kaikista on Aapo, ehkä ei suinkaan hartevin. Tämä jälkimmäinen etu ja kunnia on Tuomaan, joka oikein on kuuluisa hartioittensa levyyden tähden. Omituisuus, joka heitä kaikkia yhteisesti merkitsee, on heidän ruskea ihonsa ja kankea, hampunkarvainen tukkansa, jonka karheus etenkin Juhanilla on silmään pistävä.",
+      "PYORALIIKENNE": "Heidän isäänsä, joka oli ankaran innokas metsämies, kohtasi hänen parhaassa iässään äkisti surma, kun hän tappeli äkeän karhun kanssa. Molemmat silloin, niin metsän kontio kuin mies, löyttiin kuolleina, toinen toisensa rinnalla maaten verisellä tanterella. Pahoin oli mies haavoitettu, mutta pedonkin sekä kurkku että kylki nähtiin puukon viiltämänä ja hänen rintansa kiväärin tuiman luodin lävistämänä. Niin lopetti päivänsä roteva mies, joka oli kaatanut enemmän kuin viisikymmentä karhua. Mutta näiden metsäretkiensä kautta löi hän laimin työn ja toimen talossansa, joka vähitellen, ilman esimiehen johtoa, joutui rappiolle. Eivät kyenneet hänen poikansakaan kyntöön ja kylvöön; sillä olivatpa he perineet isältänsä saman voimallisen innon metsäotusten pyyntöön. He rakentelivat satimia, loukkuja, ansaita ja teerentarhoja surmaksi linnuille ja jäniksille. Niin viettivät he poikuutensa ajat, kunnes rupesivat käsittelemään tuliluikkua ja rohkenivat lähestyä otsoa korvessa.",
+      "RAITIOLIIKENNE": "Äiti kyllä koetti sekä nuhteilla että kurilla saattaa heitä työhön ja ahkeruuteen, mutta heidän uppiniskaisuutensa oli jäykkä vastus kaikille hänen yrityksillensä. Oli hän muutoin kelpo vaimo; tunnettu oli hänen suora ja vilpitön ehkä hieman jyrkkä mielensä. Kelpo mies oli myös hänen veljensä, poikien oiva eno, joka nuoruudessaan oli uljaana merimiehenä, purjehtinut kaukaiset meret, nähnyt monta kansaa ja kaupunkia; mutta näkönsäpä kadotti hän viimein, käyden umpisokeaksi, ja vietti ikänsä pimeät päivät Jukolan talossa. Hän silloin usein, veistellen tunteensa viittauksen mukaan kauhoja, lusikoita, kirvesvarsia, kurikkoja ja muita huoneessa tarpeellisia kaluja, kertoili sisarensa pojille tarinoita ja merkillisiä asioita sekä omasta maasta että vieraista valtakunnista, kertoili myös ihmeitä ja tapauksia raamatusta. Näitä hänen jutelmiansa kuultelivat pojat kaikella hartaudella ja painoivat lujasti muistoonsa. Mutta yhtä mieluisasti eivät he kuullelleetkaan äitinsä käskyjä ja nuhteita, vaan olivatpa kovakorvaisia vallan, huolimatta monestakaan pieksiäislöylystä. Useinpa kyllä, huomatessaan selkäsaunan lähestyvän, vilkasi veliparvi karkutielle, saattaen tämän kautta sekä äitillensä että muille murhetta ja kiusaa, ja sillä omaa asiaansa pahentaen.",
+      "LINJAAUTOLIIKENNE": "Tässä olkoon kerrottu eräs tapaus veljesten lapsuudesta. He tiesivät kototalonsa riihen alla kananpesän, jonka omistaja oli eräs eukko, kutsuttu »Männistön muoriksi»; sillä hänen pieni mökkinsä seisoi männistössä lähellä Jukolaa. Johtui kerran veljesten mieleen paistetut munat, ja päättivät he lopulta riistää pesän ja lähteä metsään nauttimaan saaliistansa. He täyttivät myös päätöksensä, tyhjensivät pesän ja läksivät yksimielisesti metsään, kuusi veljestä; Eero pyöri silloin vielä äitinsä jalkain juurella. Mutta koska he ehtivät eräälle solisevalle ojalle pimeässä kuusistossa, rakensivat he valkean äyräälle, käärivät munat ryysyihin, kastoivat ne veteen ja panivat paistumaan kihisevään tuhkaan. Ja kun herkut olivat viimein kypsyneet, söivät he maittavan atrian ja astelivat siitä tyytyväisinä kotiansa taas. Mutta kotomäelle ehdittyä, kohtasi heitä hirmumyrsky; sillä olipa jo heidän tekonsa tullut ilmi. Männistön muori ärhenteli ja riehui, ja kiivaalla katsannolla kiirehti veljeksiä vastaan heidän äitinsä, kädessä vinkuva ruoska. Mutta eivätpä mielineetkään pojat käydä kohden tuota vihuria, vaan kääntyivät takaisin ja pakenivat jälleen metsien turvaan, huolimatta äitinsä huudoista."
+    }
+  }
+]

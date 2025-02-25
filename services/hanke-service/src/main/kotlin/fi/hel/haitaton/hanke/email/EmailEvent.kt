@@ -60,3 +60,10 @@ data class InformationRequestEmail(
     val hakemusTunnus: String,
     val hakemusId: Long,
 ) : EmailEvent
+
+data class InformationRequestCanceledEmail(
+    override val to: String,
+    val hakemusNimi: String,
+    val hakemustunnus: String,
+    val hakemusId: Long,
+) : EmailEvent

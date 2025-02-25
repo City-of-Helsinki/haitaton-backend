@@ -30,6 +30,9 @@ import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.TestFile
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.asList
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.withDefaultEvents
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.withEvent
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
@@ -119,18 +122,10 @@ class HakemusHistoryServiceITest(
             hakemusFactory.builder(USERNAME).withStatus(alluId = alluId).save()
             val firstEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
             val history =
-                ApplicationHistoryFactory.create(
-                    alluId,
-                    ApplicationHistoryFactory.createEvent(
-                        firstEventTime.plusDays(5),
-                        ApplicationStatus.PENDING,
-                    ),
-                    ApplicationHistoryFactory.createEvent(
-                        firstEventTime.plusDays(10),
-                        ApplicationStatus.HANDLING,
-                    ),
-                    ApplicationHistoryFactory.createEvent(firstEventTime, ApplicationStatus.PENDING),
-                )
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(firstEventTime.plusDays(5), ApplicationStatus.PENDING)
+                    .withEvent(firstEventTime.plusDays(10), ApplicationStatus.HANDLING)
+                    .withEvent(firstEventTime, ApplicationStatus.PENDING)
 
             historyService.handleHakemusUpdates(listOf(history), updateTime)
 
@@ -155,13 +150,11 @@ class HakemusHistoryServiceITest(
                 )
                 .save()
             val history =
-                ApplicationHistoryFactory.create(
-                    alluId,
-                    ApplicationHistoryFactory.createEvent(
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
                         applicationIdentifier = "JS2400001-13",
                         newStatus = ApplicationStatus.REPLACED,
-                    ),
-                )
+                    )
 
             historyService.handleHakemusUpdates(listOf(history), updateTime)
 
@@ -181,9 +174,9 @@ class HakemusHistoryServiceITest(
             hakemusFactory.builder(USERNAME, hanke).withStatus(alluId = alluId + 2).save()
             val histories =
                 listOf(
-                    ApplicationHistoryFactory.create(alluId, "JS2300082"),
-                    ApplicationHistoryFactory.create(alluId + 1, "JS2300083"),
-                    ApplicationHistoryFactory.create(alluId + 2, "JS2300084"),
+                    ApplicationHistoryFactory.create(alluId).withDefaultEvents("JS2300082"),
+                    ApplicationHistoryFactory.create(alluId + 1).withDefaultEvents("JS2300083"),
+                    ApplicationHistoryFactory.create(alluId + 2).withDefaultEvents("JS2300084"),
                 )
 
             historyService.handleHakemusUpdates(histories, updateTime)
@@ -211,15 +204,12 @@ class HakemusHistoryServiceITest(
                 .hakija(hakija)
                 .saveEntity()
             val histories =
-                listOf(
-                    ApplicationHistoryFactory.create(
-                        alluId,
-                        ApplicationHistoryFactory.createEvent(
-                            applicationIdentifier = identifier,
-                            newStatus = ApplicationStatus.DECISION,
-                        ),
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.DECISION,
                     )
-                )
+                    .asList()
 
             historyService.handleHakemusUpdates(histories, updateTime)
 
@@ -249,15 +239,9 @@ class HakemusHistoryServiceITest(
                 .hakija(hakija)
                 .saveEntity()
             val histories =
-                listOf(
-                    ApplicationHistoryFactory.create(
-                        alluId,
-                        ApplicationHistoryFactory.createEvent(
-                            applicationIdentifier = identifier,
-                            newStatus = applicationStatus,
-                        ),
-                    )
-                )
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(applicationIdentifier = identifier, newStatus = applicationStatus)
+                    .asList()
             mockAlluDownload(applicationStatus)
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(id = alluId, applicationId = identifier)
@@ -269,7 +253,7 @@ class HakemusHistoryServiceITest(
             assertThat(email.allRecipients[0].toString()).isEqualTo(hakija.sahkoposti)
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa"
+                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Beslut om grävningsanmälan KP2300001 kan laddas ner / The decision concerning an excavation notification KP2300001 can be downloaded"
                 )
             verifyAlluDownload(applicationStatus)
             verify { alluClient.getApplicationInformation(alluId) }
@@ -289,15 +273,9 @@ class HakemusHistoryServiceITest(
                     .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
                     .save()
             val histories =
-                listOf(
-                    ApplicationHistoryFactory.create(
-                        alluId,
-                        ApplicationHistoryFactory.createEvent(
-                            applicationIdentifier = identifier,
-                            newStatus = status,
-                        ),
-                    )
-                )
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(applicationIdentifier = identifier, newStatus = status)
+                    .asList()
             mockAlluDownload(status)
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse()
@@ -347,12 +325,13 @@ class HakemusHistoryServiceITest(
                 .rakennuttaja(rakennuttaja, suorittaja, asianhoitaja)
                 .asianhoitaja(asianhoitaja, rakennuttaja, suorittaja, hakija)
                 .save()
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    applicationIdentifier = identifier,
-                    newStatus = ApplicationStatus.WAITING_INFORMATION,
-                )
-            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+            val histories =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.WAITING_INFORMATION,
+                    )
+                    .asList()
             every { alluClient.getInformationRequest(alluId) } returns
                 AlluFactory.createInformationRequest()
 
@@ -366,7 +345,7 @@ class HakemusHistoryServiceITest(
             assertThat(emails).each {
                 it.prop(MimeMessage::getSubject)
                     .isEqualTo(
-                        "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö / Hakemuksellesi on tullut täydennyspyyntö"
+                        "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Din ansökan har fått en begäran om komplettering / There is a request for supplementary information for your application"
                     )
             }
             verifySequence { alluClient.getInformationRequest(alluId) }
@@ -380,12 +359,13 @@ class HakemusHistoryServiceITest(
                     .builder(hanke)
                     .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
                     .save()
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    applicationIdentifier = identifier,
-                    newStatus = ApplicationStatus.WAITING_INFORMATION,
-                )
-            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+            val histories =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.WAITING_INFORMATION,
+                    )
+                    .asList()
             every { alluClient.getInformationRequest(alluId) } returns
                 AlluFactory.createInformationRequest(applicationAlluId = alluId)
 
@@ -410,12 +390,13 @@ class HakemusHistoryServiceITest(
                 .builder()
                 .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
                 .save()
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    applicationIdentifier = identifier,
-                    newStatus = ApplicationStatus.WAITING_INFORMATION,
-                )
-            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+            val histories =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.WAITING_INFORMATION,
+                    )
+                    .asList()
             every { alluClient.getInformationRequest(alluId) } returns null
 
             historyService.handleHakemusUpdates(histories, updateTime)
@@ -433,15 +414,16 @@ class HakemusHistoryServiceITest(
             val hakemus =
                 hakemusFactory
                     .builder()
-                    .withStatus(ApplicationStatus.WAITING_INFORMATION, 42)
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
                     .save()
             taydennysFactory.save(applicationId = hakemus.id)
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    applicationIdentifier = identifier,
-                    newStatus = ApplicationStatus.HANDLING,
-                )
-            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+            val histories =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.HANDLING,
+                    )
+                    .asList()
 
             historyService.handleHakemusUpdates(histories, updateTime)
 
@@ -456,16 +438,55 @@ class HakemusHistoryServiceITest(
         }
 
         @Test
+        fun `sends emails when removing the taydennyspyynto`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId, identifier)
+                    .hakija(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    .tyonSuorittaja(Kayttooikeustaso.HAKEMUSASIOINTI)
+                    .rakennuttaja(Kayttooikeustaso.HANKEMUOKKAUS)
+                    .asianhoitaja(Kayttooikeustaso.KATSELUOIKEUS)
+                    .save()
+            taydennysFactory.save(applicationId = hakemus.id)
+            val histories =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.HANDLING,
+                    )
+                    .asList()
+
+            historyService.handleHakemusUpdates(histories, updateTime)
+
+            val emails = greenMail.receivedMessages
+            val recipients = emails.map { it.allRecipients.toList() }.flatten()
+            assertThat(recipients)
+                .extracting { it.toString() }
+                .containsExactlyInAnyOrder(
+                    HankeKayttajaFactory.KAYTTAJA_INPUT_HAKIJA.email,
+                    HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA.email,
+                )
+            assertThat(emails).each {
+                it.prop(MimeMessage::getSubject)
+                    .isEqualTo(
+                        "Haitaton: Hakemustasi koskeva täydennyspyyntö on peruttu / Begäran om komplettering som gäller din ansökan har återtagits / The request for supplementary information concerning your application has been cancelled"
+                    )
+            }
+        }
+
+        @Test
         fun `updates the status when the new status is HANDLING and there is no taydennyspyynto`(
             output: CapturedOutput
         ) {
             hakemusFactory.builder().withStatus(ApplicationStatus.WAITING_INFORMATION, 42).save()
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    applicationIdentifier = identifier,
-                    newStatus = ApplicationStatus.HANDLING,
-                )
-            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+            val histories =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.HANDLING,
+                    )
+                    .asList()
 
             historyService.handleHakemusUpdates(histories, updateTime)
 
@@ -483,12 +504,13 @@ class HakemusHistoryServiceITest(
         ) {
             val hakemus = hakemusFactory.builder().withStatus(ApplicationStatus.DECISION, 42).save()
             taydennysFactory.save(applicationId = hakemus.id)
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    applicationIdentifier = identifier,
-                    newStatus = ApplicationStatus.HANDLING,
-                )
-            val histories = listOf(ApplicationHistoryFactory.create(alluId, event))
+            val histories =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.HANDLING,
+                    )
+                    .asList()
 
             historyService.handleHakemusUpdates(histories, updateTime)
 

@@ -7,9 +7,14 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "7.17.0"
+val sentryVersion = "7.19.0"
+val geoToolsVersion = "32.2"
 
-repositories { mavenCentral() }
+repositories {
+    mavenCentral().content { excludeModule("javax.media", "jai_core") }
+    maven { url = uri("https://repo.osgeo.org/repository/release/") }
+    maven { url = uri("https://maven.geotoolkit.org") }
+}
 
 sourceSets {
     create("integrationTest") {
@@ -49,10 +54,10 @@ spotless {
 }
 
 plugins {
-    val kotlinVersion = "2.0.21"
+    val kotlinVersion = "2.1.10"
     id("org.springframework.boot") version "3.3.5"
-    id("io.spring.dependency-management") version "1.1.6"
-    id("com.diffplug.spotless") version "6.25.0"
+    id("io.spring.dependency-management") version "1.1.7"
+    id("com.diffplug.spotless") version "7.0.2"
     kotlin("jvm") version kotlinVersion
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
     kotlin("plugin.spring") version kotlinVersion
@@ -60,7 +65,7 @@ plugins {
     kotlin("plugin.jpa") version kotlinVersion
     idea
     id("jacoco")
-    id("io.freefair.mjml.java") version "8.10.2"
+    id("io.freefair.mjml.java") version "8.12.1"
 }
 
 dependencies {
@@ -85,12 +90,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.9.0")
-    implementation("commons-io:commons-io:2.17.0")
-    implementation("com.github.librepdf:openpdf:2.0.3")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.9.2")
+    implementation("commons-io:commons-io:2.18.0")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    implementation("com.auth0:java-jwt:4.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("com.auth0:java-jwt:4.5.0")
 
     implementation("org.postgresql:postgresql")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
@@ -98,14 +102,24 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testImplementation("io.mockk:mockk:1.13.13")
+    testImplementation("io.mockk:mockk:1.13.16")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
     testImplementation("com.squareup.okhttp3:mockwebserver")
-    testImplementation("com.icegreen:greenmail-junit5:2.1.0")
+    testImplementation("com.icegreen:greenmail-junit5:2.1.3")
+
+    // Pdf generation
+    implementation("com.github.librepdf:openpdf:2.0.3")
+    implementation("org.apache.xmlgraphics:fop:2.10")
+
+    // Geotools
+    implementation("org.geotools:gt-wms:$geoToolsVersion")
+    implementation("org.geotools:gt-brewer:$geoToolsVersion")
+    implementation("org.geotools:gt-epsg-hsql:$geoToolsVersion")
+    implementation("org.locationtech.jts.io:jts-io-common:1.20.0")
 
     // Testcontainers
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.3"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
@@ -121,7 +135,7 @@ dependencies {
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
-    implementation(platform("com.azure:azure-sdk-bom:1.2.29"))
+    implementation(platform("com.azure:azure-sdk-bom:1.2.31"))
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity")

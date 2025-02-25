@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentAuthorizer
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
+import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentService
 import fi.hel.haitaton.hanke.banners.BannerService
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
@@ -17,6 +18,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.DisclosureLoggingAspect
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusService
 import fi.hel.haitaton.hanke.paatos.PaatosAuthorizer
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaAuthorizer
@@ -97,6 +99,8 @@ class IntegrationTestConfiguration {
 
     @Bean fun jdbcOperations(): JdbcOperations = mockk()
 
+    @Bean fun muutosilmoitusService(): MuutosilmoitusService = mockk()
+
     @Bean fun paatosAuthorizer(): PaatosAuthorizer = mockk()
 
     @Bean fun paatosService(): PaatosService = mockk()
@@ -106,6 +110,8 @@ class IntegrationTestConfiguration {
     @Bean fun profiiliClient(): ProfiiliClient = mockk()
 
     @Bean fun profiiliService(): ProfiiliService = mockk()
+
+    @Bean fun taydennysAttachmentService(): TaydennysAttachmentService = mockk()
 
     @Bean fun taydennysAuthorizer(): TaydennysAuthorizer = mockk()
 

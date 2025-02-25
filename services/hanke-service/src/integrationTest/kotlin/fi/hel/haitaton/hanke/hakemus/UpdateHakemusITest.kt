@@ -32,7 +32,9 @@ import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavationNotificationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createTyoalue
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.toUpdateRequest
@@ -890,6 +892,40 @@ class UpdateHakemusITest(
                 .prop(Tyoalue::tormaystarkasteluTulos)
                 .isNotNull()
                 .isEqualTo(expectedTormaystarkasteluTulos)
+        }
+
+        @Test
+        fun `updates the haittojenhallintasuunnitelma`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
+            val hankeEntity = hankeRepository.findAll().single()
+            val hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hankeEntity, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .save()
+            val area =
+                createExcavationNotificationArea(hankealueId = hanke.alueet.single().id!!)
+                    .withHaittojenhallintasuunnitelma()
+            val request =
+                hakemus
+                    .toUpdateRequest()
+                    .withDates(ZonedDateTime.now(), ZonedDateTime.now().plusDays(1))
+                    .withArea(area)
+
+            val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+            assertThat(updatedHakemus.applicationData.areas)
+                .isNotNull()
+                .single()
+                .isInstanceOf(KaivuilmoitusAlue::class)
+                .prop(KaivuilmoitusAlue::haittojenhallintasuunnitelma)
+                .isEqualTo(HaittaFactory.DEFAULT_HHS)
+            val persistedHakemus = hakemusRepository.findAll().single()
+            assertThat(persistedHakemus.hakemusEntityData.areas)
+                .isNotNull()
+                .single()
+                .isInstanceOf(KaivuilmoitusAlue::class)
+                .prop(KaivuilmoitusAlue::haittojenhallintasuunnitelma)
+                .isEqualTo(HaittaFactory.DEFAULT_HHS)
         }
     }
 }

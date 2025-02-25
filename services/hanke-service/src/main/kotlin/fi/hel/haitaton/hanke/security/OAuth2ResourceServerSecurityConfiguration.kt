@@ -1,6 +1,9 @@
 package fi.hel.haitaton.hanke.security
 
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
+import mu.KotlinLogging
+import mu.withLoggingContext
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -8,7 +11,9 @@ import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator
+import org.springframework.security.oauth2.core.OAuth2Error
 import org.springframework.security.oauth2.core.OAuth2TokenValidator
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.jwt.JwtClaimNames
 import org.springframework.security.oauth2.jwt.JwtClaimValidator
@@ -18,15 +23,50 @@ import org.springframework.security.oauth2.jwt.JwtValidators
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.web.SecurityFilterChain
 
+private val logger = KotlinLogging.logger {}
+
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
-class OAuth2ResourceServerSecurityConfiguration(private val gdprProperties: GdprProperties) {
+class OAuth2ResourceServerSecurityConfiguration(
+    private val gdprProperties: GdprProperties,
+    private val adFilterProperties: AdFilterProperties,
+    @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
+    private val issuerUri: String,
+    @Value("\${spring.security.oauth2.resourceserver.jwt.audiences}") private val audience: String,
+) {
 
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         AccessRules.configureHttpAccessRules(http)
         http.oauth2ResourceServer { it.jwt {} }
         return http.build()
+    }
+
+    fun adGroupValidator(): OAuth2TokenValidator<Jwt> = AdGroupValidator(adFilterProperties)
+
+    fun audienceValidator(): OAuth2TokenValidator<Jwt?> =
+        JwtClaimValidator<List<String>>(JwtClaimNames.AUD) { aud -> aud.contains(audience) }
+
+    /**
+     * Custom decoder that verifies the AD groups and audience of the token on top of the default
+     * behaviour.
+     *
+     * Adopted from:
+     * https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#oauth2resourceserver-jwt-validation-custom
+     */
+    @Bean
+    fun jwtDecoder(): JwtDecoder {
+        val jwtDecoder = JwtDecoders.fromIssuerLocation(issuerUri) as NimbusJwtDecoder
+
+        val adGroupValidator = adGroupValidator()
+        val audienceValidator = audienceValidator()
+        val defaultValidator = JwtValidators.createDefaultWithIssuer(issuerUri)
+        val combinedValidator =
+            DelegatingOAuth2TokenValidator(defaultValidator, audienceValidator, adGroupValidator)
+
+        jwtDecoder.setJwtValidator(combinedValidator)
+
+        return jwtDecoder
     }
 
     /**
@@ -67,7 +107,7 @@ class OAuth2ResourceServerSecurityConfiguration(private val gdprProperties: Gdpr
         return http.build()
     }
 
-    fun audienceValidator(): OAuth2TokenValidator<Jwt?> =
+    fun gdprAudienceValidator(): OAuth2TokenValidator<Jwt?> =
         JwtClaimValidator<List<String>>(JwtClaimNames.AUD) { aud ->
             aud.contains(gdprProperties.audience)
         }
@@ -77,7 +117,7 @@ class OAuth2ResourceServerSecurityConfiguration(private val gdprProperties: Gdpr
         val jwtDecoder: NimbusJwtDecoder =
             JwtDecoders.fromIssuerLocation(gdprProperties.issuer) as NimbusJwtDecoder
 
-        val audienceValidator = audienceValidator()
+        val audienceValidator = gdprAudienceValidator()
         val withIssuer: OAuth2TokenValidator<Jwt> =
             JwtValidators.createDefaultWithIssuer(gdprProperties.issuer)
         val withAudience: OAuth2TokenValidator<Jwt> =
@@ -86,5 +126,55 @@ class OAuth2ResourceServerSecurityConfiguration(private val gdprProperties: Gdpr
         jwtDecoder.setJwtValidator(withAudience)
 
         return jwtDecoder
+    }
+
+    class AdGroupValidator(private val adFilterProperties: AdFilterProperties) :
+        OAuth2TokenValidator<Jwt> {
+        override fun validate(jwt: Jwt): OAuth2TokenValidatorResult =
+            if (jwt.getClaimAsStringList(JwtClaims.AMR).contains(AmrValues.SUOMI_FI)) {
+                OAuth2TokenValidatorResult.success()
+            } else if (jwt.getClaimAsStringList(JwtClaims.AMR).contains(AmrValues.AD)) {
+                validateAdGroups(jwt).let { if (it.hasErrors()) it else validateNames(jwt) }
+            } else {
+                val error =
+                    OAuth2Error(
+                        "invalid_token",
+                        "The AMR claim has no recognized authentication methods",
+                        null,
+                    )
+                OAuth2TokenValidatorResult.failure(error)
+            }
+
+        private fun validateAdGroups(jwt: Jwt): OAuth2TokenValidatorResult {
+            val groups = jwt.getClaimAsStringList("ad_groups").toSet()
+
+            return if (!adFilterProperties.use) {
+                OAuth2TokenValidatorResult.success()
+            } else if (adFilterProperties.allowedGroups.any { groups.contains(it) }) {
+                OAuth2TokenValidatorResult.success()
+            } else {
+                val error = OAuth2Error("invalid_token", "No allowed AD groups", null)
+                OAuth2TokenValidatorResult.failure(error)
+            }
+        }
+
+        private fun validateNames(jwt: Jwt): OAuth2TokenValidatorResult {
+            // An empty error list is considered a success.
+            val errors =
+                checkClaim(jwt, JwtClaims.GIVEN_NAME) + checkClaim(jwt, JwtClaims.FAMILY_NAME)
+            return OAuth2TokenValidatorResult.failure(errors)
+        }
+
+        private fun checkClaim(jwt: Jwt, claim: String): List<OAuth2Error> =
+            if (jwt.getClaimAsString(claim).isNullOrBlank()) {
+                withLoggingContext("userId" to jwt.subject) {
+                    logger.error {
+                        "Claim $claim not found from token even though the token is with Helsinki AD authentication."
+                    }
+                }
+                listOf(OAuth2Error("invalid_token", "Missing $claim", null))
+            } else {
+                listOf()
+            }
     }
 }

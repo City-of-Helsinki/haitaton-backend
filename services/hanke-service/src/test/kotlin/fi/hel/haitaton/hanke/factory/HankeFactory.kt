@@ -20,8 +20,6 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
-import fi.hel.haitaton.hanke.factory.HankealueFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU
-import fi.hel.haitaton.hanke.factory.HankealueFactory.createHaittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
@@ -83,11 +81,7 @@ class HankeFactory(
 
     fun builder(userId: String = USERNAME): HankeBuilder {
         val hanke =
-            create(
-                nimi = defaultNimi,
-                kuvaus = defaultKuvaus,
-                vaihe = Hankevaihe.OHJELMOINTI,
-            )
+            create(nimi = defaultNimi, kuvaus = defaultKuvaus, vaihe = Hankevaihe.OHJELMOINTI)
         return HankeBuilder(
             hanke,
             DEFAULT_HANKE_PERUSTAJA,
@@ -108,7 +102,7 @@ class HankeFactory(
             hanke.createdByUserId!!,
             hankeKayttajaFactory,
             hankeYhteystietoRepository,
-            hankeYhteyshenkiloRepository
+            hankeYhteyshenkiloRepository,
         )
 
     fun addYhteystiedotTo(hanke: HankeEntity, f: HankeYhteystietoBuilder.() -> Unit) {
@@ -188,7 +182,7 @@ class HankeFactory(
                             HankeYhteystietoFactory.createEntity(1, OMISTAJA, this),
                             HankeYhteystietoFactory.createEntity(2, TOTEUTTAJA, this),
                             HankeYhteystietoFactory.createEntity(3, RAKENNUTTAJA, this),
-                            HankeYhteystietoFactory.createEntity(4, MUU, this)
+                            HankeYhteystietoFactory.createEntity(4, MUU, this),
                         )
                     alueet =
                         mutableListOf(createHankeAlueEntity(mockId = mockId, hankeEntity = this))
@@ -196,14 +190,14 @@ class HankeFactory(
                         mutableListOf(
                             HankeAttachmentFactory.createEntity(
                                 hanke = this,
-                                createdByUser = defaultUser
+                                createdByUser = defaultUser,
                             )
                         )
                 }
 
         fun createRequest(
             nimi: String = defaultNimi,
-            perustaja: HankePerustaja = DEFAULT_HANKE_PERUSTAJA
+            perustaja: HankePerustaja = DEFAULT_HANKE_PERUSTAJA,
         ): CreateHankeRequest = CreateHankeRequest(nimi, perustaja)
 
         /**
@@ -215,17 +209,19 @@ class HankeFactory(
          * ```
          */
         fun Hanke.withHankealue(
+            id: Int = 1,
             nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
             haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
             haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
             haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma? =
-                createHaittojenhallintasuunnitelma(),
+                HaittaFactory.createHaittojenhallintasuunnitelma(),
         ): Hanke {
             this.tyomaaKatuosoite = "Testikatu 1"
             this.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
             this.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
             val alue =
                 HankealueFactory.create(
+                    id = id,
                     hankeId = this.id,
                     nimi = nimi,
                     haittaAlkuPvm = haittaAlkuPvm,
@@ -238,7 +234,8 @@ class HankeFactory(
         }
 
         fun Hanke.withTormaystarkasteluTulos(
-            autoliikenne: Autoliikenneluokittelu = TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
+            autoliikenne: Autoliikenneluokittelu =
+                HaittaFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
             pyoraliikenneindeksi: Float = 1f,
             linjaautoliikenneindeksi: Float = 1f,
             raitioliikenneindeksi: Float = 1f,
@@ -305,7 +302,7 @@ class HankeFactory(
         fun Hanke.withRakennuttaja(
             i: Int,
             id: Int? = i,
-            vararg yhteyshenkilo: Yhteyshenkilo
+            vararg yhteyshenkilo: Yhteyshenkilo,
         ): Hanke {
             rakennuttajat.add(
                 HankeYhteystietoFactory.createDifferentiated(i, id, yhteyshenkilo.toList())
@@ -323,7 +320,7 @@ class HankeFactory(
         fun Hanke.withMuuYhteystieto(
             i: Int,
             id: Int? = i,
-            vararg yhteyshenkilo: Yhteyshenkilo
+            vararg yhteyshenkilo: Yhteyshenkilo,
         ): Hanke {
             muut.add(HankeYhteystietoFactory.createDifferentiated(i, id, yhteyshenkilo.toList()))
             return this
