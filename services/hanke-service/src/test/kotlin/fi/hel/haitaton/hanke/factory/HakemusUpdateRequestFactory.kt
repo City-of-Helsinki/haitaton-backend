@@ -124,7 +124,8 @@ object HakemusUpdateRequestFactory {
                     createExcavationNotificationArea(
                         "Hankealue 1",
                         tyoalueet = listOf(createTyoalue(GeometriaFactory.polygon())),
-                    )),
+                    )
+                ),
             customerWithContacts =
                 createCustomerWithContactsRequest(
                     CustomerType.COMPANY,
@@ -153,7 +154,7 @@ object HakemusUpdateRequestFactory {
         customerType: CustomerType = CustomerType.COMPANY,
         yhteystietoId: UUID? = UUID.randomUUID(),
         registryKey: String?,
-        vararg hankekayttajaIds: UUID
+        vararg hankekayttajaIds: UUID,
     ) =
         CustomerWithContactsRequest(
             createCustomer(
@@ -167,7 +168,7 @@ object HakemusUpdateRequestFactory {
     fun createCustomerWithContactsRequest(
         customerType: CustomerType = CustomerType.COMPANY,
         yhteystietoId: UUID? = UUID.randomUUID(),
-        vararg hankekayttajaIds: UUID
+        vararg hankekayttajaIds: UUID,
     ) =
         createCustomerWithContactsRequest(
             customerType = customerType,
@@ -223,17 +224,19 @@ object HakemusUpdateRequestFactory {
     fun HakemusUpdateRequest.withCustomerWithContactsRequest(
         type: CustomerType,
         yhteystietoId: UUID? = UUID.randomUUID(),
-        vararg hankekayttajaIds: UUID
+        vararg hankekayttajaIds: UUID,
     ) =
         when (this) {
             is JohtoselvityshakemusUpdateRequest ->
                 this.copy(
                     customerWithContacts =
-                        createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds))
+                        createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds)
+                )
             is KaivuilmoitusUpdateRequest ->
                 this.copy(
                     customerWithContacts =
-                        createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds))
+                        createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds)
+                )
         }
 
     fun HakemusUpdateRequest.withCustomer(
@@ -244,7 +247,7 @@ object HakemusUpdateRequestFactory {
         phone: String = DEFAULT_CUSTOMER_PHONE,
         registryKey: String? = DEFAULT_CUSTOMER_REGISTRY_KEY,
         registryKeyHidden: Boolean = false,
-        vararg hankekayttajaIds: UUID
+        vararg hankekayttajaIds: UUID,
     ) =
         when (this) {
             is JohtoselvityshakemusUpdateRequest ->
@@ -260,7 +263,8 @@ object HakemusUpdateRequestFactory {
                                 registryKey = registryKey,
                             ),
                             hankekayttajaIds.map { ContactRequest(it) },
-                        ))
+                        )
+                )
             is KaivuilmoitusUpdateRequest ->
                 this.copy(
                     customerWithContacts =
@@ -275,8 +279,24 @@ object HakemusUpdateRequestFactory {
                                 registryKeyHidden = registryKeyHidden,
                             ),
                             hankekayttajaIds.map { ContactRequest(it) },
-                        ))
+                        )
+                )
         }
+
+    fun HakemusUpdateRequest.withCustomer(
+        type: CustomerType = CustomerType.COMPANY,
+        yhteystietoId: UUID? = UUID.randomUUID(),
+        vararg hankekayttajaIds: UUID,
+    ) =
+        withCustomer(
+            type = type,
+            yhteystietoId = yhteystietoId,
+            name = DEFAULT_CUSTOMER_NAME,
+            email = DEFAULT_CUSTOMER_EMAIL,
+            phone = DEFAULT_CUSTOMER_PHONE,
+            registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
+            hankekayttajaIds = hankekayttajaIds,
+        )
 
     fun HakemusUpdateRequest.withName(name: String) =
         when (this) {
@@ -338,7 +358,8 @@ object HakemusUpdateRequestFactory {
                     postalAddress = postalAddressRequest,
                     email = email,
                     phone = phone,
-                ))
+                )
+        )
 
     fun HakemusUpdateRequest.withContractor(
         type: CustomerType = CustomerType.COMPANY,
@@ -347,7 +368,7 @@ object HakemusUpdateRequestFactory {
         email: String = DEFAULT_CUSTOMER_EMAIL,
         phone: String = DEFAULT_CUSTOMER_PHONE,
         registryKey: String = DEFAULT_CUSTOMER_REGISTRY_KEY,
-        vararg hankekayttajaIds: UUID
+        vararg hankekayttajaIds: UUID,
     ) =
         when (this) {
             is JohtoselvityshakemusUpdateRequest ->
@@ -363,7 +384,8 @@ object HakemusUpdateRequestFactory {
                                 registryKey = registryKey,
                             ),
                             hankekayttajaIds.map { ContactRequest(it) },
-                        ))
+                        )
+                )
             is KaivuilmoitusUpdateRequest ->
                 this.copy(
                     contractorWithContacts =
@@ -377,28 +399,14 @@ object HakemusUpdateRequestFactory {
                                 registryKey = registryKey,
                             ),
                             hankekayttajaIds.map { ContactRequest(it) },
-                        ))
+                        )
+                )
         }
-
-    fun HakemusUpdateRequest.withCustomer(
-        type: CustomerType = CustomerType.COMPANY,
-        yhteystietoId: UUID? = UUID.randomUUID(),
-        vararg hankekayttajaIds: UUID
-    ) =
-        withCustomer(
-            type = type,
-            yhteystietoId = yhteystietoId,
-            name = DEFAULT_CUSTOMER_NAME,
-            email = DEFAULT_CUSTOMER_EMAIL,
-            phone = DEFAULT_CUSTOMER_PHONE,
-            registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
-            hankekayttajaIds = hankekayttajaIds,
-        )
 
     fun HakemusUpdateRequest.withContractor(
         type: CustomerType = CustomerType.COMPANY,
         yhteystietoId: UUID? = UUID.randomUUID(),
-        vararg hankekayttajaIds: UUID
+        vararg hankekayttajaIds: UUID,
     ) =
         withContractor(
             type = type,
@@ -410,20 +418,33 @@ object HakemusUpdateRequestFactory {
             hankekayttajaIds = hankekayttajaIds,
         )
 
-    fun JohtoselvityshakemusUpdateRequest.withWorkDescription(workDescription: String) =
-        this.copy(workDescription = workDescription)
+    fun HakemusUpdateRequest.withTimes(startTime: ZonedDateTime?, endTime: ZonedDateTime?) =
+        when (this) {
+            is JohtoselvityshakemusUpdateRequest ->
+                this.copy(startTime = startTime, endTime = endTime)
+            is KaivuilmoitusUpdateRequest -> this.copy(startTime = startTime, endTime = endTime)
+        }
 
-    fun JohtoselvityshakemusUpdateRequest.withTimes(
-        startTime: ZonedDateTime?,
-        endTime: ZonedDateTime?
-    ) = this.copy(startTime = startTime, endTime = endTime)
+    fun HakemusUpdateRequest.withRegistryKey(registryKey: String) =
+        when (this) {
+            is JohtoselvityshakemusUpdateRequest ->
+                this.copy(
+                    customerWithContacts =
+                        this.customerWithContacts?.copy(
+                            customer =
+                                this.customerWithContacts!!.customer.copy(registryKey = registryKey)
+                        )
+                )
 
-    fun JohtoselvityshakemusUpdateRequest.withRegistryKey(registryKey: String) =
-        this.copy(
-            customerWithContacts =
-                this.customerWithContacts?.copy(
-                    customer =
-                        this.customerWithContacts!!.customer.copy(registryKey = registryKey)))
+            is KaivuilmoitusUpdateRequest ->
+                this.copy(
+                    customerWithContacts =
+                        this.customerWithContacts?.copy(
+                            customer =
+                                this.customerWithContacts!!.customer.copy(registryKey = registryKey)
+                        )
+                )
+        }
 
     fun Hakemus.toUpdateRequest(): HakemusUpdateRequest =
         this.toResponse().applicationData.toJsonString().parseJson()

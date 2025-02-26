@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.muutosilmoitus
 
+import fi.hel.haitaton.hanke.domain.HasYhteystietoEntities
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
@@ -36,9 +37,10 @@ class MuutosilmoitusEntity(
     )
     @MapKey(name = "rooli")
     @BatchSize(size = 100)
-    var yhteystiedot: MutableMap<ApplicationContactType, MuutosilmoituksenYhteystietoEntity> =
+    override var yhteystiedot:
+        MutableMap<ApplicationContactType, MuutosilmoituksenYhteystietoEntity> =
         mutableMapOf(),
-) : MuutosilmoitusIdentifier {
+) : MuutosilmoitusIdentifier, HasYhteystietoEntities<MuutosilmoituksenYhteyshenkiloEntity> {
     fun toDomain(): Muutosilmoitus {
         val yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto> =
             yhteystiedot.mapValues { it.value.toDomain() }

@@ -1,10 +1,12 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
+import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoituksenYhteyshenkiloEntity
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoituksenYhteyshenkiloRepository
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoituksenYhteystietoEntity
@@ -12,6 +14,8 @@ import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusEntity
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusService
+import fi.hel.haitaton.hanke.parseJson
+import fi.hel.haitaton.hanke.toJsonString
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.stereotype.Component
@@ -21,14 +25,21 @@ class MuutosilmoitusFactory(
     private val muutosilmoitusService: MuutosilmoitusService,
     private val muutosilmoitusRepository: MuutosilmoitusRepository,
     private val yhteyshenkiloRepository: MuutosilmoituksenYhteyshenkiloRepository,
+    private val hakemusFactory: HakemusFactory,
 ) {
-    private fun builder(muutosilmoitusEntity: MuutosilmoitusEntity): MuutosilmoitusBuilder =
-        MuutosilmoitusBuilder(
-            muutosilmoitusEntity,
-            muutosilmoitusService,
-            muutosilmoitusRepository,
-            yhteyshenkiloRepository,
-        )
+
+    fun builder(
+        type: ApplicationType = ApplicationType.EXCAVATION_NOTIFICATION
+    ): MuutosilmoitusBuilder {
+        val hakemusEntity: HakemusEntity =
+            hakemusFactory
+                .builder(type)
+                .withMandatoryFields()
+                .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                .saveEntity()
+
+        return builder(hakemusEntity)
+    }
 
     fun builder(hakemus: HakemusEntity): MuutosilmoitusBuilder {
         val entity =
@@ -67,6 +78,14 @@ class MuutosilmoitusFactory(
         return builder(entity)
     }
 
+    private fun builder(muutosilmoitusEntity: MuutosilmoitusEntity): MuutosilmoitusBuilder =
+        MuutosilmoitusBuilder(
+            muutosilmoitusEntity,
+            muutosilmoitusService,
+            muutosilmoitusRepository,
+            yhteyshenkiloRepository,
+        )
+
     companion object {
         val DEFAULT_ID: UUID = UUID.fromString("7df81277-2e36-4082-8687-0421c20d341e")
 
@@ -86,5 +105,8 @@ class MuutosilmoitusFactory(
                 ApplicationFactory.createBlankExcavationNotificationData(),
             yhteystiedot: Map<ApplicationContactType, MuutosilmoituksenYhteystietoEntity> = mapOf(),
         ) = MuutosilmoitusEntity(id, hakemusId, sent, hakemusData, yhteystiedot.toMutableMap())
+
+        fun Muutosilmoitus.toUpdateRequest(): HakemusUpdateRequest =
+            this.toResponse().applicationData.toJsonString().parseJson()
     }
 }

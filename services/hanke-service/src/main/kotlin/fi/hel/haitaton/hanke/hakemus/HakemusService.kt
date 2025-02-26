@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentMetadataService
 import fi.hel.haitaton.hanke.daysBetween
 import fi.hel.haitaton.hanke.domain.Hankevaihe
+import fi.hel.haitaton.hanke.domain.HasYhteystietoEntities
 import fi.hel.haitaton.hanke.email.ApplicationNotificationEmail
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.getCurrentTimeUTCAsLocalTime
@@ -990,12 +991,21 @@ class HakemusService(
         )
 
     private fun sendHakemusNotifications(
+        updatedEntity: HakemusEntity,
+        excludedUserIds: Set<UUID>,
+        userId: String,
+    ) {
+        sendHakemusNotifications(updatedEntity, updatedEntity, excludedUserIds, userId)
+    }
+
+    fun <H : YhteyshenkiloEntity> sendHakemusNotifications(
+        updatedEntity: HasYhteystietoEntities<H>,
         hakemusEntity: HakemusEntity,
         excludedUserIds: Set<UUID>,
         userId: String,
     ) {
         val newContacts =
-            hakemusEntity.allContactUsers().filterNot { excludedUserIds.contains(it.id) }
+            updatedEntity.allContactUsers().filterNot { excludedUserIds.contains(it.id) }
         if (newContacts.isNotEmpty()) {
             sendHakemusNotifications(newContacts, hakemusEntity, userId)
         }
