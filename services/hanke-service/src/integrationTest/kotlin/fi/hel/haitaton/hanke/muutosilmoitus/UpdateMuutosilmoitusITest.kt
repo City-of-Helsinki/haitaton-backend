@@ -276,7 +276,7 @@ class UpdateMuutosilmoitusITest(
     @ParameterizedTest
     @EnumSource(ApplicationType::class)
     fun `doesn't send email when the caller adds themself as contact`(type: ApplicationType) {
-        val muutosilmoitus = muutosilmoitusFactory.builder().withAreas(listOf()).save()
+        val muutosilmoitus = muutosilmoitusFactory.builder(type).withAreas(listOf()).save()
         val hankeId = hakemusRepository.getReferenceById(muutosilmoitus.hakemusId).hanke.id
         val permission = permissionService.findPermission(hankeId, USERNAME)!!
         val founder = hankekayttajaRepository.findByPermissionId(permission.id)!!

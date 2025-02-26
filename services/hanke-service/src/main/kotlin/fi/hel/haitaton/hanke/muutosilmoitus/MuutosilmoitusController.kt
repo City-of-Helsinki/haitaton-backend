@@ -42,8 +42,7 @@ class MuutosilmoitusController(private val muutosilmoitusService: Muutosilmoitus
                 with a copy of the data the application has.
 
                 The application needs to be in DECISION or OPERATIONAL_CONDITION
-                status and there needs to be an open information request for the
-                application.
+                status.
 
                 For the time being, creating a muutosilmoitus is only supported
                 for excavation notifications.
