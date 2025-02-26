@@ -11,13 +11,11 @@ class HakemusDataDeserializer : JsonDeserializer<HakemusData>() {
         val root = parser.readValueAsTree<ObjectNode>()
 
         val dataClass =
-            when (val typeString = root.path("applicationType").textValue()) {
-                ApplicationType.CABLE_REPORT.name -> JohtoselvityshakemusData::class.java
-                ApplicationType.EXCAVATION_NOTIFICATION.name -> KaivuilmoitusData::class.java
-                else -> throw IllegalArgumentException("Unsupported application type $typeString")
+            when (ApplicationType.valueOf(root.path("applicationType").textValue())) {
+                ApplicationType.CABLE_REPORT -> JohtoselvityshakemusData::class.java
+                ApplicationType.EXCAVATION_NOTIFICATION -> KaivuilmoitusData::class.java
             }
 
-        val hakemusData = OBJECT_MAPPER.treeToValue(root, dataClass)
-        return hakemusData
+        return OBJECT_MAPPER.treeToValue(root, dataClass)
     }
 }

@@ -71,7 +71,7 @@ class MuutosilmoitusFactory(
         val DEFAULT_ID: UUID = UUID.fromString("7df81277-2e36-4082-8687-0421c20d341e")
 
         fun create(
-            id: UUID = TaydennysFactory.DEFAULT_ID,
+            id: UUID = DEFAULT_ID,
             hakemusType: ApplicationType = ApplicationType.EXCAVATION_NOTIFICATION,
             hakemusId: Long = 1L,
             sent: OffsetDateTime? = null,
@@ -79,7 +79,7 @@ class MuutosilmoitusFactory(
         ) = Muutosilmoitus(id, hakemusId, sent, hakemusData)
 
         fun createEntity(
-            id: UUID = TaydennysFactory.DEFAULT_ID,
+            id: UUID = DEFAULT_ID,
             hakemusId: Long = ApplicationFactory.DEFAULT_APPLICATION_ID,
             sent: OffsetDateTime? = null,
             hakemusData: HakemusEntityData =

@@ -109,10 +109,12 @@ class HakemusController(
         logger.info {
             "Finding applications for hanke $hankeTunnus with areas ${if (areas) "included" else "excluded"}"
         }
-        val hakemukset = hakemusService.hankkeenHakemukset(hankeTunnus)
+        val hakemukset = hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hankeTunnus)
         logger.info { "Found ${hakemukset.size} applications for hanke $hankeTunnus" }
         return HankkeenHakemuksetResponse(
-            hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus, areas) }
+            hakemukset.map { (hakemus, muutosilmoitus) ->
+                HankkeenHakemusResponse(hakemus, muutosilmoitus, areas)
+            }
         )
     }
 
