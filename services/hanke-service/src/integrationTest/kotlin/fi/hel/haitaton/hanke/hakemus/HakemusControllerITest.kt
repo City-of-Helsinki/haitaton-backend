@@ -164,7 +164,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 )
                 .andExpect(jsonPath("$.paatokset").isMap())
                 .andExpect(jsonPath("$.paatokset").isEmpty())
-                .andExpect(jsonPath("$.taydennyspyynto").value(null))
+                .andExpect(jsonPath("$.taydennyspyynto").doesNotHaveJsonPath())
+                .andExpect(jsonPath("$.muutosilmoitus").doesNotHaveJsonPath())
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
@@ -649,7 +650,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                     .andExpect(status().isOk)
                     .andExpect(jsonPath("$.applications[*].applicationData.areas").hasJsonPath())
                     .andExpect(jsonPath("$.applications[0].muutosilmoitus").exists())
-                    .andExpect(jsonPath("$.applications[1].muutosilmoitus").value(null))
+                    .andExpect(jsonPath("$.applications[1].muutosilmoitus").doesNotHaveJsonPath())
                     .andReturnBody()
 
             assertThat(response.applications).isNotEmpty()

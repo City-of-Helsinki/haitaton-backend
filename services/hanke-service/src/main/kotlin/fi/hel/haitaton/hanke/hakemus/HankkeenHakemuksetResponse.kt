@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
 import java.time.OffsetDateTime
@@ -15,7 +17,7 @@ data class HankkeenHakemusResponse(
     val applicationIdentifier: String?,
     val applicationType: ApplicationType,
     val applicationData: HankkeenHakemusDataResponse,
-    val muutosilmoitus: HankkeenHakemusMuutosilmoitusResponse?,
+    @JsonInclude(Include.NON_NULL) val muutosilmoitus: HankkeenHakemusMuutosilmoitusResponse?,
 ) {
     constructor(
         hakemus: Hakemus,
