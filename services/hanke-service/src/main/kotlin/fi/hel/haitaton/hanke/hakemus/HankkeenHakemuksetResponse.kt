@@ -1,7 +1,12 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
+import java.time.OffsetDateTime
 import java.time.ZonedDateTime
+import java.util.UUID
 
 data class HankkeenHakemuksetResponse(val applications: List<HankkeenHakemusResponse>)
 
@@ -12,9 +17,11 @@ data class HankkeenHakemusResponse(
     val applicationIdentifier: String?,
     val applicationType: ApplicationType,
     val applicationData: HankkeenHakemusDataResponse,
+    @JsonInclude(Include.NON_NULL) val muutosilmoitus: HankkeenHakemusMuutosilmoitusResponse?,
 ) {
     constructor(
         hakemus: Hakemus,
+        muutosilmoitus: Muutosilmoitus?,
         includeAreas: Boolean = false,
     ) : this(
         hakemus.id,
@@ -28,6 +35,7 @@ data class HankkeenHakemusResponse(
             is KaivuilmoitusData ->
                 HankkeenHakemusDataResponse(hakemus.applicationData, includeAreas)
         },
+        muutosilmoitus?.let { HankkeenHakemusMuutosilmoitusResponse(muutosilmoitus, includeAreas) },
     )
 }
 
@@ -55,5 +63,24 @@ data class HankkeenHakemusDataResponse(
         kaivuilmoitusEntityData.startTime,
         kaivuilmoitusEntityData.endTime,
         if (includeAreas) kaivuilmoitusEntityData.areas else null,
+    )
+}
+
+data class HankkeenHakemusMuutosilmoitusResponse(
+    val id: UUID,
+    val sent: OffsetDateTime?,
+    val hakemusdata: HankkeenHakemusDataResponse,
+) {
+    constructor(
+        muutosilmoitus: Muutosilmoitus,
+        includeAreas: Boolean,
+    ) : this(
+        id = muutosilmoitus.id,
+        sent = muutosilmoitus.sent,
+        hakemusdata =
+            when (val data = muutosilmoitus.hakemusData) {
+                is JohtoselvityshakemusData -> HankkeenHakemusDataResponse(data, includeAreas)
+                is KaivuilmoitusData -> HankkeenHakemusDataResponse(data, includeAreas)
+            },
     )
 }

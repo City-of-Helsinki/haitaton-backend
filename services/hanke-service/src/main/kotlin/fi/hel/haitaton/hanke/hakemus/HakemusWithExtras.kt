@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonUnwrapped
 import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusResponse
@@ -27,8 +29,9 @@ data class HakemusWithExtras(
         )
 }
 
+@JsonInclude(Include.NON_NULL)
 data class HakemusWithExtrasResponse(
-    @JsonUnwrapped val hakemus: HakemusResponse,
+    @JsonUnwrapped @JsonInclude(Include.ALWAYS) val hakemus: HakemusResponse,
     val paatokset: Map<String, List<PaatosResponse>>,
     val taydennyspyynto: TaydennyspyyntoResponse?,
     val taydennys: TaydennysWithExtrasResponse?,
