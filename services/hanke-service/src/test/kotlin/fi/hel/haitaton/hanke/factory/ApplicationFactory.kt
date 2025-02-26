@@ -137,6 +137,12 @@ class ApplicationFactory(
                 ApplicationType.EXCAVATION_NOTIFICATION -> createBlankExcavationNotificationData()
             }
 
+        fun createHakemusEntityData(type: ApplicationType): HakemusEntityData =
+            when (type) {
+                ApplicationType.CABLE_REPORT -> createCableReportApplicationData()
+                ApplicationType.EXCAVATION_NOTIFICATION -> createExcavationNotificationData()
+            }
+
         fun createCableReportApplicationData(
             name: String = DEFAULT_APPLICATION_NAME,
             areas: List<JohtoselvitysHakemusalue>? = listOf(createCableReportApplicationArea()),

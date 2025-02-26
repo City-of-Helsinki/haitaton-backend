@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository
 interface PaatosRepository : JpaRepository<PaatosEntity, UUID> {
     fun findByHakemusId(hakemusId: Long): List<PaatosEntity>
 
+    fun findByHakemusIdIn(hakemusIds: Collection<Long>): List<PaatosEntity>
+
     @Modifying
     @Query("UPDATE PaatosEntity SET tila = :tila WHERE hakemustunnus = :hakemustunnus")
     fun markReplacedByHakemustunnus(hakemustunnus: String, tila: PaatosTila = PaatosTila.KORVATTU)
