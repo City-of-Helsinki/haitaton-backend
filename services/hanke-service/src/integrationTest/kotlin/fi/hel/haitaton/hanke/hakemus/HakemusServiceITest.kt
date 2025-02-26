@@ -5,6 +5,7 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.contains
+import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.containsOnly
 import assertk.assertions.each
@@ -404,7 +405,7 @@ class HakemusServiceITest(
                 val result = hakemusService.hankkeenHakemukset(hakemus.hankeTunnus)
 
                 val expectedHakemus = hakemusService.getById(hakemus.id)
-                assertThat(result).hasSameElementsAs(listOf(expectedHakemus))
+                assertThat(result).containsExactly(expectedHakemus)
             }
         }
 
@@ -417,7 +418,118 @@ class HakemusServiceITest(
                 val result = hakemusService.hankkeenHakemukset(hakemus.hankeTunnus)
 
                 val expectedHakemus = hakemusService.getById(hakemus.id)
-                assertThat(result).hasSameElementsAs(listOf(expectedHakemus))
+                assertThat(result).containsExactly(expectedHakemus)
+            }
+        }
+    }
+
+    @Nested
+    inner class HankkeenHakemuksetWithMuutosilmoitukset {
+
+        @Test
+        fun `throws not found when hanke does not exist`() {
+            val hankeTunnus = "HAI-1234"
+
+            assertFailure { hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hankeTunnus) }
+                .all {
+                    hasClass(HankeNotFoundException::class)
+                    messageContains(hankeTunnus)
+                }
+        }
+
+        @Test
+        fun `returns an empty result when there are no applications`() {
+            val hankeInitial = hankeFactory.builder(USERNAME).save()
+
+            val result =
+                hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hankeInitial.hankeTunnus)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns correct hakemukset`() {
+            val targetHanke = hankeFactory.saveMinimal()
+            val targetHakemus1 = hakemusFactory.builder(targetHanke).saveEntity()
+            val targetHakemus2 =
+                hakemusFactory
+                    .builder(targetHanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .saveEntity()
+            val targetHakemus3 = hakemusFactory.builder(targetHanke).saveEntity()
+            val muutosilmoitus1 = muutosilmoitusFactory.builder(targetHakemus1).save()
+            val muutosilmoitus2 = muutosilmoitusFactory.builder(targetHakemus2).save()
+            val otherHanke = hankeFactory.saveMinimal()
+            val otherHakemus1 = hakemusFactory.builder(otherHanke).saveEntity()
+            val otherHakemus2 =
+                hakemusFactory
+                    .builder(otherHanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .saveEntity()
+            hakemusFactory.builder(otherHanke).saveEntity()
+            muutosilmoitusFactory.builder(otherHakemus1).save()
+            muutosilmoitusFactory.builder(otherHakemus2).save()
+
+            val result =
+                hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(targetHanke.hankeTunnus)
+
+            assertThat(result)
+                .extracting { it.first.id }
+                .containsExactlyInAnyOrder(targetHakemus1.id, targetHakemus2.id, targetHakemus3.id)
+            assertThat(result)
+                .extracting { it.second?.id }
+                .containsExactlyInAnyOrder(muutosilmoitus1.id, muutosilmoitus2.id, null)
+        }
+
+        @Nested
+        inner class WithJohtoselvityshakemus {
+            @Test
+            fun `returns applications`() {
+                val hakemus = hakemusFactory.builderWithGeneratedHanke().save()
+
+                val result =
+                    hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hakemus.hankeTunnus)
+
+                val expectedHakemus = hakemusService.getById(hakemus.id)
+                assertThat(result).containsExactly(Pair(expectedHakemus, null))
+            }
+
+            @Test
+            fun `returns muutosilmoitus when hakemus has one`() {
+                val hakemusEntity = hakemusFactory.builderWithGeneratedHanke().saveEntity()
+                val hakemus = hakemusService.getById(hakemusEntity.id)
+                val muutosilmoitus = muutosilmoitusFactory.builder(hakemusEntity).save()
+
+                val result =
+                    hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hakemus.hankeTunnus)
+
+                val expectedHakemus = hakemusService.getById(hakemus.id)
+                assertThat(result).containsExactly(Pair(expectedHakemus, muutosilmoitus))
+            }
+        }
+
+        @Nested
+        inner class WithKaivuilmoitus {
+            @Test
+            fun `returns applications`() {
+                val hakemus = hakemusFactory.builder(ApplicationType.EXCAVATION_NOTIFICATION).save()
+
+                val result =
+                    hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hakemus.hankeTunnus)
+
+                val expectedHakemus = hakemusService.getById(hakemus.id)
+                assertThat(result).containsExactly(Pair(expectedHakemus, null))
+            }
+
+            @Test
+            fun `returns muutosilmoitus when hakemus has one`() {
+                val hakemusEntity = hakemusFactory.builderWithGeneratedHanke().saveEntity()
+                val hakemus = hakemusService.getById(hakemusEntity.id)
+                val muutosilmoitus = muutosilmoitusFactory.builder(hakemusEntity).save()
+
+                val result =
+                    hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hakemus.hankeTunnus)
+
+                val expectedHakemus = hakemusService.getById(hakemus.id)
+                assertThat(result).containsExactly(Pair(expectedHakemus, muutosilmoitus))
             }
         }
     }

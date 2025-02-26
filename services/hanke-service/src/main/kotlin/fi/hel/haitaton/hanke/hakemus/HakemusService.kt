@@ -25,6 +25,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
+import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.pdf.EnrichedKaivuilmoitusalue
@@ -110,6 +111,19 @@ class HakemusService(
             hankeRepository.findByHankeTunnus(hankeTunnus)
                 ?: throw HankeNotFoundException(hankeTunnus)
         return hanke.hakemukset.map { it.toHakemus() }
+    }
+
+    @Transactional(readOnly = true)
+    fun hankkeenHakemuksetWithMuutosilmoitukset(
+        hankeTunnus: String
+    ): List<Pair<Hakemus, Muutosilmoitus?>> {
+        val hankeIdentifier =
+            hankeRepository.findOneByHankeTunnus(hankeTunnus)
+                ?: throw HankeNotFoundException(hankeTunnus)
+        return hakemusRepository.findWithMuutosilmoitukset(hankeIdentifier.id).map {
+            (hakemus, muutosilmoitus) ->
+            Pair(hakemus.toHakemus(), muutosilmoitus?.toDomain())
+        }
     }
 
     @Transactional
