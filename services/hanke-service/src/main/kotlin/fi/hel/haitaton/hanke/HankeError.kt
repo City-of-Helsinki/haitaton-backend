@@ -58,7 +58,9 @@ enum class HankeError(val errorMessage: String) {
     HAI4007("Verified name not found in Profiili"),
     HAI5001("Decision not found"),
     HAI6001("Taydennys not found"),
-    HAI6002("Taydennys has no changes");
+    HAI6002("Taydennys has no changes"),
+    HAI7001("Muutosilmoitus not found"),
+    HAI7002("Muutosilmoitus is already sent to Allu, operation prohibited.");
 
     val errorCode: String
         get() = name

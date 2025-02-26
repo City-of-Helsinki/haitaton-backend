@@ -1,10 +1,17 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.hakemus.Hakemusalue
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusEntityData
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoituksenYhteyshenkiloRepository
 import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusEntity
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusService
+import java.security.InvalidParameterException
+import java.time.OffsetDateTime
 
 class MuutosilmoitusBuilder(
     private var muutosilmoitusEntity: MuutosilmoitusEntity,
@@ -23,5 +30,42 @@ class MuutosilmoitusBuilder(
             }
         }
         return savedMuutosilmoitus
+    }
+
+    fun withAreas(areas: List<Hakemusalue>) =
+        updateApplicationData(
+            {
+                if (areas.any { it !is JohtoselvitysHakemusalue }) throw InvalidParameterException()
+                copy(areas = areas.filterIsInstance<JohtoselvitysHakemusalue>())
+            },
+            {
+                if (areas.any { it !is KaivuilmoitusAlue }) throw InvalidParameterException()
+                copy(areas = areas.filterIsInstance<KaivuilmoitusAlue>())
+            },
+        )
+
+    fun withSent(sent: OffsetDateTime?): MuutosilmoitusBuilder {
+        muutosilmoitusEntity.sent = sent
+        return this
+    }
+
+    fun withoutYhteystiedot(): MuutosilmoitusBuilder {
+        muutosilmoitusEntity.yhteystiedot = mutableMapOf()
+        return this
+    }
+
+    private fun updateApplicationData(
+        onCableReport: JohtoselvityshakemusEntityData.() -> JohtoselvityshakemusEntityData,
+        onExcavationNotification: KaivuilmoitusEntityData.() -> KaivuilmoitusEntityData,
+    ): MuutosilmoitusBuilder = apply {
+        muutosilmoitusEntity.hakemusData =
+            when (val data = muutosilmoitusEntity.hakemusData) {
+                is JohtoselvityshakemusEntityData -> {
+                    data.onCableReport()
+                }
+                is KaivuilmoitusEntityData -> {
+                    data.onExcavationNotification()
+                }
+            }
     }
 }

@@ -279,7 +279,7 @@ class TaydennysService(
 
         val originalContactUserIds = taydennysEntity.allContactUsers().map { it.id }.toSet()
         val updatedTaydennysEntity = saveWithUpdate(taydennysEntity, request, hanke.id)
-        sendHakemusNotifications(
+        hakemusService.sendHakemusNotifications(
             updatedTaydennysEntity,
             hakemusEntity,
             originalContactUserIds,
@@ -391,48 +391,6 @@ class TaydennysService(
             tilaaja = false,
         )
     }
-
-    private fun sendHakemusNotifications(
-        taydennysEntity: TaydennysEntity,
-        hakemusEntity: HakemusEntity,
-        excludedUserIds: Set<UUID>,
-        userId: String,
-    ) {
-        val newContacts =
-            taydennysEntity.allContactUsers().filterNot { excludedUserIds.contains(it.id) }
-        if (newContacts.isNotEmpty()) {
-            hakemusService.sendHakemusNotifications(newContacts, hakemusEntity, userId)
-        }
-    }
-
-    private fun createYhteystieto(
-        yhteystieto: HakemusyhteystietoEntity,
-        taydennys: TaydennysEntity,
-    ): TaydennysyhteystietoEntity =
-        TaydennysyhteystietoEntity(
-                tyyppi = yhteystieto.tyyppi,
-                rooli = yhteystieto.rooli,
-                nimi = yhteystieto.nimi,
-                sahkoposti = yhteystieto.sahkoposti,
-                puhelinnumero = yhteystieto.puhelinnumero,
-                registryKey = yhteystieto.registryKey,
-                taydennys = taydennys,
-            )
-            .apply {
-                yhteyshenkilot.addAll(
-                    yhteystieto.yhteyshenkilot.map { createYhteyshenkilo(it, this) }
-                )
-            }
-
-    private fun createYhteyshenkilo(
-        yhteyshenkilo: HakemusyhteyshenkiloEntity,
-        yhteystieto: TaydennysyhteystietoEntity,
-    ) =
-        TaydennysyhteyshenkiloEntity(
-            taydennysyhteystieto = yhteystieto,
-            hankekayttaja = yhteyshenkilo.hankekayttaja,
-            tilaaja = yhteyshenkilo.tilaaja,
-        )
 
     private fun sendTaydennysToAllu(
         taydennys: Taydennys,
@@ -572,6 +530,35 @@ class TaydennysService(
     }
 
     companion object {
+
+        private fun createYhteystieto(
+            yhteystieto: HakemusyhteystietoEntity,
+            taydennys: TaydennysEntity,
+        ): TaydennysyhteystietoEntity =
+            TaydennysyhteystietoEntity(
+                    tyyppi = yhteystieto.tyyppi,
+                    rooli = yhteystieto.rooli,
+                    nimi = yhteystieto.nimi,
+                    sahkoposti = yhteystieto.sahkoposti,
+                    puhelinnumero = yhteystieto.puhelinnumero,
+                    registryKey = yhteystieto.registryKey,
+                    taydennys = taydennys,
+                )
+                .apply {
+                    yhteyshenkilot.addAll(
+                        yhteystieto.yhteyshenkilot.map { createYhteyshenkilo(it, this) }
+                    )
+                }
+
+        private fun createYhteyshenkilo(
+            yhteyshenkilo: HakemusyhteyshenkiloEntity,
+            yhteystieto: TaydennysyhteystietoEntity,
+        ) =
+            TaydennysyhteyshenkiloEntity(
+                taydennysyhteystieto = yhteystieto,
+                hankekayttaja = yhteyshenkilo.hankekayttaja,
+                tilaaja = yhteyshenkilo.tilaaja,
+            )
 
         fun mergeTaydennysToHakemus(taydennys: TaydennysEntity, hakemus: HakemusEntity) {
             hakemus.hakemusEntityData = taydennys.hakemusData
