@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.attachment.common.FileClient
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
 import fi.hel.haitaton.hanke.hakemus.AlluUpdateService
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.paatos.PaatosEntity
 import fi.hel.haitaton.hanke.paatos.PaatosRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
@@ -23,6 +24,7 @@ class TestDataService(
     private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
     private val taydennysAttachmentRepository: TaydennysAttachmentRepository,
     private val paatosRepository: PaatosRepository,
+    private val muutosilmoitusRepository: MuutosilmoitusRepository,
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val fileClient: FileClient,
     private val alluUpdateService: AlluUpdateService,
@@ -45,6 +47,9 @@ class TestDataService(
 
         logger.warn { "Removing all päätökset and täydennykset." }
         paatosRepository.findAll().forEach { deletePaatosWithAttachments(it) }
+
+        logger.warn { "Removing all muutosilmoitukset." }
+        muutosilmoitusRepository.deleteAll()
     }
 
     fun triggerAlluUpdates() {
