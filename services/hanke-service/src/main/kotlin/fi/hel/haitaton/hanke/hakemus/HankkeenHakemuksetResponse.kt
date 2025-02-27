@@ -72,7 +72,7 @@ data class HankkeenHakemusDataResponse(
 data class HankkeenHakemusMuutosilmoitusResponse(
     val id: UUID,
     val sent: OffsetDateTime?,
-    val hakemusdata: HankkeenHakemusDataResponse,
+    val applicationData: HankkeenHakemusDataResponse,
 ) {
     constructor(
         muutosilmoitus: MuutosilmoitusEntity,
@@ -80,7 +80,7 @@ data class HankkeenHakemusMuutosilmoitusResponse(
     ) : this(
         id = muutosilmoitus.id,
         sent = muutosilmoitus.sent,
-        hakemusdata =
+        applicationData =
             when (val data = muutosilmoitus.hakemusData) {
                 is JohtoselvityshakemusEntityData -> HankkeenHakemusDataResponse(data, includeAreas)
                 is KaivuilmoitusEntityData -> HankkeenHakemusDataResponse(data, includeAreas)
