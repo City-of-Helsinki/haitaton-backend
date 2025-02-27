@@ -29,6 +29,10 @@ class PaatosService(
     fun findByHakemusId(hakemusId: Long): List<Paatos> =
         paatosRepository.findByHakemusId(hakemusId).map { it.toDomain() }
 
+    @Transactional(readOnly = true)
+    fun findByHakemusIds(hakemusIds: Collection<Long>): List<Paatos> =
+        paatosRepository.findByHakemusIdIn(hakemusIds).map { it.toDomain() }
+
     @Transactional
     fun markReplaced(hakemustunnus: String) {
         paatosRepository.markReplacedByHakemustunnus(hakemustunnus)
@@ -47,29 +51,19 @@ class PaatosService(
         val pdfData = alluClient.getDecisionPdf(alluId)
 
         val filename = "${event.applicationIdentifier}-paatos.pdf"
-        createPaatos(
-            pdfData,
-            filename,
-            hakemus,
-            PaatosTyyppi.PAATOS,
-        )
+        createPaatos(pdfData, filename, hakemus, PaatosTyyppi.PAATOS)
     }
 
     @Transactional
     fun saveKaivuilmoituksenToiminnallinenKunto(
         hakemus: HakemusIdentifier,
-        event: ApplicationStatusEvent
+        event: ApplicationStatusEvent,
     ) {
         val alluId = hakemus.alluid!!
         val pdfData = alluClient.getOperationalConditionPdf(alluId)
 
         val filename = "${event.applicationIdentifier}-toiminnallinen-kunto.pdf"
-        createPaatos(
-            pdfData,
-            filename,
-            hakemus,
-            PaatosTyyppi.TOIMINNALLINEN_KUNTO,
-        )
+        createPaatos(pdfData, filename, hakemus, PaatosTyyppi.TOIMINNALLINEN_KUNTO)
     }
 
     @Transactional
@@ -78,12 +72,7 @@ class PaatosService(
         val pdfData = alluClient.getWorkFinishedPdf(alluId)
 
         val filename = "${event.applicationIdentifier}-tyo-valmis.pdf"
-        createPaatos(
-            pdfData,
-            filename,
-            hakemus,
-            PaatosTyyppi.TYO_VALMIS,
-        )
+        createPaatos(pdfData, filename, hakemus, PaatosTyyppi.TYO_VALMIS)
     }
 
     private fun createPaatos(
@@ -115,7 +104,8 @@ class PaatosService(
                 loppupaiva = applicationResponse.endTime.toLocalDate(),
                 blobLocation = path,
                 size = pdfData.size,
-            ))
+            )
+        )
     }
 
     private fun uploadPaatos(pdfData: ByteArray, filename: String, hakemusId: Long): String {

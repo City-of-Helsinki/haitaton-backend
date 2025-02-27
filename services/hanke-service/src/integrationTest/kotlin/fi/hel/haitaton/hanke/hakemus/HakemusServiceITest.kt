@@ -81,6 +81,7 @@ import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
 import fi.hel.haitaton.hanke.paatos.PaatosTila
+import fi.hel.haitaton.hanke.paatos.PaatosTyyppi
 import fi.hel.haitaton.hanke.pdf.withName
 import fi.hel.haitaton.hanke.pdf.withNames
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
@@ -430,7 +431,7 @@ class HakemusServiceITest(
         fun `throws not found when hanke does not exist`() {
             val hankeTunnus = "HAI-1234"
 
-            assertFailure { hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hankeTunnus) }
+            assertFailure { hakemusService.hankkeenHakemuksetResponses(hankeTunnus, false) }
                 .all {
                     hasClass(HankeNotFoundException::class)
                     messageContains(hankeTunnus)
@@ -441,8 +442,7 @@ class HakemusServiceITest(
         fun `returns an empty result when there are no applications`() {
             val hankeInitial = hankeFactory.builder(USERNAME).save()
 
-            val result =
-                hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hankeInitial.hankeTunnus)
+            val result = hakemusService.hankkeenHakemuksetResponses(hankeInitial.hankeTunnus, false)
 
             assertThat(result).isEmpty()
         }
@@ -468,14 +468,13 @@ class HakemusServiceITest(
             muutosilmoitusFactory.builder(otherHakemus1).save()
             muutosilmoitusFactory.builder(otherHakemus2).save()
 
-            val result =
-                hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(targetHanke.hankeTunnus)
+            val result = hakemusService.hankkeenHakemuksetResponses(targetHanke.hankeTunnus, false)
 
             assertThat(result)
-                .extracting { it.first.id }
+                .extracting { it.id }
                 .containsExactlyInAnyOrder(targetHakemus1.id, targetHakemus2.id, targetHakemus3.id)
             assertThat(result)
-                .extracting { it.second?.id }
+                .extracting { it.muutosilmoitus?.id }
                 .containsExactlyInAnyOrder(muutosilmoitus1.id, muutosilmoitus2.id, null)
         }
 
@@ -485,24 +484,55 @@ class HakemusServiceITest(
             fun `returns applications`() {
                 val hakemus = hakemusFactory.builderWithGeneratedHanke().save()
 
-                val result =
-                    hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hakemus.hankeTunnus)
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
 
-                val expectedHakemus = hakemusService.getById(hakemus.id)
-                assertThat(result).containsExactly(Pair(expectedHakemus, null))
+                val expectedHakemus = hakemusRepository.getReferenceById(hakemus.id)
+                val expectedResponse =
+                    HankkeenHakemusResponse(expectedHakemus, null, listOf(), false)
+                assertThat(result).containsExactly(expectedResponse)
             }
 
             @Test
             fun `returns muutosilmoitus when hakemus has one`() {
                 val hakemusEntity = hakemusFactory.builderWithGeneratedHanke().saveEntity()
                 val hakemus = hakemusService.getById(hakemusEntity.id)
-                val muutosilmoitus = muutosilmoitusFactory.builder(hakemusEntity).save()
+                val muutosilmoitus = muutosilmoitusFactory.builder(hakemusEntity).saveEntity()
 
-                val result =
-                    hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hakemus.hankeTunnus)
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
 
-                val expectedHakemus = hakemusService.getById(hakemus.id)
-                assertThat(result).containsExactly(Pair(expectedHakemus, muutosilmoitus))
+                val expectedMuutosilmoitus =
+                    HankkeenHakemusMuutosilmoitusResponse(
+                        muutosilmoitus.id,
+                        muutosilmoitus.sent,
+                        HankkeenHakemusDataResponse(
+                            muutosilmoitus.hakemusData as JohtoselvityshakemusEntityData,
+                            false,
+                        ),
+                    )
+                assertThat(result)
+                    .single()
+                    .prop(HankkeenHakemusResponse::muutosilmoitus)
+                    .isEqualTo(expectedMuutosilmoitus)
+            }
+
+            @Test
+            fun `returns paatokset when hakemus has them`() {
+                val hakemustunnus = "JS2500014"
+                val hakemusEntity =
+                    hakemusFactory
+                        .builderWithGeneratedHanke()
+                        .withStatus(identifier = hakemustunnus)
+                        .withMandatoryFields()
+                        .saveEntity()
+                val hakemus = hakemusService.getById(hakemusEntity.id)
+                val paatos = paatosFactory.save(hakemus, tyyppi = PaatosTyyppi.PAATOS).toResponse()
+
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
+
+                assertThat(result)
+                    .single()
+                    .prop(HankkeenHakemusResponse::paatokset)
+                    .containsOnly(hakemustunnus to listOf(paatos))
             }
         }
 
@@ -512,24 +542,82 @@ class HakemusServiceITest(
             fun `returns applications`() {
                 val hakemus = hakemusFactory.builder(ApplicationType.EXCAVATION_NOTIFICATION).save()
 
-                val result =
-                    hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hakemus.hankeTunnus)
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
 
-                val expectedHakemus = hakemusService.getById(hakemus.id)
-                assertThat(result).containsExactly(Pair(expectedHakemus, null))
+                val expectedHakemus = hakemusRepository.getReferenceById(hakemus.id)
+                val expectedResponse =
+                    HankkeenHakemusResponse(expectedHakemus, null, listOf(), false)
+                assertThat(result).containsExactly(expectedResponse)
             }
 
             @Test
             fun `returns muutosilmoitus when hakemus has one`() {
-                val hakemusEntity = hakemusFactory.builderWithGeneratedHanke().saveEntity()
+                val hakemusEntity =
+                    hakemusFactory.builder(ApplicationType.EXCAVATION_NOTIFICATION).saveEntity()
                 val hakemus = hakemusService.getById(hakemusEntity.id)
-                val muutosilmoitus = muutosilmoitusFactory.builder(hakemusEntity).save()
+                val muutosilmoitus = muutosilmoitusFactory.builder(hakemusEntity).saveEntity()
 
-                val result =
-                    hakemusService.hankkeenHakemuksetWithMuutosilmoitukset(hakemus.hankeTunnus)
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
 
-                val expectedHakemus = hakemusService.getById(hakemus.id)
-                assertThat(result).containsExactly(Pair(expectedHakemus, muutosilmoitus))
+                val expectedMuutosilmoitus =
+                    HankkeenHakemusMuutosilmoitusResponse(
+                        muutosilmoitus.id,
+                        muutosilmoitus.sent,
+                        HankkeenHakemusDataResponse(
+                            muutosilmoitus.hakemusData as KaivuilmoitusEntityData,
+                            false,
+                        ),
+                    )
+                assertThat(result)
+                    .single()
+                    .prop(HankkeenHakemusResponse::muutosilmoitus)
+                    .isEqualTo(expectedMuutosilmoitus)
+            }
+
+            @Test
+            fun `returns paatokset when hakemus has them`() {
+                val hakemustunnus = "KP2500141-2"
+                val hakemusEntity =
+                    hakemusFactory
+                        .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                        .withStatus(identifier = hakemustunnus)
+                        .withMandatoryFields()
+                        .saveEntity()
+                val hakemus = hakemusService.getById(hakemusEntity.id)
+                val paatos = paatosFactory.save(hakemus, tyyppi = PaatosTyyppi.PAATOS).toResponse()
+                val toiminnallinenKunto =
+                    paatosFactory
+                        .save(hakemus, tyyppi = PaatosTyyppi.TOIMINNALLINEN_KUNTO)
+                        .toResponse()
+                val tyoValmis =
+                    paatosFactory.save(hakemus, tyyppi = PaatosTyyppi.TYO_VALMIS).toResponse()
+                val oldHakemustunnus = "KP2500141"
+                val oldPaatos =
+                    paatosFactory
+                        .save(
+                            hakemus,
+                            hakemustunnus = oldHakemustunnus,
+                            tyyppi = PaatosTyyppi.PAATOS,
+                        )
+                        .toResponse()
+                val oldToiminnallinenKunto =
+                    paatosFactory
+                        .save(
+                            hakemus,
+                            hakemustunnus = oldHakemustunnus,
+                            tyyppi = PaatosTyyppi.TOIMINNALLINEN_KUNTO,
+                        )
+                        .toResponse()
+
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
+
+                assertThat(result)
+                    .single()
+                    .prop(HankkeenHakemusResponse::paatokset)
+                    .containsOnly(
+                        hakemustunnus to listOf(paatos, toiminnallinenKunto, tyoValmis),
+                        oldHakemustunnus to listOf(oldPaatos, oldToiminnallinenKunto),
+                    )
             }
         }
     }
