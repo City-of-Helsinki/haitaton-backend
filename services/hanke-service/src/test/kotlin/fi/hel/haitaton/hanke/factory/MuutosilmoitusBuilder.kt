@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.Hakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
@@ -44,6 +45,15 @@ class MuutosilmoitusBuilder(
             },
         )
 
+    fun withWorkDescription(description: String) =
+        updateApplicationData(
+            { copy(workDescription = description) },
+            { copy(workDescription = description) },
+        )
+
+    fun withAdditionalInfo(info: String) =
+        updateApplicationData({ invalidHakemusType() }, { copy(additionalInfo = info) })
+
     fun withSent(sent: OffsetDateTime?): MuutosilmoitusBuilder {
         muutosilmoitusEntity.sent = sent
         return this
@@ -67,5 +77,9 @@ class MuutosilmoitusBuilder(
                     data.onExcavationNotification()
                 }
             }
+    }
+
+    private fun HakemusEntityData.invalidHakemusType(): Nothing {
+        throw InvalidParameterException("Not available for hakemus type $applicationType.")
     }
 }

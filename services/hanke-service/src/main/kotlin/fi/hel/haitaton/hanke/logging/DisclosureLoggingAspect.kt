@@ -53,7 +53,7 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
                     disclosureLogService.saveForTaydennys(it.taydennys, currentUserId())
                 }
                 result.muutosilmoitus?.let {
-                    disclosureLogService.saveForMuutosilmoitus(it, currentUserId())
+                    disclosureLogService.saveForMuutosilmoitus(it.muutosilmoitus, currentUserId())
                 }
             }
             is Hanke -> disclosureLogService.saveForHanke(result, currentUserId())

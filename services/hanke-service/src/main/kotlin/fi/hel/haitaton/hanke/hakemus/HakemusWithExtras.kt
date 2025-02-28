@@ -3,8 +3,8 @@ package fi.hel.haitaton.hanke.hakemus
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import com.fasterxml.jackson.annotation.JsonUnwrapped
-import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
-import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusResponse
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusWithExtras
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusWithExtrasResponse
 import fi.hel.haitaton.hanke.paatos.Paatos
 import fi.hel.haitaton.hanke.paatos.PaatosResponse
 import fi.hel.haitaton.hanke.taydennys.TaydennysWithExtras
@@ -17,7 +17,7 @@ data class HakemusWithExtras(
     val paatokset: List<Paatos>,
     val taydennyspyynto: Taydennyspyynto?,
     val taydennys: TaydennysWithExtras?,
-    val muutosilmoitus: Muutosilmoitus?,
+    val muutosilmoitus: MuutosilmoitusWithExtras?,
 ) {
     fun toResponse(): HakemusWithExtrasResponse =
         HakemusWithExtrasResponse(
@@ -35,5 +35,5 @@ data class HakemusWithExtrasResponse(
     val paatokset: Map<String, List<PaatosResponse>>,
     val taydennyspyynto: TaydennyspyyntoResponse?,
     val taydennys: TaydennysWithExtrasResponse?,
-    val muutosilmoitus: MuutosilmoitusResponse?,
+    val muutosilmoitus: MuutosilmoitusWithExtrasResponse?,
 )
