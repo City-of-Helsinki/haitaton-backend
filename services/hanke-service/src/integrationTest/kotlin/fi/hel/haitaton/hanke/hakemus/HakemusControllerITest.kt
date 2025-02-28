@@ -35,6 +35,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withTimes
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
+import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory.Companion.withExtras
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.factory.TaydennysAttachmentFactory
@@ -400,9 +401,10 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 )
             val muutosilmoitus =
                 MuutosilmoitusFactory.create(
-                    hakemusId = hakemus.id,
-                    hakemusData = hakemus.applicationData,
-                )
+                        hakemusId = hakemus.id,
+                        hakemusData = hakemus.applicationData,
+                    )
+                    .withExtras()
             every { hakemusService.getWithExtras(id) } returns
                 hakemus.withExtras(muutosilmoitus = muutosilmoitus)
             every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
@@ -423,7 +425,49 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
                 hakemusService.getWithExtras(id)
                 disclosureLogService.saveForHakemusResponse(any(), USERNAME)
-                disclosureLogService.saveForMuutosilmoitus(muutosilmoitus.toResponse(), USERNAME)
+                disclosureLogService.saveForMuutosilmoitus(
+                    muutosilmoitus.toResponse().muutosilmoitus,
+                    USERNAME,
+                )
+            }
+        }
+
+        @ParameterizedTest
+        @EnumSource(ApplicationType::class)
+        fun `returns muutokset when muutosilmoitus is different from the hakemus`(
+            applicationType: ApplicationType
+        ) {
+            val hakemus =
+                HakemusFactory.create(
+                    id = id,
+                    applicationType = applicationType,
+                    hankeTunnus = HANKE_TUNNUS,
+                )
+            val muutokset = listOf("startTime", "customerWithContacts.puhelinnumero")
+            val muutosilmoitus =
+                MuutosilmoitusFactory.create(
+                        hakemusId = hakemus.id,
+                        hakemusData = hakemus.applicationData,
+                    )
+                    .withExtras(muutokset)
+            every { hakemusService.getWithExtras(id) } returns
+                hakemus.withExtras(muutosilmoitus = muutosilmoitus)
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("muutosilmoitus").exists())
+                .andExpect(jsonPath("muutosilmoitus.muutokset[0]").value(muutokset[0]))
+                .andExpect(jsonPath("muutosilmoitus.muutokset[1]").value(muutokset[1]))
+
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
+                hakemusService.getWithExtras(id)
+                disclosureLogService.saveForHakemusResponse(any(), USERNAME)
+                disclosureLogService.saveForMuutosilmoitus(
+                    muutosilmoitus.toResponse().muutosilmoitus,
+                    USERNAME,
+                )
             }
         }
 

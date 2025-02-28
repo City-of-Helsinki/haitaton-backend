@@ -79,7 +79,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
-import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusWithExtras
 import fi.hel.haitaton.hanke.paatos.PaatosTila
 import fi.hel.haitaton.hanke.paatos.PaatosTyyppi
 import fi.hel.haitaton.hanke.pdf.withName
@@ -364,12 +364,45 @@ class HakemusServiceITest(
             val response = hakemusService.getWithExtras(hakemus.id)
 
             assertThat(response.muutosilmoitus).isNotNull().all {
-                prop(Muutosilmoitus::id).isEqualTo(muutosilmoitus.id)
-                prop(Muutosilmoitus::hakemusData).isInstanceOf(KaivuilmoitusData::class).all {
-                    prop(HakemusData::name).isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_NAME)
-                    prop(HakemusData::startTime).isEqualTo(DateFactory.getStartDatetime())
-                    prop(HakemusData::yhteystiedot).hasSize(2)
-                }
+                prop(MuutosilmoitusWithExtras::id).isEqualTo(muutosilmoitus.id)
+                prop(MuutosilmoitusWithExtras::hakemusData)
+                    .isInstanceOf(KaivuilmoitusData::class)
+                    .all {
+                        prop(HakemusData::name)
+                            .isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_NAME)
+                        prop(HakemusData::startTime).isEqualTo(DateFactory.getStartDatetime())
+                        prop(HakemusData::yhteystiedot).hasSize(2)
+                    }
+            }
+        }
+
+        @Test
+        fun `returns muutokset with muutosilmoitus when it differs from the hakemus`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withWorkDescription("New Description")
+                    .withAdditionalInfo("New additional info.")
+                    .save()
+
+            val response = hakemusService.getWithExtras(hakemus.id)
+
+            assertThat(response.muutosilmoitus).isNotNull().all {
+                prop(MuutosilmoitusWithExtras::id).isEqualTo(muutosilmoitus.id)
+                prop(MuutosilmoitusWithExtras::hakemusData)
+                    .isInstanceOf(KaivuilmoitusData::class)
+                    .all {
+                        prop(KaivuilmoitusData::workDescription).isEqualTo("New Description")
+                        prop(KaivuilmoitusData::additionalInfo).isEqualTo("New additional info.")
+                    }
+                prop(MuutosilmoitusWithExtras::muutokset)
+                    .containsExactlyInAnyOrder("workDescription", "additionalInfo")
             }
         }
     }
