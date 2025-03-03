@@ -610,13 +610,13 @@ class TaydennysControllerITest(@Autowired override val mockMvc: MockMvc) : Contr
         }
 
         @Test
-        fun `deletes taydennys`() {
+        fun `returns 204 when taydennys is deleted`() {
             every {
                 taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             justRun { taydennysService.delete(id, USERNAME) }
 
-            delete(url).andExpect(status().isOk).andExpect(content().string(""))
+            delete(url).andExpect(status().isNoContent).andExpect(content().string(""))
 
             verifySequence {
                 taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)

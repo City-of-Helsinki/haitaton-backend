@@ -146,7 +146,7 @@ class TaydennysService(
         }
 
         taydennysRepository.findByApplicationId(application.id)?.also {
-            resetAreasIfHankeGenerated(it)
+            hakemusService.resetAreasIfHankeGenerated(it.hakemusId(), it)
 
             logger.info { "A täydennys was found. Removing it." }
             attachmentService.deleteAllAttachments(it)
@@ -505,7 +505,7 @@ class TaydennysService(
         val taydennysEntity =
             taydennysRepository.findByIdOrNull(id) ?: throw TaydennysNotFoundException(id)
 
-        resetAreasIfHankeGenerated(taydennysEntity)
+        hakemusService.resetAreasIfHankeGenerated(taydennysEntity.hakemusId(), taydennysEntity)
 
         attachmentService.deleteAllAttachments(taydennysEntity)
         val taydennys = taydennysEntity.toDomain()

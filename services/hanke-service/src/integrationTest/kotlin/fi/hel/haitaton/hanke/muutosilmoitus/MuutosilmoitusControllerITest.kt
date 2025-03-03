@@ -43,6 +43,7 @@ import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.verifySequence
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -61,6 +62,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @WebMvcTest(controllers = [MuutosilmoitusController::class])
@@ -454,6 +456,76 @@ class MuutosilmoitusControllerITest(
                 muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
                 muutosilmoitusService.update(id, request, USERNAME)
                 disclosureLogService.saveForMuutosilmoitus(muutosilmoitus.toResponse(), USERNAME)
+            }
+        }
+    }
+
+    @Nested
+    inner class Delete {
+        private val url = "/muutosilmoitukset/$id"
+
+        @Test
+        @WithAnonymousUser
+        fun `returns 401 when user is unknown`() {
+            delete(url).andExpect(status().isUnauthorized).andExpect(hankeError(HankeError.HAI0001))
+
+            verifySequence { muutosilmoitusService wasNot Called }
+        }
+
+        @Test
+        fun `returns 404 when no muutosilmoitus`() {
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } throws MuutosilmoitusNotFoundException(id)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI7001))
+
+            verifySequence {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            }
+        }
+
+        @Test
+        fun `returns 404 when no application`() {
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } throws HakemusNotFoundException(1L)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2001))
+
+            verifySequence {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            }
+        }
+
+        @Test
+        fun `returns 409 when muutosilmoitus has been sent already`() {
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { muutosilmoitusService.delete(id, USERNAME) } throws
+                MuutosilmoitusAlreadySentException(MuutosilmoitusFactory.create(id = id))
+
+            delete(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI7002))
+
+            verifySequence {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                muutosilmoitusService.delete(id, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 204 when muutosilmoitus is deleted`() {
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            justRun { muutosilmoitusService.delete(id, USERNAME) }
+
+            delete(url).andExpect(status().isNoContent).andExpect(content().string(""))
+
+            verifySequence {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                muutosilmoitusService.delete(id, USERNAME)
             }
         }
     }
