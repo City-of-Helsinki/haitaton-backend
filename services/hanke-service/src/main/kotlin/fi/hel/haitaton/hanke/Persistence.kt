@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.domain.Loggable
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import jakarta.persistence.CascadeType
@@ -55,21 +56,21 @@ class HankeEntity(
         fetch = FetchType.LAZY,
         mappedBy = "hanke",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     var yhteystiedot: MutableList<HankeYhteystietoEntity> = mutableListOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hanke",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     var alueet: MutableList<HankealueEntity> = mutableListOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hanke",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     var liitteet: MutableList<HankeAttachmentEntity> = mutableListOf(),
 ) : HankeIdentifier {
@@ -124,11 +125,11 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
 }
 
-interface HankeIdentifier : HasId<Int> {
+interface HankeIdentifier : HasId<Int>, Loggable {
     override val id: Int
     val hankeTunnus: String
 
-    fun logString() = "Hanke: (id=${id}, tunnus=${hankeTunnus})"
+    override fun logString() = "Hanke: (id=${id}, tunnus=${hankeTunnus})"
 }
 
 enum class CounterType {
@@ -179,7 +180,7 @@ interface IdCounterRepository : JpaRepository<IdCounter, CounterType> {
             WHERE counterType = :counterType
             RETURNING counterType, value
             """,
-        nativeQuery = true
+        nativeQuery = true,
     )
     fun incrementAndGet(counterType: String): List<IdCounter>
 }

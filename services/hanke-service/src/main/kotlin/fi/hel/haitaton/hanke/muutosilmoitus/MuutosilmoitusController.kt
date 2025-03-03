@@ -19,6 +19,7 @@ import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -128,6 +129,41 @@ class MuutosilmoitusController(private val muutosilmoitusService: Muutosilmoitus
         @ValidHakemusUpdateRequest @RequestBody request: HakemusUpdateRequest,
     ): MuutosilmoitusResponse =
         muutosilmoitusService.update(id, request, currentUserId()).toResponse()
+
+    @DeleteMapping("/muutosilmoitukset/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+        summary = "Delete a muutosilmoitus",
+        description =
+            "Cancels a muutosilmoitus and deletes all related data. " +
+                "A muutosilmoitus can not be canceled after it has been sent to Allu.",
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Muutosilmoitus was deleted. No body.",
+                    responseCode = "204",
+                ),
+                ApiResponse(
+                    description = "A muutosilmoitus was not found with the given id",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+                ApiResponse(
+                    description =
+                        "The muutosilmoitus has already been sent to Allu and can not be updated",
+                    responseCode = "409",
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
+    @PreAuthorize("@muutosilmoitusAuthorizer.authorize(#id, 'EDIT_APPLICATIONS')")
+    fun delete(@PathVariable id: UUID) {
+        logger.info { "Deleting muutosilmoitus with id $id..." }
+        muutosilmoitusService.delete(id, currentUserId())
+        logger.info { "Deleted muutosilmoitus with id $id." }
+    }
 
     @ExceptionHandler(InvalidHakemusDataException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
