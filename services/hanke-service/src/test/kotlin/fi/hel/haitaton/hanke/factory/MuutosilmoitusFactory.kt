@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
@@ -27,6 +28,7 @@ class MuutosilmoitusFactory(
     private val muutosilmoitusRepository: MuutosilmoitusRepository,
     private val yhteyshenkiloRepository: MuutosilmoituksenYhteyshenkiloRepository,
     private val hakemusFactory: HakemusFactory,
+    private val hankeKayttajaFactory: HankeKayttajaFactory,
 ) {
 
     fun builder(
@@ -76,15 +78,20 @@ class MuutosilmoitusFactory(
                     muutosilmoituksenYhteystieto
                 }
                 .toMutableMap()
-        return builder(entity)
+        return builder(entity, hakemus.hanke.id)
     }
 
-    private fun builder(muutosilmoitusEntity: MuutosilmoitusEntity): MuutosilmoitusBuilder =
+    private fun builder(
+        muutosilmoitusEntity: MuutosilmoitusEntity,
+        hankeId: Int,
+    ): MuutosilmoitusBuilder =
         MuutosilmoitusBuilder(
             muutosilmoitusEntity,
+            hankeId,
             muutosilmoitusService,
             muutosilmoitusRepository,
             yhteyshenkiloRepository,
+            hankeKayttajaFactory,
         )
 
     companion object {
@@ -106,6 +113,25 @@ class MuutosilmoitusFactory(
                 ApplicationFactory.createBlankExcavationNotificationData(),
             yhteystiedot: Map<ApplicationContactType, MuutosilmoituksenYhteystietoEntity> = mapOf(),
         ) = MuutosilmoitusEntity(id, hakemusId, sent, hakemusData, yhteystiedot.toMutableMap())
+
+        fun createYhteystietoEntity(
+            muutosilmoitus: MuutosilmoitusEntity,
+            tyyppi: CustomerType = CustomerType.COMPANY,
+            rooli: ApplicationContactType = ApplicationContactType.HAKIJA,
+            nimi: String = HakemusyhteystietoFactory.DEFAULT_NIMI,
+            sahkoposti: String = HakemusyhteystietoFactory.DEFAULT_SAHKOPOSTI,
+            puhelinnumero: String = HakemusyhteystietoFactory.DEFAULT_PUHELINNUMERO,
+            ytunnus: String? = HakemusyhteystietoFactory.DEFAULT_YTUNNUS,
+        ): MuutosilmoituksenYhteystietoEntity =
+            MuutosilmoituksenYhteystietoEntity(
+                tyyppi = tyyppi,
+                rooli = rooli,
+                nimi = nimi,
+                sahkoposti = sahkoposti,
+                puhelinnumero = puhelinnumero,
+                registryKey = ytunnus,
+                muutosilmoitus = muutosilmoitus,
+            )
 
         fun Muutosilmoitus.toUpdateRequest(): HakemusUpdateRequest =
             this.toResponse().applicationData.toJsonString().parseJson()

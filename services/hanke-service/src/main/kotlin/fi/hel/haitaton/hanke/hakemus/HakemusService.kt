@@ -18,6 +18,7 @@ import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentMetadataSer
 import fi.hel.haitaton.hanke.daysBetween
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.HasYhteystietoEntities
+import fi.hel.haitaton.hanke.domain.Loggable
 import fi.hel.haitaton.hanke.email.ApplicationNotificationEmail
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.getCurrentTimeUTCAsLocalTime
@@ -877,6 +878,19 @@ class HakemusService(
         area.tyoalueet.forEach { tyoalue ->
             if (!geometriatDao.isInsideHankeAlue(area.hankealueId, tyoalue.geometry))
                 throw HakemusGeometryNotInsideHankeException(area.hankealueId, tyoalue.geometry)
+        }
+    }
+
+    fun resetAreasIfHankeGenerated(hakemusId: Long, loggable: Loggable) {
+        val hakemus = hakemusRepository.getReferenceById(hakemusId)
+        val hanke = hakemus.hanke
+        val data = hakemus.hakemusEntityData
+        if (hanke.generated && data is JohtoselvityshakemusEntityData) {
+            logger.info {
+                "Entity was attached to a generated hanke. Resetting the hanke areas to match the original hakemus. " +
+                    "${hanke.logString()} ${hakemus.logString()} ${loggable.logString()}"
+            }
+            updateHankealueet(hanke, data.areas, data.startTime, data.endTime)
         }
     }
 
