@@ -101,6 +101,25 @@ class MuutosilmoitusService(
         return updatedMuutosilmoitus
     }
 
+    @Transactional
+    fun delete(id: UUID, currentUserId: String) {
+        val muutosilmoitusEntity =
+            muutosilmoitusRepository.findByIdOrNull(id) ?: throw MuutosilmoitusNotFoundException(id)
+
+        if (muutosilmoitusEntity.sent != null) {
+            throw MuutosilmoitusAlreadySentException(muutosilmoitusEntity)
+        }
+
+        hakemusService.resetAreasIfHankeGenerated(
+            muutosilmoitusEntity.hakemusId,
+            muutosilmoitusEntity,
+        )
+
+        val muutosilmoitus = muutosilmoitusEntity.toDomain()
+        muutosilmoitusRepository.delete(muutosilmoitusEntity)
+        loggingService.logDelete(muutosilmoitus, currentUserId)
+    }
+
     private fun assertUpdateCompatible(
         entity: MuutosilmoitusEntity,
         request: HakemusUpdateRequest,

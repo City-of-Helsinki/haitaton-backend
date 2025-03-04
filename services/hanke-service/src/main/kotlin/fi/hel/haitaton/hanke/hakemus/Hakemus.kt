@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.hakemus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.checkChange
 import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.domain.Loggable
 import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.ZonedDateTime
@@ -277,13 +278,13 @@ data class KaivuilmoitusData(
     }
 }
 
-interface HakemusIdentifier : HasId<Long> {
+interface HakemusIdentifier : HasId<Long>, Loggable {
     override val id: Long
     val alluid: Int?
     val applicationIdentifier: String?
     val applicationType: ApplicationType
 
-    fun logString() =
+    override fun logString() =
         "Hakemus: (id=$id, alluId=$alluid, identifier=$applicationIdentifier, type=$applicationType)"
 }
 

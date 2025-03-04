@@ -51,8 +51,8 @@ import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusService
+import fi.hel.haitaton.hanke.hakemus.Hakemusalue
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
-import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
 import fi.hel.haitaton.hanke.hasSameElementsAs
@@ -1176,7 +1176,7 @@ class TaydennysServiceITest(
 
     private fun assertHankeHasSameGeometryAsHakemus(
         hanketunnus: String,
-        hakemusalueet: List<JohtoselvitysHakemusalue>,
+        hakemusalueet: List<Hakemusalue>,
     ) {
         val hanke = hankeService.loadHanke(hanketunnus)!!
         val hankeCoordinates =
@@ -1185,6 +1185,6 @@ class TaydennysServiceITest(
                 .map { it.geometry as Polygon }
                 .map { it.coordinates }
         assertThat(hankeCoordinates)
-            .hasSameElementsAs(hakemusalueet.map { it.geometry.coordinates })
+            .hasSameElementsAs(hakemusalueet.map { it.geometries().flatMap { g -> g.coordinates } })
     }
 }
