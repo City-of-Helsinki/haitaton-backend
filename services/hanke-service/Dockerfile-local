@@ -1,7 +1,5 @@
-FROM registry.access.redhat.com/ubi9/openjdk-17 AS build
+FROM public.ecr.aws/docker/library/eclipse-temurin:17 AS build
 WORKDIR /workspace/app
-
-USER root
 
 COPY gradlew settings.gradle.kts ./
 COPY gradle/ ./gradle/
@@ -12,15 +10,14 @@ RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon :services:hank
 RUN mkdir -p services/hanke-service/build/dependency && \
     (cd services/hanke-service/build/dependency; jar -xf ../libs/*SNAPSHOT.jar)
 
-FROM registry.access.redhat.com/ubi9/openjdk-17-runtime
+FROM public.ecr.aws/docker/library/eclipse-temurin:17
 VOLUME /tmp
-
-WORKDIR /
 
 ARG DEPENDENCY=/workspace/app/services/hanke-service/build/dependency
 COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
 COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
 COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
 COPY scripts/wait-for-it.sh ./
+
 
 ENTRYPOINT ["./wait-for-it.sh", "db:5432", "--timeout=50", "--strict", "--", "java", "-cp", "app:app/lib/*", "fi.hel.haitaton.hanke.ApplicationKt"]
