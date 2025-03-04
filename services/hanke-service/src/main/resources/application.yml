@@ -100,7 +100,7 @@ server:
 spring:
   datasource:
     password: ${HAITATON_PASSWORD:haitaton}
-    url: jdbc:postgresql://${HAITATON_HOST:localhost}:${HAITATON_PORT:5432}/${HAITATON_DATABASE:haitaton}${HAITATON_DATABASE_PARAMS:}
+    url: jdbc:postgresql://${HAITATON_HOST:localhost}:${HAITATON_PORT:5432}/${HAITATON_DATABASE:haitaton}
     username: ${HAITATON_USER:haitaton_user}
   jpa:
     hibernate:
@@ -112,7 +112,7 @@ spring:
     show-sql: false
   liquibase:
     password: ${HAITATON_PASSWORD:haitaton}
-    url: jdbc:postgresql://${HAITATON_HOST:localhost}:${HAITATON_PORT:5432}/${HAITATON_DATABASE:haitaton}${HAITATON_DATABASE_PARAMS:}
+    url: jdbc:postgresql://${HAITATON_HOST:localhost}:${HAITATON_PORT:5432}/${HAITATON_DATABASE:haitaton}
     user: ${HAITATON_USER:haitaton_user}
   mail:
     host: ${MAIL_SENDER_HOST:localhost}
