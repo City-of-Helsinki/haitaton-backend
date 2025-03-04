@@ -14,6 +14,7 @@ import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusEntity
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusService
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusWithExtras
 import fi.hel.haitaton.hanke.parseJson
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.OffsetDateTime
@@ -108,5 +109,8 @@ class MuutosilmoitusFactory(
 
         fun Muutosilmoitus.toUpdateRequest(): HakemusUpdateRequest =
             this.toResponse().applicationData.toJsonString().parseJson()
+
+        fun Muutosilmoitus.withExtras(muutokset: List<String> = listOf()) =
+            MuutosilmoitusWithExtras(id, hakemusId, sent, hakemusData, muutokset)
     }
 }

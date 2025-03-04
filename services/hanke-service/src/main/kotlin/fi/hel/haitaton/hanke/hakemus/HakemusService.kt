@@ -99,7 +99,11 @@ class HakemusService(
                 val liitteet = taydennysAttachmentService.getMetadataList(it.id)
                 it.toDomain().withExtras(hakemus.applicationData, liitteet)
             }
-        val muutosilmoitus = muutosilmoitusRepository.findByHakemusId(hakemusId)?.toDomain()
+        val muutosilmoitus =
+            muutosilmoitusRepository
+                .findByHakemusId(hakemusId)
+                ?.toDomain()
+                ?.withExtras(hakemus.applicationData)
 
         return HakemusWithExtras(hakemus, paatokset, taydennyspyynto, taydennys, muutosilmoitus)
     }
