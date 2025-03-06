@@ -191,10 +191,10 @@ class TaydennysService(
         val attachments = attachmentService.getMetadataList(taydennysEntity.id)
 
         val changes =
-            taydennys.hakemusData.listChanges(hakemus.toHakemus().applicationData).ifEmpty {
-                if (attachments.isEmpty()) throw NoChangesException(taydennysEntity, hakemus)
-                else listOf("attachment")
-            }
+            taydennys.hakemusData
+                .listChanges(hakemus.toHakemus().applicationData)
+                .let { if (attachments.isEmpty()) it else it + "attachment" }
+                .ifEmpty { throw NoChangesException(taydennysEntity, hakemus) }
 
         if (hakemus.alluStatus != ApplicationStatus.WAITING_INFORMATION) {
             throw HakemusInWrongStatusException(
