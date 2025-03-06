@@ -743,7 +743,6 @@ class TaydennysServiceITest(
                 attachmentFactory.save(taydennys = taydennys).withContent().value.toDomain()
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
             val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
-            val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
             justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
             justRun { alluClient.addAttachment(any(), any()) }
             every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
@@ -756,7 +755,7 @@ class TaydennysServiceITest(
                 alluClient.respondToInformationRequest(
                     hakemus.alluid!!,
                     taydennyspyynto.alluId,
-                    updatedTaydennysData.toAlluData(hakemus.hankeTunnus),
+                    taydennys.hakemusData.toAlluData(hakemus.hankeTunnus),
                     setOf(InformationRequestFieldKey.OTHER, InformationRequestFieldKey.ATTACHMENT),
                 )
                 alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
