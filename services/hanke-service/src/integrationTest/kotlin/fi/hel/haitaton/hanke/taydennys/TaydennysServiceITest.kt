@@ -737,6 +737,34 @@ class TaydennysServiceITest(
         }
 
         @Test
+        fun `adds attachment to changed fields when taydennys has attachments`() {
+            val taydennys = taydennysFactory.builder().withWorkDescription("New description").save()
+            val attachment =
+                attachmentFactory.save(taydennys = taydennys).withContent().value.toDomain()
+            val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
+            val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
+            val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+            every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            verifySequence {
+                alluClient.addAttachment(any(), eq(attachment.toAlluAttachment(PDF_BYTES)))
+                alluClient.respondToInformationRequest(
+                    hakemus.alluid!!,
+                    taydennyspyynto.alluId,
+                    updatedTaydennysData.toAlluData(hakemus.hankeTunnus),
+                    setOf(InformationRequestFieldKey.OTHER, InformationRequestFieldKey.ATTACHMENT),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
         fun `transfers attachments from taydennys to hakemus`() {
             val taydennys = taydennysFactory.builder().save()
             val attachment =
