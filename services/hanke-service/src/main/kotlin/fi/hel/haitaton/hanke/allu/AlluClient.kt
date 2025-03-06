@@ -246,7 +246,8 @@ class AlluClient(
         updatedFields: Set<InformationRequestFieldKey>,
     ) {
         logger.info {
-            "Responding to information request. Application: $alluApplicationId, request: $requestId. Updated field keys are: ${updatedFields.joinToString()}"
+            "Responding to information request. Application: $alluApplicationId, " +
+                "request: $requestId. Updated field keys are: ${updatedFields.joinToString()}"
         }
 
         val path =
