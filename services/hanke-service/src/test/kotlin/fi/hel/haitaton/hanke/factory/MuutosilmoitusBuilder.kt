@@ -19,6 +19,7 @@ import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import java.security.InvalidParameterException
 import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 
 class MuutosilmoitusBuilder(
     private var muutosilmoitusEntity: MuutosilmoitusEntity,
@@ -51,6 +52,30 @@ class MuutosilmoitusBuilder(
                 if (areas.any { it !is KaivuilmoitusAlue }) throw InvalidParameterException()
                 copy(areas = areas.filterIsInstance<KaivuilmoitusAlue>())
             },
+        )
+
+    fun withStartTime(startTime: ZonedDateTime?) =
+        updateApplicationData({ copy(startTime = startTime) }, { copy(startTime = startTime) })
+
+    fun withEndTime(endTime: ZonedDateTime?) =
+        updateApplicationData({ copy(endTime = endTime) }, { copy(endTime = endTime) })
+
+    fun withConstructionWork(constructionWork: Boolean) =
+        updateApplicationData(
+            { copy(constructionWork = constructionWork) },
+            { copy(constructionWork = constructionWork) },
+        )
+
+    fun withMaintenanceWork(maintenanceWork: Boolean) =
+        updateApplicationData(
+            { copy(maintenanceWork = maintenanceWork) },
+            { copy(maintenanceWork = maintenanceWork) },
+        )
+
+    fun withCustomerReference(customerReference: String) =
+        updateApplicationData(
+            { invalidHakemusType() },
+            { copy(customerReference = customerReference) },
         )
 
     fun withWorkDescription(description: String) =

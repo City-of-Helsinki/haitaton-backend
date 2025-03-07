@@ -60,7 +60,8 @@ enum class HankeError(val errorMessage: String) {
     HAI6001("Taydennys not found"),
     HAI6002("Taydennys has no changes"),
     HAI7001("Muutosilmoitus not found"),
-    HAI7002("Muutosilmoitus is already sent to Allu, operation prohibited.");
+    HAI7002("Muutosilmoitus is already sent to Allu, operation prohibited."),
+    HAI7003("Muutosilmoitus has no changes");
 
     val errorCode: String
         get() = name

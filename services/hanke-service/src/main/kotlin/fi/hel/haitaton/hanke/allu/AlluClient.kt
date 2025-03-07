@@ -263,6 +263,28 @@ class AlluClient(
         post(path, request).toBodilessEntity().timeout(defaultTimeout).block()
     }
 
+    fun reportChange(
+        alluApplicationId: Int,
+        applicationData: AlluApplicationData,
+        updatedFields: Set<InformationRequestFieldKey>,
+    ) {
+        logger.info {
+            "Sending a change report. Application: $alluApplicationId. " +
+                "Updated field keys are: ${updatedFields.joinToString()}"
+        }
+
+        val path =
+            when (applicationData) {
+                is AlluCableReportApplicationData -> "cablereports/$alluApplicationId/reportchange"
+                is AlluExcavationNotificationData ->
+                    "excavationannouncements/$alluApplicationId/reportchange"
+            }
+
+        // Allu uses the same data model for reporting changes and information request responses.
+        val request = InformationRequestResponse(applicationData, updatedFields)
+        post(path, request).toBodilessEntity().timeout(defaultTimeout).block()
+    }
+
     fun getDecisionPdf(alluApplicationId: Int): ByteArray {
         logger.info { "Fetching decision pdf for application $alluApplicationId." }
         val requestPath = "cablereports/$alluApplicationId/decision"
