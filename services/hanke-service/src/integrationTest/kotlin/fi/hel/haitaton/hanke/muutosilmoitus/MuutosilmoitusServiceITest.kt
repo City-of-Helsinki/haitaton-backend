@@ -517,6 +517,40 @@ class MuutosilmoitusServiceITest(
         }
 
         @Test
+        fun `returns the associated hakemus`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(),
+                )
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withWorkDescription("New description")
+                    .withAreas(listOf(area))
+                    .save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            val response = muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            assertThat(response).isEqualTo(hakemus.toHakemus())
+            verifySequence {
+                alluClient.reportChange(any(), any(), setOf(InformationRequestFieldKey.OTHER))
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
         fun `sends geometry as changed field if there is a change to kaivuilmoitus work area`() {
             val hakemus =
                 hakemusFactory

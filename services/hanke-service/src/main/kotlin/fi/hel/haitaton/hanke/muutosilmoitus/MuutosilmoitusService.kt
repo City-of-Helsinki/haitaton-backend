@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
+import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.hakemus.HakemusDataValidator
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
@@ -151,7 +152,11 @@ class MuutosilmoitusService(
     }
 
     @Transactional
-    fun send(id: UUID, paperDecisionReceiver: PaperDecisionReceiver?, currentUserId: String) {
+    fun send(
+        id: UUID,
+        paperDecisionReceiver: PaperDecisionReceiver?,
+        currentUserId: String,
+    ): Hakemus {
         val entity =
             muutosilmoitusRepository.findByIdOrNull(id) ?: throw MuutosilmoitusNotFoundException(id)
 
@@ -189,6 +194,7 @@ class MuutosilmoitusService(
         entity.sent = OffsetDateTime.now()
 
         logger.info("Muutosilmoitus sent. ${entity.logString()} ${hakemus.logString()}")
+        return hakemus.toHakemus()
     }
 
     private fun assertUpdateCompatible(

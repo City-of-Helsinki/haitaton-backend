@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.muutosilmoitus
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusSendRequest
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
@@ -168,7 +169,6 @@ class MuutosilmoitusController(private val muutosilmoitusService: Muutosilmoitus
     }
 
     @PostMapping("/muutosilmoitukset/{id}/laheta")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(
         summary = "Send the muutosilmoitus to Allu for processing",
         description =
@@ -182,11 +182,17 @@ class MuutosilmoitusController(private val muutosilmoitusService: Muutosilmoitus
                the decision replacement to be sent to the address provided.
                Null body will remove paper decision information even if it was set
                on the original hakemus.
+
+               Returns the hakemus for compatibility with sending täydennys and
+               hakemus APIs. Sending the muutosilmoitus does not change the hakemus.
             """,
     )
     @PreAuthorize("@muutosilmoitusAuthorizer.authorize(#id, 'EDIT_APPLICATIONS')")
-    fun send(@PathVariable id: UUID, @RequestBody(required = false) request: HakemusSendRequest?) =
-        muutosilmoitusService.send(id, request?.paperDecisionReceiver, currentUserId())
+    fun send(
+        @PathVariable id: UUID,
+        @RequestBody(required = false) request: HakemusSendRequest?,
+    ): HakemusResponse =
+        muutosilmoitusService.send(id, request?.paperDecisionReceiver, currentUserId()).toResponse()
 
     @ExceptionHandler(InvalidHakemusDataException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

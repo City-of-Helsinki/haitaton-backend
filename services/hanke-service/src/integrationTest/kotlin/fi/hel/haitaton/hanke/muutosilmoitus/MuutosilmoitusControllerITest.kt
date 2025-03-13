@@ -28,6 +28,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusGeometryException
 import fi.hel.haitaton.hanke.hakemus.HakemusGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
+import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteyshenkiloException
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteystietoException
@@ -649,17 +650,21 @@ class MuutosilmoitusControllerITest(
         }
 
         @Test
-        fun `returns 204 with no content`() {
+        fun `returns the associated hakemus and logs outgoing personal information`() {
+            val hakemus = HakemusFactory.create()
             every {
                 muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
-            justRun { muutosilmoitusService.send(id, null, USERNAME) }
+            every { muutosilmoitusService.send(id, null, USERNAME) } returns hakemus
 
-            post(url).andExpect(status().isNoContent).andExpect(content().string(""))
+            val response: HakemusResponse = post(url).andExpect(status().isOk).andReturnBody()
 
+            val expectedResponse = hakemus.toResponse()
+            assertThat(response).isEqualTo(expectedResponse)
             verifySequence {
                 muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
                 muutosilmoitusService.send(id, null, USERNAME)
+                disclosureLogService.saveForHakemusResponse(expectedResponse, USERNAME)
             }
         }
     }
