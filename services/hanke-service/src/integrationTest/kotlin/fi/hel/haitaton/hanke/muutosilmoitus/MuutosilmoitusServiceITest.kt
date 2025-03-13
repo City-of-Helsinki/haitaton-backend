@@ -16,17 +16,25 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
+import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory
+import fi.hel.haitaton.hanke.factory.HaittaFactory.DEFAULT_HHS_PYORALIIKENNE
 import fi.hel.haitaton.hanke.factory.HakemusFactory
+import fi.hel.haitaton.hanke.factory.HakemusFactory.Companion.withPaperDecisionReceiver
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory.Companion.toUpdateRequest
+import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
+import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
-import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusService
+import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.WrongHakemusTypeException
@@ -34,8 +42,11 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
+import fi.hel.haitaton.hanke.pdf.withName
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
+import fi.hel.haitaton.hanke.taydennys.NoChangesException
 import fi.hel.haitaton.hanke.test.Asserts.hasSameGeometryAs
+import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectBefore
@@ -51,6 +62,10 @@ import fi.hel.haitaton.hanke.test.resetCustomerIds
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
+import io.mockk.every
+import io.mockk.justRun
+import io.mockk.verifySequence
+import java.time.OffsetDateTime
 import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -59,7 +74,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.jpa.domain.AbstractPersistable_.id
 
 class MuutosilmoitusServiceITest(
     @Autowired private val muutosilmoitusService: MuutosilmoitusService,
@@ -68,7 +82,6 @@ class MuutosilmoitusServiceITest(
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
     @Autowired private val auditLogRepository: AuditLogRepository,
-    @Autowired private val hakemusRepository: HakemusRepository,
     @Autowired private val hankekayttajaRepository: HankekayttajaRepository,
     @Autowired private val muutosilmoitusRepository: MuutosilmoitusRepository,
     @Autowired private val yhteystietoRepository: MuutosilmoituksenYhteystietoRepository,
@@ -344,6 +357,327 @@ class MuutosilmoitusServiceITest(
 
             assertThat(hankeService.loadHanke(hakemus.hankeTunnus)!!)
                 .hasSameGeometryAs((hakemus.applicationData as JohtoselvityshakemusData).areas!!)
+        }
+    }
+
+    @Nested
+    inner class Send {
+        private val startTime = DateFactory.getStartDatetime().minusDays(1)
+
+        @Test
+        fun `throws exception when muutosilmoitus is not found`() {
+            val failure = assertFailure {
+                muutosilmoitusService.send(
+                    UUID.fromString("d754f2b7-2e96-4983-bbf8-1e1d34bc0c81"),
+                    null,
+                    USERNAME,
+                )
+            }
+
+            failure.all {
+                hasClass(MuutosilmoitusNotFoundException::class)
+                messageContains("id=d754f2b7-2e96-4983-bbf8-1e1d34bc0c81")
+                messageContains("Muutosilmoitus not found")
+            }
+        }
+
+        @Test
+        fun `throws exception when muutosilmoitus has already been sent`() {
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder()
+                    .withSent(OffsetDateTime.parse("2024-03-06T16:28:01Z"))
+                    .save()
+
+            val failure = assertFailure {
+                muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+            }
+
+            failure.all {
+                hasClass(MuutosilmoitusAlreadySentException::class)
+                messageContains("id=${muutosilmoitus.id}")
+                messageContains("Muutosilmoitus is already sent to Allu")
+            }
+        }
+
+        @Test
+        fun `throws exception if the muutosilmoitus is identical to the hakemus`() {
+            val muutosilmoitus = muutosilmoitusFactory.builder().save()
+
+            val failure = assertFailure {
+                muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+            }
+
+            failure.all {
+                hasClass(NoChangesException::class)
+                messageContains("Not sending a muutosilmoitus without any changes")
+                messageContains("id=${muutosilmoitus.id}")
+            }
+        }
+
+        @Test
+        fun `throws exception when the muutosilmoitus fails validation`() {
+            val muutosilmoitus = muutosilmoitusFactory.builder().withStartTime(null).save()
+
+            val failure = assertFailure {
+                muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+            }
+
+            failure.all {
+                hasClass(InvalidHakemusDataException::class)
+                messageContains("Application contains invalid data")
+                messageContains("Errors at paths: applicationData.startTime")
+            }
+        }
+
+        @Test
+        fun `sends the data to Allu with list of changed fields`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(
+                            Haittojenhallintatyyppi.PYORALIIKENNE to
+                                "$DEFAULT_HHS_PYORALIIKENNE. Muutettu."
+                        ),
+                )
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withStartTime(startTime)
+                    .withEndTime(DateFactory.getEndDatetime().plusDays(1))
+                    .withConstructionWork(true)
+                    .withMaintenanceWork(true)
+                    .withWorkDescription("New description")
+                    .withCustomerReference("New Reference")
+                    .withAreas(listOf(area))
+                    .save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            verifySequence {
+                alluClient.reportChange(
+                    hakemus.alluid!!,
+                    muutosilmoitus.hakemusData.toAlluData(hanke.hankeTunnus),
+                    setOf(
+                        InformationRequestFieldKey.START_TIME,
+                        InformationRequestFieldKey.END_TIME,
+                        InformationRequestFieldKey.OTHER,
+                        InformationRequestFieldKey.INVOICING_CUSTOMER,
+                        InformationRequestFieldKey.ATTACHMENT,
+                    ),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `sets the sent field`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(),
+                )
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withWorkDescription("New description")
+                    .withAreas(listOf(area))
+                    .save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            val updatedEntity = muutosilmoitusRepository.getReferenceById(muutosilmoitus.id)
+            assertThat(updatedEntity.sent).isNotNull().isRecent()
+            verifySequence {
+                alluClient.reportChange(any(), any(), setOf(InformationRequestFieldKey.OTHER))
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `returns the associated hakemus`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(),
+                )
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withWorkDescription("New description")
+                    .withAreas(listOf(area))
+                    .save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            val response = muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            assertThat(response).isEqualTo(hakemus.toHakemus())
+            verifySequence {
+                alluClient.reportChange(any(), any(), setOf(InformationRequestFieldKey.OTHER))
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `sends geometry as changed field if there is a change to kaivuilmoitus work area`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    tyoalueet =
+                        listOf(
+                            ApplicationFactory.createTyoalue(
+                                geometry = GeometriaFactory.fourthPolygon()
+                            )
+                        ),
+                )
+            val muutosilmoitus =
+                muutosilmoitusFactory.builder(hakemus).withAreas(listOf(area)).save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            verifySequence {
+                alluClient.reportChange(
+                    hakemus.alluid!!,
+                    muutosilmoitus.hakemusData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.GEOMETRY),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `saves audit logs when request decision on paper`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(),
+                )
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withWorkDescription("New description")
+                    .withAreas(listOf(area))
+                    .save()
+            val paperDecisionReceiver = PaperDecisionReceiverFactory.default
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+            every { alluClient.sendSystemComment(hakemus.alluid!!, any()) } returns 4
+            auditLogRepository.deleteAll()
+
+            muutosilmoitusService.send(muutosilmoitus.id, paperDecisionReceiver, USERNAME)
+
+            val expectedDataAfter =
+                muutosilmoitus.hakemusData.withPaperDecisionReceiver(paperDecisionReceiver)
+            val createdLogs = auditLogRepository.findByType(ObjectType.MUUTOSILMOITUS)
+            assertThat(createdLogs).single().isSuccess(Operation.UPDATE) {
+                hasUserActor(USERNAME)
+                withTarget {
+                    hasObjectBefore(muutosilmoitus)
+                    hasObjectAfter(muutosilmoitus.copy(hakemusData = expectedDataAfter))
+                }
+            }
+            verifySequence {
+                alluClient.reportChange(any(), any(), any())
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+                alluClient.sendSystemComment(hakemus.alluid!!, PAPER_DECISION_MSG)
+            }
+        }
+
+        @Test
+        fun `clears paper decision when it's null`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .withPaperReceiver()
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(),
+                )
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withWorkDescription("New description")
+                    .withAreas(listOf(area))
+                    .save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+            auditLogRepository.deleteAll()
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            val expectedDataAfter = muutosilmoitus.hakemusData.withPaperDecisionReceiver(null)
+            val createdLogs = auditLogRepository.findByType(ObjectType.MUUTOSILMOITUS)
+            assertThat(createdLogs).single().isSuccess(Operation.UPDATE) {
+                hasUserActor(USERNAME)
+                withTarget {
+                    hasObjectBefore(muutosilmoitus)
+                    hasObjectAfter(muutosilmoitus.copy(hakemusData = expectedDataAfter))
+                }
+            }
+            val updatedMuutosilmoitus = muutosilmoitusRepository.findAll().single()
+            assertThat(updatedMuutosilmoitus.hakemusData.paperDecisionReceiver).isNull()
+            verifySequence {
+                alluClient.reportChange(any(), any(), any())
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
         }
     }
 }

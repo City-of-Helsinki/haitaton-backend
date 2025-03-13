@@ -3,9 +3,12 @@ package fi.hel.haitaton.hanke.muutosilmoitus
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.hakemus.HakemusResponse
+import fi.hel.haitaton.hanke.hakemus.HakemusSendRequest
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
 import fi.hel.haitaton.hanke.hakemus.ValidHakemusUpdateRequest
+import fi.hel.haitaton.hanke.taydennys.NoChangesException
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -165,6 +168,32 @@ class MuutosilmoitusController(private val muutosilmoitusService: Muutosilmoitus
         logger.info { "Deleted muutosilmoitus with id $id." }
     }
 
+    @PostMapping("/muutosilmoitukset/{id}/laheta")
+    @Operation(
+        summary = "Send the muutosilmoitus to Allu for processing",
+        description =
+            """
+               Sends the muutosilmoitus.
+               - Marks the muutosilmoitus as sent by setting the `sent` field.
+               - A clerk at Allu can process the change request after this call.
+               - The muutosilmoitus can't be edited after it has been sent.
+
+               Request body is optional. Can be used to request a paper copy of
+               the decision replacement to be sent to the address provided.
+               Null body will remove paper decision information even if it was set
+               on the original hakemus.
+
+               Returns the hakemus for compatibility with sending täydennys and
+               hakemus APIs. Sending the muutosilmoitus does not change the hakemus.
+            """,
+    )
+    @PreAuthorize("@muutosilmoitusAuthorizer.authorize(#id, 'EDIT_APPLICATIONS')")
+    fun send(
+        @PathVariable id: UUID,
+        @RequestBody(required = false) request: HakemusSendRequest?,
+    ): HakemusResponse =
+        muutosilmoitusService.send(id, request?.paperDecisionReceiver, currentUserId()).toResponse()
+
     @ExceptionHandler(InvalidHakemusDataException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
@@ -197,5 +226,13 @@ class MuutosilmoitusController(private val muutosilmoitusService: Muutosilmoitus
     fun muutosilmoitusNotFoundException(ex: MuutosilmoitusNotFoundException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI7001
+    }
+
+    @ExceptionHandler(NoChangesException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun noChangesException(ex: NoChangesException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI7003
     }
 }

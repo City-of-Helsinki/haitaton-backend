@@ -68,14 +68,9 @@ data class TaydennysBuilder(
             { copy(workDescription = description) },
         )
 
-    fun withStreetAddress(streetAddress: String): TaydennysBuilder =
+    fun withStreetAddress(address: String): TaydennysBuilder =
         updateApplicationData(
-            {
-                copy(
-                    postalAddress =
-                        postalAddress?.copy(streetAddress = StreetAddress(streetAddress))
-                )
-            },
+            { copy(postalAddress = postalAddress?.copy(streetAddress = StreetAddress(address))) },
             { invalidHakemusType() },
         )
 

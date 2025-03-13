@@ -28,6 +28,8 @@ import fi.hel.haitaton.hanke.hakemus.HakemusGeometryException
 import fi.hel.haitaton.hanke.hakemus.HakemusGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
+import fi.hel.haitaton.hanke.hakemus.HakemusResponse
+import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteyshenkiloException
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteystietoException
 import fi.hel.haitaton.hanke.hakemus.InvalidHiddenRegistryKey
@@ -36,6 +38,7 @@ import fi.hel.haitaton.hanke.hakemus.andVerifyRegistryKeys
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.taydennys.NoChangesException
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
@@ -526,6 +529,142 @@ class MuutosilmoitusControllerITest(
             verifySequence {
                 muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
                 muutosilmoitusService.delete(id, USERNAME)
+            }
+        }
+    }
+
+    @Nested
+    inner class Send {
+        private val url = "/muutosilmoitukset/$id/laheta"
+
+        @Test
+        @WithAnonymousUser
+        fun `returns 401 when unknown user`() {
+            post(url).andExpect(status().isUnauthorized)
+        }
+
+        @Test
+        fun `returns 404 when muutosilmoitus doesn't exist`() {
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } throws MuutosilmoitusNotFoundException(id)
+
+            post(url).andExpect(status().isNotFound)
+        }
+
+        @Test
+        fun `returns 404 when user doesn't have access to the muutosilmoitus`() {
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } throws HakemusNotFoundException(hakemusId)
+
+            post(url).andExpect(status().isNotFound)
+        }
+
+        @Test
+        fun `returns 409 when muutosilmoitus has already been sent`() {
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { muutosilmoitusService.send(id, null, USERNAME) } throws
+                MuutosilmoitusAlreadySentException(MuutosilmoitusFactory.create(id = id))
+
+            post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI7002))
+
+            verifySequence {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                muutosilmoitusService.send(id, null, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 409 when there are no changes in the muutosilmoitus`() {
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { muutosilmoitusService.send(id, null, USERNAME) } throws
+                NoChangesException(
+                    "muutosilmoitus",
+                    MuutosilmoitusFactory.createEntity(),
+                    HakemusFactory.create(),
+                )
+
+            post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI7003))
+
+            verifySequence {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                muutosilmoitusService.send(id, null, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 409 when the hakemus is in the wrong state`() {
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { muutosilmoitusService.send(id, null, USERNAME) } throws
+                HakemusInWrongStatusException(
+                    HakemusFactory.create(),
+                    ApplicationStatus.HANDLING,
+                    listOf(ApplicationStatus.DECISION, ApplicationStatus.OPERATIONAL_CONDITION),
+                )
+
+            post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI2015))
+
+            verifySequence {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                muutosilmoitusService.send(id, null, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 400 when the data fails validation`() {
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { muutosilmoitusService.send(id, null, USERNAME) } throws
+                InvalidHakemusDataException(listOf("rockExcavation"))
+
+            post(url).andExpect(status().isBadRequest).andExpect(hankeError(HankeError.HAI2008))
+
+            verifySequence {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                muutosilmoitusService.send(id, null, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 400 when the geometry is outside hanke geometry`() {
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { muutosilmoitusService.send(id, null, USERNAME) } throws
+                HakemusGeometryNotInsideHankeException(GeometriaFactory.polygon())
+
+            post(url).andExpect(status().isBadRequest).andExpect(hankeError(HankeError.HAI2007))
+
+            verifySequence {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                muutosilmoitusService.send(id, null, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns the associated hakemus and logs outgoing personal information`() {
+            val hakemus = HakemusFactory.create()
+            every {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { muutosilmoitusService.send(id, null, USERNAME) } returns hakemus
+
+            val response: HakemusResponse = post(url).andExpect(status().isOk).andReturnBody()
+
+            val expectedResponse = hakemus.toResponse()
+            assertThat(response).isEqualTo(expectedResponse)
+            verifySequence {
+                muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                muutosilmoitusService.send(id, null, USERNAME)
+                disclosureLogService.saveForHakemusResponse(expectedResponse, USERNAME)
             }
         }
     }
