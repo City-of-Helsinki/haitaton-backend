@@ -33,6 +33,13 @@ enum class InformationRequestFieldKey {
     OTHER;
 
     companion object {
+        fun fromHaitatonFieldNames(names: List<String>, applicationType: ApplicationType) =
+            names
+                .mapNotNull {
+                    InformationRequestFieldKey.fromHaitatonFieldName(it, applicationType)
+                }
+                .toSet()
+
         fun fromHaitatonFieldName(
             name: String,
             applicationType: ApplicationType,

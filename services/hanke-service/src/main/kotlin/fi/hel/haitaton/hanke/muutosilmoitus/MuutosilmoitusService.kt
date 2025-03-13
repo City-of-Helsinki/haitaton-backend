@@ -1,10 +1,18 @@
 package fi.hel.haitaton.hanke.muutosilmoitus
 
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
+import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
+import fi.hel.haitaton.hanke.hakemus.HakemusDataValidator
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
@@ -13,9 +21,14 @@ import fi.hel.haitaton.hanke.hakemus.HakemusService.Companion.toExistingYhteysti
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
+import fi.hel.haitaton.hanke.hakemus.PaperDecisionReceiver
 import fi.hel.haitaton.hanke.hakemus.WrongHakemusTypeException
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.MuutosilmoitusLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.taydennys.NoChangesException
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
@@ -24,14 +37,32 @@ import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
+const val FORM_DATA_PDF_FILENAME = "haitaton-form-data-muutosilmoitus.pdf"
+const val HHS_PDF_FILENAME = "haitaton-haittojenhallintasuunnitelma-muutosilmoitus.pdf"
+const val PAPER_DECISION_MSG =
+    "Asiakas haluaa korvaavan päätöksen myös paperisena. Liitteessä " +
+        "$FORM_DATA_PDF_FILENAME on päätöksen toimitukseen liittyvät osoitetiedot."
+
 @Service
 class MuutosilmoitusService(
     private val muutosilmoitusRepository: MuutosilmoitusRepository,
     private val hakemusRepository: HakemusRepository,
     private val loggingService: MuutosilmoitusLoggingService,
-    private val hakemusService: HakemusService,
+    override val hakemusService: HakemusService,
+    override val hakemusAttachmentService: ApplicationAttachmentService,
     private val hankeKayttajaService: HankeKayttajaService,
-) {
+    private val disclosureLogService: DisclosureLogService,
+    override val alluClient: AlluClient,
+) : HasUploadFormDataPdf, HasUploadHaittojenhallintasuunnitelmaPdf {
+    override val entityNameForLogs: String = "muutosilmoitus"
+    override val formDataPdfFilename: String = FORM_DATA_PDF_FILENAME
+    override val hhsPdfFilename: String = HHS_PDF_FILENAME
+
+    override fun formDataDescription(now: LocalDateTime): String =
+        "Muutosilmoitus form data from Haitaton, dated $now."
+
+    override fun hhsDescription(now: LocalDateTime): String =
+        "Haittojenhallintasuunnitelma from Haitaton muutosilmoitus, dated $now."
 
     @Transactional(readOnly = true)
     fun find(hakemusId: Long): Muutosilmoitus? =
@@ -118,6 +149,52 @@ class MuutosilmoitusService(
         val muutosilmoitus = muutosilmoitusEntity.toDomain()
         muutosilmoitusRepository.delete(muutosilmoitusEntity)
         loggingService.logDelete(muutosilmoitus, currentUserId)
+    }
+
+    @Transactional
+    fun send(
+        id: UUID,
+        paperDecisionReceiver: PaperDecisionReceiver?,
+        currentUserId: String,
+    ): Hakemus {
+        val entity =
+            muutosilmoitusRepository.findByIdOrNull(id) ?: throw MuutosilmoitusNotFoundException(id)
+
+        if (entity.sent != null) throw MuutosilmoitusAlreadySentException(entity)
+
+        val muutosilmoitusBefore = entity.toDomain()
+        entity.hakemusData = entity.hakemusData.copy(paperDecisionReceiver = paperDecisionReceiver)
+        val muutosilmoitus = entity.toDomain()
+        loggingService.logUpdate(muutosilmoitusBefore, muutosilmoitus, currentUserId)
+
+        val hakemus = hakemusRepository.getReferenceById(entity.hakemusId)
+        val hanke = hakemus.hanke
+
+        logger.info(
+            "Sending muutosilmoitus to Allu ${muutosilmoitus.logString()} " +
+                "${hakemus.logString()} ${hanke.logString()}"
+        )
+
+        val changes =
+            muutosilmoitus.hakemusData.listChanges(hakemus.toHakemus().applicationData).ifEmpty {
+                throw NoChangesException(entityNameForLogs, entity, hakemus)
+            }
+
+        HakemusDataValidator.ensureValidForSend(muutosilmoitus.hakemusData)
+
+        if (!hanke.generated) {
+            entity.hakemusData.areas?.let { areas ->
+                hakemusService.assertGeometryCompatibility(hanke.id, areas)
+            }
+        }
+
+        logger.info("Sending muutosilmoitus id=$id")
+        sendMuutosilmoitusToAllu(muutosilmoitus, hakemus, hanke, changes)
+
+        entity.sent = OffsetDateTime.now()
+
+        logger.info("Muutosilmoitus sent. ${entity.logString()} ${hakemus.logString()}")
+        return hakemus.toHakemus()
     }
 
     private fun assertUpdateCompatible(
@@ -238,6 +315,30 @@ class MuutosilmoitusService(
         )
 
         return muutosilmoitus
+    }
+
+    private fun sendMuutosilmoitusToAllu(
+        muutosilmoitus: Muutosilmoitus,
+        hakemus: HakemusIdentifier,
+        hanke: HankeEntity,
+        muutokset: List<String>,
+    ) {
+        val updatedFieldKeys =
+            InformationRequestFieldKey.fromHaitatonFieldNames(
+                muutokset,
+                muutosilmoitus.hakemusData.applicationType,
+            )
+        val alluData = muutosilmoitus.hakemusData.toAlluData(hanke.hankeTunnus)
+
+        disclosureLogService.withDisclosureLogging(hakemus.id, alluData) {
+            alluClient.reportChange(hakemus.alluid!!, alluData, updatedFieldKeys)
+        }
+        uploadFormDataPdf(hakemus, hanke.hankeTunnus, muutosilmoitus.hakemusData)
+        uploadHaittojenhallintasuunnitelmaPdf(hakemus, hanke, muutosilmoitus.hakemusData)
+
+        if (muutosilmoitus.hakemusData.paperDecisionReceiver != null) {
+            alluClient.sendSystemComment(hakemus.alluid!!, PAPER_DECISION_MSG)
+        }
     }
 
     companion object {

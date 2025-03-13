@@ -310,6 +310,14 @@ class HakemusFactory(
             muutosilmoitus: MuutosilmoitusWithExtras? = null,
         ) = HakemusWithExtras(this, paatokset, taydennyspyynto, taydennys, muutosilmoitus)
 
+        fun HakemusData.withPaperDecisionReceiver(
+            paperDecisionReceiver: PaperDecisionReceiver?
+        ): HakemusData =
+            when (this) {
+                is JohtoselvityshakemusData -> copy(paperDecisionReceiver = paperDecisionReceiver)
+                is KaivuilmoitusData -> copy(paperDecisionReceiver = paperDecisionReceiver)
+            }
+
         fun hakemusDataForRegistryKeyTest(tyyppi: CustomerType): KaivuilmoitusData {
             val hakija =
                 HakemusyhteystietoFactory.createPerson(tyyppi = tyyppi, registryKey = "280341-912F")

@@ -440,6 +440,50 @@ class AlluClientITests {
     }
 
     @Nested
+    inner class ReportChange {
+        private val alluid = 3211
+
+        @Test
+        fun `calls the right address when the hakemus is a johtoselvityshakemus`() {
+            val applicationData = AlluFactory.createCableReportApplicationData()
+            val fields =
+                setOf(InformationRequestFieldKey.GEOMETRY, InformationRequestFieldKey.CONTRACTOR)
+            mockWebServer.enqueue(MockResponse().setResponseCode(200))
+
+            service.reportChange(alluid, applicationData, fields)
+
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("POST")
+            assertThat(request.path).isEqualTo("/v2/cablereports/$alluid/reportchange")
+            val expectedBody = InformationRequestResponse(applicationData, fields).toJsonString()
+            val actualBody = request.body.readUtf8()
+            JSONAssert.assertEquals(expectedBody, actualBody, JSONCompareMode.NON_EXTENSIBLE)
+            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+        }
+
+        @Test
+        fun `calls the right address when the hakemus is a kaivuilmoitus`() {
+            val applicationData = AlluFactory.createExcavationNotificationData()
+            val fields =
+                setOf(
+                    InformationRequestFieldKey.WORK_DESCRIPTION,
+                    InformationRequestFieldKey.ATTACHMENT,
+                )
+            mockWebServer.enqueue(MockResponse().setResponseCode(200))
+
+            service.reportChange(alluid, applicationData, fields)
+
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("POST")
+            assertThat(request.path).isEqualTo("/v2/excavationannouncements/$alluid/reportchange")
+            val expectedBody = InformationRequestResponse(applicationData, fields).toJsonString()
+            val actualBody = request.body.readUtf8()
+            JSONAssert.assertEquals(expectedBody, actualBody, JSONCompareMode.NON_EXTENSIBLE)
+            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+        }
+    }
+
+    @Nested
     inner class GetDecisionPdf {
         @Test
         fun `returns PDF file as bytes`() {

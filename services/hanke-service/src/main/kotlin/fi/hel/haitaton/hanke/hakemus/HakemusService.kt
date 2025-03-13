@@ -659,7 +659,13 @@ class HakemusService(
     ): Int {
         val formAttachment =
             getApplicationDataAsPdf(applicationId, hankeEntity.hankeTunnus, hakemusData)
-        val hhsAttachment = getHaittojenhallintasuunnitelmaPdf(hankeEntity, hakemusData)
+        val hhsAttachment =
+            getHaittojenhallintasuunnitelmaPdf(
+                hankeEntity,
+                hakemusData,
+                HHS_PDF_FILENAME,
+                "Haittojenhallintasuunnitelma from Haitaton, dated ${LocalDateTime.now()}.",
+            )
 
         val alluId = alluAction()
 
@@ -682,13 +688,21 @@ class HakemusService(
     ): Attachment {
         logger.info { "Creating a PDF from the hakemus data for data attachment." }
         val attachments = attachmentService.getMetadataList(applicationId)
-        return getApplicationDataAsPdf(hankeTunnus, attachments, data)
+        return getApplicationDataAsPdf(
+            hankeTunnus,
+            attachments,
+            data,
+            FORM_DATA_PDF_FILENAME,
+            "Original form data from Haitaton, dated ${LocalDateTime.now()}.",
+        )
     }
 
     fun getApplicationDataAsPdf(
         hankeTunnus: String,
         attachments: List<ApplicationAttachmentMetadata>,
         data: HakemusData,
+        filename: String,
+        description: String,
     ): Attachment {
         val totalArea =
             geometriatDao.calculateCombinedArea(data.areas?.flatMap { it.geometries() } ?: listOf())
@@ -710,8 +724,8 @@ class HakemusService(
             AttachmentMetadata(
                 id = null,
                 mimeType = MediaType.APPLICATION_PDF_VALUE,
-                name = FORM_DATA_PDF_FILENAME,
-                description = "Original form data from Haitaton, dated ${LocalDateTime.now()}.",
+                name = filename,
+                description = description,
             )
         logger.info { "Created the PDF for data attachment." }
         return Attachment(attachmentMetadata, pdfData)
@@ -740,6 +754,8 @@ class HakemusService(
     fun getHaittojenhallintasuunnitelmaPdf(
         hankeEntity: HankeEntity,
         data: HakemusData,
+        filename: String,
+        description: String,
     ): Attachment? {
         if (data !is KaivuilmoitusData) return null
         logger.info { "Creating a PDF from haittojenhallintasuunnitelma." }
@@ -755,9 +771,8 @@ class HakemusService(
             AttachmentMetadata(
                 id = null,
                 mimeType = MediaType.APPLICATION_PDF_VALUE,
-                name = HHS_PDF_FILENAME,
-                description =
-                    "Haittojenhallintasuunnitelma from Haitaton, dated ${LocalDateTime.now()}.",
+                name = filename,
+                description = description,
             )
         logger.info { "Created the PDF from haittojenhallintasuunnitelma." }
         return Attachment(attachmentMetadata, pdfData)
