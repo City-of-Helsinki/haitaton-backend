@@ -33,6 +33,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.asList
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.withDefaultEvents
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.withEvent
+import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
@@ -299,16 +300,10 @@ class HakemusHistoryServiceITest(
         fun `merges changes from muutosilmoitus to the hakemus when a hakemus gets a decision`(
             applicationType: ApplicationType
         ) {
-            val hakemus =
-                hakemusFactory
-                    .builder(applicationType)
-                    .withMandatoryFields()
-                    .withStatus(ApplicationStatus.DECISIONMAKING, alluId, identifier)
-                    .saveEntity()
             val muutosilmoitus =
                 muutosilmoitusFactory
-                    .builder(hakemus)
-                    .withEndTime(hakemus.hakemusEntityData.endTime!!.plusDays(1L))
+                    .builder(applicationType, alluId = alluId)
+                    .withEndTime(DateFactory.getEndDatetime().plusDays(1))
                     .withSent()
                     .save()
             val histories =
@@ -326,13 +321,42 @@ class HakemusHistoryServiceITest(
 
             historyService.handleHakemusUpdates(histories, updateTime)
 
-            assertThat(hakemusRepository.getReferenceById(hakemus.id).hakemusEntityData.endTime)
-                .isEqualTo(muutosilmoitus.hakemusData.endTime)
+            val hakemus =
+                hakemusRepository.findOneById(muutosilmoitus.hakemusId)!!.hakemusEntityData
+            assertThat(hakemus.endTime).isEqualTo(muutosilmoitus.hakemusData.endTime)
             assertThat(muutosilmoitusRepository.findAll()).isEmpty()
             if (applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
                 verifyAlluDownload(ApplicationStatus.DECISION)
                 verify { alluClient.getApplicationInformation(alluId) }
             }
+        }
+
+        @ParameterizedTest
+        @EnumSource(ApplicationType::class)
+        fun `merges changes from muutosilmoitus to the hakemus when a hakemus gets a taydennyspyynto`(
+            applicationType: ApplicationType
+        ) {
+            val newName = "Updated for muutosilmoitus"
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(type = applicationType, alluId = alluId)
+                    .withName(newName)
+                    .withSent()
+                    .save()
+            val histories =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(newStatus = ApplicationStatus.WAITING_INFORMATION)
+                    .asList()
+            every { alluClient.getInformationRequest(alluId) } returns
+                AlluFactory.createInformationRequest(applicationAlluId = alluId)
+
+            historyService.handleHakemusUpdates(histories, updateTime)
+
+            val hakemus =
+                hakemusRepository.findOneById(muutosilmoitus.hakemusId)!!.hakemusEntityData
+            assertThat(hakemus.name).isEqualTo(newName)
+            assertThat(muutosilmoitusRepository.findAll()).isEmpty()
+            verifySequence { alluClient.getInformationRequest(alluId) }
         }
 
         @Test

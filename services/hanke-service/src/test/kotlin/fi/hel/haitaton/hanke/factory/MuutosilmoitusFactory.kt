@@ -34,13 +34,15 @@ class MuutosilmoitusFactory(
 ) {
 
     fun builder(
-        type: ApplicationType = ApplicationType.EXCAVATION_NOTIFICATION
+        type: ApplicationType = ApplicationType.EXCAVATION_NOTIFICATION,
+        status: ApplicationStatus = ApplicationStatus.DECISION,
+        alluId: Int = TaydennyspyyntoFactory.DEFAULT_ALLU_ID,
     ): MuutosilmoitusBuilder {
         val hakemusEntity: HakemusEntity =
             hakemusFactory
                 .builder(type)
                 .withMandatoryFields()
-                .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
                 .saveEntity()
 
         return builder(hakemusEntity)
