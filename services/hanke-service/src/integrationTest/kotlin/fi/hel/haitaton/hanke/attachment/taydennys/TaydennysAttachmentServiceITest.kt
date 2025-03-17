@@ -203,9 +203,9 @@ class TaydennysAttachmentServiceITest(
 
             failure.all {
                 hasClass(AttachmentLimitReachedException::class)
-                hasMessage(
-                    "Attachment amount limit reached, limit=${ALLOWED_ATTACHMENT_COUNT}, taydennysId=${taydennys.id}"
-                )
+                messageContains("Attachment amount limit reached")
+                messageContains("limit=$ALLOWED_ATTACHMENT_COUNT")
+                messageContains("Täydennys: (id=${taydennys.id}")
             }
         }
 

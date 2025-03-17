@@ -49,7 +49,7 @@ class HankeAttachmentServiceITest(
     @Autowired private val attachmentRepository: HankeAttachmentRepository,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
-    @Autowired private val fileClient: MockFileClient
+    @Autowired private val fileClient: MockFileClient,
 ) : IntegrationTest() {
 
     private lateinit var mockClamAv: MockWebServer
@@ -85,7 +85,7 @@ class HankeAttachmentServiceITest(
             assertThat(result).each { d ->
                 d.transform { it.id }.isNotNull()
                 d.transform { it.fileName }.endsWith(FILE_NAME_PDF)
-                d.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
+                d.transform { it.hanketunnus }.isEqualTo(hanke.hankeTunnus)
                 d.transform { it.contentType }.isEqualTo(APPLICATION_PDF_VALUE)
                 d.transform { it.size }.isEqualTo(DEFAULT_SIZE)
             }
@@ -103,7 +103,7 @@ class HankeAttachmentServiceITest(
             val result =
                 hankeAttachmentService.uploadHankeAttachment(
                     hankeTunnus = hanke.hankeTunnus,
-                    attachment = testFile()
+                    attachment = testFile(),
                 )
 
             assertThat(result).all {
@@ -127,7 +127,7 @@ class HankeAttachmentServiceITest(
             assertFailure {
                     hankeAttachmentService.uploadHankeAttachment(
                         hankeTunnus = hanke.hankeTunnus,
-                        attachment = testFile()
+                        attachment = testFile(),
                     )
                 }
                 .all {

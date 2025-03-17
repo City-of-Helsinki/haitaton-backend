@@ -3,14 +3,12 @@ package fi.hel.haitaton.hanke.attachment.taydennys
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
-import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
-import fi.hel.haitaton.hanke.attachment.common.hasInfected
 import fi.hel.haitaton.hanke.taydennys.TaydennysIdentifier
 import fi.hel.haitaton.hanke.taydennys.TaydennysNotFoundException
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
@@ -29,7 +27,7 @@ class TaydennysAttachmentService(
     private val taydennysRepository: TaydennysRepository,
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
-) {
+) : AttachmentService<TaydennysIdentifier, TaydennysAttachmentMetadata> {
     fun getMetadataList(taydennysId: UUID): List<TaydennysAttachmentMetadata> =
         metadataService.getMetadataList(taydennysId)
 
@@ -61,7 +59,7 @@ class TaydennysAttachmentService(
         val taydennys = findTaydennys(taydennysId)
 
         val contentType = AttachmentValidator.ensureMediaType(attachment.contentType)
-        scanAttachment(filename, attachment.bytes)
+        scanClient.scanAttachment(filename, attachment.bytes)
         metadataService.ensureRoomForAttachment(taydennys)
 
         val newAttachment =
@@ -73,47 +71,6 @@ class TaydennysAttachmentService(
     private fun findTaydennys(taydennysId: UUID): TaydennysIdentifier =
         taydennysRepository.findByIdOrNull(taydennysId)
             ?: throw TaydennysNotFoundException(taydennysId)
-
-    private fun scanAttachment(filename: String, content: ByteArray) {
-        val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))
-        if (scanResult.hasInfected()) {
-            throw AttachmentInvalidException("Infected file detected, see previous logs.")
-        }
-    }
-
-    private fun saveAttachment(
-        taydennys: TaydennysIdentifier,
-        content: ByteArray,
-        filename: String,
-        contentType: MediaType,
-        attachmentType: ApplicationAttachmentType,
-    ): TaydennysAttachmentMetadata {
-        logger.info { "Saving attachment content for täydennys. ${taydennys.logString()}" }
-        val blobPath =
-            attachmentContentService.upload(filename, contentType, content, taydennys.hakemusId())
-        logger.info { "Saving attachment metadata for täydennys. ${taydennys.logString()}" }
-        val newAttachment =
-            try {
-                metadataService.create(
-                    filename,
-                    contentType.toString(),
-                    content.size.toLong(),
-                    blobPath,
-                    attachmentType,
-                    taydennys.id,
-                )
-            } catch (e: Exception) {
-                logger.error(e) {
-                    "Attachment metadata save failed, deleting attachment content $blobPath"
-                }
-                attachmentContentService.delete(blobPath)
-                throw e
-            }
-        logger.info {
-            "Added attachment metadata ${newAttachment.id} and content $blobPath for täydennys. ${taydennys.logString()}"
-        }
-        return newAttachment
-    }
 
     fun deleteAttachment(attachmentId: UUID) {
         val attachment = metadataService.findAttachment(attachmentId)
@@ -136,4 +93,23 @@ class TaydennysAttachmentService(
         }
         logger.info { "Deleted all attachments from täydennys. ${taydennys.logString()}" }
     }
+
+    override fun upload(
+        filename: String,
+        contentType: MediaType,
+        content: ByteArray,
+        entity: TaydennysIdentifier,
+    ): String = attachmentContentService.upload(filename, contentType, content, entity.hakemusId())
+
+    override fun createMetadata(
+        filename: String,
+        contentType: String,
+        size: Long,
+        blobPath: String,
+        entity: TaydennysIdentifier,
+        attachmentType: ApplicationAttachmentType?,
+    ): TaydennysAttachmentMetadata =
+        metadataService.create(filename, contentType, size, blobPath, attachmentType!!, entity.id)
+
+    override fun delete(blobPath: String): Boolean = attachmentContentService.delete(blobPath)
 }
