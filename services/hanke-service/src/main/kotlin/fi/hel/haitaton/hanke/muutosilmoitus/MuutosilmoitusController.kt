@@ -202,14 +202,6 @@ class MuutosilmoitusController(private val muutosilmoitusService: Muutosilmoitus
         return HankeErrorDetail(hankeError = HankeError.HAI2008, errorPaths = ex.errorPaths)
     }
 
-    @ExceptionHandler(MuutosilmoitusAlreadySentException::class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    @Hidden
-    fun muutosilmoitusAlreadySentException(ex: MuutosilmoitusAlreadySentException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI7002
-    }
-
     @ExceptionHandler(IncompatibleMuutosilmoitusUpdateException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
