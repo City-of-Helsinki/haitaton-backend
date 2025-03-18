@@ -5,12 +5,10 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
-import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
-import fi.hel.haitaton.hanke.attachment.common.hasInfected
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
@@ -30,7 +28,8 @@ class ApplicationAttachmentService(
     private val hakemusRepository: HakemusRepository,
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
-) {
+) : AttachmentService<HakemusIdentifier, ApplicationAttachmentMetadata> {
+
     /** Authorization in controller throws exception if application ID is unknown. */
     fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadata> =
         metadataService.getMetadataList(applicationId)
@@ -74,46 +73,13 @@ class ApplicationAttachmentService(
         }
 
         val contentType = AttachmentValidator.ensureMediaType(attachment.contentType)
-        scanAttachment(filename, attachment.bytes)
+        scanClient.scanAttachment(filename, attachment.bytes)
         metadataService.ensureRoomForAttachment(applicationId)
 
         val newAttachment =
             saveAttachment(hakemus, attachment.bytes, filename, contentType, attachmentType)
 
         return newAttachment.toDto()
-    }
-
-    fun saveAttachment(
-        hakemus: HakemusIdentifier,
-        content: ByteArray,
-        filename: String,
-        contentType: MediaType,
-        attachmentType: ApplicationAttachmentType,
-    ): ApplicationAttachmentMetadata {
-        logger.info { "Saving attachment content for application. ${hakemus.logString()}" }
-        val blobPath = attachmentContentService.upload(filename, contentType, content, hakemus.id)
-        logger.info { "Saving attachment metadata for application. ${hakemus.logString()}" }
-        val newAttachment =
-            try {
-                metadataService.create(
-                    filename,
-                    contentType.toString(),
-                    content.size.toLong(),
-                    blobPath,
-                    attachmentType,
-                    hakemus.id,
-                )
-            } catch (e: Exception) {
-                logger.error(e) {
-                    "Attachment metadata save failed, deleting attachment content $blobPath"
-                }
-                attachmentContentService.delete(blobPath)
-                throw e
-            }
-        logger.info {
-            "Added attachment metadata ${newAttachment.id} and content $blobPath for application. ${hakemus.logString()}"
-        }
-        return newAttachment
     }
 
     /** Attachment can be deleted if the application has not been sent to Allu (alluId null). */
@@ -163,12 +129,24 @@ class ApplicationAttachmentService(
         hakemusRepository.findByIdOrNull(applicationId)?.toMetadata()
             ?: throw HakemusNotFoundException(applicationId)
 
-    private fun scanAttachment(filename: String, content: ByteArray) {
-        val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))
-        if (scanResult.hasInfected()) {
-            throw AttachmentInvalidException("Infected file detected, see previous logs.")
-        }
-    }
-
     private fun isInAllu(hakemus: HakemusIdentifier): Boolean = hakemus.alluid != null
+
+    override fun upload(
+        filename: String,
+        contentType: MediaType,
+        content: ByteArray,
+        entity: HakemusIdentifier,
+    ): String = attachmentContentService.upload(filename, contentType, content, entity.id)
+
+    override fun createMetadata(
+        filename: String,
+        contentType: String,
+        size: Long,
+        blobPath: String,
+        entity: HakemusIdentifier,
+        attachmentType: ApplicationAttachmentType?,
+    ): ApplicationAttachmentMetadata =
+        metadataService.create(filename, contentType, size, blobPath, attachmentType!!, entity.id)
+
+    override fun delete(blobPath: String) = attachmentContentService.delete(blobPath)
 }

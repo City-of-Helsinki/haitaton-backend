@@ -31,7 +31,7 @@ class HankeAttachmentFactory(
         size: Long = SIZE,
         createdByUser: String = USERNAME,
         createdAt: OffsetDateTime = CREATED_AT,
-        hanke: HankeEntity = hankeFactory.builder(USERNAME).saveEntity()
+        hanke: HankeEntity = hankeFactory.builder(USERNAME).saveEntity(),
     ): HankeAttachmentBuilder {
         val entity =
             attachmentRepository.save(
@@ -44,7 +44,7 @@ class HankeAttachmentFactory(
         path: String,
         filename: String = FILE_NAME_PDF,
         mediaType: MediaType = MEDIA_TYPE,
-        bytes: ByteArray = PDF_BYTES
+        bytes: ByteArray = PDF_BYTES,
     ) {
         fileClient.upload(HANKE_LIITTEET, path, filename, mediaType, bytes)
     }
@@ -64,7 +64,7 @@ class HankeAttachmentFactory(
             blobLocation: String = HankeAttachmentContentService.generateBlobPath(42),
             createdByUser: String = currentUserId(),
             createdAt: OffsetDateTime = OffsetDateTime.now(),
-            hankeId: Int = 42,
+            hanketunnus: String = "HAI24-42",
         ): HankeAttachmentMetadata =
             HankeAttachmentMetadata(
                 id = attachmentId,
@@ -74,7 +74,7 @@ class HankeAttachmentFactory(
                 blobLocation = blobLocation,
                 createdByUserId = createdByUser,
                 createdAt = createdAt,
-                hankeId = hankeId,
+                hanketunnus = hanketunnus,
             )
 
         fun createDto(
@@ -103,7 +103,7 @@ class HankeAttachmentFactory(
             size: Long = SIZE,
             createdByUser: String = USERNAME,
             createdAt: OffsetDateTime = CREATED_AT,
-            hanke: HankeEntity = HankeFactory.createMinimalEntity()
+            hanke: HankeEntity = HankeFactory.createMinimalEntity(),
         ) =
             HankeAttachmentEntity(
                 id = id,

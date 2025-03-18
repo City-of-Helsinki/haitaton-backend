@@ -72,7 +72,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
     @Test
     fun `getMetadataList when valid request should return metadata list`() {
-        val data = (1..3).map { HankeAttachmentFactory.createDto(fileName = "${it}file.pdf") }
+        val data = (1..3).map { HankeAttachmentFactory.create(fileName = "${it}file.pdf") }
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
         every { hankeAttachmentService.getMetadataList(HANKE_TUNNUS) } returns data
 
@@ -178,7 +178,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
     private fun postAttachment(
         hankeTunnus: String = HANKE_TUNNUS,
-        file: MockMultipartFile = testFile()
+        file: MockMultipartFile = testFile(),
     ): ResultActions {
         return mockMvc.perform(multipart("/hankkeet/$hankeTunnus/liitteet").file(file).with(csrf()))
     }
@@ -191,7 +191,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
 @WebMvcTest(
     HankeAttachmentController::class,
-    properties = ["haitaton.features.hanke-editing=false"]
+    properties = ["haitaton.features.hanke-editing=false"],
 )
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("test")

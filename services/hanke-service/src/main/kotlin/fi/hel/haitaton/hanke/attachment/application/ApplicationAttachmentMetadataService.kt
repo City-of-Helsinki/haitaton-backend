@@ -20,7 +20,7 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class ApplicationAttachmentMetadataService(
-    private val attachmentRepository: ApplicationAttachmentRepository,
+    private val attachmentRepository: ApplicationAttachmentRepository
 ) {
     @Transactional(readOnly = true)
     fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadata> =
@@ -41,7 +41,7 @@ class ApplicationAttachmentMetadataService(
         size: Long,
         blobLocation: String,
         attachmentType: ApplicationAttachmentType,
-        applicationId: Long
+        applicationId: Long,
     ): ApplicationAttachmentMetadata {
         val entity =
             ApplicationAttachmentEntity(
@@ -78,7 +78,7 @@ class ApplicationAttachmentMetadataService(
             logger.warn {
                 "Application $applicationId has reached the allowed amount of attachments."
             }
-            throw AttachmentLimitReachedException(applicationId, ALLOWED_ATTACHMENT_COUNT)
+            throw AttachmentLimitReachedException(applicationId)
         }
     }
 
