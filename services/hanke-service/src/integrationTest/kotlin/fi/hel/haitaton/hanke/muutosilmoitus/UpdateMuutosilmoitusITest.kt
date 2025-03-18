@@ -29,7 +29,6 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
@@ -140,11 +139,7 @@ class UpdateMuutosilmoitusITest(
     @ParameterizedTest
     @EnumSource(ApplicationType::class)
     fun `throws exception when the muutosilmoitus has been sent already`(type: ApplicationType) {
-        val muutosilmoitus =
-            muutosilmoitusFactory
-                .builder(type)
-                .withSent(DateFactory.getStartDatetime().toOffsetDateTime())
-                .save()
+        val muutosilmoitus = muutosilmoitusFactory.builder(type).withSent().save()
         val request = muutosilmoitus.toUpdateRequest()
 
         val exception = assertFailure {

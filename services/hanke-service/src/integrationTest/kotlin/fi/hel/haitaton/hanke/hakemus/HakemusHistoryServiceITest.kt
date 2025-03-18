@@ -36,8 +36,10 @@ import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.withEvent
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
+import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.firstReceivedMessage
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
@@ -69,12 +71,14 @@ class HakemusHistoryServiceITest(
     @Autowired private val historyService: HakemusHistoryService,
     @Autowired private val hakemusRepository: HakemusRepository,
     @Autowired private val alluStatusRepository: AlluStatusRepository,
+    @Autowired private val muutosilmoitusRepository: MuutosilmoitusRepository,
     @Autowired private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
     @Autowired private val taydennysRepository: TaydennysRepository,
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val taydennysFactory: TaydennysFactory,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
+    @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
     @Autowired private val alluClient: AlluClient,
     @Autowired private val fileClient: MockFileClient,
 ) : IntegrationTest() {
@@ -288,6 +292,47 @@ class HakemusHistoryServiceITest(
                 .startsWith("${hakemus.id}/")
             verifyAlluDownload(status)
             verify { alluClient.getApplicationInformation(alluId) }
+        }
+
+        @ParameterizedTest
+        @EnumSource(ApplicationType::class)
+        fun `merges changes from muutosilmoitus to the hakemus when a hakemus gets a decision`(
+            applicationType: ApplicationType
+        ) {
+            val hakemus =
+                hakemusFactory
+                    .builder(applicationType)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISIONMAKING, alluId, identifier)
+                    .saveEntity()
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withEndTime(hakemus.hakemusEntityData.endTime!!.plusDays(1L))
+                    .withSent()
+                    .save()
+            val histories =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.DECISION,
+                    )
+                    .asList()
+            if (applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
+                mockAlluDownload(ApplicationStatus.DECISION)
+                every { alluClient.getApplicationInformation(alluId) } returns
+                    AlluFactory.createAlluApplicationResponse()
+            }
+
+            historyService.handleHakemusUpdates(histories, updateTime)
+
+            assertThat(hakemusRepository.getReferenceById(hakemus.id).hakemusEntityData.endTime)
+                .isEqualTo(muutosilmoitus.hakemusData.endTime)
+            assertThat(muutosilmoitusRepository.findAll()).isEmpty()
+            if (applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
+                verifyAlluDownload(ApplicationStatus.DECISION)
+                verify { alluClient.getApplicationInformation(alluId) }
+            }
         }
 
         @Test

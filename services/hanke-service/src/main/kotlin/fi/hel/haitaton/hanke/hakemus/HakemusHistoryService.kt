@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.email.InformationRequestEmail
 import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusService
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -26,6 +27,7 @@ class HakemusHistoryService(
     private val taydennysService: TaydennysService,
     private val paatosService: PaatosService,
     private val hankeKayttajaService: HankeKayttajaService,
+    private val muutosilmoitusService: MuutosilmoitusService,
     private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional(readOnly = true) fun getAllAlluIds() = hakemusRepository.getAllAlluIds()
@@ -73,6 +75,7 @@ class HakemusHistoryService(
 
         when (event.newStatus) {
             ApplicationStatus.DECISION -> {
+                muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(application)
                 updateStatus()
                 sendDecisionReadyEmails(application, event.applicationIdentifier)
                 if (application.applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {

@@ -197,6 +197,22 @@ class MuutosilmoitusService(
         return hakemus.toHakemus()
     }
 
+    @Transactional
+    fun mergeMuutosilmoitusToHakemusIfItExists(hakemus: HakemusEntity) {
+        val muutosilmoitus = muutosilmoitusRepository.findByHakemusId(hakemus.id) ?: return
+        if (muutosilmoitus.sent == null) {
+            // The muutosilmoitus has not been sent, so the change in Allu can't be related to it.
+            return
+        }
+
+        mergeMuutosilmoitusToHakemus(muutosilmoitus, hakemus)
+
+        muutosilmoitusRepository.delete(muutosilmoitus)
+        loggingService.logDeleteFromAllu(muutosilmoitus.toDomain())
+
+        hakemusRepository.save(hakemus)
+    }
+
     private fun assertUpdateCompatible(
         entity: MuutosilmoitusEntity,
         request: HakemusUpdateRequest,
@@ -342,6 +358,14 @@ class MuutosilmoitusService(
     }
 
     companion object {
+        fun mergeMuutosilmoitusToHakemus(
+            muutosilmoitus: MuutosilmoitusEntity,
+            hakemus: HakemusEntity,
+        ) {
+            hakemus.hakemusEntityData = muutosilmoitus.hakemusData
+            muutosilmoitus.mergeYhteystiedotToHakemus(hakemus)
+        }
+
         private fun createYhteystieto(
             yhteystieto: HakemusyhteystietoEntity,
             muutosilmoitus: MuutosilmoitusEntity,

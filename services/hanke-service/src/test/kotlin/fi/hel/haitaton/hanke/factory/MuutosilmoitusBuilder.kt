@@ -87,7 +87,9 @@ class MuutosilmoitusBuilder(
     fun withAdditionalInfo(info: String) =
         updateApplicationData({ invalidHakemusType() }, { copy(additionalInfo = info) })
 
-    fun withSent(sent: OffsetDateTime?): MuutosilmoitusBuilder {
+    fun withSent(
+        sent: OffsetDateTime? = MuutosilmoitusFactory.DEFAULT_SENT
+    ): MuutosilmoitusBuilder {
         muutosilmoitusEntity.sent = sent
         return this
     }
