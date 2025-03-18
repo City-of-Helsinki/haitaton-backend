@@ -1,16 +1,17 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.HankeIdentifier
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
-import fi.hel.haitaton.hanke.attachment.common.FileScanInput
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
-import fi.hel.haitaton.hanke.attachment.common.hasInfected
 import fi.hel.haitaton.hanke.attachment.common.validNameAndType
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 
@@ -21,7 +22,8 @@ class HankeAttachmentService(
     private val metadataService: HankeAttachmentMetadataService,
     private val contentService: HankeAttachmentContentService,
     private val scanClient: FileScanClient,
-) {
+) : AttachmentService<HankeIdentifier, HankeAttachmentMetadata> {
+
     fun getMetadataList(hankeTunnus: String) = metadataService.getMetadataList(hankeTunnus)
 
     fun getContent(attachmentId: UUID): AttachmentContent {
@@ -39,25 +41,9 @@ class HankeAttachmentService(
         AttachmentValidator.validateSize(attachment.bytes.size)
         val (filename, mediatype) = attachment.validNameAndType()
 
-        scanAttachment(filename, attachment.bytes)
+        scanClient.scanAttachment(filename, attachment.bytes)
 
-        val blobPath =
-            contentService.upload(
-                fileName = filename,
-                contentType = mediatype,
-                content = attachment.bytes,
-                hankeId = hanke.id,
-            )
-
-        return metadataService
-            .saveAttachment(
-                hankeTunnus = hanke.hankeTunnus,
-                name = filename,
-                type = mediatype.toString(),
-                size = attachment.size,
-                blobPath = blobPath,
-            )
-            .also { logger.info { "Added attachment ${it.id} to hanke ${hanke.hankeTunnus}" } }
+        return saveAttachment(hanke, attachment.bytes, filename, mediatype).toDto()
     }
 
     fun deleteAttachment(attachmentId: UUID) {
@@ -74,10 +60,28 @@ class HankeAttachmentService(
         logger.info { "Deleted all attachments from hanke ${hanke.logString()}" }
     }
 
-    private fun scanAttachment(filename: String, content: ByteArray) {
-        val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))
-        if (scanResult.hasInfected()) {
-            throw AttachmentInvalidException("Infected file detected, see previous logs.")
-        }
-    }
+    override fun upload(
+        filename: String,
+        contentType: MediaType,
+        content: ByteArray,
+        entity: HankeIdentifier,
+    ): String =
+        contentService.upload(
+            fileName = filename,
+            contentType = contentType,
+            content = content,
+            hankeId = entity.id,
+        )
+
+    override fun createMetadata(
+        filename: String,
+        contentType: String,
+        size: Long,
+        blobPath: String,
+        entity: HankeIdentifier,
+        attachmentType: ApplicationAttachmentType?,
+    ): HankeAttachmentMetadata =
+        metadataService.saveAttachment(entity.hankeTunnus, filename, contentType, size, blobPath)
+
+    override fun delete(blobPath: String) = contentService.delete(blobPath)
 }

@@ -28,9 +28,7 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/hankkeet/{hankeTunnus}/liitteet")
 @SecurityRequirement(name = "bearerAuth")
-class HankeAttachmentController(
-    private val hankeAttachmentService: HankeAttachmentService,
-) {
+class HankeAttachmentController(private val hankeAttachmentService: HankeAttachmentService) {
 
     @GetMapping
     @Operation(summary = "Get metadata from hanke attachments")
@@ -41,13 +39,13 @@ class HankeAttachmentController(
                 ApiResponse(
                     description = "Hanke not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
             ]
     )
     @PreAuthorize("@hankeAttachmentAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
     fun getMetadataList(@PathVariable hankeTunnus: String): List<HankeAttachmentMetadataDto> {
-        return hankeAttachmentService.getMetadataList(hankeTunnus)
+        return hankeAttachmentService.getMetadataList(hankeTunnus).map { it.toDto() }
     }
 
     @GetMapping("/{attachmentId}/content")
@@ -59,7 +57,7 @@ class HankeAttachmentController(
                 ApiResponse(
                     description = "Attachment not found.",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
             ]
     )
@@ -86,12 +84,12 @@ class HankeAttachmentController(
                 ApiResponse(
                     description = "Hanke not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
                 ApiResponse(
                     description = "Invalid attachment",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
             ]
     )
@@ -121,8 +119,8 @@ class HankeAttachmentController(
                 ApiResponse(
                     description = "Attachment not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                )
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
             ]
     )
     @PreAuthorize(
