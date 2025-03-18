@@ -117,6 +117,7 @@ class HakemusHistoryService(
                 paatosService.markReplaced(event.applicationIdentifier)
             }
             ApplicationStatus.WAITING_INFORMATION -> {
+                muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(application)
                 updateStatus()
                 taydennysService.saveTaydennyspyyntoFromAllu(application)?.also {
                     sendInformationRequestEmails(application, event.applicationIdentifier)
