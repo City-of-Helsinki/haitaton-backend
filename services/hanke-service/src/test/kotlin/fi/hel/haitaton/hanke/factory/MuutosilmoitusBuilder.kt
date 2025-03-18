@@ -42,6 +42,8 @@ class MuutosilmoitusBuilder(
         return savedMuutosilmoitus
     }
 
+    fun withName(name: String) = updateApplicationData({ copy(name = name) }, { copy(name = name) })
+
     fun withAreas(areas: List<Hakemusalue>) =
         updateApplicationData(
             {
