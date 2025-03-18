@@ -17,6 +17,8 @@ import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusService
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusWithExtras
 import fi.hel.haitaton.hanke.parseJson
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
+import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -96,6 +98,7 @@ class MuutosilmoitusFactory(
 
     companion object {
         val DEFAULT_ID: UUID = UUID.fromString("7df81277-2e36-4082-8687-0421c20d341e")
+        val DEFAULT_SENT: OffsetDateTime = OffsetDateTime.parse("2024-03-06T16:28:01Z")
 
         fun create(
             id: UUID = DEFAULT_ID,
@@ -138,5 +141,43 @@ class MuutosilmoitusFactory(
 
         fun Muutosilmoitus.withExtras(muutokset: List<String> = listOf()) =
             MuutosilmoitusWithExtras(id, hakemusId, sent, hakemusData, muutokset)
+
+        fun createYhteyshenkiloEntity(
+            hankeId: Int,
+            yhteystieto: MuutosilmoituksenYhteystietoEntity,
+            id: UUID = UUID.randomUUID(),
+            etunimi: String = HakemusyhteyshenkiloFactory.DEFAULT_ETUNIMI,
+            sukunimi: String = HakemusyhteyshenkiloFactory.DEFAULT_SUKUNIMI,
+            sahkoposti: String = HakemusyhteyshenkiloFactory.DEFAULT_SAHKOPOSTI,
+            puhelin: String = HakemusyhteyshenkiloFactory.DEFAULT_PUHELIN,
+            tilaaja: Boolean = HakemusyhteyshenkiloFactory.DEFAULT_TILAAJA,
+            permission: PermissionEntity = PermissionFactory.createEntity(),
+        ): MuutosilmoituksenYhteyshenkiloEntity =
+            MuutosilmoituksenYhteyshenkiloEntity(
+                id = id,
+                yhteystieto = yhteystieto,
+                hankekayttaja =
+                    HankekayttajaEntity(
+                        id = id,
+                        hankeId = hankeId,
+                        etunimi = etunimi,
+                        sukunimi = sukunimi,
+                        sahkoposti = sahkoposti,
+                        puhelin = puhelin,
+                        permission = permission,
+                    ),
+                tilaaja = tilaaja,
+            )
+
+        fun createYhteyshenkiloEntity(
+            yhteystieto: MuutosilmoituksenYhteystietoEntity,
+            hankekayttaja: HankekayttajaEntity,
+            tilaaja: Boolean,
+        ): MuutosilmoituksenYhteyshenkiloEntity =
+            MuutosilmoituksenYhteyshenkiloEntity(
+                yhteystieto = yhteystieto,
+                hankekayttaja = hankekayttaja,
+                tilaaja = tilaaja,
+            )
     }
 }

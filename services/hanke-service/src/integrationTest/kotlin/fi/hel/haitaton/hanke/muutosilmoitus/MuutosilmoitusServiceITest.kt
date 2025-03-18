@@ -29,6 +29,7 @@ import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory.Companion.toUpdateRequest
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
 import fi.hel.haitaton.hanke.findByType
+import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.hakemus.HakemusInWrongStatusException
@@ -38,6 +39,7 @@ import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.WrongHakemusTypeException
+import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -52,6 +54,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectBefore
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasServiceActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasTargetType
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
@@ -65,7 +68,6 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verifySequence
-import java.time.OffsetDateTime
 import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -263,11 +265,7 @@ class MuutosilmoitusServiceITest(
 
         @Test
         fun `throws exception when muutosilmoitus has already been sent`() {
-            val muutosilmoitus =
-                muutosilmoitusFactory
-                    .builder()
-                    .withSent(DateFactory.getStartDatetime().toOffsetDateTime())
-                    .saveEntity()
+            val muutosilmoitus = muutosilmoitusFactory.builder().withSent().saveEntity()
 
             val failure = assertFailure {
                 muutosilmoitusService.delete(muutosilmoitus.id, USERNAME)
@@ -383,11 +381,7 @@ class MuutosilmoitusServiceITest(
 
         @Test
         fun `throws exception when muutosilmoitus has already been sent`() {
-            val muutosilmoitus =
-                muutosilmoitusFactory
-                    .builder()
-                    .withSent(OffsetDateTime.parse("2024-03-06T16:28:01Z"))
-                    .save()
+            val muutosilmoitus = muutosilmoitusFactory.builder().withSent().save()
 
             val failure = assertFailure {
                 muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
@@ -677,6 +671,105 @@ class MuutosilmoitusServiceITest(
                 alluClient.reportChange(any(), any(), any())
                 alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+    }
+
+    @Nested
+    inner class MergeMuutosilmoitusToHakemusIfItExists {
+        @ParameterizedTest
+        @EnumSource(ApplicationType::class)
+        fun `doesn't change the hakemus when a muutosilmoitus doesn't exist`(
+            applicationType: ApplicationType
+        ) {
+            val hakemus = hakemusFactory.builder(applicationType).withMandatoryFields().saveEntity()
+            val originalHakemus = hakemus.toHakemus()
+
+            muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(hakemus)
+
+            val updatedHakemus = hakemusService.getById(hakemus.id)
+            assertThat(updatedHakemus).isEqualTo(originalHakemus)
+        }
+
+        @ParameterizedTest
+        @EnumSource(ApplicationType::class)
+        fun `doesn't change the hakemus when the muutosilmoitus hasn't been sent`(
+            applicationType: ApplicationType
+        ) {
+            val hakemus = hakemusFactory.builder(applicationType).withMandatoryFields().saveEntity()
+            val originalHakemus = hakemus.toHakemus()
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withEndTime(originalHakemus.applicationData.endTime!!.plusDays(1))
+                    .withSent(null)
+                    .save()
+
+            muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(hakemus)
+
+            val updatedHakemus = hakemusService.getById(hakemus.id)
+            assertThat(updatedHakemus).isEqualTo(originalHakemus)
+            assertThat(muutosilmoitusService.find(hakemus.id)).isEqualTo(muutosilmoitus)
+        }
+
+        @ParameterizedTest
+        @EnumSource(ApplicationType::class)
+        fun `merges data from the muutosilmoitus when the muutosilmoitus has been sent`(
+            applicationType: ApplicationType
+        ) {
+            val hakemus = hakemusFactory.builder(applicationType).withMandatoryFields().saveEntity()
+            assertThat(hakemus.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]).isNull()
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withStartTime(hakemus.hakemusEntityData.startTime!!.minusDays(1))
+                    .rakennuttaja()
+                    .withSent()
+                    .save()
+
+            muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(hakemus)
+
+            val updatedHakemus = hakemusService.getById(hakemus.id)
+            assertThat(updatedHakemus.applicationData.startTime)
+                .isEqualTo(muutosilmoitus.hakemusData.startTime)
+            val hakemusRakennuttaja =
+                updatedHakemus.applicationData.yhteystiedot().first {
+                    it.rooli == ApplicationContactType.RAKENNUTTAJA
+                }
+            val muutosilmoitusRakennuttaja =
+                muutosilmoitus.hakemusData.yhteystiedot().first {
+                    it.rooli == ApplicationContactType.RAKENNUTTAJA
+                }
+            assertThat(hakemusRakennuttaja.nimi).isEqualTo(muutosilmoitusRakennuttaja.nimi)
+            assertThat(hakemusRakennuttaja.yhteyshenkilot.single().hankekayttajaId)
+                .isEqualTo(muutosilmoitusRakennuttaja.yhteyshenkilot.single().hankekayttajaId)
+        }
+
+        @ParameterizedTest
+        @EnumSource(ApplicationType::class)
+        fun `deletes the merged muutosilmoitus and logs the deletion`(
+            applicationType: ApplicationType
+        ) {
+            val hakemus = hakemusFactory.builder(applicationType).withMandatoryFields().saveEntity()
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withStartTime(hakemus.hakemusEntityData.startTime!!.minusDays(1))
+                    .withSent()
+                    .save()
+            auditLogRepository.deleteAll()
+
+            muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(hakemus)
+
+            assertThat(muutosilmoitusRepository.findAll()).isEmpty()
+            assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.DELETE) {
+                hasServiceActor(ALLU_AUDIT_LOG_USERID)
+                withTarget {
+                    prop(AuditLogTarget::id).isEqualTo(muutosilmoitus.id.toString())
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.MUUTOSILMOITUS)
+                    hasObjectBefore(muutosilmoitus)
+                    hasNoObjectAfter()
+                }
             }
         }
     }
