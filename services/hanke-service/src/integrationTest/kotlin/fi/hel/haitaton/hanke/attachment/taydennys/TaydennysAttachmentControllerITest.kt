@@ -209,6 +209,16 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
         }
 
         @Test
+        fun `returns 404 and error when taydennys is not found`() {
+            every { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) } throws
+                TaydennysNotFoundException(DEFAULT_ID)
+
+            postAttachment().andExpect(status().isNotFound).andExpect(hankeError(HAI6001))
+
+            verifyOrder { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) }
+        }
+
+        @Test
         @WithAnonymousUser
         fun `returns 401 and error when user is unauthorized`() {
             postAttachment().andExpectError(HAI0001)
