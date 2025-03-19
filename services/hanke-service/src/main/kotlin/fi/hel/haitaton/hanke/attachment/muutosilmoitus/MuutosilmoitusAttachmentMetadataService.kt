@@ -21,6 +21,9 @@ class MuutosilmoitusAttachmentMetadataService(
     private val attachmentRepository: MuutosilmoitusAttachmentRepository,
     private val hakemusAttachmentRepository: ApplicationAttachmentRepository,
 ) {
+    @Transactional(readOnly = true)
+    fun getMetadataList(muutosilmoitusId: UUID): List<MuutosilmoitusAttachmentMetadata> =
+        attachmentRepository.findByMuutosilmoitusId(muutosilmoitusId).map { it.toDomain() }
 
     @Transactional(readOnly = true)
     fun findAttachment(attachmentId: UUID): MuutosilmoitusAttachmentMetadata =
