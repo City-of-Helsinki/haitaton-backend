@@ -65,6 +65,12 @@ class MuutosilmoitusAttachmentMetadataService(
         }
     }
 
+    @Transactional
+    fun deleteAttachmentById(attachmentId: UUID) {
+        attachmentRepository.deleteById(attachmentId)
+        logger.info { "Deleted attachment metadata $attachmentId" }
+    }
+
     private fun attachmentAmountReached(entity: MuutosilmoitusIdentifier): Boolean {
         val hakemusAttachmentCount =
             hakemusAttachmentRepository.countByApplicationId(entity.hakemusId)

@@ -32,6 +32,7 @@ import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.verifyOrder
 import io.mockk.verifySequence
 import java.util.UUID
@@ -255,6 +256,88 @@ class MuutosilmoitusAttachmentControllerITest(@Autowired override val mockMvc: M
                     .param("tyyppi", attachmentType.toString())
                     .with(csrf())
             )
+        }
+    }
+
+    @Nested
+    inner class DeleteAttachment {
+
+        private val url = "/muutosilmoitukset/$DEFAULT_ID/liitteet/$attachmentId"
+
+        @Test
+        fun `returns 200 and empty body when deletion succeeds`() {
+            every {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            } returns true
+            justRun { attachmentService.deleteAttachment(attachmentId) }
+
+            delete(url).andExpect(status().isOk).andExpect(content().string(""))
+
+            verifySequence {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+                attachmentService.deleteAttachment(attachmentId)
+            }
+        }
+
+        @Test
+        fun `returns 409 when muutosilmoitus has been sent`() {
+            every {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            } returns true
+            every { attachmentService.deleteAttachment(attachmentId) } throws
+                MuutosilmoitusAlreadySentException(MuutosilmoitusFactory.create(id = DEFAULT_ID))
+
+            delete(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI7002))
+
+            verifySequence {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+                attachmentService.deleteAttachment(attachmentId)
+            }
+        }
+
+        @Test
+        @WithAnonymousUser
+        fun `returns 401 and error when user is unauthorized`() {
+            delete(url).andExpectError(HankeError.HAI0001)
+        }
+
+        @Test
+        fun `returns 404 and error when user has no rights for application`() {
+            every {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            } throws HakemusNotFoundException(APPLICATION_ID)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2001))
+
+            verifySequence {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            }
+        }
+
+        @Test
+        fun `returns 404 and error when attachment not found`() {
+            every {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            } throws AttachmentNotFoundException(attachmentId)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI3002))
+
+            verifySequence {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            }
+        }
+
+        @Test
+        fun `returns 404 and error when muutosilmoitus not found`() {
+            every {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            } throws MuutosilmoitusNotFoundException(DEFAULT_ID)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI7001))
+
+            verifySequence {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, EDIT_APPLICATIONS.name)
+            }
         }
     }
 }

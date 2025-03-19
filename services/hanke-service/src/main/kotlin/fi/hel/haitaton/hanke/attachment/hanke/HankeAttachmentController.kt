@@ -128,6 +128,7 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
             "@hankeAttachmentAuthorizer.authorizeAttachment(#hankeTunnus,#attachmentId,'EDIT')"
     )
     fun deleteAttachment(@PathVariable hankeTunnus: String, @PathVariable attachmentId: UUID) {
+        logger.info { "Deleting attachment $attachmentId from hanke $hankeTunnus." }
         hankeAttachmentService.deleteAttachment(attachmentId)
         logger.info { "Deleted hanke attachment $attachmentId" }
     }

@@ -58,15 +58,6 @@ class TaydennysAttachmentService(
         taydennysRepository.findByIdOrNull(taydennysId)
             ?: throw TaydennysNotFoundException(taydennysId)
 
-    fun deleteAttachment(attachmentId: UUID) {
-        val attachment = metadataService.findAttachment(attachmentId)
-        logger.info { "Deleting attachment metadata ${attachment.id}" }
-        metadataService.deleteAttachmentById(attachment.id)
-        logger.info { "Deleting attachment content at ${attachment.blobLocation}" }
-        contentService.delete(attachment.blobLocation)
-        logger.info { "Deleted attachment $attachmentId from täydennys ${attachment.taydennysId}" }
-    }
-
     fun deleteAllAttachments(taydennys: TaydennysIdentifier) {
         logger.info { "Deleting all attachments from täydennys. ${taydennys.logString()}" }
         val paths = metadataService.deleteAllAttachments(taydennys)
@@ -103,5 +94,8 @@ class TaydennysAttachmentService(
     ): TaydennysAttachmentMetadata =
         metadataService.create(filename, contentType, size, blobPath, attachmentType!!, entity.id)
 
-    override fun delete(blobPath: String): Boolean = contentService.delete(blobPath)
+    override fun deleteMetadata(attachmentId: UUID) =
+        metadataService.deleteAttachmentById(attachmentId)
+
+    override fun deleteContent(blobPath: String): Boolean = contentService.delete(blobPath)
 }
