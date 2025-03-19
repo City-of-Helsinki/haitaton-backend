@@ -15,6 +15,7 @@ import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteyshenkiloException
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteystietoException
 import fi.hel.haitaton.hanke.hakemus.InvalidHiddenRegistryKey
 import fi.hel.haitaton.hanke.hakemus.WrongHakemusTypeException
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusAlreadySentException
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -230,6 +231,14 @@ class ControllerExceptionHandler {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI3003
+    }
+
+    @ExceptionHandler(MuutosilmoitusAlreadySentException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun muutosilmoitusAlreadySentException(ex: MuutosilmoitusAlreadySentException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI7002
     }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
