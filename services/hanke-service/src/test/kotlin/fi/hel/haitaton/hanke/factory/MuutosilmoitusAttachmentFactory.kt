@@ -10,7 +10,6 @@ import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory.Companion.DEFAULT_ID
 import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.OffsetDateTime
 import java.util.UUID
-import org.springframework.http.MediaType
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.stereotype.Component
 
@@ -19,8 +18,6 @@ class MuutosilmoitusAttachmentFactory {
 
     companion object {
         val DEFAULT_ATTACHMENT_ID: UUID = UUID.fromString("5cba3a76-28ad-42aa-b7e6-b5c1775be81a")
-        val MEDIA_TYPE = MediaType.APPLICATION_PDF
-        val CONTENT_TYPE = MEDIA_TYPE.toString()
         val CREATED_AT: OffsetDateTime = OffsetDateTime.parse("2023-11-09T08:03:55Z")
 
         const val FILE_NAME = "file.pdf"
