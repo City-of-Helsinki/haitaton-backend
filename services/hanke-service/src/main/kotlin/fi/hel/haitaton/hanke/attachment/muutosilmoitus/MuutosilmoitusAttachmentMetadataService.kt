@@ -4,11 +4,13 @@ import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusIdentifier
 import java.time.OffsetDateTime
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -19,6 +21,12 @@ class MuutosilmoitusAttachmentMetadataService(
     private val attachmentRepository: MuutosilmoitusAttachmentRepository,
     private val hakemusAttachmentRepository: ApplicationAttachmentRepository,
 ) {
+
+    @Transactional(readOnly = true)
+    fun findAttachment(attachmentId: UUID): MuutosilmoitusAttachmentMetadata =
+        attachmentRepository.findByIdOrNull(attachmentId)?.toDomain()
+            ?: throw AttachmentNotFoundException(attachmentId)
+
     @Transactional
     fun create(
         filename: String,

@@ -2,13 +2,11 @@ package fi.hel.haitaton.hanke.attachment.taydennys
 
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadataDto
-import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.taydennys.TaydennysIdentifier
 import fi.hel.haitaton.hanke.taydennys.TaydennysNotFoundException
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
@@ -25,23 +23,11 @@ private val logger = KotlinLogging.logger {}
 class TaydennysAttachmentService(
     private val metadataService: TaydennysAttachmentMetadataService,
     private val taydennysRepository: TaydennysRepository,
-    private val attachmentContentService: ApplicationAttachmentContentService,
+    private val contentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) : AttachmentService<TaydennysIdentifier, TaydennysAttachmentMetadata> {
     fun getMetadataList(taydennysId: UUID): List<TaydennysAttachmentMetadata> =
         metadataService.getMetadataList(taydennysId)
-
-    fun getContent(attachmentId: UUID): AttachmentContent {
-        val attachment = metadataService.findAttachment(attachmentId)
-
-        if (attachment.attachmentType == ApplicationAttachmentType.VALTAKIRJA) {
-            throw ValtakirjaForbiddenException(attachmentId)
-        }
-
-        val content = attachmentContentService.find(attachment.blobLocation, attachment.id)
-
-        return AttachmentContent(attachment.fileName, attachment.contentType, content)
-    }
 
     fun addAttachment(
         taydennysId: UUID,
@@ -77,7 +63,7 @@ class TaydennysAttachmentService(
         logger.info { "Deleting attachment metadata ${attachment.id}" }
         metadataService.deleteAttachmentById(attachment.id)
         logger.info { "Deleting attachment content at ${attachment.blobLocation}" }
-        attachmentContentService.delete(attachment.blobLocation)
+        contentService.delete(attachment.blobLocation)
         logger.info { "Deleted attachment $attachmentId from täydennys ${attachment.taydennysId}" }
     }
 
@@ -85,7 +71,7 @@ class TaydennysAttachmentService(
         logger.info { "Deleting all attachments from täydennys. ${taydennys.logString()}" }
         val paths = metadataService.deleteAllAttachments(taydennys)
         try {
-            paths.forEach(attachmentContentService::delete)
+            paths.forEach(contentService::delete)
         } catch (e: Exception) {
             logger.error(e) {
                 "Failed to delete all attachment content for täydennys. Continuing with täydennys deletion regardless of error. ${taydennys.logString()}"
@@ -94,12 +80,18 @@ class TaydennysAttachmentService(
         logger.info { "Deleted all attachments from täydennys. ${taydennys.logString()}" }
     }
 
+    override fun findMetadata(attachmentId: UUID): TaydennysAttachmentMetadata =
+        metadataService.findAttachment(attachmentId)
+
+    override fun findContent(attachment: TaydennysAttachmentMetadata): ByteArray =
+        contentService.find(attachment.blobLocation, attachment.id)
+
     override fun upload(
         filename: String,
         contentType: MediaType,
         content: ByteArray,
         entity: TaydennysIdentifier,
-    ): String = attachmentContentService.upload(filename, contentType, content, entity.hakemusId())
+    ): String = contentService.upload(filename, contentType, content, entity.hakemusId())
 
     override fun createMetadata(
         filename: String,
@@ -111,5 +103,5 @@ class TaydennysAttachmentService(
     ): TaydennysAttachmentMetadata =
         metadataService.create(filename, contentType, size, blobPath, attachmentType!!, entity.id)
 
-    override fun delete(blobPath: String): Boolean = attachmentContentService.delete(blobPath)
+    override fun delete(blobPath: String): Boolean = contentService.delete(blobPath)
 }

@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadataDto
-import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.taydennys.TaydennysNotFoundException
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
@@ -38,7 +37,16 @@ private val logger = KotlinLogging.logger {}
 class TaydennysAttachmentController(private val attachmentService: TaydennysAttachmentService) {
 
     @GetMapping("/{attachmentId}/content")
-    @Operation(summary = "Download attachment file")
+    @Operation(
+        summary = "Download attachment file",
+        description =
+            """
+               Download the content for the given attachment.
+
+               If the attachment is a power of attorney (valtakirja), it can't
+               be downloaded because of privacy concerns.
+            """,
+    )
     @ApiResponses(
         value =
             [
@@ -46,6 +54,11 @@ class TaydennysAttachmentController(private val attachmentService: TaydennysAtta
                 ApiResponse(
                     description = "Attachment not found",
                     responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+                ApiResponse(
+                    description = "Attachment is valtakirja",
+                    responseCode = "403",
                     content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
             ]
@@ -111,14 +124,6 @@ class TaydennysAttachmentController(private val attachmentService: TaydennysAtta
     fun deleteAttachment(@PathVariable taydennysId: UUID, @PathVariable attachmentId: UUID) {
         logger.info { "Deleting attachment $attachmentId from täydennys $taydennysId." }
         attachmentService.deleteAttachment(attachmentId)
-    }
-
-    @ExceptionHandler(ValtakirjaForbiddenException::class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    @Hidden
-    fun valtakirjaForbiddenException(ex: ValtakirjaForbiddenException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI3004
     }
 
     @ExceptionHandler(TaydennysNotFoundException::class)
