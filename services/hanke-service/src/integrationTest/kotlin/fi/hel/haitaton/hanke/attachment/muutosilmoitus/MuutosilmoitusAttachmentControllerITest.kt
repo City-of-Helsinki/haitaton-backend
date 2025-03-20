@@ -5,17 +5,17 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.HankeError.HAI0001
-import fi.hel.haitaton.hanke.HankeError.HAI1001
-import fi.hel.haitaton.hanke.HankeError.HAI2001
-import fi.hel.haitaton.hanke.HankeError.HAI7001
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.attachment.APPLICATION_ID
+import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.andExpectError
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
+import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusAttachmentFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
@@ -26,12 +26,14 @@ import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusAlreadySentException
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusAuthorizer
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusNotFoundException
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
+import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.verifyOrder
+import io.mockk.verifySequence
 import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -40,6 +42,9 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpHeaders.CONTENT_DISPOSITION
+import org.springframework.http.MediaType.APPLICATION_PDF
+import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
@@ -48,6 +53,8 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @WebMvcTest(MuutosilmoitusAttachmentController::class)
@@ -59,6 +66,8 @@ class MuutosilmoitusAttachmentControllerITest(@Autowired override val mockMvc: M
     @Autowired private lateinit var attachmentService: MuutosilmoitusAttachmentService
     @Autowired private lateinit var authorizer: MuutosilmoitusAuthorizer
 
+    private val attachmentId: UUID = UUID.fromString("2d3a1fac-53dc-4471-a7b8-ab527690c264")
+
     @BeforeEach
     fun clearMocks() {
         clearAllMocks()
@@ -68,6 +77,83 @@ class MuutosilmoitusAttachmentControllerITest(@Autowired override val mockMvc: M
     fun checkMocks() {
         checkUnnecessaryStub()
         confirmVerified(attachmentService, authorizer)
+    }
+
+    @Nested
+    inner class GetAttachmentContent {
+
+        private val url = "/muutosilmoitukset/$DEFAULT_ID/liitteet/$attachmentId/content"
+
+        @Test
+        fun `returns 200 and attachment file when request is valid`() {
+            every { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) } returns
+                true
+            every { attachmentService.getContent(attachmentId) } returns
+                AttachmentContent(FILE_NAME_PDF, APPLICATION_PDF_VALUE, DUMMY_DATA)
+
+            get(url, APPLICATION_PDF)
+                .andExpect(status().isOk)
+                .andExpect(
+                    header().string(CONTENT_DISPOSITION, "attachment; filename=$FILE_NAME_PDF")
+                )
+                .andExpect(content().bytes(DUMMY_DATA))
+
+            verifySequence {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name)
+                attachmentService.getContent(attachmentId)
+            }
+        }
+
+        @Test
+        @WithAnonymousUser
+        fun `returns 401 and error when user is unauthorized`() {
+            get(url).andExpectError(HankeError.HAI0001)
+        }
+
+        @Test
+        fun `returns 404 and error when user has no rights for application`() {
+            every { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) } throws
+                HakemusNotFoundException(APPLICATION_ID)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2001))
+
+            verifySequence { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) }
+        }
+
+        @Test
+        fun `returns 403 and error when asking for valtakirja`() {
+            every { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) } returns
+                true
+            every { attachmentService.getContent(attachmentId) } throws
+                ValtakirjaForbiddenException(attachmentId)
+
+            get(url).andExpect(status().isForbidden).andExpect(hankeError(HankeError.HAI3004))
+
+            verifySequence {
+                authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name)
+                attachmentService.getContent(attachmentId)
+            }
+        }
+
+        @Test
+        fun `returns 404 and error when attachment not found`() {
+            every { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) } throws
+                AttachmentNotFoundException(attachmentId)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI3002))
+
+            verifySequence { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) }
+        }
+
+        @Test
+        fun `returns 404 and error when muutosilmoitus not found`() {
+            every { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) } throws
+                MuutosilmoitusNotFoundException(DEFAULT_ID)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI7001))
+
+            verifySequence { authorizer.authorizeAttachment(DEFAULT_ID, attachmentId, VIEW.name) }
+        }
     }
 
     @Nested
@@ -121,7 +207,9 @@ class MuutosilmoitusAttachmentControllerITest(@Autowired override val mockMvc: M
             every { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) } throws
                 HankeNotFoundException("HAI24-1")
 
-            postAttachment().andExpect(status().isNotFound).andExpect(hankeError(HAI1001))
+            postAttachment()
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI1001))
 
             verifyOrder { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) }
         }
@@ -131,7 +219,9 @@ class MuutosilmoitusAttachmentControllerITest(@Autowired override val mockMvc: M
             every { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) } throws
                 HakemusNotFoundException(APPLICATION_ID)
 
-            postAttachment().andExpect(status().isNotFound).andExpect(hankeError(HAI2001))
+            postAttachment()
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI2001))
 
             verifyOrder { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) }
         }
@@ -141,7 +231,9 @@ class MuutosilmoitusAttachmentControllerITest(@Autowired override val mockMvc: M
             every { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) } throws
                 MuutosilmoitusNotFoundException(DEFAULT_ID)
 
-            postAttachment().andExpect(status().isNotFound).andExpect(hankeError(HAI7001))
+            postAttachment()
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI7001))
 
             verifyOrder { authorizer.authorize(DEFAULT_ID, EDIT_APPLICATIONS.name) }
         }
@@ -149,7 +241,7 @@ class MuutosilmoitusAttachmentControllerITest(@Autowired override val mockMvc: M
         @Test
         @WithAnonymousUser
         fun `returns 401 and error when user is unauthorized`() {
-            postAttachment().andExpectError(HAI0001)
+            postAttachment().andExpectError(HankeError.HAI0001)
         }
 
         private fun postAttachment(

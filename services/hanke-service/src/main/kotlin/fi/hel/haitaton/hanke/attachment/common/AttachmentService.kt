@@ -1,12 +1,17 @@
 package fi.hel.haitaton.hanke.attachment.common
 
 import fi.hel.haitaton.hanke.domain.Loggable
+import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.http.MediaType
 
 private val logger = KotlinLogging.logger {}
 
 interface AttachmentService<E : Loggable, M : AttachmentMetadata> {
+
+    fun findMetadata(attachmentId: UUID): M
+
+    fun findContent(attachment: M): ByteArray
 
     fun upload(filename: String, contentType: MediaType, content: ByteArray, entity: E): String
 
@@ -20,6 +25,21 @@ interface AttachmentService<E : Loggable, M : AttachmentMetadata> {
     ): M
 
     fun delete(blobPath: String): Boolean
+
+    fun getContent(attachmentId: UUID): AttachmentContent {
+        val attachment = findMetadata(attachmentId)
+
+        if (
+            attachment is AttachmentMetadataWithType &&
+                attachment.attachmentType == ApplicationAttachmentType.VALTAKIRJA
+        ) {
+            throw ValtakirjaForbiddenException(attachmentId)
+        }
+
+        val content = findContent(attachment)
+
+        return AttachmentContent(attachment.fileName, attachment.contentType, content)
+    }
 
     /**
      * Saves the attachment.

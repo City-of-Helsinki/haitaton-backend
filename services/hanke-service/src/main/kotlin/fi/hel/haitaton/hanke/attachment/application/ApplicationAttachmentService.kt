@@ -4,11 +4,9 @@ import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
-import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import fi.hel.haitaton.hanke.hakemus.HakemusNotFoundException
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
@@ -26,25 +24,13 @@ class ApplicationAttachmentService(
     private val alluClient: AlluClient,
     private val metadataService: ApplicationAttachmentMetadataService,
     private val hakemusRepository: HakemusRepository,
-    private val attachmentContentService: ApplicationAttachmentContentService,
+    private val contentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) : AttachmentService<HakemusIdentifier, ApplicationAttachmentMetadata> {
 
     /** Authorization in controller throws exception if application ID is unknown. */
     fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadata> =
         metadataService.getMetadataList(applicationId)
-
-    fun getContent(attachmentId: UUID): AttachmentContent {
-        val attachment = metadataService.findAttachment(attachmentId)
-
-        if (attachment.attachmentType == ApplicationAttachmentType.VALTAKIRJA) {
-            throw ValtakirjaForbiddenException(attachmentId)
-        }
-
-        val content = attachmentContentService.find(attachment)
-
-        return AttachmentContent(attachment.fileName, attachment.contentType, content)
-    }
 
     /**
      * Attachment can be added if application has not proceeded to HANDLING or later status. It will
@@ -97,7 +83,7 @@ class ApplicationAttachmentService(
         logger.info { "Deleting attachment metadata ${attachment.id}" }
         metadataService.deleteAttachmentById(attachment.id)
         logger.info { "Deleting attachment content at ${attachment.blobLocation}" }
-        attachmentContentService.delete(attachment.blobLocation)
+        contentService.delete(attachment.blobLocation)
         logger.info { "Deleted attachment $attachmentId from application ${hakemus.id}" }
     }
 
@@ -105,7 +91,7 @@ class ApplicationAttachmentService(
         logger.info { "Deleting all attachments from application. ${hakemus.logString()}" }
         metadataService.deleteAllAttachments(hakemus)
         try {
-            attachmentContentService.deleteAllForApplication(hakemus)
+            contentService.deleteAllForApplication(hakemus)
             logger.info { "Deleted all attachments from application. ${hakemus.logString()}" }
         } catch (e: Exception) {
             logger.error(e) {
@@ -122,7 +108,7 @@ class ApplicationAttachmentService(
             return
         }
 
-        alluClient.addAttachments(alluId, attachments) { attachmentContentService.find(it) }
+        alluClient.addAttachments(alluId, attachments) { contentService.find(it) }
     }
 
     private fun findHakemus(applicationId: Long): HakemusIdentifier =
@@ -131,12 +117,18 @@ class ApplicationAttachmentService(
 
     private fun isInAllu(hakemus: HakemusIdentifier): Boolean = hakemus.alluid != null
 
+    override fun findMetadata(attachmentId: UUID): ApplicationAttachmentMetadata =
+        metadataService.findAttachment(attachmentId)
+
+    override fun findContent(attachment: ApplicationAttachmentMetadata): ByteArray =
+        contentService.find(attachment)
+
     override fun upload(
         filename: String,
         contentType: MediaType,
         content: ByteArray,
         entity: HakemusIdentifier,
-    ): String = attachmentContentService.upload(filename, contentType, content, entity.id)
+    ): String = contentService.upload(filename, contentType, content, entity.id)
 
     override fun createMetadata(
         filename: String,
@@ -148,5 +140,5 @@ class ApplicationAttachmentService(
     ): ApplicationAttachmentMetadata =
         metadataService.create(filename, contentType, size, blobPath, attachmentType!!, entity.id)
 
-    override fun delete(blobPath: String) = attachmentContentService.delete(blobPath)
+    override fun delete(blobPath: String) = contentService.delete(blobPath)
 }

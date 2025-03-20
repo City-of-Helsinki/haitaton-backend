@@ -60,6 +60,12 @@ class MuutosilmoitusAttachmentService(
         muutosilmoitusRepository.findByIdOrNull(muutosilmoitusId)
             ?: throw MuutosilmoitusNotFoundException(muutosilmoitusId)
 
+    override fun findMetadata(attachmentId: UUID): MuutosilmoitusAttachmentMetadata =
+        metadataService.findAttachment(attachmentId)
+
+    override fun findContent(attachment: MuutosilmoitusAttachmentMetadata): ByteArray =
+        contentService.find(attachment.blobLocation, attachment.id)
+
     override fun upload(
         filename: String,
         contentType: MediaType,
