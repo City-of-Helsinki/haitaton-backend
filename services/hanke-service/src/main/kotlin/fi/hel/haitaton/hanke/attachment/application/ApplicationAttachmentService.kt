@@ -68,25 +68,6 @@ class ApplicationAttachmentService(
         return newAttachment.toDto()
     }
 
-    /** Attachment can be deleted if the application has not been sent to Allu (alluId null). */
-    fun deleteAttachment(attachmentId: UUID) {
-        val attachment = metadataService.findAttachment(attachmentId)
-        val hakemus = findHakemus(attachment.applicationId)
-
-        if (isInAllu(hakemus)) {
-            logger.warn {
-                "Application is in Allu, attachments cannot be deleted. ${hakemus.logString()}"
-            }
-            throw ApplicationInAlluException(hakemus.id, hakemus.alluid)
-        }
-
-        logger.info { "Deleting attachment metadata ${attachment.id}" }
-        metadataService.deleteAttachmentById(attachment.id)
-        logger.info { "Deleting attachment content at ${attachment.blobLocation}" }
-        contentService.delete(attachment.blobLocation)
-        logger.info { "Deleted attachment $attachmentId from application ${hakemus.id}" }
-    }
-
     fun deleteAllAttachments(hakemus: HakemusIdentifier) {
         logger.info { "Deleting all attachments from application. ${hakemus.logString()}" }
         metadataService.deleteAllAttachments(hakemus)
@@ -140,5 +121,21 @@ class ApplicationAttachmentService(
     ): ApplicationAttachmentMetadata =
         metadataService.create(filename, contentType, size, blobPath, attachmentType!!, entity.id)
 
-    override fun delete(blobPath: String) = contentService.delete(blobPath)
+    override fun deleteMetadata(attachmentId: UUID) {
+        metadataService.deleteAttachmentById(attachmentId)
+    }
+
+    override fun deleteContent(blobPath: String) = contentService.delete(blobPath)
+
+    /** Attachment can be deleted if the application has not been sent to Allu (alluId null). */
+    override fun beforeDelete(attachment: ApplicationAttachmentMetadata) {
+        val hakemus = findHakemus(attachment.applicationId)
+
+        if (isInAllu(hakemus)) {
+            logger.warn {
+                "Application is in Allu, attachments cannot be deleted. ${hakemus.logString()}"
+            }
+            throw ApplicationInAlluException(hakemus.id, hakemus.alluid)
+        }
+    }
 }

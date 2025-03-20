@@ -39,13 +39,6 @@ class HankeAttachmentService(
         return saveAttachment(hanke, attachment.bytes, filename, mediatype).toDto()
     }
 
-    fun deleteAttachment(attachmentId: UUID) {
-        logger.info { "Deleting hanke attachment $attachmentId..." }
-        val attachmentToDelete = metadataService.findAttachment(attachmentId)
-        contentService.delete(attachmentToDelete)
-        metadataService.delete(attachmentId)
-    }
-
     fun deleteAllAttachments(hanke: HankeIdentifier) {
         logger.info { "Deleting all attachments from hanke ${hanke.logString()}" }
         contentService.deleteAllForHanke(hanke.id)
@@ -82,5 +75,7 @@ class HankeAttachmentService(
     ): HankeAttachmentMetadata =
         metadataService.saveAttachment(entity.hankeTunnus, filename, contentType, size, blobPath)
 
-    override fun delete(blobPath: String) = contentService.delete(blobPath)
+    override fun deleteMetadata(attachmentId: UUID) = metadataService.delete(attachmentId)
+
+    override fun deleteContent(blobPath: String) = contentService.delete(blobPath)
 }

@@ -24,7 +24,17 @@ interface AttachmentService<E : Loggable, M : AttachmentMetadata> {
         attachmentType: ApplicationAttachmentType? = null,
     ): M
 
-    fun delete(blobPath: String): Boolean
+    fun deleteMetadata(attachmentId: UUID)
+
+    fun deleteContent(blobPath: String): Boolean
+
+    /**
+     * Callback called before deleting the attachment. Can be used to check things like if hakemus
+     * or muutosilmoitus has been sent to Allu yet.
+     */
+    fun beforeDelete(attachment: M) {
+        // Do nothing by default.
+    }
 
     fun getContent(attachmentId: UUID): AttachmentContent {
         val attachment = findMetadata(attachmentId)
@@ -76,12 +86,24 @@ interface AttachmentService<E : Loggable, M : AttachmentMetadata> {
                 logger.error(e) {
                     "Attachment metadata save failed, deleting attachment content $blobPath"
                 }
-                delete(blobPath)
+                deleteContent(blobPath)
                 throw e
             }
         logger.info {
             "Added attachment metadata ${newAttachment.id} and content $blobPath for ${entity.logString()}"
         }
         return newAttachment
+    }
+
+    fun deleteAttachment(attachmentId: UUID) {
+        val attachment = findMetadata(attachmentId)
+
+        beforeDelete(attachment)
+
+        logger.info { "Deleting attachment metadata ${attachment.id}" }
+        deleteMetadata(attachment.id)
+        logger.info { "Deleting attachment content at ${attachment.blobLocation}" }
+        deleteContent(attachment.blobLocation)
+        logger.info { "Deleted attachment $attachmentId." }
     }
 }

@@ -3,11 +3,14 @@ package fi.hel.haitaton.hanke.attachment.muutosilmoitus
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.containsExactly
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
+import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.isPresent
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
@@ -351,6 +354,51 @@ class MuutosilmoitusAttachmentServiceITest(
                 messageContains("Muutosilmoitus is already sent to Allu")
             }
             assertThat(attachmentRepository.findAll()).isEmpty()
+        }
+    }
+
+    @Nested
+    inner class DeleteAttachment {
+        @Test
+        fun `throws exception when attachment is missing`() {
+            val attachmentId = UUID.fromString("ab7993b7-a775-4eac-b5b7-8546332944fe")
+
+            val failure = assertFailure { attachmentService.deleteAttachment(attachmentId) }
+
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachmentId.toString())
+            }
+        }
+
+        @Test
+        fun `throws exception when muutosilmoitus has been sent to Allu`() {
+            val muutosilmoitus = muutosilmoitusFactory.builder().withSent().save()
+            val attachment = attachmentFactory.save(muutosilmoitus = muutosilmoitus)
+
+            val failure = assertFailure {
+                attachmentService.deleteAttachment(attachmentId = attachment.id!!)
+            }
+
+            failure.all {
+                hasClass(MuutosilmoitusAlreadySentException::class)
+                messageContains("Muutosilmoitus is already sent to Allu")
+                messageContains("id=${muutosilmoitus.id}")
+            }
+            assertThat(attachmentRepository.findById(attachment.id!!)).isPresent()
+        }
+
+        @Test
+        fun `deletes attachment and content`() {
+            val attachment = attachmentFactory.save()
+            assertThat(attachmentRepository.findAll()).hasSize(1)
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET).map { it.path })
+                .containsExactly(attachment.blobLocation)
+
+            attachmentService.deleteAttachment(attachment.id!!)
+
+            assertThat(attachmentRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).isEmpty()
         }
     }
 }
