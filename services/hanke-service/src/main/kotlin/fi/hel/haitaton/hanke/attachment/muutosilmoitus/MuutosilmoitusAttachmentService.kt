@@ -56,6 +56,21 @@ class MuutosilmoitusAttachmentService(
         return newAttachment
     }
 
+    fun deleteAllAttachments(muutosilmoitus: MuutosilmoitusIdentifier) {
+        logger.info {
+            "Deleting all attachments from muutosilmoitus. ${muutosilmoitus.logString()}"
+        }
+        val paths = metadataService.deleteAllAttachments(muutosilmoitus)
+        try {
+            paths.forEach(contentService::delete)
+        } catch (e: Exception) {
+            logger.error(e) {
+                "Failed to delete all attachment content for muutosilmoitus. Continuing with muutosilmoitus deletion regardless of error. ${muutosilmoitus.logString()}"
+            }
+        }
+        logger.info { "Deleted all attachments from muutosilmoitus. ${muutosilmoitus.logString()}" }
+    }
+
     private fun findMuutosilmoitus(muutosilmoitusId: UUID): MuutosilmoitusEntity =
         muutosilmoitusRepository.findByIdOrNull(muutosilmoitusId)
             ?: throw MuutosilmoitusNotFoundException(muutosilmoitusId)
