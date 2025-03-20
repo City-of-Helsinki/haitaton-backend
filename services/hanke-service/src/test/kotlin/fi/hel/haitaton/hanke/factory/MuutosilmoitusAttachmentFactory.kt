@@ -13,6 +13,7 @@ import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentM
 import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentRepository
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory.Companion.DEFAULT_ID
 import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusEntity
 import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -26,6 +27,29 @@ class MuutosilmoitusAttachmentFactory(
     private val muutosilmoitusFactory: MuutosilmoitusFactory,
     private val fileClient: FileClient,
 ) {
+    fun save(
+        muutosilmoitus: MuutosilmoitusEntity,
+        id: UUID? = null,
+        fileName: String = FILE_NAME_PDF,
+        contentType: MediaType = MEDIA_TYPE,
+        size: Long = DEFAULT_SIZE,
+        createdByUser: String = USERNAME,
+        createdAt: OffsetDateTime = CREATED_AT,
+        attachmentType: ApplicationAttachmentType = MUU,
+        content: ByteArray? = PDF_BYTES,
+    ) =
+        save(
+            id = id,
+            fileName = fileName,
+            contentType = contentType,
+            size = size,
+            createdByUser = createdByUser,
+            createdAt = createdAt,
+            attachmentType = attachmentType,
+            muutosilmoitus = muutosilmoitus.toDomain(),
+            content = content,
+        )
+
     fun save(
         id: UUID? = null,
         fileName: String = FILE_NAME_PDF,
