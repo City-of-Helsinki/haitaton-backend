@@ -55,6 +55,7 @@ import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
+import fi.hel.haitaton.hanke.factory.MuutosilmoitusAttachmentFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
@@ -147,6 +148,7 @@ class HakemusServiceITest(
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val alluClient: AlluClient,
     @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
+    @Autowired private val muutosilmoitusAttachmentFactory: MuutosilmoitusAttachmentFactory,
     @Autowired private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
     @Autowired private val taydennysFactory: TaydennysFactory,
     @Autowired private val taydennysAttachmentFactory: TaydennysAttachmentFactory,
@@ -404,6 +406,35 @@ class HakemusServiceITest(
                 prop(MuutosilmoitusWithExtras::muutokset)
                     .containsExactlyInAnyOrder("workDescription", "additionalInfo")
             }
+        }
+
+        @Test
+        fun `returns liitteet with muutosilmoitus`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                    .saveEntity()
+            val muutosilmoitus = muutosilmoitusFactory.builder(hakemus).save()
+            muutosilmoitusAttachmentFactory.save(
+                fileName = "First",
+                muutosilmoitus = muutosilmoitus,
+            )
+            muutosilmoitusAttachmentFactory.save(
+                fileName = "Second",
+                muutosilmoitus = muutosilmoitus,
+            )
+
+            val response = hakemusService.getWithExtras(hakemus.id)
+
+            assertThat(response.muutosilmoitus)
+                .isNotNull()
+                .prop(MuutosilmoitusWithExtras::liitteet)
+                .all {
+                    hasSize(2)
+                    extracting { it.fileName }.containsExactlyInAnyOrder("First", "Second")
+                }
         }
     }
 
