@@ -17,13 +17,15 @@ import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.PDF_BYTES
-import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
+import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadResponse
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
@@ -51,6 +53,7 @@ class MuutosilmoitusAttachmentServiceITest(
     @Autowired private val attachmentService: MuutosilmoitusAttachmentService,
     @Autowired private val attachmentRepository: MuutosilmoitusAttachmentRepository,
     @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
+    @Autowired private val attachmentFactory: MuutosilmoitusAttachmentFactory,
     @Autowired private val fileClient: MockFileClient,
 ) : IntegrationTest() {
     private lateinit var mockClamAv: MockWebServer
@@ -67,6 +70,58 @@ class MuutosilmoitusAttachmentServiceITest(
     fun tearDown() {
         mockClamAv.shutdown()
         checkUnnecessaryStub()
+    }
+
+    @Nested
+    inner class GetContent {
+        @Test
+        fun `throws exception when attachment not found`() {
+            val attachmentId = UUID.fromString("93b5c49d-918a-453d-a2bf-b918b47923c1")
+
+            val failure = assertFailure { attachmentService.getContent(attachmentId) }
+
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachmentId.toString())
+            }
+        }
+
+        @Test
+        fun `throws exception when content not in file storage`() {
+            val attachment = attachmentFactory.save()
+            fileClient.delete(Container.HAKEMUS_LIITTEET, attachment.blobLocation)
+
+            val failure = assertFailure { attachmentService.getContent(attachment.id!!) }
+
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachment.id.toString())
+            }
+        }
+
+        @Test
+        fun `returns the attachment content, filename and type`() {
+            val attachment = attachmentFactory.save()
+
+            val result = attachmentService.getContent(attachment.id!!)
+
+            assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+            assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+            assertThat(result.bytes).isEqualTo(PDF_BYTES)
+        }
+
+        @Test
+        fun `throws exception when trying to get valtakirja content`() {
+            val attachment =
+                attachmentFactory.save(attachmentType = ApplicationAttachmentType.VALTAKIRJA)
+
+            val failure = assertFailure { attachmentService.getContent(attachment.id!!) }
+
+            failure.all {
+                hasClass(ValtakirjaForbiddenException::class)
+                messageContains("id=${attachment.id}")
+            }
+        }
     }
 
     @Nested
@@ -110,7 +165,8 @@ class MuutosilmoitusAttachmentServiceITest(
                     .startsWith("${muutosilmoitus.hakemusId}/")
             }
 
-            val content = fileClient.download(HAKEMUS_LIITTEET, attachments.first().blobLocation)
+            val content =
+                fileClient.download(Container.HAKEMUS_LIITTEET, attachments.first().blobLocation)
             assertThat(content)
                 .isNotNull()
                 .prop(DownloadResponse::content)

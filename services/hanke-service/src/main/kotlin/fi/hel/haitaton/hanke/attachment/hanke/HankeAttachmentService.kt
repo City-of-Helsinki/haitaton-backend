@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
@@ -25,12 +24,6 @@ class HankeAttachmentService(
 ) : AttachmentService<HankeIdentifier, HankeAttachmentMetadata> {
 
     fun getMetadataList(hankeTunnus: String) = metadataService.getMetadataList(hankeTunnus)
-
-    fun getContent(attachmentId: UUID): AttachmentContent {
-        val attachment = metadataService.findAttachment(attachmentId)
-        val content = contentService.find(attachment)
-        return AttachmentContent(attachment.fileName, attachment.contentType, content)
-    }
 
     fun uploadHankeAttachment(
         hankeTunnus: String,
@@ -59,6 +52,12 @@ class HankeAttachmentService(
         metadataService.deleteAllByHanke(hanke.id)
         logger.info { "Deleted all attachments from hanke ${hanke.logString()}" }
     }
+
+    override fun findMetadata(attachmentId: UUID): HankeAttachmentMetadata =
+        metadataService.findAttachment(attachmentId)
+
+    override fun findContent(attachment: HankeAttachmentMetadata): ByteArray =
+        contentService.find(attachment)
 
     override fun upload(
         filename: String,

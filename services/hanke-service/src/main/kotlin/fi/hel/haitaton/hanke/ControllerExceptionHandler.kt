@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationInAlluException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import fi.hel.haitaton.hanke.hakemus.HakemusAlreadyProcessingException
@@ -231,6 +232,14 @@ class ControllerExceptionHandler {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI3003
+    }
+
+    @ExceptionHandler(ValtakirjaForbiddenException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @Hidden
+    fun valtakirjaForbiddenException(ex: ValtakirjaForbiddenException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI3004
     }
 
     @ExceptionHandler(MuutosilmoitusAlreadySentException::class)
