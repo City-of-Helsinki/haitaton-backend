@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository
 @Repository
 interface MuutosilmoitusAttachmentRepository : JpaRepository<MuutosilmoitusAttachmentEntity, UUID> {
     fun countByMuutosilmoitusId(muutosilmoitusId: UUID): Int
+
+    fun findByMuutosilmoitusId(muutosilmoitusId: UUID): List<MuutosilmoitusAttachmentEntity>
 }

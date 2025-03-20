@@ -34,6 +34,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRegistryKey
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withTimes
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.MuutosilmoitusAttachmentFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory.Companion.withExtras
 import fi.hel.haitaton.hanke.factory.PaatosFactory
@@ -46,6 +47,7 @@ import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusWithExtras
 import fi.hel.haitaton.hanke.paatos.PaatosTila.KORVATTU
 import fi.hel.haitaton.hanke.paatos.PaatosTila.NYKYINEN
 import fi.hel.haitaton.hanke.paatos.PaatosTyyppi.PAATOS
@@ -459,6 +461,47 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 .andExpect(jsonPath("muutosilmoitus").exists())
                 .andExpect(jsonPath("muutosilmoitus.muutokset[0]").value(muutokset[0]))
                 .andExpect(jsonPath("muutosilmoitus.muutokset[1]").value(muutokset[1]))
+
+            verifySequence {
+                authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)
+                hakemusService.getWithExtras(id)
+                disclosureLogService.saveForHakemusResponse(any(), USERNAME)
+                disclosureLogService.saveForMuutosilmoitus(
+                    muutosilmoitus.toResponse().muutosilmoitus,
+                    USERNAME,
+                )
+            }
+        }
+
+        @ParameterizedTest
+        @EnumSource(ApplicationType::class)
+        fun `returns muutosilmoitus liitteet with hakemus`(applicationType: ApplicationType) {
+            val hakemus =
+                HakemusFactory.create(
+                    id = id,
+                    applicationType = applicationType,
+                    hankeTunnus = HANKE_TUNNUS,
+                )
+            val liitteet =
+                listOf(
+                    MuutosilmoitusAttachmentFactory.create(fileName = "First"),
+                    MuutosilmoitusAttachmentFactory.create(fileName = "Second"),
+                )
+            val muutosilmoitus: MuutosilmoitusWithExtras =
+                MuutosilmoitusFactory.create(
+                        hakemusId = hakemus.id,
+                        hakemusData = hakemus.applicationData,
+                    )
+                    .withExtras(liitteet = liitteet)
+            every { hakemusService.getWithExtras(id) } returns
+                hakemus.withExtras(muutosilmoitus = muutosilmoitus)
+            every { authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name) } returns true
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("muutosilmoitus").exists())
+                .andExpect(jsonPath("muutosilmoitus.liitteet[0].fileName").value("First"))
+                .andExpect(jsonPath("muutosilmoitus.liitteet[1].fileName").value("Second"))
 
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.VIEW.name)

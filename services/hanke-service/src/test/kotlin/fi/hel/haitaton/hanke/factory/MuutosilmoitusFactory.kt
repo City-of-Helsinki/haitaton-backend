@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
@@ -141,8 +142,10 @@ class MuutosilmoitusFactory(
         fun Muutosilmoitus.toUpdateRequest(): HakemusUpdateRequest =
             this.toResponse().applicationData.toJsonString().parseJson()
 
-        fun Muutosilmoitus.withExtras(muutokset: List<String> = listOf()) =
-            MuutosilmoitusWithExtras(id, hakemusId, sent, hakemusData, muutokset)
+        fun Muutosilmoitus.withExtras(
+            muutokset: List<String> = listOf(),
+            liitteet: List<MuutosilmoitusAttachmentMetadata> = listOf(),
+        ) = MuutosilmoitusWithExtras(id, hakemusId, sent, hakemusData, muutokset, liitteet)
 
         fun createYhteyshenkiloEntity(
             hankeId: Int,
