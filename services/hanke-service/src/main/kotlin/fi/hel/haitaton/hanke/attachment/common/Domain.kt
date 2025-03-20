@@ -12,7 +12,7 @@ interface AttachmentMetadata {
     val size: Long
     val createdByUserId: String
     val createdAt: OffsetDateTime
-    val blobLocation: String?
+    val blobLocation: String
 }
 
 interface AttachmentMetadataWithType : AttachmentMetadata {

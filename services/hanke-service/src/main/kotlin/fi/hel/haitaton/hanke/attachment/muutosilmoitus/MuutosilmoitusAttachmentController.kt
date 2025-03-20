@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -106,6 +107,40 @@ class MuutosilmoitusAttachmentController(
         @RequestParam("liite") attachment: MultipartFile,
     ): MuutosilmoitusAttachmentMetadataDto {
         return attachmentService.addAttachment(muutosilmoitusId, tyyppi, attachment).toDto()
+    }
+
+    @DeleteMapping("/{attachmentId}")
+    @Operation(
+        summary = "Delete attachment from muutosilmoitus",
+        description =
+            """
+               Can be deleted if muutosilmoitus has not been sent to Allu.
+
+               Don't delete if muutosilmoitus has value in sent.
+            """,
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "Delete attachment", responseCode = "200"),
+                ApiResponse(
+                    description = "Attachment not found",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+                ApiResponse(
+                    description = "Application already in Allu",
+                    responseCode = "409",
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
+    @PreAuthorize(
+        "@muutosilmoitusAuthorizer.authorizeAttachment(#muutosilmoitusId, #attachmentId, 'EDIT_APPLICATIONS')"
+    )
+    fun removeAttachment(@PathVariable muutosilmoitusId: UUID, @PathVariable attachmentId: UUID) {
+        logger.info { "Deleting attachment $attachmentId from muutosilmoitus $muutosilmoitusId." }
+        return attachmentService.deleteAttachment(attachmentId)
     }
 
     @ExceptionHandler(MuutosilmoitusNotFoundException::class)

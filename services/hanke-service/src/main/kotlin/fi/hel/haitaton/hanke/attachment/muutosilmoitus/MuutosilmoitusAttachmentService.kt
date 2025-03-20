@@ -83,5 +83,20 @@ class MuutosilmoitusAttachmentService(
     ): MuutosilmoitusAttachmentMetadata =
         metadataService.create(filename, contentType, size, blobPath, attachmentType!!, entity.id)
 
-    override fun delete(blobPath: String): Boolean = contentService.delete(blobPath)
+    override fun deleteMetadata(attachmentId: UUID) =
+        metadataService.deleteAttachmentById(attachmentId)
+
+    override fun deleteContent(blobPath: String): Boolean = contentService.delete(blobPath)
+
+    /** Attachment can be deleted if the muutosilmoitus has not been sent to Allu (sent is null). */
+    override fun beforeDelete(attachment: MuutosilmoitusAttachmentMetadata) {
+        val muutosilmoitus = findMuutosilmoitus(attachment.muutosilmoitusId)
+
+        if (muutosilmoitus.sent != null) {
+            logger.warn {
+                "Application is in Allu, attachments cannot be deleted. ${muutosilmoitus.logString()}"
+            }
+            throw MuutosilmoitusAlreadySentException(muutosilmoitus)
+        }
+    }
 }
