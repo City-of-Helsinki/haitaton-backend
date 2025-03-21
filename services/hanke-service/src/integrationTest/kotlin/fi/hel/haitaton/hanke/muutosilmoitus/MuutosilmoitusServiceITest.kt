@@ -17,6 +17,9 @@ import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
+import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.common.MockFileClient
+import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentRepository
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
@@ -25,6 +28,7 @@ import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HaittaFactory.DEFAULT_HHS_PYORALIIKENNE
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory.Companion.withPaperDecisionReceiver
+import fi.hel.haitaton.hanke.factory.MuutosilmoitusAttachmentFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory.Companion.toUpdateRequest
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
@@ -81,14 +85,17 @@ class MuutosilmoitusServiceITest(
     @Autowired private val muutosilmoitusService: MuutosilmoitusService,
     @Autowired private val hakemusService: HakemusService,
     @Autowired private val hankeService: HankeService,
+    @Autowired private val attachmentFactory: MuutosilmoitusAttachmentFactory,
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
+    @Autowired private val attachmentRepository: MuutosilmoitusAttachmentRepository,
     @Autowired private val auditLogRepository: AuditLogRepository,
     @Autowired private val hankekayttajaRepository: HankekayttajaRepository,
     @Autowired private val muutosilmoitusRepository: MuutosilmoitusRepository,
     @Autowired private val yhteystietoRepository: MuutosilmoituksenYhteystietoRepository,
     @Autowired private val yhteyshenkiloRepository: MuutosilmoituksenYhteyshenkiloRepository,
     @Autowired private val alluClient: AlluClient,
+    @Autowired private val fileClient: MockFileClient,
 ) : IntegrationTest() {
 
     @BeforeEach
@@ -355,6 +362,38 @@ class MuutosilmoitusServiceITest(
 
             assertThat(hankeService.loadHanke(hakemus.hankeTunnus)!!)
                 .hasSameGeometryAs((hakemus.applicationData as JohtoselvityshakemusData).areas!!)
+        }
+
+        @Test
+        fun `deletes the attachments when deleting a muutosilmoitus`() {
+            val muutosilmoitus = muutosilmoitusFactory.builder().save()
+            attachmentFactory.save(muutosilmoitus = muutosilmoitus)
+            attachmentFactory.save(muutosilmoitus = muutosilmoitus)
+            assertThat(attachmentRepository.findByMuutosilmoitusId(muutosilmoitus.id)).hasSize(2)
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
+
+            muutosilmoitusService.delete(muutosilmoitus.id, USERNAME)
+
+            assertThat(muutosilmoitusRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).isEmpty()
+            assertThat(attachmentRepository.findByMuutosilmoitusId(muutosilmoitus.id)).isEmpty()
+        }
+
+        @Test
+        fun `deletes all attachment metadata even when deleting attachment content fails`() {
+            val muutosilmoitus = muutosilmoitusFactory.builder().save()
+            attachmentFactory.save(muutosilmoitus = muutosilmoitus)
+            attachmentFactory.save(muutosilmoitus = muutosilmoitus)
+            assertThat(attachmentRepository.findByMuutosilmoitusId(muutosilmoitus.id)).hasSize(2)
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
+            fileClient.connected = false
+
+            muutosilmoitusService.delete(muutosilmoitus.id, USERNAME)
+
+            fileClient.connected = true
+            assertThat(muutosilmoitusRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
+            assertThat(attachmentRepository.findByMuutosilmoitusId(muutosilmoitus.id)).isEmpty()
         }
     }
 

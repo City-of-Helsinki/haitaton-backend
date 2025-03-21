@@ -74,6 +74,22 @@ class MuutosilmoitusAttachmentMetadataService(
         logger.info { "Deleted attachment metadata $attachmentId" }
     }
 
+    /**
+     * Delete all attachments for muutosilmoitus and return the blob locations of the deleted
+     * attachments.
+     */
+    @Transactional
+    fun deleteAllAttachments(muutosilmoitus: MuutosilmoitusIdentifier): List<String> {
+        return attachmentRepository
+            .deleteByMuutosilmoitusId(muutosilmoitus.id)
+            .map(MuutosilmoitusAttachmentEntity::blobLocation)
+            .also {
+                logger.info {
+                    "Deleted all attachment metadata for muutosilmoitus ${muutosilmoitus.logString()}"
+                }
+            }
+    }
+
     private fun attachmentAmountReached(entity: MuutosilmoitusIdentifier): Boolean {
         val hakemusAttachmentCount =
             hakemusAttachmentRepository.countByApplicationId(entity.hakemusId)
