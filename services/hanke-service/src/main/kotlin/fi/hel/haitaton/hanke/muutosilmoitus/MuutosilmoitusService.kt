@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentService
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
@@ -49,6 +50,7 @@ class MuutosilmoitusService(
     private val hakemusRepository: HakemusRepository,
     private val loggingService: MuutosilmoitusLoggingService,
     override val hakemusService: HakemusService,
+    private val attachmentService: MuutosilmoitusAttachmentService,
     override val hakemusAttachmentService: ApplicationAttachmentService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val disclosureLogService: DisclosureLogService,
@@ -146,6 +148,7 @@ class MuutosilmoitusService(
             muutosilmoitusEntity,
         )
 
+        attachmentService.deleteAllAttachments(muutosilmoitusEntity)
         val muutosilmoitus = muutosilmoitusEntity.toDomain()
         muutosilmoitusRepository.delete(muutosilmoitusEntity)
         loggingService.logDelete(muutosilmoitus, currentUserId)
