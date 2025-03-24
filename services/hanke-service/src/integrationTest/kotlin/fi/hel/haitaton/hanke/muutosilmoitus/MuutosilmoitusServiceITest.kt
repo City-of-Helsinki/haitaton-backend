@@ -17,7 +17,11 @@ import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
+import fi.hel.haitaton.hanke.attachment.PDF_BYTES
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentRepository
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
@@ -83,6 +87,7 @@ import org.springframework.beans.factory.annotation.Autowired
 
 class MuutosilmoitusServiceITest(
     @Autowired private val muutosilmoitusService: MuutosilmoitusService,
+    @Autowired private val attachmentContentService: ApplicationAttachmentContentService,
     @Autowired private val hakemusService: HakemusService,
     @Autowired private val hankeService: HankeService,
     @Autowired private val attachmentFactory: MuutosilmoitusAttachmentFactory,
@@ -90,6 +95,7 @@ class MuutosilmoitusServiceITest(
     @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
     @Autowired private val attachmentRepository: MuutosilmoitusAttachmentRepository,
     @Autowired private val auditLogRepository: AuditLogRepository,
+    @Autowired private val hakemusAttachmentRepository: ApplicationAttachmentRepository,
     @Autowired private val hankekayttajaRepository: HankekayttajaRepository,
     @Autowired private val muutosilmoitusRepository: MuutosilmoitusRepository,
     @Autowired private val yhteystietoRepository: MuutosilmoituksenYhteystietoRepository,
@@ -810,6 +816,35 @@ class MuutosilmoitusServiceITest(
                     hasNoObjectAfter()
                 }
             }
+        }
+
+        @Test
+        fun `transfers attachments from muutosilmoitus to hakemus`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .saveEntity()
+            val muutosilmoitus = muutosilmoitusFactory.builder(hakemus).withSent().save()
+            val attachment = attachmentFactory.save(muutosilmoitus = muutosilmoitus).toDomain()
+
+            muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(hakemus)
+
+            assertThat(attachmentRepository.findAll()).isEmpty()
+            val hakemusAttachment =
+                hakemusAttachmentRepository.findByApplicationId(hakemus.id).single().toDomain()
+            assertThat(hakemusAttachment).all {
+                prop(ApplicationAttachmentMetadata::fileName).isEqualTo(attachment.fileName)
+                prop(ApplicationAttachmentMetadata::contentType).isEqualTo(attachment.contentType)
+                prop(ApplicationAttachmentMetadata::size).isEqualTo(attachment.size)
+                prop(ApplicationAttachmentMetadata::blobLocation).isEqualTo(attachment.blobLocation)
+                prop(ApplicationAttachmentMetadata::createdByUserId)
+                    .isEqualTo(attachment.createdByUserId)
+                prop(ApplicationAttachmentMetadata::createdAt).isEqualTo(attachment.createdAt)
+                prop(ApplicationAttachmentMetadata::attachmentType)
+                    .isEqualTo(attachment.attachmentType)
+            }
+            assertThat(attachmentContentService.find(hakemusAttachment)).isEqualTo(PDF_BYTES)
         }
     }
 }

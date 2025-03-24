@@ -209,6 +209,7 @@ class MuutosilmoitusService(
         }
 
         mergeMuutosilmoitusToHakemus(muutosilmoitus, hakemus)
+        attachmentService.transferAttachmentsToHakemus(muutosilmoitus, hakemus)
 
         muutosilmoitusRepository.delete(muutosilmoitus)
         loggingService.logDeleteFromAllu(muutosilmoitus.toDomain())

@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusAlreadySentException
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusEntity
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusIdentifier
@@ -113,5 +114,9 @@ class MuutosilmoitusAttachmentService(
             }
             throw MuutosilmoitusAlreadySentException(muutosilmoitus)
         }
+    }
+
+    fun transferAttachmentsToHakemus(muutosilmoitus: MuutosilmoitusEntity, hakemus: HakemusEntity) {
+        metadataService.transferAttachmentsToHakemus(muutosilmoitus, hakemus)
     }
 }
