@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.NotInChangeLogView
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
 
@@ -17,7 +16,7 @@ data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(
         description = "Hanke identity for external purposes, set by the service.",
-        example = "HAI24-123"
+        example = "HAI24-123",
     )
     override val hankeTunnus: String,
     //
@@ -100,7 +99,7 @@ data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(
         description = "Work site street address. Required for the hanke to be published.",
-        maxLength = 2000
+        maxLength = 2000,
     )
     var tyomaaKatuosoite: String? = null
 
@@ -120,10 +119,6 @@ data class Hanke(
             "Hanke areas data. At least one alue is required for the hanke to be published."
     )
     var alueet = mutableListOf<SavedHankealue>()
-
-    @JsonView(NotInChangeLogView::class)
-    @field:Schema(description = "Collision review result, set by the service.")
-    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
 
     override fun extractYhteystiedot(): List<HankeYhteystieto> =
         listOfNotNull(omistajat, rakennuttajat, toteuttajat, muut).flatten()
@@ -150,7 +145,7 @@ enum class HankeStatus {
 enum class Hankevaihe {
     OHJELMOINTI,
     SUUNNITTELU,
-    RAKENTAMINEN
+    RAKENTAMINEN,
 }
 
 enum class TyomaaTyyppi {
@@ -184,5 +179,5 @@ enum class TyomaaTyyppi {
     KUVAUKSET,
     LUMENPUDOTUS,
     YLEISOTILAISUUS,
-    VAIHTOLAVA
+    VAIHTOLAVA,
 }

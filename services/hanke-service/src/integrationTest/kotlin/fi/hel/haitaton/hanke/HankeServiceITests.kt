@@ -264,7 +264,6 @@ class HankeServiceITests(
                 prop(Hanke::alkuPvm).isNull()
                 prop(Hanke::loppuPvm).isNull()
                 prop(Hanke::alueet).isEmpty()
-                prop(Hanke::tormaystarkasteluTulos).isNull()
             }
         }
 
