@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentMetadataWithType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
@@ -58,6 +59,26 @@ class ApplicationAttachmentMetadataService(
         return attachmentRepository.save(entity).toDomain().also {
             logger.info { "Saved attachment metadata ${it.id} for application $applicationId" }
         }
+    }
+
+    @Transactional
+    fun create(
+        attachment: AttachmentMetadataWithType,
+        hakemusId: Long,
+    ): ApplicationAttachmentMetadata {
+        val hakemusAttachmentEntity =
+            ApplicationAttachmentEntity(
+                id = null,
+                fileName = attachment.fileName,
+                contentType = attachment.contentType,
+                size = attachment.size,
+                createdByUserId = attachment.createdByUserId,
+                createdAt = attachment.createdAt,
+                blobLocation = attachment.blobLocation,
+                applicationId = hakemusId,
+                attachmentType = attachment.attachmentType,
+            )
+        return attachmentRepository.save(hakemusAttachmentEntity).toDomain()
     }
 
     @Transactional

@@ -1,14 +1,13 @@
 package fi.hel.haitaton.hanke.attachment.muutosilmoitus
 
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
-import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusEntity
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusIdentifier
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -24,6 +23,7 @@ private val logger = KotlinLogging.logger {}
 class MuutosilmoitusAttachmentMetadataService(
     private val attachmentRepository: MuutosilmoitusAttachmentRepository,
     private val hakemusAttachmentRepository: ApplicationAttachmentRepository,
+    private val hakemusAttachmentService: ApplicationAttachmentMetadataService,
 ) {
     @Transactional(readOnly = true)
     fun getMetadataList(muutosilmoitusId: UUID): List<MuutosilmoitusAttachmentMetadata> =
@@ -97,25 +97,16 @@ class MuutosilmoitusAttachmentMetadataService(
     /** Transfers all muutosilmoitus attachments to hakemus. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun transferAttachmentsToHakemus(
-        muutosilmoitus: MuutosilmoitusEntity,
+        muutosilmoitus: MuutosilmoitusIdentifier,
         hakemusEntity: HakemusEntity,
     ) {
-        attachmentRepository.findByMuutosilmoitusId(muutosilmoitus.id).forEach { attachment ->
-            val hakemusAttachmentEntity =
-                ApplicationAttachmentEntity(
-                    id = null,
-                    fileName = attachment.fileName,
-                    contentType = attachment.contentType,
-                    size = attachment.size,
-                    createdByUserId = attachment.createdByUserId,
-                    createdAt = attachment.createdAt,
-                    blobLocation = attachment.blobLocation,
-                    applicationId = hakemusEntity.id,
-                    attachmentType = attachment.attachmentType,
-                )
-            hakemusAttachmentRepository.save(hakemusAttachmentEntity)
-            attachmentRepository.deleteById(attachment.id!!)
-        }
+        attachmentRepository
+            .findByMuutosilmoitusId(muutosilmoitus.id)
+            .map { it.toDomain() }
+            .forEach { attachment ->
+                hakemusAttachmentService.create(attachment, hakemusEntity.id)
+                attachmentRepository.deleteById(attachment.id)
+            }
     }
 
     private fun attachmentAmountReached(entity: MuutosilmoitusIdentifier): Boolean {

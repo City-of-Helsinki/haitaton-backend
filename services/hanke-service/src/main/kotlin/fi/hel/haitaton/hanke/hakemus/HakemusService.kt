@@ -12,8 +12,8 @@ import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.attachment.common.AttachmentMetadataWithType
 import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentMetadataService
 import fi.hel.haitaton.hanke.daysBetween
@@ -701,7 +701,7 @@ class HakemusService(
 
     fun getApplicationDataAsPdf(
         hankeTunnus: String,
-        attachments: List<ApplicationAttachmentMetadata>,
+        attachments: List<AttachmentMetadataWithType>,
         data: HakemusData,
         filename: String,
         description: String,

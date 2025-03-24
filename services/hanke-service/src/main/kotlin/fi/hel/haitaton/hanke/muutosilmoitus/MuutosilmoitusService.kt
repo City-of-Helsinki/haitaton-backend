@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentService
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
@@ -178,10 +179,13 @@ class MuutosilmoitusService(
                 "${hakemus.logString()} ${hanke.logString()}"
         )
 
+        val attachments = attachmentService.getMetadataList(muutosilmoitus.id)
+
         val changes =
-            muutosilmoitus.hakemusData.listChanges(hakemus.toHakemus().applicationData).ifEmpty {
-                throw NoChangesException(entityNameForLogs, entity, hakemus)
-            }
+            muutosilmoitus.hakemusData
+                .listChanges(hakemus.toHakemus().applicationData)
+                .let { if (attachments.isEmpty()) it else it + "attachment" }
+                .ifEmpty { throw NoChangesException(entityNameForLogs, entity, hakemus) }
 
         HakemusDataValidator.ensureValidForSend(muutosilmoitus.hakemusData)
 
@@ -192,7 +196,8 @@ class MuutosilmoitusService(
         }
 
         logger.info("Sending muutosilmoitus id=$id")
-        sendMuutosilmoitusToAllu(muutosilmoitus, hakemus, hanke, changes)
+        sendAttachments(attachments, hakemus)
+        sendMuutosilmoitusToAllu(muutosilmoitus, hakemus, hanke, changes, attachments)
 
         entity.sent = OffsetDateTime.now()
 
@@ -337,11 +342,22 @@ class MuutosilmoitusService(
         return muutosilmoitus
     }
 
+    private fun sendAttachments(
+        attachments: List<MuutosilmoitusAttachmentMetadata>,
+        hakemus: HakemusIdentifier,
+    ) {
+        attachments.forEach { attachment ->
+            val content = attachmentService.getContent(attachment.id)
+            alluClient.addAttachment(hakemus.alluid!!, attachment.toAlluAttachment(content.bytes))
+        }
+    }
+
     private fun sendMuutosilmoitusToAllu(
         muutosilmoitus: Muutosilmoitus,
         hakemus: HakemusIdentifier,
         hanke: HankeEntity,
         muutokset: List<String>,
+        muutosilmoitusAttachments: List<MuutosilmoitusAttachmentMetadata>,
     ) {
         val updatedFieldKeys =
             InformationRequestFieldKey.fromHaitatonFieldNames(
@@ -353,7 +369,12 @@ class MuutosilmoitusService(
         disclosureLogService.withDisclosureLogging(hakemus.id, alluData) {
             alluClient.reportChange(hakemus.alluid!!, alluData, updatedFieldKeys)
         }
-        uploadFormDataPdf(hakemus, hanke.hankeTunnus, muutosilmoitus.hakemusData)
+        uploadFormDataPdf(
+            hakemus,
+            hanke.hankeTunnus,
+            muutosilmoitus.hakemusData,
+            muutosilmoitusAttachments,
+        )
         uploadHaittojenhallintasuunnitelmaPdf(hakemus, hanke, muutosilmoitus.hakemusData)
 
         if (muutosilmoitus.hakemusData.paperDecisionReceiver != null) {

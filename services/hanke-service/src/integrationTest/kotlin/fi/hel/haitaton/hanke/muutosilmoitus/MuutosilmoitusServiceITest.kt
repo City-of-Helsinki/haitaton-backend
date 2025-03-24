@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.muutosilmoitus
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
@@ -16,6 +17,7 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
 import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
@@ -25,6 +27,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentRepository
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
+import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
@@ -52,6 +55,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
+import fi.hel.haitaton.hanke.pdf.getPdfAsText
 import fi.hel.haitaton.hanke.pdf.withName
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.taydennys.NoChangesException
@@ -91,6 +95,7 @@ class MuutosilmoitusServiceITest(
     @Autowired private val hakemusService: HakemusService,
     @Autowired private val hankeService: HankeService,
     @Autowired private val attachmentFactory: MuutosilmoitusAttachmentFactory,
+    @Autowired private val hakemusAttachmentFactory: ApplicationAttachmentFactory,
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
     @Autowired private val attachmentRepository: MuutosilmoitusAttachmentRepository,
@@ -515,6 +520,96 @@ class MuutosilmoitusServiceITest(
                         InformationRequestFieldKey.ATTACHMENT,
                     ),
                 )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `sends the attachments to Allu and adds it to change list`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(),
+                )
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withWorkDescription("New description")
+                    .withAreas(listOf(area))
+                    .save()
+            val attachment = attachmentFactory.save(muutosilmoitus = muutosilmoitus).toDomain()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            verifySequence {
+                alluClient.addAttachment(any(), eq(attachment.toAlluAttachment(PDF_BYTES)))
+                alluClient.reportChange(
+                    hakemus.alluid!!,
+                    any(),
+                    setOf(InformationRequestFieldKey.OTHER, InformationRequestFieldKey.ATTACHMENT),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `adds the muutosilmoitus attachments to the form data PDF`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val hakemusAttachment =
+                hakemusAttachmentFactory
+                    .save(fileName = "Hakemus-attachment.pdf", application = hakemus)
+                    .withContent()
+                    .value
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(),
+                )
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withWorkDescription("New description")
+                    .withAreas(listOf(area))
+                    .save()
+            val muutosilmoitusAttachment =
+                attachmentFactory
+                    .save(
+                        fileName = "Muutosilmoitus-attachment.pdf",
+                        muutosilmoitus = muutosilmoitus,
+                    )
+                    .toDomain()
+            val sentAttachments = mutableListOf<Attachment>()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), capture(sentAttachments)) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            assertThat(getPdfAsText(sentAttachments[1].file)).all {
+                contains(hakemusAttachment.fileName)
+                contains(muutosilmoitusAttachment.fileName)
+            }
+            verifySequence {
+                alluClient.addAttachment(any(), withName(muutosilmoitusAttachment.fileName))
+                alluClient.reportChange(any(), any(), any())
                 alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
             }
