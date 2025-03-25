@@ -13,7 +13,6 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withMuuYhteystieto
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withToteuttaja
 import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
 import fi.hel.haitaton.hanke.geometria.Geometriat
@@ -26,6 +25,7 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.IndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -137,11 +137,14 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             val raitioliikenneindeksi = 3f
             val hanke =
                 HankeFactory.create(hankeTunnus = HANKE_TUNNUS)
-                    .withTormaystarkasteluTulos(
-                        autoliikenne = autoliikenne,
-                        pyoraliikenneindeksi = pyoraliikenneindeksi,
-                        linjaautoliikenneindeksi = linjaautoliikenneindeksi,
-                        raitioliikenneindeksi = raitioliikenneindeksi,
+                    .withHankealue(
+                        tormaystarkasteluTulos =
+                            TormaystarkasteluTulos(
+                                autoliikenne = autoliikenne,
+                                pyoraliikenneindeksi = pyoraliikenneindeksi,
+                                linjaautoliikenneindeksi = linjaautoliikenneindeksi,
+                                raitioliikenneindeksi = raitioliikenneindeksi,
+                            )
                     )
             every { hankeService.loadHanke(HANKE_TUNNUS) }.returns(hanke)
             every {
@@ -151,48 +154,48 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             get(url)
                 .andExpect(status().isOk)
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.autoliikenne.haitanKesto")
+                    jsonPath("alueet[0].tormaystarkasteluTulos.autoliikenne.haitanKesto")
                         .value(autoliikenne.haitanKesto)
                 )
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.autoliikenne.katuluokka")
+                    jsonPath("alueet[0].tormaystarkasteluTulos.autoliikenne.katuluokka")
                         .value(autoliikenne.katuluokka)
                 )
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.autoliikenne.liikennemaara")
+                    jsonPath("alueet[0].tormaystarkasteluTulos.autoliikenne.liikennemaara")
                         .value(autoliikenne.liikennemaara)
                 )
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.autoliikenne.kaistahaitta")
+                    jsonPath("alueet[0].tormaystarkasteluTulos.autoliikenne.kaistahaitta")
                         .value(autoliikenne.kaistahaitta)
                 )
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.autoliikenne.kaistapituushaitta")
+                    jsonPath("alueet[0].tormaystarkasteluTulos.autoliikenne.kaistapituushaitta")
                         .value(autoliikenne.kaistapituushaitta)
                 )
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.autoliikenne.indeksi")
+                    jsonPath("alueet[0].tormaystarkasteluTulos.autoliikenne.indeksi")
                         .value(autoliikenne.indeksi)
                 )
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.pyoraliikenneindeksi")
+                    jsonPath("alueet[0].tormaystarkasteluTulos.pyoraliikenneindeksi")
                         .value(pyoraliikenneindeksi)
                 )
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.linjaautoliikenneindeksi")
+                    jsonPath("alueet[0].tormaystarkasteluTulos.linjaautoliikenneindeksi")
                         .value(linjaautoliikenneindeksi)
                 )
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.raitioliikenneindeksi")
+                    jsonPath("alueet[0].tormaystarkasteluTulos.raitioliikenneindeksi")
                         .value(raitioliikenneindeksi)
                 )
                 // In this case, raitioliikenneindeksi has the highest value
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.liikennehaittaindeksi.indeksi")
+                    jsonPath("alueet[0].tormaystarkasteluTulos.liikennehaittaindeksi.indeksi")
                         .value(raitioliikenneindeksi)
                 )
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.liikennehaittaindeksi.tyyppi")
+                    jsonPath("alueet[0].tormaystarkasteluTulos.liikennehaittaindeksi.tyyppi")
                         .value(IndeksiType.RAITIOLIIKENNEINDEKSI.name)
                 )
 

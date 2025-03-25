@@ -24,7 +24,6 @@ import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.test.USERNAME
-import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
 import org.springframework.stereotype.Component
@@ -215,6 +214,7 @@ class HankeFactory(
             haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
             haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma? =
                 HaittaFactory.createHaittojenhallintasuunnitelma(),
+            tormaystarkasteluTulos: TormaystarkasteluTulos? = HaittaFactory.tormaystarkasteluTulos(),
         ): Hanke {
             this.tyomaaKatuosoite = "Testikatu 1"
             this.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
@@ -227,26 +227,10 @@ class HankeFactory(
                     haittaAlkuPvm = haittaAlkuPvm,
                     haittaLoppuPvm = haittaLoppuPvm,
                     haittojenhallintasuunnitelma = haittojenhallintasuunnitelma,
+                    tormaystarkasteluTulos = tormaystarkasteluTulos,
                 )
             this.alueet.add(alue)
 
-            return this
-        }
-
-        fun Hanke.withTormaystarkasteluTulos(
-            autoliikenne: Autoliikenneluokittelu =
-                HaittaFactory.TORMAYSTARKASTELU_DEFAULT_AUTOLIIKENNELUOKITTELU,
-            pyoraliikenneindeksi: Float = 1f,
-            linjaautoliikenneindeksi: Float = 1f,
-            raitioliikenneindeksi: Float = 1f,
-        ): Hanke {
-            this.tormaystarkasteluTulos =
-                TormaystarkasteluTulos(
-                    autoliikenne,
-                    pyoraliikenneindeksi,
-                    linjaautoliikenneindeksi,
-                    raitioliikenneindeksi,
-                )
             return this
         }
 
