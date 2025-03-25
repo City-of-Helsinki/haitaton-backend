@@ -34,7 +34,7 @@ object HankeMapper {
                     modifiedBy = modifiedByUserId,
                     modifiedAt = modifiedAt?.zonedDateTime(),
                     status = status,
-                    generated = generated
+                    generated = generated,
                 )
             }
             .apply {
@@ -46,7 +46,6 @@ object HankeMapper {
                 tyomaaKatuosoite = entity.tyomaaKatuosoite
                 tyomaaTyyppi = entity.tyomaaTyyppi
                 alueet = alueList(entity.hankeTunnus, entity.alueet, geometriaData)
-                tormaystarkasteluTulos = tormaystarkasteluTulos(entity)
             }
 
     private fun contacts(entity: HankeEntity): Map<ContactType, List<HankeYhteystieto>> =
@@ -55,7 +54,7 @@ object HankeMapper {
     private fun alueList(
         hankeTunnus: String?,
         alueet: List<HankealueEntity>,
-        geometriaData: Map<Int, Geometriat?>
+        geometriaData: Map<Int, Geometriat?>,
     ): MutableList<SavedHankealue> =
         alueet.map { alue(hankeTunnus, it, geometriaData[it.geometriat]) }.toMutableList()
 
@@ -94,7 +93,7 @@ object HankeMapper {
                                 it.katuluokka,
                                 it.autoliikennemaara,
                                 it.kaistahaitta,
-                                it.kaistapituushaitta
+                                it.kaistapituushaitta,
                             )
                         },
                 pyoraliikenneindeksi = tulokset.maxOf { it.pyoraliikenne },
