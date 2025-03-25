@@ -29,6 +29,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContent
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
@@ -713,6 +714,26 @@ class TaydennysServiceITest(
             val taydennys = taydennysFactory.builder().save()
             val attachment =
                 attachmentFactory.save(taydennys = taydennys).withContent().value.toDomain()
+            val liikennejarjestely =
+                attachmentFactory
+                    .save(
+                        fileName = "liikennejärjestely.pdf",
+                        taydennys = taydennys,
+                        attachmentType = ApplicationAttachmentType.LIIKENNEJARJESTELY,
+                    )
+                    .withContent()
+                    .value
+                    .toDomain()
+            val valtakirja =
+                attachmentFactory
+                    .save(
+                        fileName = "valtakirja.pdf",
+                        taydennys = taydennys,
+                        attachmentType = ApplicationAttachmentType.VALTAKIRJA,
+                    )
+                    .withContent()
+                    .value
+                    .toDomain()
             val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
             val hakemus = hakemusService.getById(taydennyspyynto.applicationId)
             val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
@@ -725,6 +746,8 @@ class TaydennysServiceITest(
 
             verifySequence {
                 alluClient.addAttachment(any(), eq(attachment.toAlluAttachment(PDF_BYTES)))
+                alluClient.addAttachment(any(), eq(liikennejarjestely.toAlluAttachment(PDF_BYTES)))
+                alluClient.addAttachment(any(), eq(valtakirja.toAlluAttachment(PDF_BYTES)))
                 alluClient.respondToInformationRequest(
                     hakemus.alluid!!,
                     taydennyspyynto.alluId,

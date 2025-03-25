@@ -24,6 +24,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContent
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentRepository
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
@@ -546,14 +547,38 @@ class MuutosilmoitusServiceITest(
                     .withWorkDescription("New description")
                     .withAreas(listOf(area))
                     .save()
-            val attachment = attachmentFactory.save(muutosilmoitus = muutosilmoitus).toDomain()
+            val muuAttachment =
+                attachmentFactory
+                    .save(
+                        muutosilmoitus = muutosilmoitus,
+                        attachmentType = ApplicationAttachmentType.MUU,
+                    )
+                    .toDomain()
+            val liikennejarjestely =
+                attachmentFactory
+                    .save(
+                        fileName = "liikenne.pdf",
+                        muutosilmoitus = muutosilmoitus,
+                        attachmentType = ApplicationAttachmentType.LIIKENNEJARJESTELY,
+                    )
+                    .toDomain()
+            val valtakirja =
+                attachmentFactory
+                    .save(
+                        fileName = "valtakirja.pdf",
+                        attachmentType = ApplicationAttachmentType.VALTAKIRJA,
+                        muutosilmoitus = muutosilmoitus,
+                    )
+                    .toDomain()
             justRun { alluClient.reportChange(any(), any(), any()) }
             justRun { alluClient.addAttachment(any(), any()) }
 
             muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
 
             verifySequence {
-                alluClient.addAttachment(any(), eq(attachment.toAlluAttachment(PDF_BYTES)))
+                alluClient.addAttachment(any(), eq(muuAttachment.toAlluAttachment(PDF_BYTES)))
+                alluClient.addAttachment(any(), eq(liikennejarjestely.toAlluAttachment(PDF_BYTES)))
+                alluClient.addAttachment(any(), eq(valtakirja.toAlluAttachment(PDF_BYTES)))
                 alluClient.reportChange(
                     hakemus.alluid!!,
                     any(),

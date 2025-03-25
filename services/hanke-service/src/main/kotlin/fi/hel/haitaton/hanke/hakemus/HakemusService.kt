@@ -382,10 +382,10 @@ class HakemusService(
             .getMetadataList(kaivuilmoitus.id)
             .filter { it.attachmentType == ApplicationAttachmentType.MUU }
             .forEach { metadata ->
-                val content = attachmentService.getContent(metadata.id)
+                val content = attachmentService.findContent(metadata)
                 attachmentService.saveAttachment(
                     johtoselvityshakemusMetadata,
-                    content.bytes,
+                    content,
                     metadata.fileName,
                     MediaType.parseMediaType(metadata.contentType),
                     ApplicationAttachmentType.MUU,
