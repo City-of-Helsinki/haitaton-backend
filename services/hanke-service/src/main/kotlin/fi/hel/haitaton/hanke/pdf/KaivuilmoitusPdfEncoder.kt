@@ -1,8 +1,8 @@
 package fi.hel.haitaton.hanke.pdf
 
 import com.lowagie.text.Document
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.attachment.common.AttachmentMetadataWithType
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 
@@ -11,7 +11,7 @@ object KaivuilmoitusPdfEncoder {
     fun createPdf(
         data: KaivuilmoitusData,
         totalArea: Float?,
-        attachments: List<ApplicationAttachmentMetadata>,
+        attachments: List<AttachmentMetadataWithType>,
         areas: List<EnrichedKaivuilmoitusalue>?,
     ): ByteArray = createDocument { document, _ ->
         formatKaivuilmoitusPdf(document, data, totalArea, attachments, areas)
@@ -21,7 +21,7 @@ object KaivuilmoitusPdfEncoder {
         document: Document,
         data: KaivuilmoitusData,
         totalArea: Float?,
-        attachments: List<ApplicationAttachmentMetadata>,
+        attachments: List<AttachmentMetadataWithType>,
         areas: List<EnrichedKaivuilmoitusalue>?,
     ) {
 

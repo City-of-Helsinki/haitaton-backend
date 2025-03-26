@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.muutosilmoitus
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.common.AttachmentMetadataWithType
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import fi.hel.haitaton.hanke.hakemus.HakemusService
@@ -25,8 +26,13 @@ interface HasUploadFormDataPdf {
 
     fun formDataDescription(now: LocalDateTime): String
 
-    fun uploadFormDataPdf(hakemus: HakemusIdentifier, hankeTunnus: String, data: HakemusData) {
-        val formAttachment = createPdfFromHakemusData(hakemus, hankeTunnus, data)
+    fun uploadFormDataPdf(
+        hakemus: HakemusIdentifier,
+        hankeTunnus: String,
+        data: HakemusData,
+        extraAttachments: List<AttachmentMetadataWithType> = listOf(),
+    ) {
+        val formAttachment = createPdfFromHakemusData(hakemus, hankeTunnus, data, extraAttachments)
         try {
             alluClient.addAttachment(hakemus.alluid!!, formAttachment)
         } catch (e: Exception) {
@@ -40,9 +46,10 @@ interface HasUploadFormDataPdf {
         hakemus: HakemusIdentifier,
         hankeTunnus: String,
         data: HakemusData,
+        extraAttachments: List<AttachmentMetadataWithType>,
     ): Attachment {
         logger.info { "Creating a PDF from the hakemus data for data attachment." }
-        val attachments = hakemusAttachmentService.getMetadataList(hakemus.id)
+        val attachments = hakemusAttachmentService.getMetadataList(hakemus.id) + extraAttachments
         return hakemusService.getApplicationDataAsPdf(
             hankeTunnus,
             attachments,

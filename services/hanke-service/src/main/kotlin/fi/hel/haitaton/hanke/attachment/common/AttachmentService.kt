@@ -36,6 +36,10 @@ interface AttachmentService<E : Loggable, M : AttachmentMetadata> {
         // Do nothing by default.
     }
 
+    /**
+     * Download the content for serving it to the user. Downloading VALTAKIRJA attachments is
+     * forbidden.
+     */
     fun getContent(attachmentId: UUID): AttachmentContent {
         val attachment = findMetadata(attachmentId)
 

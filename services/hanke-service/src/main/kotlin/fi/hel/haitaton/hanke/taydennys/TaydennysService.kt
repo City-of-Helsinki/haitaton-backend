@@ -256,8 +256,8 @@ class TaydennysService(
         hakemus: HakemusEntity,
     ) {
         attachments.forEach { attachment ->
-            val content = attachmentService.getContent(attachment.id)
-            alluClient.addAttachment(hakemus.alluid!!, attachment.toAlluAttachment(content.bytes))
+            val content = attachmentService.findContent(attachment)
+            alluClient.addAttachment(hakemus.alluid!!, attachment.toAlluAttachment(content))
             attachmentMetadataService.transferAttachmentToHakemus(attachment, hakemus)
         }
     }

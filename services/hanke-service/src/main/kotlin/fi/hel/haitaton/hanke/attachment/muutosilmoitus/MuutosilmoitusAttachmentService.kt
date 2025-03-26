@@ -27,6 +27,8 @@ class MuutosilmoitusAttachmentService(
     private val contentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) : AttachmentService<MuutosilmoitusIdentifier, MuutosilmoitusAttachmentMetadata> {
+    fun getMetadataList(muutosilmoitusId: UUID): List<MuutosilmoitusAttachmentMetadata> =
+        metadataService.getMetadataList(muutosilmoitusId)
 
     fun addAttachment(
         muutosilmoitusId: UUID,
@@ -72,6 +74,10 @@ class MuutosilmoitusAttachmentService(
         logger.info { "Deleted all attachments from muutosilmoitus. ${muutosilmoitus.logString()}" }
     }
 
+    fun transferAttachmentsToHakemus(muutosilmoitus: MuutosilmoitusEntity, hakemus: HakemusEntity) {
+        metadataService.transferAttachmentsToHakemus(muutosilmoitus, hakemus)
+    }
+
     private fun findMuutosilmoitus(muutosilmoitusId: UUID): MuutosilmoitusEntity =
         muutosilmoitusRepository.findByIdOrNull(muutosilmoitusId)
             ?: throw MuutosilmoitusNotFoundException(muutosilmoitusId)
@@ -114,9 +120,5 @@ class MuutosilmoitusAttachmentService(
             }
             throw MuutosilmoitusAlreadySentException(muutosilmoitus)
         }
-    }
-
-    fun transferAttachmentsToHakemus(muutosilmoitus: MuutosilmoitusEntity, hakemus: HakemusEntity) {
-        metadataService.transferAttachmentsToHakemus(muutosilmoitus, hakemus)
     }
 }
