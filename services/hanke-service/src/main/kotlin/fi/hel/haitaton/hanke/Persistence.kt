@@ -120,9 +120,18 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
 
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
 
-    override fun findAll(): List<HankeEntity>
-
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
+
+    @Query(
+        "select h.id " +
+            "from HankeEntity h " +
+            "left join HankealueEntity ha on ha.hanke = h " +
+            "where h.status = 'PUBLIC' " +
+            "group by h.id " +
+            "having coalesce(max(ha.haittaLoppuPvm), '1990-01-01') < CURRENT_DATE " +
+            "order by h.modifiedAt asc limit :limit"
+    )
+    fun findHankeToComplete(limit: Int): List<Int>
 }
 
 interface HankeIdentifier : HasId<Int>, Loggable {
