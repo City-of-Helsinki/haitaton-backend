@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
+import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.ModifyGeometriaRequest
@@ -69,6 +70,13 @@ data class HankeBuilder(
     /** Save the entity with [save], and - for convenience - get the saved entity from DB. */
     fun saveEntity(): HankeEntity = hankeRepository.getReferenceById(save().id)
 
+    /** Create the hanke and save it with an overridden status. */
+    fun saveEntity(status: HankeStatus): HankeEntity {
+        val entity = hankeRepository.getReferenceById(save().id)
+        entity.status = status
+        return hankeRepository.save(entity)
+    }
+
     /**
      * Save a hanke that has the generated field set. The hanke is created like it would be created
      * for a stand-alone johtoselvityshakemus.
@@ -125,6 +133,8 @@ data class HankeBuilder(
         tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         alue.haittojenhallintasuunnitelma = haittojenhallintasuunnitelma
     }
+
+    fun withNoAreas() = applyToHanke { alueet.clear() }
 
     fun withPerustaja(perustaja: HankekayttajaInput): HankeBuilder =
         this.copy(
