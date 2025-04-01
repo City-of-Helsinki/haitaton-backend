@@ -14,6 +14,9 @@ haitaton:
     hanke-editing: true
   gdpr:
     disabled: true
+  hanke:
+    completions:
+      max-per-run: 3
   map-service:
     url: http://localhost:3004
   profiili-api:

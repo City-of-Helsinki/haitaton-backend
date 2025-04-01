@@ -21,6 +21,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -44,6 +45,7 @@ class HankeEntity(
     var createdAt: LocalDateTime? = null,
     var modifiedByUserId: String? = null,
     var modifiedAt: LocalDateTime? = null,
+    var completedAt: OffsetDateTime? = null,
     var generated: Boolean = false,
     // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
     // can be a performance problem if there is a need to do bulk inserts.
@@ -120,9 +122,18 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
 
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
 
-    override fun findAll(): List<HankeEntity>
-
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
+
+    @Query(
+        "select h.id " +
+            "from HankeEntity h " +
+            "left join HankealueEntity ha on ha.hanke = h " +
+            "where h.status = 'PUBLIC' " +
+            "group by h.id " +
+            "having coalesce(max(ha.haittaLoppuPvm), '1990-01-01') < CURRENT_DATE " +
+            "order by h.modifiedAt asc limit :limit"
+    )
+    fun findHankeToComplete(limit: Int): List<Int>
 }
 
 interface HankeIdentifier : HasId<Int>, Loggable {

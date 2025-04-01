@@ -136,10 +136,11 @@ enum class HankeStatus {
     PUBLIC,
 
     /**
-     * After the end dates of all hankealue have passed, a hanke is considered finished. It's
-     * anonymized and at least mostly hidden in the UI.
+     * After the end dates of all hankealue have passed and all related applications are completed,
+     * the hanke is locked (no edits possible) for some months, after which it's permanently
+     * deleted.
      */
-    ENDED,
+    COMPLETED,
 }
 
 enum class Hankevaihe {
