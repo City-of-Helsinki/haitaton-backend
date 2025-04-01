@@ -7,11 +7,13 @@ import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.hasClass
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
+import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.Nested
@@ -163,6 +165,7 @@ class HankeCompletionServiceITest(
 
             val result = hankeRepository.getReferenceById(hanke.id)
             assertThat(result.status).isEqualTo(HankeStatus.PUBLIC)
+            assertThat(result.completedAt).isNull()
         }
 
         @Test
@@ -178,6 +181,7 @@ class HankeCompletionServiceITest(
 
             val result = hankeRepository.getReferenceById(hanke.id)
             assertThat(result.status).isEqualTo(HankeStatus.PUBLIC)
+            assertThat(result.completedAt).isNull()
         }
 
         @Test
@@ -193,6 +197,7 @@ class HankeCompletionServiceITest(
 
             val result = hankeRepository.getReferenceById(hanke.id)
             assertThat(result.status).isEqualTo(HankeStatus.COMPLETED)
+            assertThat(result.completedAt).isRecent()
         }
     }
 }

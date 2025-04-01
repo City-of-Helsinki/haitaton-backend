@@ -21,6 +21,7 @@ class HankeCompletionScheduler(
     private val featureFlags: FeatureFlags,
 ) {
     @Scheduled(cron = "\${haitaton.hanke.completions.cron}", zone = "Europe/Helsinki")
+    @EventListener(ApplicationReadyEvent::class)
     fun completeHankkeet() {
         if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
             logger.info { "Hanke completion is disabled, not running daily completion job." }

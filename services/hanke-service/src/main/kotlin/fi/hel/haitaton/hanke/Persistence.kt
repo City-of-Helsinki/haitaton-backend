@@ -21,6 +21,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -44,6 +45,7 @@ class HankeEntity(
     var createdAt: LocalDateTime? = null,
     var modifiedByUserId: String? = null,
     var modifiedAt: LocalDateTime? = null,
+    var completedAt: OffsetDateTime? = null,
     var generated: Boolean = false,
     // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
     // can be a performance problem if there is a need to do bulk inserts.

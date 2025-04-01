@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import java.time.LocalDate
+import java.time.OffsetDateTime
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -47,6 +48,7 @@ class HankeCompletionService(
 
         logger.info { "Hanke has been completed, marking it completed. ${hanke.logString()}" }
         hanke.status = HankeStatus.COMPLETED
+        hanke.completedAt = OffsetDateTime.now()
     }
 
     companion object {
