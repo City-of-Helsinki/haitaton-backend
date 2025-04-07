@@ -437,7 +437,7 @@ class HankeCompletionServiceITest(
         @Nested
         inner class Completion5 {
             @Test
-            fun `doesn't do anything if the reminder is not yet due`() {
+            fun `does nothing if the reminder is not yet due`() {
                 val hanke =
                     hankeFactory
                         .builder()
@@ -452,6 +452,27 @@ class HankeCompletionServiceITest(
 
                 val updatedHanke = hankeRepository.getReferenceById(hanke.id)
                 assertThat(updatedHanke.sentReminders).isEmpty()
+                assertThat(greenMail.receivedMessages).isEmpty()
+            }
+
+            @Test
+            fun `does nothing if the reminder has been marked as sent`() {
+                val hanke =
+                    hankeFactory
+                        .builder()
+                        .withHankealue(
+                            HankealueFactory.create(
+                                haittaLoppuPvm = ZonedDateTime.now().plusDays(4)
+                            )
+                        )
+                        .saveEntity(HankeStatus.PUBLIC) {
+                            it.sentReminders = arrayOf(HankeReminder.COMPLETION_5)
+                        }
+
+                hankeCompletionService.sendReminderIfNecessary(hanke.id, HankeReminder.COMPLETION_5)
+
+                val updatedHanke = hankeRepository.getReferenceById(hanke.id)
+                assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_5)
                 assertThat(greenMail.receivedMessages).isEmpty()
             }
 
@@ -494,7 +515,7 @@ class HankeCompletionServiceITest(
         @Nested
         inner class Completion14 {
             @Test
-            fun `doesn't do anything if the reminder is not yet due`() {
+            fun `does nothing if the reminder is not yet due`() {
                 val hanke =
                     hankeFactory
                         .builder()
@@ -526,6 +547,30 @@ class HankeCompletionServiceITest(
                             )
                         )
                         .saveEntity(HankeStatus.PUBLIC)
+
+                hankeCompletionService.sendReminderIfNecessary(
+                    hanke.id,
+                    HankeReminder.COMPLETION_14,
+                )
+
+                val updatedHanke = hankeRepository.getReferenceById(hanke.id)
+                assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_14)
+                assertThat(greenMail.receivedMessages).isEmpty()
+            }
+
+            @Test
+            fun `does nothing if the reminder has been marked as sent`() {
+                val hanke =
+                    hankeFactory
+                        .builder()
+                        .withHankealue(
+                            HankealueFactory.create(
+                                haittaLoppuPvm = ZonedDateTime.now().plusDays(13)
+                            )
+                        )
+                        .saveEntity(HankeStatus.PUBLIC) {
+                            it.sentReminders = arrayOf(HankeReminder.COMPLETION_14)
+                        }
 
                 hankeCompletionService.sendReminderIfNecessary(
                     hanke.id,
