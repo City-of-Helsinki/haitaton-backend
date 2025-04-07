@@ -243,3 +243,5 @@ databaseChangeLog:
       file: db/changelog/changesets/106-create-table-for-muutosilmoitus-attachment.sql
   - include:
       file: db/changelog/changesets/107-add-completion-date-to-hanke.sql
+  - include:
+      file: db/changelog/changesets/108-add-sent-reminders-to-hanke.sql

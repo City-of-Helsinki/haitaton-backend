@@ -107,6 +107,7 @@ class HankeService(
             hankeRepository.findByHankeTunnus(hankeTunnus)
                 ?: throw HankeNotFoundException(hankeTunnus)
 
+        val originalEndDate = entity.endDate()
         val hankeBeforeUpdate = createHankeDomainObjectFromEntity(entity)
 
         val existingYTs = prepareMapOfExistingYhteystietos(entity)
@@ -127,6 +128,10 @@ class HankeService(
 
         updateTormaystarkastelut(entity.alueet)
         entity.status = decideNewHankeStatus(entity)
+
+        if (entity.endDate() != originalEndDate) {
+            entity.sentReminders = arrayOf()
+        }
 
         logger.debug { "Saving Hanke ${entity.logString()}." }
         val savedHankeEntity = hankeRepository.saveAndFlush(entity)

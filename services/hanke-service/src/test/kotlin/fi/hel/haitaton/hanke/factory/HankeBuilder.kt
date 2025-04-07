@@ -71,9 +71,10 @@ data class HankeBuilder(
     fun saveEntity(): HankeEntity = hankeRepository.getReferenceById(save().id)
 
     /** Create the hanke and save it with an overridden status. */
-    fun saveEntity(status: HankeStatus): HankeEntity {
+    fun saveEntity(status: HankeStatus, modifier: (HankeEntity) -> Unit = {}): HankeEntity {
         val entity = hankeRepository.getReferenceById(save().id)
         entity.status = status
+        modifier(entity)
         return hankeRepository.save(entity)
     }
 

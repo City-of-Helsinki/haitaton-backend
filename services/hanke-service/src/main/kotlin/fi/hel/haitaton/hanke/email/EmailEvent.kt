@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.email
 
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import java.time.LocalDate
 
 sealed interface EmailEvent {
     val to: String
@@ -66,4 +67,11 @@ data class InformationRequestCanceledEmail(
     val hakemusNimi: String,
     val hakemustunnus: String,
     val hakemusId: Long,
+) : EmailEvent
+
+data class HankeEndingReminder(
+    override val to: String,
+    val hankeNimi: String,
+    val hanketunnus: String,
+    val endingDate: LocalDate,
 ) : EmailEvent

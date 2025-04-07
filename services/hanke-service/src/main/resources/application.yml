@@ -56,6 +56,8 @@ haitaton:
       max-per-run: ${HAITATON_COMPLETIONS_PER_RUN:250}
       # By default, run every day at 18:26:41 (Helsinki time).
       cron: ${HAITATON_COMPLETIONS_CRON:41 26 18 * * *}
+      # By default, run every day at 19:17:21 (Helsinki time).
+      reminderCron: ${HAITATON_COMPLETIONS_REMINDER_CRON:21 17 19 * * *}
   map-service:
     capability-url: https://kartta.hel.fi/ws/geoserver/avoindata/wms?REQUEST=GetCapabilities&SERVICE=WMS
   profiili-api:

@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
+import fi.hel.haitaton.hanke.domain.HankeReminder
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.HasId
@@ -9,6 +10,7 @@ import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.CollectionTable
+import jakarta.persistence.Column
 import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -20,6 +22,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import org.springframework.data.jpa.repository.JpaRepository
@@ -51,6 +54,10 @@ class HankeEntity(
     // can be a performance problem if there is a need to do bulk inserts.
     // Using SEQUENCE would allow getting multiple ids more efficiently.
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override var id: Int = 0,
+    @Column(name = "sent_reminders", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Suppress("JpaAttributeTypeInspection")
+    var sentReminders: Array<HankeReminder> = arrayOf(),
 
     // related
     // orphanRemoval is needed for even explicit child-object removal. JPA weirdness...
@@ -96,6 +103,8 @@ class HankeEntity(
         }
     }
 
+    fun endDate(): LocalDate? = alueet.mapNotNull { it.haittaLoppuPvm }.maxOrNull()
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is HankeEntity) return false
@@ -134,6 +143,17 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
             "order by h.modifiedAt asc limit :limit"
     )
     fun findHankeToComplete(limit: Int): List<Int>
+
+    @Query(
+        "select h.id from HankeEntity h " +
+            "left join HankealueEntity ha on ha.hanke = h " +
+            "where h.status = 'PUBLIC' " +
+            "and not array_contains(h.sentReminders, :reminder) " +
+            "group by h.id " +
+            "having coalesce(max(ha.haittaLoppuPvm), '1990-01-01') <= :reminderDate " +
+            "order by h.modifiedAt asc limit :limit"
+    )
+    fun findHankeToRemind(limit: Int, reminderDate: LocalDate, reminder: HankeReminder): List<Int>
 }
 
 interface HankeIdentifier : HasId<Int>, Loggable {

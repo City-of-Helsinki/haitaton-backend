@@ -283,6 +283,80 @@ class HankeKayttajaServiceITest : IntegrationTest() {
     }
 
     @Nested
+    inner class GtHankeKayttajatWithPermission {
+        @Test
+        fun `returns empty list when there's no hanke `() {
+            val result =
+                hankeKayttajaService.getHankeKayttajatWithPermission(42, PermissionCode.VIEW)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns empty list if no one has the permission`() {
+            val hanke =
+                hankeFactory.builder().saveWithYhteystiedot {
+                    omistaja(Kayttooikeustaso.KATSELUOIKEUS)
+                    rakennuttaja(Kayttooikeustaso.HANKEMUOKKAUS)
+                    toteuttaja(Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
+                }
+            val perustajaPermission =
+                permissionService.findByHankeId(hanke.id).first {
+                    it.kayttooikeustaso == Kayttooikeustaso.KAIKKI_OIKEUDET
+                }
+            permissionService.updateKayttooikeustaso(
+                perustajaPermission,
+                Kayttooikeustaso.KATSELUOIKEUS,
+                USERNAME,
+            )
+
+            val result =
+                hankeKayttajaService.getHankeKayttajatWithPermission(
+                    hanke.id,
+                    PermissionCode.DELETE,
+                )
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns the matching kayttajat`() {
+            hankeFactory.builder().withYhteystiedot().save()
+            val hanke =
+                hankeFactory.builder().saveWithYhteystiedot {
+                    omistaja(kayttaja("omistaja@test", "omistaja", Kayttooikeustaso.HANKEMUOKKAUS))
+                    rakennuttaja(
+                        kayttaja(
+                            "rakennuttaja@test",
+                            "rakennuttaja",
+                            Kayttooikeustaso.HAKEMUSASIOINTI,
+                        )
+                    )
+                    toteuttaja(
+                        kayttaja(
+                            "toteuttaja@test",
+                            "toteuttaja",
+                            Kayttooikeustaso.KAIKKIEN_MUOKKAUS,
+                        )
+                    )
+                }
+
+            val result =
+                hankeKayttajaService.getHankeKayttajatWithPermission(
+                    hanke.id,
+                    PermissionCode.EDIT_APPLICATIONS,
+                )
+
+            assertThat(result.map { it.sahkoposti })
+                .containsExactlyInAnyOrder(
+                    "pertti@perustaja.test",
+                    "rakennuttaja@test",
+                    "toteuttaja@test",
+                )
+        }
+    }
+
+    @Nested
     inner class GetKayttajaByUserId {
         @Test
         fun `When user exists should return current hanke user`() {
