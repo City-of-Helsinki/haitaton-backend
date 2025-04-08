@@ -138,7 +138,7 @@ class HankeCompletionService(
             return
         }
 
-        hanke.hakemukset.forEach { hakemus -> hakemusService.deleteCompleted(hakemus.id) }
+        hanke.hakemukset.forEach { hakemus -> hakemusService.deleteFromCompletedHanke(hakemus.id) }
 
         hankeAttachmentService.deleteAllAttachments(hanke)
         val domain = hankeService.loadHanke(hanke.hankeTunnus)!!

@@ -721,6 +721,10 @@ class HankeCompletionServiceITest(
                 .save()
             hakemusFactory
                 .builder(hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                .withNoAlluFields()
+                .save()
+            hakemusFactory
+                .builder(hanke, ApplicationType.EXCAVATION_NOTIFICATION)
                 .withStatus(ApplicationStatus.ARCHIVED, alluId = 53)
                 .save()
             hankeAttachmentFactory.save(hanke = hanke).withContent()

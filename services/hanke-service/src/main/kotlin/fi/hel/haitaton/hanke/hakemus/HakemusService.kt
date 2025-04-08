@@ -1116,22 +1116,22 @@ class HakemusService(
     }
 
     @Transactional
-    fun deleteCompleted(hakemusId: Long) {
+    fun deleteFromCompletedHanke(hakemusId: Long) {
         val hakemus = getById(hakemusId)
-        assertCompleted(hakemus)
-        logger.info { "Deleting completed hakemus, ${hakemus.logString()}" }
+        assertDraftOrCompleted(hakemus)
+        logger.info { "Deleting hakemus for completed hanke, ${hakemus.logString()}" }
         attachmentService.deleteAllAttachments(hakemus)
         hakemusRepository.deleteById(hakemus.id)
         hakemusLoggingService.logDeleteFromHaitaton(hakemus)
         logger.info { "Hakemus deleted, ${hakemus.logString()}" }
     }
 
-    private fun assertCompleted(hakemus: Hakemus) {
-        if (!hakemus.hasCompletedStatus()) {
+    private fun assertDraftOrCompleted(hakemus: Hakemus) {
+        if (hakemus.alluStatus != null && !hakemus.hasCompletedStatus()) {
             throw HakemusInWrongStatusException(
                 hakemus,
                 hakemus.alluStatus,
-                hakemus.completedStatuses().toList(),
+                hakemus.completedStatuses().toList() + null,
             )
         }
     }
@@ -1298,7 +1298,7 @@ class WrongHakemusTypeException(
 class HakemusInWrongStatusException(
     hakemus: HakemusIdentifier,
     status: ApplicationStatus?,
-    allowed: Collection<ApplicationStatus>,
+    allowed: Collection<ApplicationStatus?>,
 ) :
     RuntimeException(
         "Hakemus is in the wrong status for this operation. status=$status, " +

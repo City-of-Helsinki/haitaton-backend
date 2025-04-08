@@ -2165,7 +2165,7 @@ class HakemusServiceITest(
     }
 
     @Nested
-    inner class DeleteCompleted {
+    inner class DeleteFromCompletedHanke {
         private val alluId = 570
 
         @Test
@@ -2173,7 +2173,7 @@ class HakemusServiceITest(
             val hakemus =
                 hakemusFactory.builder().withStatus(ApplicationStatus.PENDING, alluId).save()
 
-            val failure = assertFailure { hakemusService.deleteCompleted(hakemus.id) }
+            val failure = assertFailure { hakemusService.deleteFromCompletedHanke(hakemus.id) }
 
             failure.all {
                 hasClass(HakemusInWrongStatusException::class)
@@ -2193,10 +2193,19 @@ class HakemusServiceITest(
             attachmentFactory.save(application = application).withContent()
             attachmentFactory.save(application = application).withContent()
 
-            hakemusService.deleteCompleted(application.id)
+            hakemusService.deleteFromCompletedHanke(application.id)
 
             assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).isEmpty()
+        }
+
+        @Test
+        fun `also deletes a draft application`() {
+            val application = hakemusFactory.builder().withNoAlluFields().saveEntity()
+
+            hakemusService.deleteFromCompletedHanke(application.id)
+
+            assertThat(hakemusRepository.findAll()).isEmpty()
         }
 
         @Test
@@ -2207,7 +2216,7 @@ class HakemusServiceITest(
             attachmentFactory.save(application = application).withContent()
             fileClient.connected = false
 
-            hakemusService.deleteCompleted(application.id)
+            hakemusService.deleteFromCompletedHanke(application.id)
 
             assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(applicationAttachmentRepository.findAll()).isEmpty()
@@ -2220,7 +2229,7 @@ class HakemusServiceITest(
             val hakemus = hakemusFactory.builder().withStatus(ApplicationStatus.FINISHED).save()
             auditLogRepository.deleteAll()
 
-            hakemusService.deleteCompleted(hakemus.id)
+            hakemusService.deleteFromCompletedHanke(hakemus.id)
 
             assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.DELETE) {
                 hasServiceActor(HAITATON_AUDIT_LOG_USERID)
@@ -2245,7 +2254,7 @@ class HakemusServiceITest(
                     .asianhoitaja()
                     .save()
 
-            hakemusService.deleteCompleted(hakemus.id)
+            hakemusService.deleteFromCompletedHanke(hakemus.id)
 
             assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(hakemusyhteystietoRepository.findAll()).isEmpty()
