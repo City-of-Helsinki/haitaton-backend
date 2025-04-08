@@ -1,0 +1,44 @@
+<mjml>
+    <mj-head>
+        <mj-include path="common/attributes.partial"/>
+    </mj-head>
+    <mj-body>
+        <mj-include path="common/header-content.partial"/>
+        <mj-section>
+            <mj-column>
+                <mj-text mj-class="header-txt">
+                    Hankkeesi {{hanketunnus}} ilmoitettu päättymispäivä lähenee / Hankkeesi {{hanketunnus}} ilmoitettu
+                    päättymispäivä lähenee / Hankkeesi {{hanketunnus}} ilmoitettu päättymispäivä lähenee
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> ilmoitettu päättymispäivä {{endingDate}} lähenee.
+                    Varmistathan, että hankkeen ja sen töiden aikataulut ovat ajan tasalla. Päivitä tiedot tarvittaessa
+                    Haitattomaan tai ota tarvitsemasi tiedot talteen. Huomaathan, että hankkeen päättyminen lukitsee
+                    hankkeen ja estää sen näkymisen hankkeen ulkopuolisille.
+                </mj-text>
+                <mj-include path="common/signature-fi.partial"/>
+
+                <mj-divider mj-class="language-separator"/>
+
+                <mj-text mj-class="basic-txt">
+                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> ilmoitettu päättymispäivä {{endingDate}} lähenee.
+                    Varmistathan, että hankkeen ja sen töiden aikataulut ovat ajan tasalla. Päivitä tiedot tarvittaessa
+                    Haitattomaan tai ota tarvitsemasi tiedot talteen. Huomaathan, että hankkeen päättyminen lukitsee
+                    hankkeen ja estää sen näkymisen hankkeen ulkopuolisille.
+                </mj-text>
+                <mj-include path="common/signature-sv.partial"/>
+
+                <mj-divider mj-class="language-separator"/>
+
+                <mj-text mj-class="basic-txt">
+                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> ilmoitettu päättymispäivä {{endingDate}} lähenee.
+                    Varmistathan, että hankkeen ja sen töiden aikataulut ovat ajan tasalla. Päivitä tiedot tarvittaessa
+                    Haitattomaan tai ota tarvitsemasi tiedot talteen. Huomaathan, että hankkeen päättyminen lukitsee
+                    hankkeen ja estää sen näkymisen hankkeen ulkopuolisille.
+                </mj-text>
+                <mj-include path="common/signature-en.partial"/>
+            </mj-column>
+        </mj-section>
+        <mj-include path="common/footer-content.partial"/>
+    </mj-body>
+</mjml>

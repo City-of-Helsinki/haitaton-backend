@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.LockService
+import fi.hel.haitaton.hanke.domain.HankeReminder
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -43,13 +44,29 @@ class HankeCompletionSchedulerTest {
         private val hankeCompletionScheduler =
             HankeCompletionScheduler(completionService, lockService, featureFlags)
 
-        @Test
-        fun `doesn't do anything`() {
-            hankeCompletionScheduler.completeHankkeet()
+        @Nested
+        inner class CompleteHankkeet {
+            @Test
+            fun `doesn't do anything`() {
+                hankeCompletionScheduler.completeHankkeet()
 
-            verify {
-                jdbcLockRegistry wasNot Called
-                completionService wasNot Called
+                verify {
+                    jdbcLockRegistry wasNot Called
+                    completionService wasNot Called
+                }
+            }
+        }
+
+        @Nested
+        inner class SendCompletionReminders {
+            @Test
+            fun `doesn't do anything`() {
+                hankeCompletionScheduler.sendCompletionReminders()
+
+                verify {
+                    jdbcLockRegistry wasNot Called
+                    completionService wasNot Called
+                }
             }
         }
     }
@@ -61,49 +78,111 @@ class HankeCompletionSchedulerTest {
         private val hankeCompletionScheduler =
             HankeCompletionScheduler(completionService, lockService, featureFlags)
 
-        @Test
-        fun `gets a list of hanke IDs and tries to complete them`() {
-            mockLocking(true)
-            every { completionService.getPublicIds() } returns listOf(1, 2, 3)
+        @Nested
+        inner class CompleteHankkeet {
 
-            hankeCompletionScheduler.completeHankkeet()
+            @Test
+            fun `gets a list of hanke IDs and tries to complete them`() {
+                mockLocking(true)
+                every { completionService.getPublicIds() } returns listOf(1, 2, 3)
 
-            verifySequence {
-                jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
-                completionService.getPublicIds()
-                completionService.completeHankeIfPossible(1)
-                completionService.completeHankeIfPossible(2)
-                completionService.completeHankeIfPossible(3)
+                hankeCompletionScheduler.completeHankkeet()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService.getPublicIds()
+                    completionService.completeHankeIfPossible(1)
+                    completionService.completeHankeIfPossible(2)
+                    completionService.completeHankeIfPossible(3)
+                }
+            }
+
+            @Test
+            fun `continues when a hanke has an validity error`() {
+                mockLocking(true)
+                every { completionService.getPublicIds() } returns listOf(1, 2, 3)
+                every { completionService.completeHankeIfPossible(2) } throws
+                    HankealueWithoutEndDateException(HankeFactory.create(id = 2))
+
+                hankeCompletionScheduler.completeHankkeet()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService.getPublicIds()
+                    completionService.completeHankeIfPossible(1)
+                    completionService.completeHankeIfPossible(2)
+                    completionService.completeHankeIfPossible(3)
+                }
+            }
+
+            @Test
+            fun `does nothing when lock can't be obtained after waiting`() {
+                mockLocking(false)
+
+                hankeCompletionScheduler.completeHankkeet()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService wasNot Called
+                }
             }
         }
 
-        @Test
-        fun `continues when a hanke has an validity error`() {
-            mockLocking(true)
-            every { completionService.getPublicIds() } returns listOf(1, 2, 3)
-            every { completionService.completeHankeIfPossible(2) } throws
-                HankealueWithoutEndDateException(HankeFactory.create(id = 2))
+        @Nested
+        inner class SendCompletionReminders {
+            @Test
+            fun `gets a list of hanke IDs for each reminder and tries to send their reminders`() {
+                mockLocking(true)
+                every { completionService.idsForReminders(any()) } returns listOf(1, 2, 3)
 
-            hankeCompletionScheduler.completeHankkeet()
+                hankeCompletionScheduler.sendCompletionReminders()
 
-            verifySequence {
-                jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
-                completionService.getPublicIds()
-                completionService.completeHankeIfPossible(1)
-                completionService.completeHankeIfPossible(2)
-                completionService.completeHankeIfPossible(3)
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService.idsForReminders(HankeReminder.COMPLETION_14)
+                    completionService.sendReminderIfNecessary(1, HankeReminder.COMPLETION_14)
+                    completionService.sendReminderIfNecessary(2, HankeReminder.COMPLETION_14)
+                    completionService.sendReminderIfNecessary(3, HankeReminder.COMPLETION_14)
+                    completionService.idsForReminders(HankeReminder.COMPLETION_5)
+                    completionService.sendReminderIfNecessary(1, HankeReminder.COMPLETION_5)
+                    completionService.sendReminderIfNecessary(2, HankeReminder.COMPLETION_5)
+                    completionService.sendReminderIfNecessary(3, HankeReminder.COMPLETION_5)
+                }
             }
-        }
 
-        @Test
-        fun `does nothing when lock can't be obtained after waiting`() {
-            mockLocking(false)
+            @Test
+            fun `continues when a hanke has an validity error`() {
+                mockLocking(true)
+                every { completionService.idsForReminders(any()) } returns listOf(1, 2, 3)
+                every {
+                    completionService.sendReminderIfNecessary(2, HankeReminder.COMPLETION_14)
+                } throws HankealueWithoutEndDateException(HankeFactory.create(id = 2))
 
-            hankeCompletionScheduler.completeHankkeet()
+                hankeCompletionScheduler.sendCompletionReminders()
 
-            verifySequence {
-                jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
-                completionService wasNot Called
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService.idsForReminders(HankeReminder.COMPLETION_14)
+                    completionService.sendReminderIfNecessary(1, HankeReminder.COMPLETION_14)
+                    completionService.sendReminderIfNecessary(2, HankeReminder.COMPLETION_14)
+                    completionService.sendReminderIfNecessary(3, HankeReminder.COMPLETION_14)
+                    completionService.idsForReminders(HankeReminder.COMPLETION_5)
+                    completionService.sendReminderIfNecessary(1, HankeReminder.COMPLETION_5)
+                    completionService.sendReminderIfNecessary(2, HankeReminder.COMPLETION_5)
+                    completionService.sendReminderIfNecessary(3, HankeReminder.COMPLETION_5)
+                }
+            }
+
+            @Test
+            fun `does nothing when lock can't be obtained after waiting`() {
+                mockLocking(false)
+
+                hankeCompletionScheduler.sendCompletionReminders()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService wasNot Called
+                }
             }
         }
     }

@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.getResourceAsText
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import jakarta.mail.internet.MimeMessage
+import java.time.format.DateTimeFormatter
 import mu.KotlinLogging
 import net.pwall.mustache.Template
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.event.TransactionalEventListener
 
 private val logger = KotlinLogging.logger {}
+private val FINNISH_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.uuuu")
 
 @ConfigurationProperties(prefix = "haitaton.email")
 data class EmailProperties(
@@ -36,10 +38,11 @@ enum class EmailTemplate(val value: String) {
     APPLICATION_NOTIFICATION("kayttaja-lisatty-hakemus"),
     CABLE_REPORT_DONE("johtoselvitys-valmis"),
     EXCAVATION_NOTIFICATION_DECISION("kaivuilmoitus-paatos"),
-    INVITATION_HANKE("kayttaja-lisatty-hanke"),
-    REMOVAL_FROM_HANKE_NOTIFICATION("kayttaja-poistettu-hanke"),
+    HANKE_ENDING("hanke-paattyy"),
     INFORMATION_REQUEST("taydennyspyynto"),
     INFORMATION_REQUEST_CANCELED("taydennyspyynto-peruttu"),
+    INVITATION_HANKE("kayttaja-lisatty-hanke"),
+    REMOVAL_FROM_HANKE_NOTIFICATION("kayttaja-poistettu-hanke"),
 }
 
 @Service
@@ -178,6 +181,19 @@ class EmailSenderService(
             )
 
         sendHybridEmail(data.to, EmailTemplate.INFORMATION_REQUEST_CANCELED, templateData)
+    }
+
+    @TransactionalEventListener
+    fun sendHankeEndingEmail(data: HankeEndingReminder) {
+        logger.info { "Sending reminder email for hanke ending soon" }
+        val templateData =
+            mapOf(
+                "hanketunnus" to data.hanketunnus,
+                "hankeNimi" to data.hankeNimi,
+                "endingDate" to data.endingDate.format(FINNISH_DATE_FORMAT),
+            )
+
+        sendHybridEmail(data.to, EmailTemplate.HANKE_ENDING, templateData)
     }
 
     private fun sendHybridEmail(to: String, template: EmailTemplate, data: Map<String, Any>) {
