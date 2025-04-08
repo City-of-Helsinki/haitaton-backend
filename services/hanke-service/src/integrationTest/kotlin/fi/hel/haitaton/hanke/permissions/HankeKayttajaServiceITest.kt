@@ -283,7 +283,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
     }
 
     @Nested
-    inner class GtHankeKayttajatWithPermission {
+    inner class GetHankeKayttajatWithPermission {
         @Test
         fun `returns empty list when there's no hanke `() {
             val result =
