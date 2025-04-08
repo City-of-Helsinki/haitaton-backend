@@ -182,3 +182,8 @@ enum class TyomaaTyyppi {
     YLEISOTILAISUUS,
     VAIHTOLAVA,
 }
+
+enum class HankeReminder {
+    COMPLETION_5,
+    COMPLETION_14,
+}

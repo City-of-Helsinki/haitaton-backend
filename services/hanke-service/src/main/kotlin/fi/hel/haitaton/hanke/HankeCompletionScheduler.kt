@@ -3,11 +3,10 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.LockService
+import fi.hel.haitaton.hanke.domain.HankeReminder
 import java.util.concurrent.TimeUnit
 import mu.KotlinLogging
-import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.annotation.Profile
-import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
@@ -21,7 +20,6 @@ class HankeCompletionScheduler(
     private val featureFlags: FeatureFlags,
 ) {
     @Scheduled(cron = "\${haitaton.hanke.completions.cron}", zone = "Europe/Helsinki")
-    @EventListener(ApplicationReadyEvent::class)
     fun completeHankkeet() {
         if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
             logger.info { "Hanke completion is disabled, not running daily completion job." }
@@ -33,15 +31,44 @@ class HankeCompletionScheduler(
         )
         lockService.withLock(LOCK_NAME, 10, TimeUnit.MINUTES) {
             val ids = completionService.getPublicIds()
-            logger.info("Got ${ids.size} hanke to try to complete.")
+            logger.info { "Got ${ids.size} hanke to try to complete." }
 
-            ids.forEach { id ->
-                try {
-                    completionService.completeHankeIfPossible(id)
-                } catch (e: HankeValidityException) {
-                    // Don't fail on hanke validation issues, log the error and continue.
-                    logger.error(e) { e.message }
-                }
+            doForEachId(ids) { id -> completionService.completeHankeIfPossible(id) }
+        }
+    }
+
+    @Scheduled(cron = "\${haitaton.hanke.completions.reminderCron}", zone = "Europe/Helsinki")
+    fun sendCompletionReminders() {
+        if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
+            logger.info { "Hanke completion is disabled, not checking for reminders to send." }
+            return
+        }
+
+        logger.info {
+            "Trying to obtain lock $LOCK_NAME to start checking for hanke completion reminders"
+        }
+
+        lockService.withLock(LOCK_NAME, 10, TimeUnit.MINUTES) {
+            sendReminders(HankeReminder.COMPLETION_14)
+            sendReminders(HankeReminder.COMPLETION_5)
+        }
+    }
+
+    private fun sendReminders(reminder: HankeReminder) {
+        val ids = completionService.idsForReminders(reminder)
+
+        logger.info { "Got ${ids.size} hanke for sending reminder $reminder." }
+
+        doForEachId(ids) { id -> completionService.sendReminderIfNecessary(id, reminder) }
+    }
+
+    private fun doForEachId(ids: List<Int>, f: (Int) -> Unit) {
+        ids.forEach { id ->
+            try {
+                f(id)
+            } catch (e: HankeValidityException) {
+                // Don't fail on hanke validation issues, log the error and continue.
+                logger.error(e) { e.message }
             }
         }
     }
