@@ -1,11 +1,11 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.domain.HankeReminder
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.email.HankeEndingReminder
-import fi.hel.haitaton.hanke.hakemus.ApplicationType
-import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hakemus.HakemusService
+import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import java.time.LocalDate
@@ -21,7 +21,11 @@ private val logger = KotlinLogging.logger {}
 @Service
 class HankeCompletionService(
     private val hankeRepository: HankeRepository,
+    private val hakemusService: HakemusService,
+    private val hankeService: HankeService,
+    private val hankeAttachmentService: HankeAttachmentService,
     private val hankeKayttajaService: HankeKayttajaService,
+    private val hankeLoggingService: HankeLoggingService,
     private val applicationEventPublisher: ApplicationEventPublisher,
     @Value("\${haitaton.hanke.completions.max-per-run}") private val completionsPerDay: Int,
 ) {
@@ -32,6 +36,10 @@ class HankeCompletionService(
     @Transactional(readOnly = true)
     fun idsForReminders(reminder: HankeReminder): List<Int> =
         hankeRepository.findHankeToRemind(completionsPerDay, reminderDate(reminder), reminder)
+
+    @Transactional(readOnly = true)
+    fun idsToDelete(): List<Int> =
+        hankeRepository.findHankeToDelete(OffsetDateTime.now().minusMonths(6))
 
     @Transactional
     fun completeHankeIfPossible(id: Int) {
@@ -110,6 +118,34 @@ class HankeCompletionService(
         sendReminders(hanke, endDate)
     }
 
+    @Transactional
+    fun deleteHanke(id: Int) {
+        logger.info { "Trying to delete hanke $id" }
+        val hanke = hankeRepository.getReferenceById(id)
+
+        assertHankeCompleted(hanke)
+        val deletionDate = hanke.deletionDate()
+        if (deletionDate == null) {
+            throw HankeHasNoCompletionDateException(hanke)
+        } else if (deletionDate.isAfter(LocalDate.now())) {
+            throw HankeCompletedRecently(hanke, deletionDate)
+        }
+
+        if (hankeHasActiveApplications(hanke)) {
+            logger.error {
+                "Hanke has active applications, not doing anything. ${hanke.logString()}"
+            }
+            return
+        }
+
+        hanke.hakemukset.forEach { hakemus -> hakemusService.deleteCompleted(hakemus.id) }
+
+        hankeAttachmentService.deleteAllAttachments(hanke)
+        val domain = hankeService.loadHanke(hanke.hankeTunnus)!!
+        hankeLoggingService.logDeleteFromHaitaton(domain)
+        hankeRepository.deleteById(hanke.id)
+    }
+
     private fun sendReminders(hanke: HankeEntity, endingDate: LocalDate) {
         hankeKayttajaService
             .getHankeKayttajatWithPermission(hanke.id, PermissionCode.EDIT)
@@ -121,14 +157,13 @@ class HankeCompletionService(
     }
 
     companion object {
-        private val COMPLETED_EXCAVATION_NOTIFICATION_STATUSES: Set<ApplicationStatus> =
-            setOf(ApplicationStatus.FINISHED, ApplicationStatus.ARCHIVED)
-
-        private val COMPLETED_CABLE_REPORT_STATUSES: Set<ApplicationStatus> =
-            COMPLETED_EXCAVATION_NOTIFICATION_STATUSES + ApplicationStatus.DECISION
 
         fun assertHankePublic(hanke: HankeEntity) {
             if (hanke.status != HankeStatus.PUBLIC) throw HankeNotPublicException(hanke)
+        }
+
+        fun assertHankeCompleted(hanke: HankeEntity) {
+            if (hanke.status != HankeStatus.COMPLETED) throw HankeNotCompletedException(hanke)
         }
 
         fun assertHankeHasAreas(hanke: HankeEntity) {
@@ -144,7 +179,7 @@ class HankeCompletionService(
         fun hankeHasActiveApplications(hanke: HankeEntity): Boolean {
             val activeApplications =
                 hanke.hakemukset.filterNot { hakemus ->
-                    hakemus.alluStatus == null || hasCompletedStatus(hakemus)
+                    hakemus.alluStatus == null || hakemus.hasCompletedStatus()
                 }
 
             activeApplications.forEach {
@@ -161,16 +196,21 @@ class HankeCompletionService(
                 HankeReminder.COMPLETION_14 -> LocalDate.now().plusDays(14)
                 HankeReminder.COMPLETION_5 -> LocalDate.now().plusDays(5)
             }
-
-        private fun hasCompletedStatus(hakemus: HakemusEntity): Boolean =
-            hakemus.alluStatus in
-                when (hakemus.applicationType) {
-                    ApplicationType.CABLE_REPORT -> COMPLETED_CABLE_REPORT_STATUSES
-                    ApplicationType.EXCAVATION_NOTIFICATION ->
-                        COMPLETED_EXCAVATION_NOTIFICATION_STATUSES
-                }
     }
 }
+
+class HankeHasNoCompletionDateException(hanke: HankeEntity) :
+    HankeValidityException("Hanke has no completion date", hanke)
+
+class HankeCompletedRecently(hanke: HankeEntity, deletionDate: LocalDate?) :
+    HankeValidityException(
+        "Hanke has been completed too recently, on ${hanke.completedAt}," +
+            " so it can not be deleted before $deletionDate.",
+        hanke,
+    )
+
+class HankeNotCompletedException(hanke: HankeEntity) :
+    HankeValidityException("Hanke is not completed, it's ${hanke.status}", hanke)
 
 class HankeNotPublicException(hanke: HankeEntity) :
     HankeValidityException("Hanke is not public, it's ${hanke.status}", hanke)

@@ -27,7 +27,7 @@ import org.hibernate.annotations.Type
 data class HakemusEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override val id: Long,
     override var alluid: Int?,
-    @Enumerated(EnumType.STRING) var alluStatus: ApplicationStatus?,
+    @Enumerated(EnumType.STRING) override var alluStatus: ApplicationStatus?,
     override var applicationIdentifier: String?,
     var userId: String?,
     @Enumerated(EnumType.STRING) override val applicationType: ApplicationType,
@@ -53,7 +53,7 @@ data class HakemusEntity(
     )
     @BatchSize(size = 100)
     val valmistumisilmoitukset: MutableList<ValmistumisilmoitusEntity> = mutableListOf(),
-) : HakemusIdentifier, HasYhteystietoEntities<HakemusyhteyshenkiloEntity> {
+) : HakemusIdentifier, HasAlluStatus, HasYhteystietoEntities<HakemusyhteyshenkiloEntity> {
     fun toMetadata(): HakemusMetaData =
         HakemusMetaData(
             id = id,

@@ -78,6 +78,7 @@ import fi.hel.haitaton.hanke.logging.AlluContactWithRole
 import fi.hel.haitaton.hanke.logging.AlluCustomerWithRole
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
+import fi.hel.haitaton.hanke.logging.HAITATON_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusWithExtras
@@ -2160,6 +2161,97 @@ class HakemusServiceITest(
             hakemusService.cancelAndDelete(hakemus, USERNAME)
 
             assertThat(hakemusRepository.findAll()).isEmpty()
+        }
+    }
+
+    @Nested
+    inner class DeleteCompleted {
+        private val alluId = 570
+
+        @Test
+        fun `throws an exception when the application is not completed`() {
+            val hakemus =
+                hakemusFactory.builder().withStatus(ApplicationStatus.PENDING, alluId).save()
+
+            val failure = assertFailure { hakemusService.deleteCompleted(hakemus.id) }
+
+            failure.all {
+                hasClass(HakemusInWrongStatusException::class)
+                messageContains("Hakemus is in the wrong status for this operation")
+                messageContains("status=PENDING")
+                messageContains("allowed statuses=FINISHED, ARCHIVED, DECISION")
+                messageContains("id=${hakemus.id}")
+                messageContains("alluId=$alluId")
+            }
+            assertThat(hakemusRepository.findAll()).hasSize(1)
+        }
+
+        @Test
+        fun `deletes the application and all it's attachments`() {
+            val application =
+                hakemusFactory.builder().withStatus(ApplicationStatus.ARCHIVED).saveEntity()
+            attachmentFactory.save(application = application).withContent()
+            attachmentFactory.save(application = application).withContent()
+
+            hakemusService.deleteCompleted(application.id)
+
+            assertThat(hakemusRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).isEmpty()
+        }
+
+        @Test
+        fun `deletes the application and attachment metadata even when attachment content deletion fails`() {
+            val application =
+                hakemusFactory.builder().withStatus(ApplicationStatus.DECISION).saveEntity()
+            attachmentFactory.save(application = application).withContent()
+            attachmentFactory.save(application = application).withContent()
+            fileClient.connected = false
+
+            hakemusService.deleteCompleted(application.id)
+
+            assertThat(hakemusRepository.findAll()).isEmpty()
+            assertThat(applicationAttachmentRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
+        }
+
+        @Test
+        fun `writes audit log for the deleted application`() {
+            TestUtils.addMockedRequestIp()
+            val hakemus = hakemusFactory.builder().withStatus(ApplicationStatus.FINISHED).save()
+            auditLogRepository.deleteAll()
+
+            hakemusService.deleteCompleted(hakemus.id)
+
+            assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.DELETE) {
+                hasServiceActor(HAITATON_AUDIT_LOG_USERID)
+                withTarget {
+                    prop(AuditLogTarget::id).isEqualTo(hakemus.id.toString())
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.HAKEMUS)
+                    hasObjectBefore(hakemus)
+                    hasNoObjectAfter()
+                }
+            }
+        }
+
+        @Test
+        fun `deletes yhteystiedot and yhteyshenkilot but no hankekayttaja`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withStatus(ApplicationStatus.FINISHED)
+                    .hakija()
+                    .tyonSuorittaja()
+                    .rakennuttaja()
+                    .asianhoitaja()
+                    .save()
+
+            hakemusService.deleteCompleted(hakemus.id)
+
+            assertThat(hakemusRepository.findAll()).isEmpty()
+            assertThat(hakemusyhteystietoRepository.findAll()).isEmpty()
+            assertThat(hakemusyhteyshenkiloRepository.findAll()).isEmpty()
+            assertThat(hankekayttajaRepository.count())
+                .isEqualTo(5) // Hanke founder + one kayttaja for each role
         }
     }
 
