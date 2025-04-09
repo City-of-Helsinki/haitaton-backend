@@ -105,6 +105,8 @@ class HankeEntity(
 
     fun endDate(): LocalDate? = alueet.mapNotNull { it.haittaLoppuPvm }.maxOrNull()
 
+    fun deletionDate(): LocalDate? = completedAt?.plusMonths(6)?.toLocalDate()
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is HankeEntity) return false
@@ -154,6 +156,9 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
             "order by h.modifiedAt asc limit :limit"
     )
     fun findHankeToRemind(limit: Int, reminderDate: LocalDate, reminder: HankeReminder): List<Int>
+
+    @Query("select h.id from HankeEntity h where h.completedAt <= :date")
+    fun findHankeToDelete(date: OffsetDateTime): List<Int>
 }
 
 interface HankeIdentifier : HasId<Int>, Loggable {

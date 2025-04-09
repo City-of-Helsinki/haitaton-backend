@@ -398,8 +398,9 @@ class HakemusService(
      * delete, if the application is in Allu, and it's beyond the pending status.
      */
     @Transactional
-    fun delete(applicationId: Long, userId: String) =
-        with(getById(applicationId)) { cancelAndDelete(this, userId) }
+    fun delete(applicationId: Long, userId: String) {
+        cancelAndDelete(getById(applicationId), userId)
+    }
 
     /**
      * Deletes an application. Cancels the application in Allu if it's still pending. Refuses to
@@ -1114,6 +1115,27 @@ class HakemusService(
         logger.info { "Hakemus deleted, ${hakemus.logString()}" }
     }
 
+    @Transactional
+    fun deleteFromCompletedHanke(hakemusId: Long) {
+        val hakemus = getById(hakemusId)
+        assertDraftOrCompleted(hakemus)
+        logger.info { "Deleting hakemus for completed hanke, ${hakemus.logString()}" }
+        attachmentService.deleteAllAttachments(hakemus)
+        hakemusRepository.deleteById(hakemus.id)
+        hakemusLoggingService.logDeleteFromHaitaton(hakemus)
+        logger.info { "Hakemus deleted, ${hakemus.logString()}" }
+    }
+
+    private fun assertDraftOrCompleted(hakemus: Hakemus) {
+        if (hakemus.alluStatus != null && !hakemus.hasCompletedStatus()) {
+            throw HakemusInWrongStatusException(
+                hakemus,
+                hakemus.alluStatus,
+                hakemus.completedStatuses().toList() + null,
+            )
+        }
+    }
+
     /** Cancel a hakemus that's been sent to Allu. */
     private fun cancelHakemus(id: Long?, alluId: Int, alluStatus: ApplicationStatus?) {
         if (isStillPending(alluId, alluStatus)) {
@@ -1276,7 +1298,7 @@ class WrongHakemusTypeException(
 class HakemusInWrongStatusException(
     hakemus: HakemusIdentifier,
     status: ApplicationStatus?,
-    allowed: List<ApplicationStatus>,
+    allowed: Collection<ApplicationStatus?>,
 ) :
     RuntimeException(
         "Hakemus is in the wrong status for this operation. status=$status, " +

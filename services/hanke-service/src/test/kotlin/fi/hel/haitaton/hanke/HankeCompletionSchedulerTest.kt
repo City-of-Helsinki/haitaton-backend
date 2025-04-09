@@ -69,6 +69,19 @@ class HankeCompletionSchedulerTest {
                 }
             }
         }
+
+        @Nested
+        inner class DeleteCompletedHanke {
+            @Test
+            fun `doesn't do anything`() {
+                hankeCompletionScheduler.deleteCompletedHanke()
+
+                verify {
+                    jdbcLockRegistry wasNot Called
+                    completionService wasNot Called
+                }
+            }
+        }
     }
 
     @Nested
@@ -178,6 +191,55 @@ class HankeCompletionSchedulerTest {
                 mockLocking(false)
 
                 hankeCompletionScheduler.sendCompletionReminders()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService wasNot Called
+                }
+            }
+        }
+
+        @Nested
+        inner class DeleteCompletedHanke {
+            @Test
+            fun `gets a list of hanke IDs to delete and attempts to delete them`() {
+                mockLocking(true)
+                every { completionService.idsToDelete() } returns listOf(1, 2, 3)
+
+                hankeCompletionScheduler.deleteCompletedHanke()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService.idsToDelete()
+                    completionService.deleteHanke(1)
+                    completionService.deleteHanke(2)
+                    completionService.deleteHanke(3)
+                }
+            }
+
+            @Test
+            fun `continues when a hanke has an validity error`() {
+                mockLocking(true)
+                every { completionService.idsToDelete() } returns listOf(1, 2, 3)
+                every { completionService.deleteHanke(2) } throws
+                    HankeHasNoCompletionDateException(HankeFactory.createEntity())
+
+                hankeCompletionScheduler.deleteCompletedHanke()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService.idsToDelete()
+                    completionService.deleteHanke(1)
+                    completionService.deleteHanke(2)
+                    completionService.deleteHanke(3)
+                }
+            }
+
+            @Test
+            fun `does nothing when lock can't be obtained after waiting`() {
+                mockLocking(false)
+
+                hankeCompletionScheduler.deleteCompletedHanke()
 
                 verifySequence {
                     jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
