@@ -8,8 +8,6 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
-import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 
 object HankeMapper {
 
@@ -33,6 +31,7 @@ object HankeMapper {
                     createdAt = createdAt?.zonedDateTime(),
                     modifiedBy = modifiedByUserId,
                     modifiedAt = modifiedAt?.zonedDateTime(),
+                    deletionDate = deletionDate(),
                     status = status,
                     generated = generated,
                 )
@@ -76,30 +75,4 @@ object HankeMapper {
                 haittojenhallintasuunnitelma = haittojenhallintasuunnitelma.toMap(),
             )
         }
-
-    private fun tormaystarkasteluTulos(entity: HankeEntity): TormaystarkasteluTulos? {
-        val tulokset = entity.alueet.mapNotNull { it.tormaystarkasteluTulos }
-        return if (tulokset.isEmpty()) {
-            null
-        } else {
-            TormaystarkasteluTulos(
-                autoliikenne =
-                    tulokset
-                        .maxBy { it.autoliikenne }
-                        .let {
-                            Autoliikenneluokittelu(
-                                it.autoliikenne,
-                                it.haitanKesto,
-                                it.katuluokka,
-                                it.autoliikennemaara,
-                                it.kaistahaitta,
-                                it.kaistapituushaitta,
-                            )
-                        },
-                pyoraliikenneindeksi = tulokset.maxOf { it.pyoraliikenne },
-                linjaautoliikenneindeksi = tulokset.maxOf { it.linjaautoliikenne },
-                raitioliikenneindeksi = tulokset.maxOf { it.raitioliikenne },
-            )
-        }
-    }
 }
