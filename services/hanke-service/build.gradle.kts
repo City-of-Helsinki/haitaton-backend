@@ -55,7 +55,7 @@ spotless {
 
 plugins {
     val kotlinVersion = "2.1.20"
-    id("org.springframework.boot") version "3.3.5"
+    id("org.springframework.boot") version "3.3.10"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.diffplug.spotless") version "7.0.2"
     kotlin("jvm") version kotlinVersion
@@ -78,12 +78,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
-    implementation("ch.qos.logback.access:tomcat:2.0.3") {
-        // logback-access has dependencies incompatible with Spring Boot 3.3
-        // https://github.com/qos-ch/logback-access/issues/17
-        exclude("org.apache.tomcat")
-        exclude("jakarta.servlet")
-    }
+    implementation("ch.qos.logback.access:logback-access-tomcat:2.0.6")
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
@@ -187,7 +182,8 @@ tasks {
         mustRunAfter("test", "integrationTest")
         reports { xml.required.set(true) }
         executionData.setFrom(
-            fileTree(layout.buildDirectory).include("/jacoco/test.exec", "/jacoco/integrationTest.exec")
+            fileTree(layout.buildDirectory)
+                .include("/jacoco/test.exec", "/jacoco/integrationTest.exec")
         )
     }
 
