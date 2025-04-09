@@ -88,7 +88,7 @@ dependencies {
     implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.9.9")
     implementation("commons-io:commons-io:2.18.0")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("com.auth0:java-jwt:4.5.0")
 
     implementation("org.postgresql:postgresql")
