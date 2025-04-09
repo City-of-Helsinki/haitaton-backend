@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.contains
@@ -9,20 +10,40 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.messageContains
+import assertk.assertions.prop
+import assertk.assertions.single
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.domain.HankeReminder
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.HakemusFactory
+import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
+import fi.hel.haitaton.hanke.hakemus.ApplicationType
+import fi.hel.haitaton.hanke.hakemus.HakemusRepository
+import fi.hel.haitaton.hanke.logging.AuditLogRepository
+import fi.hel.haitaton.hanke.logging.AuditLogTarget
+import fi.hel.haitaton.hanke.logging.HAITATON_AUDIT_LOG_USERID
+import fi.hel.haitaton.hanke.logging.ObjectType
+import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectAfter
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasServiceActor
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -34,9 +55,13 @@ import org.springframework.beans.factory.annotation.Autowired
 
 class HankeCompletionServiceITest(
     @Autowired private val hankeCompletionService: HankeCompletionService,
-    @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hakemusFactory: HakemusFactory,
+    @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
+    @Autowired private val auditLogRepository: AuditLogRepository,
+    @Autowired private val hankeFactory: HankeFactory,
+    @Autowired private val hakemusRepository: HakemusRepository,
     @Autowired private val hankeRepository: HankeRepository,
+    @Autowired private val fileClient: MockFileClient,
 ) : IntegrationTest() {
 
     @Nested
@@ -618,6 +643,117 @@ class HankeCompletionServiceITest(
                     .contains(
                         "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) ilmoitettu päättymispäivä $day.$month.$year lähenee"
                     )
+            }
+        }
+    }
+
+    @Nested
+    inner class DeleteHanke {
+        @ParameterizedTest
+        @EnumSource(HankeStatus::class, names = ["COMPLETED"], mode = EnumSource.Mode.EXCLUDE)
+        fun `throws exception when hanke is not completed`(status: HankeStatus) {
+            val hanke = hankeFactory.builder().saveEntity(status)
+
+            val failure = assertFailure { hankeCompletionService.deleteHanke(hanke.id) }
+
+            failure.all {
+                hasClass(HankeNotCompletedException::class)
+                messageContains("Hanke is not completed")
+                messageContains("id=${hanke.id}")
+            }
+        }
+
+        @Test
+        fun `throws exception when hanke has no completion date`() {
+            val hanke =
+                hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) { it.completedAt = null }
+
+            val failure = assertFailure { hankeCompletionService.deleteHanke(hanke.id) }
+
+            failure.all {
+                hasClass(HankeHasNoCompletionDateException::class)
+                messageContains("Hanke has no completion date")
+                messageContains("id=${hanke.id}")
+            }
+        }
+
+        @Test
+        fun `throws exception when hanke completion date is too recently`() {
+            val hanke =
+                hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(1)
+                }
+
+            val failure = assertFailure { hankeCompletionService.deleteHanke(hanke.id) }
+
+            failure.all {
+                hasClass(HankeCompletedRecently::class)
+                messageContains("Hanke has been completed too recently")
+                messageContains("id=${hanke.id}")
+            }
+        }
+
+        @Test
+        fun `does nothing when hanke has active applications`() {
+            val hanke =
+                hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6)
+                }
+            hakemusFactory.builder(hanke).withStatus(ApplicationStatus.DECISIONMAKING).save()
+
+            hankeCompletionService.deleteHanke(hanke.id)
+
+            assertThat(hankeRepository.findOneById(hanke.id)).isNotNull().all {
+                prop(HankeIdentifier::id).isEqualTo(hanke.id)
+                prop(HankeIdentifier::hankeTunnus).isEqualTo(hanke.hankeTunnus)
+            }
+        }
+
+        @Test
+        fun `deletes the hanke with attachments and applications`() {
+            val hanke =
+                hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6)
+                }
+            hakemusFactory
+                .builder(hanke, ApplicationType.CABLE_REPORT)
+                .withStatus(ApplicationStatus.FINISHED, alluId = 41)
+                .save()
+            hakemusFactory
+                .builder(hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                .withNoAlluFields()
+                .save()
+            hakemusFactory
+                .builder(hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                .withStatus(ApplicationStatus.ARCHIVED, alluId = 53)
+                .save()
+            hankeAttachmentFactory.save(hanke = hanke).withContent()
+            hankeAttachmentFactory.save(hanke = hanke).withContent()
+
+            hankeCompletionService.deleteHanke(hanke.id)
+
+            assertThat(hankeRepository.findAll()).isEmpty()
+            assertThat(hakemusRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(Container.HANKE_LIITTEET)).isEmpty()
+        }
+
+        @Test
+        fun `logs the deletion to audit logs`() {
+            val hanke =
+                hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6)
+                }
+            auditLogRepository.deleteAll()
+
+            hankeCompletionService.deleteHanke(hanke.id)
+
+            assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.DELETE) {
+                hasServiceActor(HAITATON_AUDIT_LOG_USERID)
+                withTarget {
+                    hasId(hanke.id)
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.HANKE)
+                    hasNoObjectAfter()
+                }
             }
         }
     }

@@ -54,6 +54,21 @@ class HankeCompletionScheduler(
         }
     }
 
+    @Scheduled(cron = "\${haitaton.hanke.completions.deletionCron}", zone = "Europe/Helsinki")
+    fun deleteCompletedHanke() {
+        if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
+            logger.info { "Hanke completion is disabled, not checking for hanke to delete." }
+            return
+        }
+
+        logger.info { "Trying to obtain lock $LOCK_NAME to start checking for hanke to delete." }
+
+        lockService.withLock(LOCK_NAME, 10, TimeUnit.MINUTES) {
+            val ids = completionService.idsToDelete()
+            doForEachId(ids) { id -> completionService.deleteHanke(id) }
+        }
+    }
+
     private fun sendReminders(reminder: HankeReminder) {
         val ids = completionService.idsForReminders(reminder)
 

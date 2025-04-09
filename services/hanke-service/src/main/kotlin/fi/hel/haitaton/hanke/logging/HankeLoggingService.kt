@@ -28,5 +28,22 @@ class HankeLoggingService(private val auditLogService: AuditLogService) :
         auditLogService.createAll(yhteystietoEntries + auditLogEntry)
     }
 
+    /**
+     * Create audit log entry for a hanke deleted by Haitaton.
+     *
+     * This also creates entries for sub-entities (yhteystiedot), since they will be deleted with
+     * the hanke, and they are not handled anywhere else.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    override fun logDeleteFromHaitaton(before: Hanke) {
+        val auditLogEntry = AuditLogService.deleteEntryForHaitaton(ObjectType.HANKE, before)
+        val yhteystietoEntries =
+            before.extractYhteystiedot().map {
+                AuditLogService.deleteEntryForHaitaton(ObjectType.YHTEYSTIETO, it)
+            }
+
+        auditLogService.createAll(yhteystietoEntries + auditLogEntry)
+    }
+
     fun createAll(auditLogEntries: List<AuditLogEntry>) = auditLogService.createAll(auditLogEntries)
 }
