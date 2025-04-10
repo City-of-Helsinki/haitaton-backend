@@ -149,6 +149,7 @@ class HankeFactory(
                 createdAt = createdAt,
                 modifiedBy = null,
                 modifiedAt = null,
+                deletionDate = null,
                 status = hankeStatus,
             )
 

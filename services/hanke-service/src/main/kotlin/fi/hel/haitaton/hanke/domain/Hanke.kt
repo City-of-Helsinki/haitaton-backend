@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import io.swagger.v3.oas.annotations.media.Schema
+import java.time.LocalDate
 import java.time.ZonedDateTime
 
 @Schema(description = "The project within which applications are processed.")
@@ -62,6 +63,10 @@ data class Hanke(
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Timestamp of last modification, set by the service.")
     var modifiedAt: ZonedDateTime?,
+    //
+    @JsonView(NotInChangeLogView::class)
+    @field:Schema(description = "The date the completed hanke will be automatically deleted.")
+    var deletionDate: LocalDate?,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Hanke current status, set by the service.")
