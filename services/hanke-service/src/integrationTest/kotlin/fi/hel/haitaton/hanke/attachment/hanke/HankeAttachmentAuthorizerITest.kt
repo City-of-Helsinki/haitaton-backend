@@ -6,9 +6,11 @@ import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.isTrue
 import assertk.assertions.messageContains
+import fi.hel.haitaton.hanke.HankeAlreadyCompletedException
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
@@ -34,22 +36,28 @@ class HankeAttachmentAuthorizerITest(
     inner class AuthorizeAttachment {
         @Test
         fun `throws exception if hankeTunnus is not found`() {
-            assertFailure { authorizer.authorizeAttachment(hankeTunnus, attachmentId, VIEW.name) }
-                .all {
-                    hasClass(HankeNotFoundException::class)
-                    messageContains(hankeTunnus)
-                }
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(hankeTunnus, attachmentId, VIEW.name)
+            }
+
+            failure.all {
+                hasClass(HankeNotFoundException::class)
+                messageContains(hankeTunnus)
+            }
         }
 
         @Test
         fun `throws exception if user doesn't have any permission for the hanke`() {
             hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
 
-            assertFailure { authorizer.authorizeAttachment(hankeTunnus, attachmentId, VIEW.name) }
-                .all {
-                    hasClass(HankeNotFoundException::class)
-                    messageContains(hankeTunnus)
-                }
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(hankeTunnus, attachmentId, VIEW.name)
+            }
+
+            failure.all {
+                hasClass(HankeNotFoundException::class)
+                messageContains(hankeTunnus)
+            }
         }
 
         @Test
@@ -57,11 +65,14 @@ class HankeAttachmentAuthorizerITest(
             val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
-            assertFailure { authorizer.authorizeAttachment(hankeTunnus, attachmentId, EDIT.name) }
-                .all {
-                    hasClass(HankeNotFoundException::class)
-                    messageContains(hankeTunnus)
-                }
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(hankeTunnus, attachmentId, EDIT.name)
+            }
+
+            failure.all {
+                hasClass(HankeNotFoundException::class)
+                messageContains(hankeTunnus)
+            }
         }
 
         @Test
@@ -69,11 +80,14 @@ class HankeAttachmentAuthorizerITest(
             val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
-            assertFailure { authorizer.authorizeAttachment(hankeTunnus, attachmentId, VIEW.name) }
-                .all {
-                    hasClass(AttachmentNotFoundException::class)
-                    messageContains(attachmentId.toString())
-                }
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(hankeTunnus, attachmentId, VIEW.name)
+            }
+
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachmentId.toString())
+            }
         }
 
         @Test
@@ -82,13 +96,14 @@ class HankeAttachmentAuthorizerITest(
             val attachment = hankeAttachmentFactory.save().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
-            assertFailure {
-                    authorizer.authorizeAttachment(hankeTunnus, attachment.id!!, VIEW.name)
-                }
-                .all {
-                    hasClass(AttachmentNotFoundException::class)
-                    messageContains(attachment.id.toString())
-                }
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(hankeTunnus, attachment.id!!, VIEW.name)
+            }
+
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachment.id.toString())
+            }
         }
 
         @Test
@@ -97,8 +112,38 @@ class HankeAttachmentAuthorizerITest(
             val attachment = hankeAttachmentFactory.save(hanke = hanke).value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
-            assertThat(authorizer.authorizeAttachment(hankeTunnus, attachment.id!!, VIEW.name))
-                .isTrue()
+            val result = authorizer.authorizeAttachment(hankeTunnus, attachment.id!!, VIEW.name)
+
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `throws an exception when modifying an attachment from a completed hanke`() {
+            val hanke = hankeFactory.saveMinimal(status = HankeStatus.COMPLETED)
+            val attachment = hankeAttachmentFactory.save(hanke = hanke).value
+            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KAIKKI_OIKEUDET)
+
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(hanke.hankeTunnus, attachment.id!!, EDIT.name)
+            }
+
+            failure.all {
+                hasClass(HankeAlreadyCompletedException::class)
+                messageContains("Hanke has already been completed, so the operation is not allowed")
+                messageContains("hankeId=${hanke.id}")
+            }
+        }
+
+        @Test
+        fun `returns true when viewing an attachment from a completed hanke`() {
+            val hanke = hankeFactory.saveMinimal(status = HankeStatus.COMPLETED)
+            val attachment = hankeAttachmentFactory.save(hanke = hanke).value
+            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KAIKKI_OIKEUDET)
+
+            val result =
+                authorizer.authorizeAttachment(hanke.hankeTunnus, attachment.id!!, VIEW.name)
+
+            assertThat(result).isTrue()
         }
 
         @Test

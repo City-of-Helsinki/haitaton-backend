@@ -488,6 +488,19 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         }
 
         @Test
+        fun `returns 409 when hanke has been completed`() {
+            val hanke = HankeFactory.create(version = null)
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name) } throws
+                HankeAlreadyCompletedException(hanke.id)
+
+            put(url, hanke).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI1034))
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
+            }
+        }
+
+        @Test
         fun `Update Hanke with data and return it (PUT)`() {
             val hankeToBeUpdated = HankeFactory.create(version = null)
             val updatedHanke =

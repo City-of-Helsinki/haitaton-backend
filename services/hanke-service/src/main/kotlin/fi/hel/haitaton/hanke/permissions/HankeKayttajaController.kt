@@ -42,15 +42,12 @@ class HankeKayttajaController(
     @GetMapping("/my-permissions")
     @Operation(
         summary = "Get your permissions for your own projects",
-        description =
-            "Returns a map of current users Hanke identifiers and respective permissions.")
+        description = "Returns a map of current users Hanke identifiers and respective permissions.",
+    )
     @ApiResponses(
         value =
-            [
-                ApiResponse(
-                    description = "Permissions grouped by hankeTunnus.",
-                    responseCode = "200",
-                )])
+            [ApiResponse(description = "Permissions grouped by hankeTunnus.", responseCode = "200")]
+    )
     fun whoAmIByHanke(): Map<String, WhoamiResponse> {
         val permissions: List<HankePermission> =
             permissionService.permissionsByHanke(userId = currentUserId())
@@ -66,12 +63,15 @@ class HankeKayttajaController(
                 ApiResponse(
                     description = "Your permissions",
                     responseCode = "200",
-                    content = [Content(schema = Schema(implementation = WhoamiResponse::class))]),
+                    content = [Content(schema = Schema(implementation = WhoamiResponse::class))],
+                ),
                 ApiResponse(
                     description = "Hanke not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
-            ])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun whoami(@PathVariable hankeTunnus: String): WhoamiResponse {
         val userId = currentUserId()
@@ -86,7 +86,8 @@ class HankeKayttajaController(
     @GetMapping("/kayttajat/{kayttajaId}")
     @Operation(
         summary = "Get a Hanke user",
-        description = "Returns a single user and their Hanke related information.")
+        description = "Returns a single user and their Hanke related information.",
+    )
     @ApiResponses(
         value =
             [
@@ -94,12 +95,15 @@ class HankeKayttajaController(
                 ApiResponse(
                     description = "Invalid UUID",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description = "Hanke or user not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
-            ])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'VIEW')")
     fun getHankeKayttaja(@PathVariable kayttajaId: UUID): HankeKayttajaDto =
         hankeKayttajaService.getKayttaja(kayttajaId).toDto()
@@ -107,7 +111,8 @@ class HankeKayttajaController(
     @GetMapping("/hankkeet/{hankeTunnus}/kayttajat")
     @Operation(
         summary = "Get Hanke users",
-        description = "Returns a list of users and their Hanke related information.")
+        description = "Returns a list of users and their Hanke related information.",
+    )
     @ApiResponses(
         value =
             [
@@ -115,12 +120,15 @@ class HankeKayttajaController(
                     description = "Users in Hanke",
                     responseCode = "200",
                     content =
-                        [Content(schema = Schema(implementation = HankeKayttajaResponse::class))]),
+                        [Content(schema = Schema(implementation = HankeKayttajaResponse::class))],
+                ),
                 ApiResponse(
                     description = "Hanke not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
-            ])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankeKayttajat(@PathVariable hankeTunnus: String): HankeKayttajaResponse {
         logger.info { "Finding kayttajat for hanke $hankeTunnus" }
@@ -140,10 +148,7 @@ class HankeKayttajaController(
         description =
             "Add a new user for the hanke. Adds an invitation with viewing permissions. Sends an invitation email to them.",
     )
-    @ApiResponse(
-        description = "The user that was added",
-        responseCode = "200",
-    )
+    @ApiResponse(description = "The user that was added", responseCode = "200")
     @ApiResponse(
         description = "Hanke not found",
         responseCode = "404",
@@ -157,7 +162,7 @@ class HankeKayttajaController(
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'CREATE_USER')")
     fun createNewUser(
         @RequestBody request: NewUserRequest,
-        @PathVariable hankeTunnus: String
+        @PathVariable hankeTunnus: String,
     ): HankeKayttajaDto {
         val hanke = hankeService.loadHanke(hankeTunnus)!!
         return hankeKayttajaService.createNewUser(request, hanke, currentUserId())
@@ -182,7 +187,8 @@ permissions.
 
 If removing or adding KAIKKI_OIKEUDET kayttooikeustaso, the caller needs to
 have those same permissions.
-""")
+""",
+    )
     @ApiResponses(
         value =
             [
@@ -190,28 +196,34 @@ have those same permissions.
                 ApiResponse(
                     description = "The request body was invalid",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description = "Not authorized to change admin permissions",
                     responseCode = "403",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description = "Hanke by requested tunnus not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description =
                         "User tried editing their own permissions or there would " +
                             "be no users with KAIKKI_OIKEUDET left.",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
-            ])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize(
-        "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_EDIT_PERMISSIONS')")
+        "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_EDIT_PERMISSIONS')"
+    )
     fun updatePermissions(
         @RequestBody permissions: PermissionUpdate,
-        @PathVariable hankeTunnus: String
+        @PathVariable hankeTunnus: String,
     ) {
         val hankeIdentifier = hankeService.findIdentifier(hankeTunnus)!!
 
@@ -219,13 +231,17 @@ have those same permissions.
 
         val deleteAdminPermission =
             permissionService.hasPermission(
-                hankeIdentifier.id, userId, PermissionCode.MODIFY_DELETE_PERMISSIONS)
+                hankeIdentifier.id,
+                userId,
+                PermissionCode.MODIFY_DELETE_PERMISSIONS,
+            )
 
         hankeKayttajaService.updatePermissions(
             hankeIdentifier,
             permissions.kayttajat.associate { it.id to it.kayttooikeustaso },
             deleteAdminPermission,
-            userId)
+            userId,
+        )
     }
 
     @PostMapping("/kayttajat")
@@ -240,7 +256,8 @@ the hanke the token was created for.
 Removes the token after a successful identification.
 
 Responds with information about the activated user and the hanke associated with it.
-""")
+""",
+    )
     @ApiResponses(
         value =
             [
@@ -251,24 +268,31 @@ Responds with information about the activated user and the hanke associated with
                 ApiResponse(
                     description = "Token not found or outdated",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description =
                         "Token doesn't have a user associated with it or the verified name cannot be retrieved from Profiili",
                     responseCode = "500",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description = "Permission already exists",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
-            ])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     fun identifyUser(
         @RequestBody tunnistautuminen: Tunnistautuminen,
-        @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext
+        @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext,
     ): TunnistautuminenResponse {
         val kayttaja =
             hankeKayttajaService.createPermissionFromToken(
-                currentUserId(), tunnistautuminen.tunniste, securityContext)
+                currentUserId(),
+                tunnistautuminen.tunniste,
+                securityContext,
+            )
 
         val hanke = hankeService.loadHankeById(kayttaja.hankeId)!!
         return TunnistautuminenResponse(kayttaja.id, hanke.hankeTunnus, hanke.nimi)
@@ -287,25 +311,22 @@ original email will not work anymore. It also means that the period of validity
 of the token and link will be reset.
 
 Returns the updated hankekayttaja.
-""")
+""",
+    )
     @ApiResponses(
         value =
             [
-                ApiResponse(
-                    description = "Invitation email resent",
-                    responseCode = "204",
-                ),
-                ApiResponse(
-                    description = "User not found",
-                    responseCode = "404",
-                ),
+                ApiResponse(description = "Invitation email resent", responseCode = "204"),
+                ApiResponse(description = "User not found", responseCode = "404"),
                 ApiResponse(
                     description =
                         "User has already been activated or the current user doesn't have name and email registered.",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
-            ])
-    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'RESEND_INVITATION')")
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeResend(#kayttajaId, 'RESEND_INVITATION')")
     fun resendInvitations(@PathVariable kayttajaId: UUID): HankeKayttajaDto =
         hankeKayttajaService.resendInvitation(kayttajaId, currentUserId()).toDto()
 
@@ -319,27 +340,23 @@ Updates the contact information of the hankekayttaja the user has in the hanke.
 The sahkoposti and puhelinnumero are mandatory and can't be empty or blank.
 
 Returns the updated hankekayttaja.
-""")
+""",
+    )
     @ApiResponses(
         value =
             [
-                ApiResponse(
-                    description = "Information updated",
-                    responseCode = "200",
-                ),
+                ApiResponse(description = "Information updated", responseCode = "200"),
                 ApiResponse(
                     description = "Email or telephone number is missing",
                     responseCode = "400",
                 ),
-                ApiResponse(
-                    description = "Hanke not found or not authorized",
-                    responseCode = "404",
-                ),
-            ])
+                ApiResponse(description = "Hanke not found or not authorized", responseCode = "404"),
+            ]
+    )
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun updateOwnContactInfo(
         @Valid @RequestBody update: ContactUpdate,
-        @PathVariable hankeTunnus: String
+        @PathVariable hankeTunnus: String,
     ): HankeKayttajaDto {
         return hankeKayttajaService
             .updateOwnContactInfo(hankeTunnus, update, currentUserId())
@@ -354,14 +371,12 @@ Returns the updated hankekayttaja.
 Updates the contact and (optionally) name information of the hankekayttaja.
 
 Returns the updated hankekayttaja.
-""")
+""",
+    )
     @ApiResponses(
         value =
             [
-                ApiResponse(
-                    description = "Information updated",
-                    responseCode = "200",
-                ),
+                ApiResponse(description = "Information updated", responseCode = "200"),
                 ApiResponse(
                     description = "Email or telephone number is missing",
                     responseCode = "400",
@@ -375,12 +390,13 @@ Returns the updated hankekayttaja.
                         "User has already been activated and therefore cannot update name",
                     responseCode = "409",
                 ),
-            ])
+            ]
+    )
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_USER')")
     fun updateKayttajaInfo(
         @RequestBody @Valid update: KayttajaUpdate,
         @PathVariable hankeTunnus: String,
-        @PathVariable kayttajaId: UUID
+        @PathVariable kayttajaId: UUID,
     ): HankeKayttajaDto {
         return hankeKayttajaService.updateKayttajaInfo(hankeTunnus, update, kayttajaId).toDto()
     }
@@ -399,23 +415,19 @@ needs to show them when asking for confirmation.
 
 Does not check if the caller needs KAIKKI_OIKEUDET to delete this particular
 user.
-""")
+""",
+    )
     @ApiResponses(
         value =
             [
-                ApiResponse(
-                    description = "Return the results",
-                    responseCode = "200",
-                ),
-                ApiResponse(
-                    description = "kayttajaId is not a proper UUID",
-                    responseCode = "400",
-                ),
+                ApiResponse(description = "Return the results", responseCode = "200"),
+                ApiResponse(description = "kayttajaId is not a proper UUID", responseCode = "400"),
                 ApiResponse(
                     description = "Hankekayttaja not found or not authorized",
                     responseCode = "404",
                 ),
-            ])
+            ]
+    )
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'DELETE_USER')")
     fun checkForDelete(@PathVariable kayttajaId: UUID): HankekayttajaDeleteService.DeleteInfo =
         hankekayttajaDeleteService.checkForDelete(kayttajaId)
@@ -428,18 +440,13 @@ Deletes the given hankekayttaja (user) from the hanke.
 
 Check if there are active applications the user is a contact in or if the user is the only
 contact in the applicant customer role. If either is true, refuse to delete the kayttaja.
-""")
+""",
+    )
     @ApiResponses(
         value =
             [
-                ApiResponse(
-                    description = "User deleted. No body.",
-                    responseCode = "204",
-                ),
-                ApiResponse(
-                    description = "kayttajaId is not a proper UUID.",
-                    responseCode = "400",
-                ),
+                ApiResponse(description = "User deleted. No body.", responseCode = "204"),
+                ApiResponse(description = "kayttajaId is not a proper UUID.", responseCode = "400"),
                 ApiResponse(
                     description = "Hankekayttaja not found or not authorized.",
                     responseCode = "404",
@@ -451,7 +458,8 @@ contact in the applicant customer role. If either is true, refuse to delete the 
                             "there would be no admin users left.",
                     responseCode = "409",
                 ),
-            ])
+            ]
+    )
     @DeleteMapping("/kayttajat/{kayttajaId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'DELETE_USER')")
