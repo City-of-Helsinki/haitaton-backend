@@ -131,6 +131,15 @@ class ControllerExceptionHandler {
         return HankeError.HAI2001
     }
 
+    @ExceptionHandler(HankeAlreadyCompletedException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun hankeAlreadyCompleted(ex: HankeAlreadyCompletedException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI1034
+    }
+
     @ExceptionHandler(ApplicationInAlluException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden

@@ -39,3 +39,6 @@ out/
 
 ### Azurite debug log ###
 azurite-debug.log
+
+# Kotlin 2 cache directory
+/.kotlin

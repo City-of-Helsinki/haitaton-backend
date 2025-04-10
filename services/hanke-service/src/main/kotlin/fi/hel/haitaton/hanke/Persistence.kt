@@ -137,6 +137,9 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
 
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
 
+    @Query("select h.status from HankeEntity h where h.id = :id")
+    fun findStatusById(id: Int): HankeStatus?
+
     @Query(
         "select h.id " +
             "from HankeEntity h " +

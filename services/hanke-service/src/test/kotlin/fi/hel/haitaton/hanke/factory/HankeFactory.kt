@@ -43,9 +43,15 @@ class HankeFactory(
         hankeTunnus: String = hanketunnusService.newHanketunnus(),
         nimi: String = defaultNimi,
         generated: Boolean = false,
+        status: HankeStatus = HankeStatus.DRAFT,
     ): HankeEntity =
         hankeRepository.save(
-            HankeEntity(hankeTunnus = hankeTunnus, nimi = nimi, generated = generated)
+            HankeEntity(
+                hankeTunnus = hankeTunnus,
+                nimi = nimi,
+                generated = generated,
+                status = status,
+            )
         )
 
     fun saveSeveralMinimal(n: Int): List<HankeEntity> = (1..n).map { saveMinimal() }
