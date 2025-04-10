@@ -44,6 +44,7 @@ class HankeMapperTest {
             prop(Hanke::createdBy).isEqualTo(entity.createdByUserId)
             prop(Hanke::modifiedAt).isEqualTo(DateFactory.getEndDatetime())
             prop(Hanke::modifiedBy).isEqualTo(entity.modifiedByUserId)
+            prop(Hanke::deletionDate).isEqualTo(entity.deletionDate())
             prop(Hanke::status).isEqualTo(entity.status)
             prop(Hanke::generated).isEqualTo(entity.generated)
             prop(Hanke::omistajat).isEqualTo(expectedYhteystieto(entity, OMISTAJA, 1))

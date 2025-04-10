@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.HankeStatus
@@ -8,6 +9,7 @@ import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HaittaFactory
+import fi.hel.haitaton.hanke.factory.HankeBuilder.Companion.toModifyRequest
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withMuuYhteystieto
@@ -509,6 +511,23 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
                 hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any())
                 disclosureLogService.saveForHanke(updatedHanke, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 400 with validation errors when update fails validation`() {
+            val partialHanke = HankeFactory.create(hankeTunnus = HANKE_TUNNUS, nimi = "")
+            val request = partialHanke.toModifyRequest()
+            every {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
+            } returns true
+
+            val response = put(url, request).andExpect(status().isBadRequest).andReturnContent()
+
+            assertThat(response)
+                .contains(""""errorMessage":"Invalid Hanke data","errorCode":"HAI1002"""")
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
             }
         }
 
