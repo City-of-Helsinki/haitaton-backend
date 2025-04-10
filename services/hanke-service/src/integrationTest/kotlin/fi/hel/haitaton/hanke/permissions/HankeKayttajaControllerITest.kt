@@ -297,7 +297,10 @@ class HankeKayttajaControllerITest(
             val testData =
                 listOf(
                     HankeKayttajaFactory.createHankeKayttaja(
-                        1, ContactType.OMISTAJA, ContactType.MUU),
+                        1,
+                        ContactType.OMISTAJA,
+                        ContactType.MUU,
+                    ),
                     HankeKayttajaFactory.createHankeKayttaja(2),
                     HankeKayttajaFactory.createHankeKayttaja(3),
                 )
@@ -438,9 +441,8 @@ class HankeKayttajaControllerITest(
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS.name)
             } throws HankeNotFoundException(HANKE_TUNNUS)
-            val request =
-                PermissionUpdate(
-                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
+            val change = PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)
+            val request = PermissionUpdate(listOf(change))
 
             put(url, request).andExpect(status().isNotFound)
 
@@ -456,15 +458,17 @@ class HankeKayttajaControllerITest(
             every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hankeIdentifier
             every {
                 permissionService.hasPermission(
-                    hankeIdentifier.id, USERNAME, PermissionCode.MODIFY_DELETE_PERMISSIONS)
+                    hankeIdentifier.id,
+                    USERNAME,
+                    PermissionCode.MODIFY_DELETE_PERMISSIONS,
+                )
             } returns false
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
             justRun {
                 hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
             }
-            val request =
-                PermissionUpdate(
-                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
+            val change = PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)
+            val request = PermissionUpdate(listOf(change))
 
             put(url, request).andExpect(status().isNoContent).andExpect(content().string(""))
 
@@ -479,15 +483,17 @@ class HankeKayttajaControllerITest(
             every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hankeIdentifier
             every {
                 permissionService.hasPermission(
-                    hankeIdentifier.id, USERNAME, PermissionCode.MODIFY_DELETE_PERMISSIONS)
+                    hankeIdentifier.id,
+                    USERNAME,
+                    PermissionCode.MODIFY_DELETE_PERMISSIONS,
+                )
             } returns true
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
             justRun {
                 hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
             }
-            val request =
-                PermissionUpdate(
-                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
+            val change = PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)
+            val request = PermissionUpdate(listOf(change))
 
             put(url, request).andExpect(status().isNoContent)
 
@@ -497,9 +503,8 @@ class HankeKayttajaControllerITest(
         @Test
         fun `Returns forbidden when missing admin permissions`() {
             val updates = setupForException(MissingAdminPermissionException(USERNAME))
-            val request =
-                PermissionUpdate(
-                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
+            val change = PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)
+            val request = PermissionUpdate(listOf(change))
 
             put(url, request)
                 .andExpect(status().isForbidden)
@@ -511,9 +516,8 @@ class HankeKayttajaControllerITest(
         @Test
         fun `Returns forbidden when changing own permissions`() {
             val updates = setupForException(ChangingOwnPermissionException(USERNAME))
-            val request =
-                PermissionUpdate(
-                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
+            val change = PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)
+            val request = PermissionUpdate(listOf(change))
 
             put(url, request)
                 .andExpect(status().isForbidden)
@@ -524,12 +528,11 @@ class HankeKayttajaControllerITest(
 
         @Test
         fun `Returns internal server error if there are users without either permission or tunniste`() {
-            val updates =
-                setupForException(
-                    UsersWithoutKayttooikeustasoException(missingIds = listOf(hankeKayttajaId)))
-            val request =
-                PermissionUpdate(
-                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
+            val exception =
+                UsersWithoutKayttooikeustasoException(missingIds = listOf(hankeKayttajaId))
+            val updates = setupForException(exception)
+            val change = PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)
+            val request = PermissionUpdate(listOf(change))
 
             put(url, request)
                 .andExpect(status().isInternalServerError)
@@ -541,9 +544,8 @@ class HankeKayttajaControllerITest(
         @Test
         fun `Returns conflict if there would be no admins remaining`() {
             val updates = setupForException(NoAdminRemainingException(hankeIdentifier))
-            val request =
-                PermissionUpdate(
-                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
+            val change = PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)
+            val request = PermissionUpdate(listOf(change))
 
             put(url, request)
                 .andExpect(status().isConflict)
@@ -554,12 +556,11 @@ class HankeKayttajaControllerITest(
 
         @Test
         fun `Returns bad request if there would be no admins remaining`() {
-            val updates =
-                setupForException(
-                    HankeKayttajatNotFoundException(listOf(hankeKayttajaId), hankeIdentifier))
-            val request =
-                PermissionUpdate(
-                    listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)))
+            val exception =
+                HankeKayttajatNotFoundException(listOf(hankeKayttajaId), hankeIdentifier)
+            val updates = setupForException(exception)
+            val change = PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS)
+            val request = PermissionUpdate(listOf(change))
 
             put(url, request)
                 .andExpect(status().isBadRequest)
@@ -595,7 +596,10 @@ class HankeKayttajaControllerITest(
             every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hankeIdentifier
             every {
                 permissionService.hasPermission(
-                    hankeIdentifier.id, USERNAME, PermissionCode.MODIFY_DELETE_PERMISSIONS)
+                    hankeIdentifier.id,
+                    USERNAME,
+                    PermissionCode.MODIFY_DELETE_PERMISSIONS,
+                )
             } returns false
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
             every {
@@ -701,48 +705,45 @@ class HankeKayttajaControllerITest(
 
         @Test
         fun `Returns 404 if current user doesn't have permission for hanke`() {
-            every { authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name) } throws
+            every { authorizer.authorizeResend(kayttajaId, RESEND_INVITATION.name) } throws
                 HankeKayttajaNotFoundException(kayttajaId)
 
             post(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI4001))
 
-            verifySequence { authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name) }
+            verifySequence { authorizer.authorizeResend(kayttajaId, RESEND_INVITATION.name) }
         }
 
         @Test
         fun `Returns 409 if kayttaja already has permission`() {
-            every { authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name) } returns
-                true
+            every { authorizer.authorizeResend(kayttajaId, RESEND_INVITATION.name) } returns true
             every { hankeKayttajaService.resendInvitation(kayttajaId, USERNAME) } throws
                 UserAlreadyHasPermissionException(USERNAME, kayttajaId, 41)
 
             post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI4003))
 
             verifySequence {
-                authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name)
+                authorizer.authorizeResend(kayttajaId, RESEND_INVITATION.name)
                 hankeKayttajaService.resendInvitation(kayttajaId, USERNAME)
             }
         }
 
         @Test
         fun `Returns 409 if current user doesn't have a kayttaja`() {
-            every { authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name) } returns
-                true
+            every { authorizer.authorizeResend(kayttajaId, RESEND_INVITATION.name) } returns true
             every { hankeKayttajaService.resendInvitation(kayttajaId, USERNAME) } throws
                 CurrentUserWithoutKayttajaException(USERNAME)
 
             post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI4003))
 
             verifySequence {
-                authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name)
+                authorizer.authorizeResend(kayttajaId, RESEND_INVITATION.name)
                 hankeKayttajaService.resendInvitation(kayttajaId, USERNAME)
             }
         }
 
         @Test
         fun `Returns 200 if invitation resent`() {
-            every { authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name) } returns
-                true
+            every { authorizer.authorizeResend(kayttajaId, RESEND_INVITATION.name) } returns true
             val hankekayttaja = HankeKayttajaFactory.create()
             every { hankeKayttajaService.resendInvitation(kayttajaId, USERNAME) } returns
                 hankekayttaja
@@ -755,7 +756,7 @@ class HankeKayttajaControllerITest(
                 prop(HankeKayttajaDto::kutsuttu).isEqualTo(hankekayttaja.kutsuttu)
             }
             verifySequence {
-                authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name)
+                authorizer.authorizeResend(kayttajaId, RESEND_INVITATION.name)
                 hankeKayttajaService.resendInvitation(kayttajaId, USERNAME)
                 disclosureLogService.saveForHankeKayttaja(response, USERNAME)
             }

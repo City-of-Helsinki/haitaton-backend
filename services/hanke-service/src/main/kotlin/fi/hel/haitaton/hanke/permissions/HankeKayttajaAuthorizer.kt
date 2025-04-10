@@ -12,12 +12,29 @@ class HankeKayttajaAuthorizer(
     private val hankekayttajaRepository: HankekayttajaRepository,
 ) : Authorizer(permissionService, hankeRepository) {
 
-    fun authorizeKayttajaId(hankeKayttajaId: UUID, permissionCode: PermissionCode): Boolean {
+    private fun authorizeKayttajaId(
+        hankeKayttajaId: UUID,
+        permissionCode: PermissionCode,
+        editDeniedForCompleted: Boolean,
+    ): Boolean {
         val hankeId = hankekayttajaRepository.findByIdOrNull(hankeKayttajaId)?.hankeId
-        authorize(hankeId, permissionCode) { HankeKayttajaNotFoundException(hankeKayttajaId) }
+        authorize(hankeId, permissionCode, editDeniedForCompleted) {
+            HankeKayttajaNotFoundException(hankeKayttajaId)
+        }
         return true
     }
 
     fun authorizeKayttajaId(hankeKayttajaId: UUID, permissionCode: String): Boolean =
-        authorizeKayttajaId(hankeKayttajaId, PermissionCode.valueOf(permissionCode))
+        authorizeKayttajaId(
+            hankeKayttajaId,
+            PermissionCode.valueOf(permissionCode),
+            editDeniedForCompleted = true,
+        )
+
+    fun authorizeResend(hankeKayttajaId: UUID, permissionCode: String) =
+        authorizeKayttajaId(
+            hankeKayttajaId,
+            PermissionCode.valueOf(permissionCode),
+            editDeniedForCompleted = false,
+        )
 }

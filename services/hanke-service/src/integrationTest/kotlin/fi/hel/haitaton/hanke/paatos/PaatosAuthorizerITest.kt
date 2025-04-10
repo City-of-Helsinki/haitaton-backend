@@ -6,8 +6,11 @@ import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.isTrue
 import assertk.assertions.messageContains
+import fi.hel.haitaton.hanke.HankeAlreadyCompletedException
 import fi.hel.haitaton.hanke.IntegrationTest
+import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.factory.HakemusFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.KATSELUOIKEUS
@@ -22,21 +25,23 @@ import org.springframework.beans.factory.annotation.Autowired
 class PaatosAuthorizerITest(
     @Autowired private val authorizer: PaatosAuthorizer,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
+    @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val paatosFactory: PaatosFactory,
 ) : IntegrationTest() {
 
-    val paatosId = UUID.fromString("871565c5-cdbb-4d29-9d63-68467f5bf9d6")
+    private val paatosId = UUID.fromString("871565c5-cdbb-4d29-9d63-68467f5bf9d6")
 
     @Nested
     inner class AuthorizePaatosId {
         @Test
         fun `throws exception if paatos doesn't exist`() {
-            assertFailure { authorizer.authorizePaatosId(paatosId, VIEW.name) }
-                .all {
-                    hasClass(PaatosNotFoundException::class)
-                    messageContains(paatosId.toString())
-                }
+            val failure = assertFailure { authorizer.authorizePaatosId(paatosId, VIEW.name) }
+
+            failure.all {
+                hasClass(PaatosNotFoundException::class)
+                messageContains(paatosId.toString())
+            }
         }
 
         @Test
@@ -44,11 +49,12 @@ class PaatosAuthorizerITest(
             val hakemus = hakemusFactory.builder(userId = "Other user").asSent().save()
             val paatos = paatosFactory.save(hakemus)
 
-            assertFailure { authorizer.authorizePaatosId(paatos.id, VIEW.name) }
-                .all {
-                    hasClass(PaatosNotFoundException::class)
-                    messageContains(paatos.id.toString())
-                }
+            val failure = assertFailure { authorizer.authorizePaatosId(paatos.id, VIEW.name) }
+
+            failure.all {
+                hasClass(PaatosNotFoundException::class)
+                messageContains(paatos.id.toString())
+            }
         }
 
         @Test
@@ -56,13 +62,19 @@ class PaatosAuthorizerITest(
             val hakemus = hakemusFactory.builder(userId = "Other user").asSent().save()
             val paatos = paatosFactory.save(hakemus)
             hankeKayttajaFactory.saveIdentifiedUser(
-                hakemus.hankeId, userId = USERNAME, kayttooikeustaso = KATSELUOIKEUS)
+                hakemus.hankeId,
+                userId = USERNAME,
+                kayttooikeustaso = KATSELUOIKEUS,
+            )
 
-            assertFailure { authorizer.authorizePaatosId(paatos.id, EDIT_APPLICATIONS.name) }
-                .all {
-                    hasClass(PaatosNotFoundException::class)
-                    messageContains(paatos.id.toString())
-                }
+            val failure = assertFailure {
+                authorizer.authorizePaatosId(paatos.id, EDIT_APPLICATIONS.name)
+            }
+
+            failure.all {
+                hasClass(PaatosNotFoundException::class)
+                messageContains(paatos.id.toString())
+            }
         }
 
         @Test
@@ -70,9 +82,42 @@ class PaatosAuthorizerITest(
             val hakemus = hakemusFactory.builder(userId = "Other user").asSent().save()
             val paatos = paatosFactory.save(hakemus)
             hankeKayttajaFactory.saveIdentifiedUser(
-                hakemus.hankeId, userId = USERNAME, kayttooikeustaso = KATSELUOIKEUS)
+                hakemus.hankeId,
+                userId = USERNAME,
+                kayttooikeustaso = KATSELUOIKEUS,
+            )
 
-            assertThat(authorizer.authorizePaatosId(paatos.id, VIEW.name)).isTrue()
+            val result = authorizer.authorizePaatosId(paatos.id, VIEW.name)
+
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `throws exception when modifying a paatos from a completed hanke`() {
+            val hanke = hankeFactory.builder().saveEntity(HankeStatus.COMPLETED)
+            val hakemus = hakemusFactory.builder(hankeEntity = hanke).asSent().save()
+            val paatos = paatosFactory.save(hakemus)
+
+            val failure = assertFailure {
+                authorizer.authorizePaatosId(paatos.id, EDIT_APPLICATIONS.name)
+            }
+
+            failure.all {
+                hasClass(HankeAlreadyCompletedException::class)
+                messageContains("Hanke has already been completed, so the operation is not allowed")
+                messageContains("hankeId=${hanke.id}")
+            }
+        }
+
+        @Test
+        fun `returns true when viewing a paatos from a completed hanke`() {
+            val hanke = hankeFactory.builder().saveEntity(HankeStatus.COMPLETED)
+            val hakemus = hakemusFactory.builder(hankeEntity = hanke).asSent().save()
+            val paatos = paatosFactory.save(hakemus)
+
+            val result = authorizer.authorizePaatosId(paatos.id, VIEW.name)
+
+            assertThat(result).isTrue()
         }
     }
 }
