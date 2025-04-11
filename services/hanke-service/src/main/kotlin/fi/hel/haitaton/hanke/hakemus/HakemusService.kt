@@ -362,9 +362,11 @@ class HakemusService(
     private fun updateCableReportDoneFlag(hakemus: HakemusEntity) {
         val hakemusData = hakemus.hakemusEntityData
         if (hakemusData is KaivuilmoitusEntityData && !hakemusData.cableReportDone) {
-            hakemus.hakemusEntityData = hakemusData.copy(cableReportDone = true)
+            hakemus.hakemusEntityData =
+                hakemusData.copy(cableReportDone = true, rockExcavation = null)
             logger.info(
-                "Set cablereportDone as 'true' after send for accompanying johtoselvityshakemus in kaivuilmoitus. ${hakemus.logString()}"
+                "Set cablereportDone as 'true' and rockExcavation as 'null' after " +
+                    "send for accompanying johtoselvityshakemus in kaivuilmoitus. ${hakemus.logString()}"
             )
         }
     }

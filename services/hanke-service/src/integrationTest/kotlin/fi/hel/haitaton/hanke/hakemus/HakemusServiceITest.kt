@@ -1556,6 +1556,7 @@ class HakemusServiceITest(
                             .copy(
                                 cableReports = listOf(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER),
                                 cableReportDone = true,
+                                rockExcavation = null,
                             )
                             .setOrdererForRepresentative(currentUser.id)
                     expectedCableReportAlluRequest =
