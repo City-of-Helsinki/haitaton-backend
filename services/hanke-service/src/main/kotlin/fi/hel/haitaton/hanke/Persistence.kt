@@ -104,7 +104,7 @@ class HankeEntity(
         }
     }
 
-    fun endDate(): LocalDate? = alueet.mapNotNull { it.haittaLoppuPvm }.maxOrNull()
+    fun endDate(): LocalDate? = alueet.endDate()
 
     fun deletionDate(): LocalDate? =
         completedAt?.plusMonths(6)?.atZoneSameInstant(ZoneId.of("Europe/Helsinki"))?.toLocalDate()
@@ -126,6 +126,13 @@ class HankeEntity(
         result = 31 * result + id
         return result
     }
+
+    companion object {
+        fun List<HankealueEntity>.endDate(): LocalDate? =
+            this.map { it.haittaLoppuPvm }
+                .let { if (null in it) null else it.filterNotNull() }
+                ?.maxOrNull()
+    }
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
@@ -144,7 +151,7 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
         "select h.id " +
             "from HankeEntity h " +
             "left join HankealueEntity ha on ha.hanke = h " +
-            "where h.status = 'PUBLIC' " +
+            "where h.status in ('PUBLIC', 'DRAFT') " +
             "group by h.id " +
             "having coalesce(max(ha.haittaLoppuPvm), '1990-01-01') < CURRENT_DATE " +
             "order by h.modifiedAt asc limit :limit"
@@ -154,7 +161,7 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
     @Query(
         "select h.id from HankeEntity h " +
             "left join HankealueEntity ha on ha.hanke = h " +
-            "where h.status = 'PUBLIC' " +
+            "where h.status in ('PUBLIC', 'DRAFT') " +
             "and not array_contains(h.sentReminders, :reminder) " +
             "group by h.id " +
             "having coalesce(max(ha.haittaLoppuPvm), '1990-01-01') <= :reminderDate " +

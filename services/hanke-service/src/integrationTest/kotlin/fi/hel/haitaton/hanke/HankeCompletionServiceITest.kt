@@ -76,14 +76,14 @@ class HankeCompletionServiceITest(
         }
 
         @Test
-        fun `returns only public hanke`() {
-            hankeFactory.builder().saveEntity(HankeStatus.DRAFT)
+        fun `returns only public and draft hanke`() {
+            val draftHanke = hankeFactory.builder().saveEntity(HankeStatus.DRAFT)
             hankeFactory.builder().saveEntity(HankeStatus.COMPLETED)
             val publicHanke = hankeFactory.builder().saveEntity(HankeStatus.PUBLIC)
 
             val result = hankeCompletionService.idsToComplete()
 
-            assertThat(result).containsExactly(publicHanke.id)
+            assertThat(result).containsExactlyInAnyOrder(draftHanke.id, publicHanke.id)
         }
 
         @Test
@@ -154,14 +154,14 @@ class HankeCompletionServiceITest(
         }
 
         @Test
-        fun `returns only public hanke`() {
-            hankeFactory.builder().saveEntity(HankeStatus.DRAFT)
+        fun `returns only public and draft hanke`() {
+            val draftHanke = hankeFactory.builder().saveEntity(HankeStatus.DRAFT)
             hankeFactory.builder().saveEntity(HankeStatus.COMPLETED)
             val publicHanke = hankeFactory.builder().saveEntity(HankeStatus.PUBLIC)
 
             val result = hankeCompletionService.idsForReminders(HankeReminder.COMPLETION_14)
 
-            assertThat(result).containsExactly(publicHanke.id)
+            assertThat(result).containsExactlyInAnyOrder(draftHanke.id, publicHanke.id)
         }
 
         @Test
@@ -377,16 +377,16 @@ class HankeCompletionServiceITest(
                 )
 
         @Test
-        fun `throws exception when the hanke is not public`() {
+        fun `throws exception when the hanke is completed`() {
             val hanke = baseHanke().saveEntity(HankeStatus.COMPLETED)
 
             val failure = assertFailure { hankeCompletionService.completeHankeIfPossible(hanke.id) }
 
-            failure.hasClass(HankeNotPublicException::class)
+            failure.hasClass(HankeCompletedException::class)
         }
 
         @Test
-        fun `throws exception when the hanke has no areas`() {
+        fun `throws exception when a public hanke has no areas`() {
             val hanke = baseHanke().withNoAreas().saveEntity(HankeStatus.PUBLIC)
 
             val failure = assertFailure { hankeCompletionService.completeHankeIfPossible(hanke.id) }
@@ -395,7 +395,18 @@ class HankeCompletionServiceITest(
         }
 
         @Test
-        fun `throws exception when the hanke has an empty end date`() {
+        fun `does nothing when a draft hanke has no areas`() {
+            val hanke = hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.DRAFT)
+
+            hankeCompletionService.completeHankeIfPossible(hanke.id)
+
+            val result = hankeRepository.getReferenceById(hanke.id)
+            assertThat(result.status).isEqualTo(HankeStatus.DRAFT)
+            assertThat(result.completedAt).isNull()
+        }
+
+        @Test
+        fun `throws exception when a public hanke has an empty end date`() {
             val hanke =
                 baseHanke()
                     .withHankealue(HankealueFactory.create(haittaLoppuPvm = null))
@@ -404,6 +415,20 @@ class HankeCompletionServiceITest(
             val failure = assertFailure { hankeCompletionService.completeHankeIfPossible(hanke.id) }
 
             failure.hasClass(HankealueWithoutEndDateException::class)
+        }
+
+        @Test
+        fun `does nothing when a draft hanke has an empty end date`() {
+            val hanke =
+                baseHanke()
+                    .withHankealue(HankealueFactory.create(haittaLoppuPvm = null))
+                    .saveEntity(HankeStatus.DRAFT)
+
+            hankeCompletionService.completeHankeIfPossible(hanke.id)
+
+            val result = hankeRepository.getReferenceById(hanke.id)
+            assertThat(result.status).isEqualTo(HankeStatus.DRAFT)
+            assertThat(result.completedAt).isNull()
         }
 
         @Test
@@ -438,9 +463,10 @@ class HankeCompletionServiceITest(
             assertThat(result.completedAt).isNull()
         }
 
-        @Test
-        fun `changes hanke status when hanke has archived application`() {
-            val hanke = baseHanke().saveEntity(HankeStatus.PUBLIC)
+        @ParameterizedTest
+        @EnumSource(HankeStatus::class, names = ["DRAFT", "PUBLIC"])
+        fun `changes hanke status when hanke has archived application`(status: HankeStatus) {
+            val hanke = baseHanke().saveEntity(status)
             hakemusFactory
                 .builder(hanke)
                 .withMandatoryFields()
@@ -496,18 +522,18 @@ class HankeCompletionServiceITest(
     @Nested
     inner class SendReminderIfNecessary {
         @Test
-        fun `throws exception when the hanke is not public`() {
+        fun `throws exception when the hanke is completed`() {
             val hanke = hankeFactory.builder().saveEntity(HankeStatus.COMPLETED)
 
             val failure = assertFailure {
                 hankeCompletionService.sendReminderIfNecessary(hanke.id, HankeReminder.COMPLETION_5)
             }
 
-            failure.hasClass(HankeNotPublicException::class)
+            failure.hasClass(HankeCompletedException::class)
         }
 
         @Test
-        fun `throws exception when the hanke has no areas`() {
+        fun `throws exception when a public hanke has no areas`() {
             val hanke = hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.PUBLIC)
 
             val failure = assertFailure {
@@ -518,11 +544,25 @@ class HankeCompletionServiceITest(
         }
 
         @Test
-        fun `throws exception when the hanke has only empty end dates`() {
+        fun `does nothing when a draft hanke has no areas`() {
+            val hanke = hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.DRAFT)
+
+            hankeCompletionService.sendReminderIfNecessary(hanke.id, HankeReminder.COMPLETION_5)
+
+            assertThat(greenMail.receivedMessages).isEmpty()
+            val updatedHanke = hankeRepository.getReferenceById(hanke.id)
+            assertThat(updatedHanke.sentReminders).isEmpty()
+        }
+
+        @Test
+        fun `throws exception when a public hanke has empty end dates`() {
             val hanke =
                 hankeFactory
                     .builder()
                     .withHankealue(HankealueFactory.create(haittaLoppuPvm = null))
+                    .withHankealue(
+                        HankealueFactory.create(haittaLoppuPvm = ZonedDateTime.now().plusDays(20))
+                    )
                     .saveEntity(HankeStatus.PUBLIC)
 
             val failure = assertFailure {
@@ -533,6 +573,24 @@ class HankeCompletionServiceITest(
             }
 
             failure.hasClass(HankealueWithoutEndDateException::class)
+        }
+
+        @Test
+        fun `does nothing when a draft hanke has empty end dates`() {
+            val hanke =
+                hankeFactory
+                    .builder()
+                    .withHankealue(HankealueFactory.create(haittaLoppuPvm = null))
+                    .withHankealue(
+                        HankealueFactory.create(haittaLoppuPvm = ZonedDateTime.now().plusDays(12))
+                    )
+                    .saveEntity(HankeStatus.DRAFT)
+
+            hankeCompletionService.sendReminderIfNecessary(hanke.id, HankeReminder.COMPLETION_14)
+
+            assertThat(greenMail.receivedMessages).isEmpty()
+            val updatedHanke = hankeRepository.getReferenceById(hanke.id)
+            assertThat(updatedHanke.sentReminders).isEmpty()
         }
 
         @Test
@@ -583,7 +641,6 @@ class HankeCompletionServiceITest(
             val hanke =
                 hankeFactory
                     .builder()
-                    .withHankealue(HankealueFactory.create(haittaLoppuPvm = null))
                     .withHankealue(
                         HankealueFactory.create(haittaLoppuPvm = ZonedDateTime.now().plusDays(5))
                     )
@@ -620,8 +677,9 @@ class HankeCompletionServiceITest(
                 assertThat(greenMail.receivedMessages).isEmpty()
             }
 
-            @Test
-            fun `does nothing if the reminder has been marked as sent`() {
+            @ParameterizedTest
+            @EnumSource(HankeStatus::class, names = ["DRAFT", "PUBLIC"])
+            fun `does nothing if the reminder has been marked as sent`(status: HankeStatus) {
                 val hanke =
                     hankeFactory
                         .builder()
@@ -630,7 +688,7 @@ class HankeCompletionServiceITest(
                                 haittaLoppuPvm = ZonedDateTime.now().plusDays(4)
                             )
                         )
-                        .saveEntity(HankeStatus.PUBLIC) {
+                        .saveEntity(status) {
                             it.sentReminders = arrayOf(HankeReminder.COMPLETION_5)
                         }
 
@@ -696,6 +754,37 @@ class HankeCompletionServiceITest(
                         "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) ilmoitettu päättymispäivä $day.$month.$year lähenee"
                     )
             }
+
+            @Test
+            fun `marks the reminder sent and sends the reminder also when the hanke is a draft`() {
+                val endDate = ZonedDateTime.now().plusDays(5)
+                val hanke =
+                    hankeFactory
+                        .builder()
+                        .withHankealue(HankealueFactory.create(haittaLoppuPvm = endDate))
+                        .saveEntity(HankeStatus.DRAFT)
+
+                hankeCompletionService.sendReminderIfNecessary(hanke.id, HankeReminder.COMPLETION_5)
+
+                val updatedHanke = hankeRepository.getReferenceById(hanke.id)
+                assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_5)
+                val email = greenMail.firstReceivedMessage()
+                assertThat(email.allRecipients).hasSize(1)
+                assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+                assertThat(email.subject)
+                    .isEqualTo(
+                        "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
+                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
+                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee"
+                    )
+                val day = endDate.dayOfMonth
+                val month = endDate.monthValue
+                val year = endDate.year
+                assertThat(email.textBody())
+                    .contains(
+                        "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) ilmoitettu päättymispäivä $day.$month.$year lähenee"
+                    )
+            }
         }
 
         @Nested
@@ -722,8 +811,11 @@ class HankeCompletionServiceITest(
                 assertThat(greenMail.receivedMessages).isEmpty()
             }
 
-            @Test
-            fun `marks the reminder sent but doesn't send anything when the hanke is due to be sent the next reminder`() {
+            @ParameterizedTest
+            @EnumSource(HankeStatus::class, names = ["DRAFT", "PUBLIC"])
+            fun `marks the reminder sent but doesn't send anything when the hanke is due to be sent the next reminder`(
+                status: HankeStatus
+            ) {
                 val hanke =
                     hankeFactory
                         .builder()
@@ -732,7 +824,7 @@ class HankeCompletionServiceITest(
                                 haittaLoppuPvm = ZonedDateTime.now().plusDays(5)
                             )
                         )
-                        .saveEntity(HankeStatus.PUBLIC)
+                        .saveEntity(status)
 
                 hankeCompletionService.sendReminderIfNecessary(
                     hanke.id,
@@ -769,8 +861,9 @@ class HankeCompletionServiceITest(
                 assertThat(greenMail.receivedMessages).isEmpty()
             }
 
-            @Test
-            fun `does nothing if the reminder has been marked as sent`() {
+            @ParameterizedTest
+            @EnumSource(HankeStatus::class, names = ["DRAFT", "PUBLIC"])
+            fun `does nothing if the reminder has been marked as sent`(status: HankeStatus) {
                 val hanke =
                     hankeFactory
                         .builder()
@@ -779,7 +872,7 @@ class HankeCompletionServiceITest(
                                 haittaLoppuPvm = ZonedDateTime.now().plusDays(13)
                             )
                         )
-                        .saveEntity(HankeStatus.PUBLIC) {
+                        .saveEntity(status) {
                             it.sentReminders = arrayOf(HankeReminder.COMPLETION_14)
                         }
 
@@ -804,6 +897,40 @@ class HankeCompletionServiceITest(
                         .builder()
                         .withHankealue(HankealueFactory.create(haittaLoppuPvm = endDate))
                         .saveEntity(HankeStatus.PUBLIC)
+
+                hankeCompletionService.sendReminderIfNecessary(
+                    hanke.id,
+                    HankeReminder.COMPLETION_14,
+                )
+
+                val updatedHanke = hankeRepository.getReferenceById(hanke.id)
+                assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_14)
+                val email = greenMail.firstReceivedMessage()
+                assertThat(email.allRecipients).hasSize(1)
+                assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+                assertThat(email.subject)
+                    .isEqualTo(
+                        "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
+                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
+                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee"
+                    )
+                val day = endDate.dayOfMonth
+                val month = endDate.monthValue
+                val year = endDate.year
+                assertThat(email.textBody())
+                    .contains(
+                        "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) ilmoitettu päättymispäivä $day.$month.$year lähenee"
+                    )
+            }
+
+            @Test
+            fun `marks the 14-day reminder sent and sends the reminder also when the hanke is a draft`() {
+                val endDate = ZonedDateTime.now().plusDays(14)
+                val hanke =
+                    hankeFactory
+                        .builder()
+                        .withHankealue(HankealueFactory.create(haittaLoppuPvm = endDate))
+                        .saveEntity(HankeStatus.DRAFT)
 
                 hankeCompletionService.sendReminderIfNecessary(
                     hanke.id,
