@@ -162,8 +162,16 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
     )
     fun findHankeToRemind(limit: Int, reminderDate: LocalDate, reminder: HankeReminder): List<Int>
 
-    @Query("select h.id from HankeEntity h where h.completedAt <= :date")
+    @Query("select h.id from HankeEntity h where h.completedAt <= :date order by h.completedAt asc")
     fun findHankeToDelete(date: OffsetDateTime): List<Int>
+
+    @Query(
+        "select h.id from HankeEntity h " +
+            "where date(h.completedAt) <= :reminderDate " +
+            "and not array_contains(h.sentReminders, :reminder) " +
+            "order by h.completedAt asc"
+    )
+    fun findIdsForDeletionReminders(reminderDate: LocalDate, reminder: HankeReminder): List<Int>
 }
 
 interface HankeIdentifier : HasId<Int>, Loggable {

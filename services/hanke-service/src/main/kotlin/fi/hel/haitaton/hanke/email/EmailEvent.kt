@@ -76,6 +76,13 @@ data class HankeEndingReminder(
     val endingDate: LocalDate,
 ) : EmailEvent
 
+data class HankeDeletionReminder(
+    override val to: String,
+    val hankeNimi: String,
+    val hanketunnus: String,
+    val deletionDate: LocalDate,
+) : EmailEvent
+
 data class HankeCompletedNotification(
     override val to: String,
     val hankeNimi: String,

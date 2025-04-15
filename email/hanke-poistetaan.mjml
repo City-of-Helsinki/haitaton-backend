@@ -1,0 +1,41 @@
+<mjml>
+    <mj-head>
+        <mj-include path="common/attributes.partial"/>
+    </mj-head>
+    <mj-body>
+        <mj-include path="common/header-content.partial"/>
+        <mj-section>
+            <mj-column>
+                <mj-text mj-class="header-txt">
+                    Hankkeesi {{hanketunnus}} poistetaan järjestelmästä / Hankkeesi {{hanketunnus}} poistetaan
+                    järjestelmästä / Hankkeesi {{hanketunnus}} poistetaan järjestelmästä
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> poistuu Haitattomasta {{deletionDate}}. Ota
+                    tarvitsemasi tiedot talteen ennen hankkeen poistumista. Poistumisen jälkeen hankkeen ja sen
+                    hakemusten kaikki tiedot poistuvat, eikä niitä pääse enää palauttamaan.
+                </mj-text>
+                <mj-include path="common/signature-fi.partial"/>
+
+                <mj-divider mj-class="language-separator"/>
+
+                <mj-text mj-class="basic-txt">
+                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> poistuu Haitattomasta {{deletionDate}}. Ota
+                    tarvitsemasi tiedot talteen ennen hankkeen poistumista. Poistumisen jälkeen hankkeen ja sen
+                    hakemusten kaikki tiedot poistuvat, eikä niitä pääse enää palauttamaan.
+                </mj-text>
+                <mj-include path="common/signature-sv.partial"/>
+
+                <mj-divider mj-class="language-separator"/>
+
+                <mj-text mj-class="basic-txt">
+                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> poistuu Haitattomasta {{deletionDate}}. Ota
+                    tarvitsemasi tiedot talteen ennen hankkeen poistumista. Poistumisen jälkeen hankkeen ja sen
+                    hakemusten kaikki tiedot poistuvat, eikä niitä pääse enää palauttamaan.
+                </mj-text>
+                <mj-include path="common/signature-en.partial"/>
+            </mj-column>
+        </mj-section>
+        <mj-include path="common/footer-content.partial"/>
+    </mj-body>
+</mjml>

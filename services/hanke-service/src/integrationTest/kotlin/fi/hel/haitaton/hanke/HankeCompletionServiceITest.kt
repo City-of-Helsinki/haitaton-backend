@@ -42,6 +42,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasServiceActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
@@ -65,11 +66,11 @@ class HankeCompletionServiceITest(
 ) : IntegrationTest() {
 
     @Nested
-    inner class GetPublicIds {
+    inner class IdsToComplete {
 
         @Test
         fun `with no hanke returns empty list`() {
-            val result = hankeCompletionService.getPublicIds()
+            val result = hankeCompletionService.idsToComplete()
 
             assertThat(result).isEmpty()
         }
@@ -80,7 +81,7 @@ class HankeCompletionServiceITest(
             hankeFactory.builder().saveEntity(HankeStatus.COMPLETED)
             val publicHanke = hankeFactory.builder().saveEntity(HankeStatus.PUBLIC)
 
-            val result = hankeCompletionService.getPublicIds()
+            val result = hankeCompletionService.idsToComplete()
 
             assertThat(result).containsExactly(publicHanke.id)
         }
@@ -105,7 +106,7 @@ class HankeCompletionServiceITest(
                 )
                 .saveEntity(HankeStatus.PUBLIC)
 
-            val result = hankeCompletionService.getPublicIds()
+            val result = hankeCompletionService.idsToComplete()
 
             assertThat(result).containsExactly(pastHanke.id)
         }
@@ -120,7 +121,7 @@ class HankeCompletionServiceITest(
                     .withHankealue(HankealueFactory.create(haittaLoppuPvm = null))
                     .saveEntity(HankeStatus.PUBLIC)
 
-            val result = hankeCompletionService.getPublicIds()
+            val result = hankeCompletionService.idsToComplete()
 
             assertThat(result)
                 .containsExactlyInAnyOrder(hankeWithoutArea.id, hankeWithoutEndDate.id)
@@ -136,7 +137,7 @@ class HankeCompletionServiceITest(
                     hankeRepository.save(hanke)
                 }
 
-            val result = hankeCompletionService.getPublicIds()
+            val result = hankeCompletionService.idsToComplete()
 
             // max-per-run is set to 3 in application-test.yml
             assertThat(result).containsExactly(hankkeet[1].id, hankkeet[5].id, hankkeet[4].id)
@@ -244,6 +245,125 @@ class HankeCompletionServiceITest(
             val result = hankeCompletionService.idsForReminders(HankeReminder.COMPLETION_5)
 
             assertThat(result).containsExactly(unsentHanke.id)
+        }
+    }
+
+    @Nested
+    inner class IdsToDelete {
+        @Test
+        fun `returns empty list if there are no hanke`() {
+            val result = hankeCompletionService.idsToDelete()
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `only returns hanke the completion date is at least 6 months in the past`() {
+            val over6MonthsAgo =
+                hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6).minusDays(1)
+                }
+            val exactly6MonthsAgo =
+                hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6)
+                }
+            hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(1)
+            }
+
+            val result = hankeCompletionService.idsToDelete()
+
+            assertThat(result).containsExactly(over6MonthsAgo.id, exactly6MonthsAgo.id)
+        }
+
+        @Test
+        fun `returns all matching hanke IDs ordered by completed at`() {
+            val hankkeet =
+                listOf(30, 2, 25, 15, 4).map { date ->
+                    hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                        it.completedAt = OffsetDateTime.now().minusMonths(7).withDayOfMonth(date)
+                    }
+                }
+
+            val result = hankeCompletionService.idsToDelete()
+
+            // max-per-run is set to 3 in application-test.yml
+            assertThat(result)
+                .containsExactly(
+                    hankkeet[1].id,
+                    hankkeet[4].id,
+                    hankkeet[3].id,
+                    hankkeet[2].id,
+                    hankkeet[0].id,
+                )
+        }
+    }
+
+    @Nested
+    inner class IdsForDeletionReminders {
+        @Test
+        fun `returns empty list if there are no hanke`() {
+            val result = hankeCompletionService.idsForDeletionReminders()
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `only returns hanke the completion date is at least 6 months in the past`() {
+            val justBeforeHanke =
+                hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(4)
+                }
+            val onTheDayHanke =
+                hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(5)
+                }
+            hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(6)
+            }
+
+            val result = hankeCompletionService.idsForDeletionReminders()
+
+            assertThat(result).containsExactly(justBeforeHanke.id, onTheDayHanke.id)
+        }
+
+        @Test
+        fun `returns only hanke where the reminder hasn't been sent already`() {
+            val unsentHanke =
+                hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(5)
+                    it.sentReminders = arrayOf()
+                }
+            hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(5)
+                it.sentReminders = arrayOf(HankeReminder.DELETION_5)
+            }
+
+            val result = hankeCompletionService.idsForDeletionReminders()
+
+            assertThat(result).containsExactly(unsentHanke.id)
+        }
+
+        @Test
+        fun `returns all matching hanke IDs ordered by completed at`() {
+            val hankkeet =
+                listOf(30, 2, 25, 15, 4).map { date ->
+                    hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                        it.completedAt = OffsetDateTime.now().minusMonths(7).withDayOfMonth(date)
+                    }
+                }
+
+            val result = hankeCompletionService.idsForDeletionReminders()
+
+            // max-per-run is set to 3 in application-test.yml
+            assertThat(result)
+                .containsExactly(
+                    hankkeet[1].id,
+                    hankkeet[4].id,
+                    hankkeet[3].id,
+                    hankkeet[2].id,
+                    hankkeet[0].id,
+                )
         }
     }
 
@@ -415,24 +535,6 @@ class HankeCompletionServiceITest(
             failure.hasClass(HankealueWithoutEndDateException::class)
         }
 
-        @ParameterizedTest
-        @EnumSource(HankeReminder::class, names = ["COMPLETION_5", "COMPLETION_14"])
-        fun `marks the reminder sent but doesn't send anything when the hanke is due to be completed`(
-            reminder: HankeReminder
-        ) {
-            val hanke =
-                hankeFactory
-                    .builder()
-                    .withHankealue(HankealueFactory.create(haittaLoppuPvm = ZonedDateTime.now()))
-                    .saveEntity(HankeStatus.PUBLIC)
-
-            hankeCompletionService.sendReminderIfNecessary(hanke.id, reminder)
-
-            val updatedHanke = hankeRepository.getReferenceById(hanke.id)
-            assertThat(updatedHanke.sentReminders).containsExactly(reminder)
-            assertThat(greenMail.receivedMessages).isEmpty()
-        }
-
         @Test
         fun `sends the reminder to everyone with EDIT permissions`() {
             val hanke =
@@ -540,6 +642,28 @@ class HankeCompletionServiceITest(
             }
 
             @ParameterizedTest
+            @ValueSource(ints = [0, 1])
+            fun `marks the reminder sent but doesn't send anything when the hanke is due to be completed`(
+                daysAgo: Long
+            ) {
+                val hanke =
+                    hankeFactory
+                        .builder()
+                        .withHankealue(
+                            HankealueFactory.create(
+                                haittaLoppuPvm = ZonedDateTime.now().minusDays(daysAgo)
+                            )
+                        )
+                        .saveEntity(HankeStatus.PUBLIC)
+
+                hankeCompletionService.sendReminderIfNecessary(hanke.id, HankeReminder.COMPLETION_5)
+
+                val updatedHanke = hankeRepository.getReferenceById(hanke.id)
+                assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_5)
+                assertThat(greenMail.receivedMessages).isEmpty()
+            }
+
+            @ParameterizedTest
             @ValueSource(ints = [1, 4, 5])
             fun `marks the reminder sent and sends the reminder when the hanke is ending soon`(
                 date: Long
@@ -555,7 +679,6 @@ class HankeCompletionServiceITest(
 
                 val updatedHanke = hankeRepository.getReferenceById(hanke.id)
                 assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_5)
-                assertThat(greenMail.receivedMessages).hasSize(1)
                 val email = greenMail.firstReceivedMessage()
                 assertThat(email.allRecipients).hasSize(1)
                 assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
@@ -621,6 +744,31 @@ class HankeCompletionServiceITest(
                 assertThat(greenMail.receivedMessages).isEmpty()
             }
 
+            @ParameterizedTest
+            @ValueSource(ints = [0, 1])
+            fun `marks the reminder sent but doesn't send anything when the hanke is due to be completed`(
+                daysAgo: Long
+            ) {
+                val hanke =
+                    hankeFactory
+                        .builder()
+                        .withHankealue(
+                            HankealueFactory.create(
+                                haittaLoppuPvm = ZonedDateTime.now().minusDays(daysAgo)
+                            )
+                        )
+                        .saveEntity(HankeStatus.PUBLIC)
+
+                hankeCompletionService.sendReminderIfNecessary(
+                    hanke.id,
+                    HankeReminder.COMPLETION_14,
+                )
+
+                val updatedHanke = hankeRepository.getReferenceById(hanke.id)
+                assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_14)
+                assertThat(greenMail.receivedMessages).isEmpty()
+            }
+
             @Test
             fun `does nothing if the reminder has been marked as sent`() {
                 val hanke =
@@ -664,7 +812,6 @@ class HankeCompletionServiceITest(
 
                 val updatedHanke = hankeRepository.getReferenceById(hanke.id)
                 assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_14)
-                assertThat(greenMail.receivedMessages).hasSize(1)
                 val email = greenMail.firstReceivedMessage()
                 assertThat(email.allRecipients).hasSize(1)
                 assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
@@ -793,6 +940,162 @@ class HankeCompletionServiceITest(
                     hasNoObjectAfter()
                 }
             }
+        }
+    }
+
+    @Nested
+    inner class SendDeletionRemindersIfNecessary {
+        @Test
+        fun `throws exception when hanke is not COMPLETED`() {
+            val hanke = hankeFactory.builder().saveEntity(HankeStatus.PUBLIC)
+
+            val result = assertFailure {
+                hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
+            }
+
+            result.all {
+                hasClass(HankeNotCompletedException::class)
+                messageContains("Hanke is not completed")
+                messageContains("id=${hanke.id}")
+            }
+        }
+
+        @Test
+        fun `does nothing when notification has already been sent`() {
+            val hanke =
+                hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6)
+                    it.sentReminders = arrayOf(HankeReminder.DELETION_5)
+                }
+
+            hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
+
+            assertThat(greenMail.receivedMessages).isEmpty()
+        }
+
+        @Test
+        fun `throws exception when hanke has no completion date`() {
+            val hanke =
+                hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) { it.completedAt = null }
+
+            val result = assertFailure {
+                hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
+            }
+
+            result.all {
+                hasClass(HankeHasNoCompletionDateException::class)
+                messageContains("Hanke has no completion date")
+                messageContains("id=${hanke.id}")
+            }
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = [0, 1])
+        fun `marks the reminder sent but doesn't send anything when the hanke is due to be deleted`(
+            daysAgo: Long
+        ) {
+            val hanke =
+                hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6).minusDays(daysAgo)
+                }
+
+            hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
+
+            assertThat(greenMail.receivedMessages).isEmpty()
+            val updatedHanke = hankeRepository.getReferenceById(hanke.id)
+            assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.DELETION_5)
+        }
+
+        @Test
+        fun `does nothing when the reminder is not yet due`() {
+            val hanke =
+                hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(6)
+                }
+
+            hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
+
+            assertThat(greenMail.receivedMessages).isEmpty()
+            val updatedHanke = hankeRepository.getReferenceById(hanke.id)
+            assertThat(updatedHanke.sentReminders).isEmpty()
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = [1, 4, 5])
+        fun `marks the reminder sent and sends the reminder when the hanke is ending soon`(
+            date: Long
+        ) {
+            val hanke =
+                hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(date)
+                }
+
+            hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
+
+            val updatedHanke = hankeRepository.getReferenceById(hanke.id)
+            assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.DELETION_5)
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.allRecipients).hasSize(1)
+            assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Hankkeesi ${hanke.hankeTunnus} poistetaan järjestelmästä " +
+                        "/ Hankkeesi ${hanke.hankeTunnus} poistetaan järjestelmästä " +
+                        "/ Hankkeesi ${hanke.hankeTunnus} poistetaan järjestelmästä"
+                )
+            val deletionDate = LocalDate.now().plusDays(date)
+            val day = deletionDate.dayOfMonth
+            val month = deletionDate.monthValue
+            val year = deletionDate.year
+            assertThat(email.textBody())
+                .contains(
+                    "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) poistuu Haitattomasta $day.$month.$year."
+                )
+        }
+
+        @Test
+        fun `sends the reminder to everyone with EDIT permissions`() {
+            val hanke =
+                hankeFactory
+                    .builder()
+                    .withHankealue(
+                        HankealueFactory.create(haittaLoppuPvm = ZonedDateTime.now().plusDays(5))
+                    )
+                    .saveWithYhteystiedot {
+                        omistaja(
+                            kayttaja("omistaja@test", "omistaja", Kayttooikeustaso.HANKEMUOKKAUS)
+                        )
+                        rakennuttaja(
+                            kayttaja(
+                                "rakennuttaja@test",
+                                "rakennuttaja",
+                                Kayttooikeustaso.HAKEMUSASIOINTI,
+                            )
+                        )
+                        toteuttaja(
+                            kayttaja(
+                                "toteuttaja@test",
+                                "toteuttaja",
+                                Kayttooikeustaso.KAIKKIEN_MUOKKAUS,
+                            )
+                        )
+                        muuYhteystieto(kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS)
+                    }
+            hanke.status = HankeStatus.COMPLETED
+            hanke.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(3)
+            hankeRepository.save(hanke)
+
+            hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
+
+            assertThat(greenMail.receivedMessages).hasSize(3)
+            val recipients = greenMail.receivedMessages.map { it.allRecipients.single().toString() }
+            assertThat(recipients).hasSize(3)
+            assertThat(recipients)
+                .containsExactlyInAnyOrder(
+                    "pertti@perustaja.test",
+                    "omistaja@test",
+                    "toteuttaja@test",
+                )
         }
     }
 
