@@ -3,9 +3,12 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.domain.HankeReminder
 import fi.hel.haitaton.hanke.domain.HankeStatus
+import fi.hel.haitaton.hanke.email.EmailEvent
+import fi.hel.haitaton.hanke.email.HankeCompletedNotification
 import fi.hel.haitaton.hanke.email.HankeEndingReminder
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
+import fi.hel.haitaton.hanke.permissions.HankeKayttaja
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import java.time.LocalDate
@@ -66,6 +69,8 @@ class HankeCompletionService(
         logger.info { "Hanke has been completed, marking it completed. ${hanke.logString()}" }
         hanke.status = HankeStatus.COMPLETED
         hanke.completedAt = OffsetDateTime.now()
+
+        sendCompletionNotifications(hanke)
     }
 
     @Transactional
@@ -146,14 +151,22 @@ class HankeCompletionService(
         hankeRepository.deleteById(hanke.id)
     }
 
+    private fun sendCompletionNotifications(hanke: HankeEntity) {
+        sendEmailToEditors(hanke) {
+            HankeCompletedNotification(it.sahkoposti, hanke.nimi, hanke.hankeTunnus)
+        }
+    }
+
     private fun sendReminders(hanke: HankeEntity, endingDate: LocalDate) {
+        sendEmailToEditors(hanke) {
+            HankeEndingReminder(it.sahkoposti, hanke.nimi, hanke.hankeTunnus, endingDate)
+        }
+    }
+
+    private fun sendEmailToEditors(hanke: HankeEntity, email: (HankeKayttaja) -> EmailEvent) {
         hankeKayttajaService
             .getHankeKayttajatWithPermission(hanke.id, PermissionCode.EDIT)
-            .forEach {
-                applicationEventPublisher.publishEvent(
-                    HankeEndingReminder(it.sahkoposti, hanke.nimi, hanke.hankeTunnus, endingDate)
-                )
-            }
+            .forEach { applicationEventPublisher.publishEvent(email(it)) }
     }
 
     companion object {

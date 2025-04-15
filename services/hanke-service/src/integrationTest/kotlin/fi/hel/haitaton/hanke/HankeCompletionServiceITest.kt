@@ -333,6 +333,44 @@ class HankeCompletionServiceITest(
             assertThat(result.status).isEqualTo(HankeStatus.COMPLETED)
             assertThat(result.completedAt).isRecent()
         }
+
+        @Test
+        fun `sends notification emails to hanke users with EDIT permissions`() {
+            val hanke =
+                baseHanke().saveWithYhteystiedot {
+                    omistaja(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    rakennuttaja(Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
+                    toteuttaja(Kayttooikeustaso.KATSELUOIKEUS)
+                    muuYhteystieto(Kayttooikeustaso.HANKEMUOKKAUS)
+                    toteuttaja(Kayttooikeustaso.HAKEMUSASIOINTI)
+                }
+            hanke.status = HankeStatus.PUBLIC
+            hankeRepository.save(hanke)
+
+            hankeCompletionService.completeHankeIfPossible(hanke.id)
+
+            val emails = greenMail.receivedMessages
+            val recipients = emails.map { it.allRecipients.single().toString() }
+            assertThat(recipients).hasSize(4)
+            assertThat(recipients)
+                .containsExactlyInAnyOrder(
+                    "pertti@perustaja.test",
+                    "olivia.omistaja@mail.com",
+                    "rane.rakennuttaja@mail.com",
+                    "anssi.asianhoitaja@mail.com",
+                )
+            val email = emails.first()
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Hankkeesi ${hanke.hankeTunnus} ilmoitettu päättymispäivä on ohitettu " +
+                        "/ Hankkeesi ${hanke.hankeTunnus} ilmoitettu päättymispäivä on ohitettu " +
+                        "/ Hankkeesi ${hanke.hankeTunnus} ilmoitettu päättymispäivä on ohitettu"
+                )
+            assertThat(email.textBody())
+                .contains(
+                    "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) ilmoitettu päättymispäivä on ohitettu. Hankkeesi ei enää näy muille Haitattoman käyttäjille eikä sitä pääse enää muokkamaan. Hanke säilyy Haitattomassa 6 kk, jona aikana pääset tarkastelemaan sitä."
+                )
+        }
     }
 
     @Nested
