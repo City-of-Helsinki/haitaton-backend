@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.domain.HankeReminder
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.email.EmailEvent
 import fi.hel.haitaton.hanke.email.HankeCompletedNotification
+import fi.hel.haitaton.hanke.email.HankeDeletionReminder
 import fi.hel.haitaton.hanke.email.HankeEndingReminder
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
@@ -34,7 +35,7 @@ class HankeCompletionService(
 ) {
 
     @Transactional(readOnly = true)
-    fun getPublicIds(): List<Int> = hankeRepository.findHankeToComplete(completionsPerDay)
+    fun idsToComplete(): List<Int> = hankeRepository.findHankeToComplete(completionsPerDay)
 
     @Transactional(readOnly = true)
     fun idsForReminders(reminder: HankeReminder): List<Int> =
@@ -43,6 +44,13 @@ class HankeCompletionService(
     @Transactional(readOnly = true)
     fun idsToDelete(): List<Int> =
         hankeRepository.findHankeToDelete(OffsetDateTime.now().minusMonths(6))
+
+    @Transactional(readOnly = true)
+    fun idsForDeletionReminders(): List<Int> =
+        hankeRepository.findIdsForDeletionReminders(
+            reminderDate(HankeReminder.DELETION_5),
+            HankeReminder.DELETION_5,
+        )
 
     @Transactional
     fun completeHankeIfPossible(id: Int) {
@@ -129,10 +137,8 @@ class HankeCompletionService(
         val hanke = hankeRepository.getReferenceById(id)
 
         assertHankeCompleted(hanke)
-        val deletionDate = hanke.deletionDate()
-        if (deletionDate == null) {
-            throw HankeHasNoCompletionDateException(hanke)
-        } else if (deletionDate.isAfter(LocalDate.now())) {
+        val deletionDate = hanke.deletionDate() ?: throw HankeHasNoCompletionDateException(hanke)
+        if (deletionDate.isAfter(LocalDate.now())) {
             throw HankeCompletedRecently(hanke, deletionDate)
         }
 
@@ -151,6 +157,39 @@ class HankeCompletionService(
         hankeRepository.deleteById(hanke.id)
     }
 
+    @Transactional
+    fun sendDeletionRemindersIfNecessary(id: Int) {
+        logger.info { "Trying to send deletion reminders for hanke $id" }
+        val hanke = hankeRepository.getReferenceById(id)
+
+        assertHankeCompleted(hanke)
+        if (hanke.sentReminders.contains(HankeReminder.DELETION_5)) {
+            logger.info {
+                "Hanke has been sent the deletion reminder already, so not sending it again. " +
+                    hanke.logString()
+            }
+            return
+        }
+        val deletionDate = hanke.deletionDate() ?: throw HankeHasNoCompletionDateException(hanke)
+
+        if (deletionDate.isAfter(LocalDate.now().plusDays(5))) {
+            return
+        }
+
+        if (!deletionDate.isAfter(LocalDate.now())) {
+            logger.info {
+                "Hanke is due to be deleted, not sending reminders anymore. ${hanke.logString()}"
+            }
+            // Mark this reminder as sent so it doesn't come up again unless the hanke end date
+            // changes.
+            hanke.sentReminders += HankeReminder.DELETION_5
+            return
+        }
+
+        hanke.sentReminders += HankeReminder.DELETION_5
+        sendDeletionReminders(hanke, deletionDate)
+    }
+
     private fun sendCompletionNotifications(hanke: HankeEntity) {
         sendEmailToEditors(hanke) {
             HankeCompletedNotification(it.sahkoposti, hanke.nimi, hanke.hankeTunnus)
@@ -167,6 +206,21 @@ class HankeCompletionService(
         hankeKayttajaService
             .getHankeKayttajatWithPermission(hanke.id, PermissionCode.EDIT)
             .forEach { applicationEventPublisher.publishEvent(email(it)) }
+    }
+
+    private fun sendDeletionReminders(hanke: HankeEntity, deletionDate: LocalDate) {
+        hankeKayttajaService
+            .getHankeKayttajatWithPermission(hanke.id, PermissionCode.EDIT)
+            .forEach {
+                applicationEventPublisher.publishEvent(
+                    HankeDeletionReminder(
+                        it.sahkoposti,
+                        hanke.nimi,
+                        hanke.hankeTunnus,
+                        deletionDate,
+                    )
+                )
+            }
     }
 
     companion object {
@@ -208,6 +262,7 @@ class HankeCompletionService(
             when (reminder) {
                 HankeReminder.COMPLETION_14 -> LocalDate.now().plusDays(14)
                 HankeReminder.COMPLETION_5 -> LocalDate.now().plusDays(5)
+                HankeReminder.DELETION_5 -> LocalDate.now().minusMonths(6).plusDays(5)
             }
     }
 }

@@ -30,7 +30,7 @@ class HankeCompletionScheduler(
             "Trying to obtain lock $LOCK_NAME to start checking for hanke that need to be completed."
         )
         lockService.withLock(LOCK_NAME, 10, TimeUnit.MINUTES) {
-            val ids = completionService.getPublicIds()
+            val ids = completionService.idsToComplete()
             logger.info { "Got ${ids.size} hanke to try to complete." }
 
             doForEachId(ids) { id -> completionService.completeHankeIfPossible(id) }
@@ -66,6 +66,30 @@ class HankeCompletionScheduler(
         lockService.withLock(LOCK_NAME, 10, TimeUnit.MINUTES) {
             val ids = completionService.idsToDelete()
             doForEachId(ids) { id -> completionService.deleteHanke(id) }
+        }
+    }
+
+    @Scheduled(
+        cron = "\${haitaton.hanke.completions.deletionReminderCron}",
+        zone = "Europe/Helsinki",
+    )
+    fun sendDeletionReminders() {
+        if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
+            logger.info {
+                "Hanke completion is disabled, not checking for deletion reminders to send."
+            }
+            return
+        }
+
+        logger.info {
+            "Trying to obtain lock $LOCK_NAME to start checking for hanke deletion completion reminders"
+        }
+
+        lockService.withLock(LOCK_NAME, 10, TimeUnit.MINUTES) {
+            val ids = completionService.idsForDeletionReminders()
+            logger.info { "Got ${ids.size} hanke for sending deletion reminders." }
+
+            doForEachId(ids) { id -> completionService.sendDeletionRemindersIfNecessary(id) }
         }
     }
 

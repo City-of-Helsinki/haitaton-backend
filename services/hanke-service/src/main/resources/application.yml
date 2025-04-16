@@ -60,6 +60,8 @@ haitaton:
       deletionCron: ${HAITATON_COMPLETIONS_DELETE_CRON:38 32 20 * * *}
       # By default, run every day at 19:17:21 (Helsinki time).
       reminderCron: ${HAITATON_COMPLETIONS_REMINDER_CRON:21 17 19 * * *}
+      # By default, run every day at 20:03:53 (Helsinki time).
+      deletionReminderCron: ${HAITATON_COMPLETIONS_DELETE_CRON:53 03 20 * * *}
   map-service:
     capability-url: https://kartta.hel.fi/ws/geoserver/avoindata/wms?REQUEST=GetCapabilities&SERVICE=WMS
   profiili-api:
