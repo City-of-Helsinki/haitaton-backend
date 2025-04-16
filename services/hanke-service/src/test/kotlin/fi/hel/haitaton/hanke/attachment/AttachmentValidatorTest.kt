@@ -93,9 +93,18 @@ class AttachmentValidatorTest {
         }
 
         @ParameterizedTest
+        @CsvSource("exa/mple,mple", "../example,example", "/var/file/example,example")
+        fun `removes the path part from the filename`(given: String, expected: String) {
+            val filename = "$given.txt"
+
+            val result = AttachmentValidator.validFilename(filename)
+
+            assertThat(result).isEqualTo("$expected.txt")
+        }
+
+        @ParameterizedTest
         @CsvSource(
             "exa\\mple,exa_mple",
-            "exa/mple,exa_mple",
             "example:,example_",
             "exa*mple,exa_mple",
             "examp?le,examp_le",
@@ -106,8 +115,8 @@ class AttachmentValidatorTest {
             "exa%22mple,exa_mple",
             "exa*|%22:<>mple,exa______mple",
             "exa-mple,exa-mple",
-            "../example,___example",
             "example.,example_",
+            "example.tar,example_tar",
         )
         fun `Invalid characters should be sanitized`(given: String, expected: String) {
             val filename = "$given.txt"
@@ -178,7 +187,7 @@ class AttachmentValidatorTest {
         fun `accepts other extensions for MUU type attachments`(extension: String) {
             AttachmentValidator.validateExtensionForType(
                 "file.$extension",
-                ApplicationAttachmentType.MUU
+                ApplicationAttachmentType.MUU,
             )
         }
     }
@@ -189,7 +198,7 @@ class AttachmentValidatorTest {
         @ParameterizedTest
         fun `Should sanitize file name when it has special characters`(
             input: String,
-            expected: String
+            expected: String,
         ) {
             val file =
                 MockMultipartFile("file", input, MediaType.APPLICATION_PDF_VALUE, ByteArray(0))
@@ -206,7 +215,7 @@ class AttachmentValidatorTest {
                     "file",
                     "hello.html",
                     MediaType.APPLICATION_PDF_VALUE,
-                    ByteArray(0)
+                    ByteArray(0),
                 )
 
             assertFailure { file.validNameAndType() }
@@ -221,7 +230,7 @@ class AttachmentValidatorTest {
                 [
                     MediaType.APPLICATION_PDF_VALUE,
                     MediaType.APPLICATION_OCTET_STREAM_VALUE,
-                    MediaType.TEXT_PLAIN_VALUE
+                    MediaType.TEXT_PLAIN_VALUE,
                 ]
         )
         @ParameterizedTest

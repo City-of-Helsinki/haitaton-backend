@@ -1,8 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.common
 
+import java.io.File
 import mu.KotlinLogging
-import org.apache.commons.io.FilenameUtils.getExtension
-import org.apache.commons.io.FilenameUtils.removeExtension
 import org.springframework.http.InvalidMediaTypeException
 import org.springframework.http.MediaType
 import org.springframework.web.multipart.MultipartFile
@@ -12,22 +11,12 @@ private val logger = KotlinLogging.logger {}
 private const val pdfExtension = "pdf"
 
 private val supportedFiletypes =
-    setOf(
-        pdfExtension,
-        "jpg",
-        "jpeg",
-        "png",
-        "dgn",
-        "dwg",
-        "docx",
-        "txt",
-        "gt",
-    )
+    setOf(pdfExtension, "jpg", "jpeg", "png", "dgn", "dwg", "docx", "txt", "gt")
 
 fun MultipartFile.validNameAndType() =
     Pair(
         AttachmentValidator.validFilename(originalFilename),
-        AttachmentValidator.ensureMediaType(contentType)
+        AttachmentValidator.ensureMediaType(contentType),
     )
 
 // Microsoft: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
@@ -96,7 +85,7 @@ object AttachmentValidator {
 
     fun validateExtensionForType(
         sanitizedFilename: String,
-        attachmentType: ApplicationAttachmentType
+        attachmentType: ApplicationAttachmentType,
     ) {
         if (!isValidExtensionForType(sanitizedFilename, attachmentType)) {
             throw AttachmentInvalidException(
@@ -106,8 +95,8 @@ object AttachmentValidator {
     }
 
     private fun sanitizeFilename(filename: String): String {
-        val extension = getExtension(filename).replace(INVALID_CHARS_PATTERN, "_")
-        val base = removeExtension(filename).replace(INVALID_CHARS_PATTERN, "_")
+        val extension = filename.extension.replace(INVALID_CHARS_PATTERN, "_")
+        val base = filename.withoutExtension.replace(INVALID_CHARS_PATTERN, "_")
 
         return if (extension.isEmpty()) base else "$base.$extension"
     }
@@ -117,7 +106,7 @@ object AttachmentValidator {
             filename.isBlank() -> fail("Attachment file name blank")
             filename.length > 128 -> fail("File name is too long")
             !supportedType(filename) -> fail("File '$filename' not supported")
-            RESERVED_NAMES.contains(removeExtension(filename).uppercase()) ->
+            RESERVED_NAMES.contains(filename.withoutExtension.uppercase()) ->
                 fail("File name is reserved")
             else -> true
         }
@@ -128,19 +117,27 @@ object AttachmentValidator {
     }
 
     private fun supportedType(filename: String): Boolean {
-        val extension = getExtension(filename).lowercase()
+        val extension = filename.extension.lowercase()
         return supportedFiletypes.contains(extension)
     }
 
     private fun isValidExtensionForType(
         filename: String,
-        attachmentType: ApplicationAttachmentType
+        attachmentType: ApplicationAttachmentType,
     ): Boolean {
-        val extension = getExtension(filename).lowercase()
+        val extension = filename.extension.lowercase()
         return when (attachmentType) {
             ApplicationAttachmentType.MUU -> supportedFiletypes.contains(extension)
             ApplicationAttachmentType.VALTAKIRJA,
             ApplicationAttachmentType.LIIKENNEJARJESTELY -> extension == pdfExtension
         }
     }
+
+    /** Using File removes the path part from the name. */
+    private val String.extension: String
+        get() = File(this).extension
+
+    /** Using File removes the path part from the name. */
+    private val String.withoutExtension: String
+        get() = File(this).nameWithoutExtension
 }
