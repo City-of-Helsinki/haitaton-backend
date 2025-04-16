@@ -86,7 +86,7 @@ object HankealueFactory {
 
     fun createHankeAlueEntity(
         mockId: Int = 1,
-        hankeEntity: HankeEntity,
+        hankeEntity: HankeEntity = HankeFactory.createMinimalEntity(),
         haittaAlkuPvm: LocalDate? = DateFactory.getStartDatetime().toLocalDate(),
         haittaLoppuPvm: LocalDate? = DateFactory.getEndDatetime().toLocalDate(),
     ): HankealueEntity {

@@ -4,12 +4,16 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.hasClass
-import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isNotNull
+import assertk.assertions.isNull
+import assertk.assertions.isSameInstanceAs
 import assertk.assertions.isTrue
 import assertk.assertions.messageContains
+import fi.hel.haitaton.hanke.HankeCompletionService.Companion.areasForDraft
+import fi.hel.haitaton.hanke.HankeCompletionService.Companion.areasForPublic
+import fi.hel.haitaton.hanke.HankeCompletionService.Companion.hasFutureAreas
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
@@ -26,38 +30,12 @@ private typealias Service = HankeCompletionService
 class HankeCompletionServiceTest {
 
     @Nested
-    inner class AssertHankePublic {
-        @ParameterizedTest
-        @EnumSource(HankeStatus::class, names = ["PUBLIC"], mode = EnumSource.Mode.EXCLUDE)
-        fun `throws exception when hanke is not public`(status: HankeStatus) {
-            val hanke = HankeFactory.createEntity()
-            hanke.status = status
-
-            val failure = assertFailure { Service.assertHankePublic(hanke) }
-
-            failure.all {
-                hasClass(HankeNotPublicException::class.java)
-                messageContains("Hanke is not public, it's $status")
-                messageContains("id=${hanke.id}")
-            }
-        }
-
-        @Test
-        fun `passes when hanke is public`() {
-            val hanke = HankeFactory.createEntity()
-            hanke.status = HankeStatus.PUBLIC
-
-            Service.assertHankePublic(hanke)
-        }
-    }
-
-    @Nested
-    inner class AssertHankeHasAreas {
+    inner class AreasForPublic {
         @Test
         fun `throws exception when hanke has no areas`() {
             val hanke = HankeFactory.createMinimalEntity()
 
-            val failure = assertFailure { Service.assertHankeHasAreas(hanke) }
+            val failure = assertFailure { hanke.areasForPublic() }
 
             failure.all {
                 hasClass(PublicHankeHasNoAreasException::class.java)
@@ -67,96 +45,102 @@ class HankeCompletionServiceTest {
         }
 
         @Test
-        fun `passes when hanke has areas`() {
+        fun `returns areas when hanke has them`() {
             val hanke = HankeFactory.createMinimalEntity()
             hanke.alueet.add(HankealueFactory.createHankeAlueEntity(hankeEntity = hanke))
 
-            assertThat(Service.assertHankeHasAreas(hanke)).isEqualTo(Unit)
+            val result = hanke.areasForPublic()
+
+            assertThat(result).isSameInstanceAs(hanke.alueet)
         }
     }
 
     @Nested
-    inner class HankeHasFutureAreas {
+    inner class AreasForDraft {
         @Test
-        fun `throws exception when hanke has an area without an end date`() {
+        fun `returns null when hanke has no areas`() {
             val hanke = HankeFactory.createMinimalEntity()
-            hanke.alueet.add(
-                HankealueFactory.createHankeAlueEntity(hankeEntity = hanke, haittaLoppuPvm = null)
-            )
 
-            val failure = assertFailure { Service.hankeHasFutureAreas(hanke) }
+            val result = hanke.areasForDraft()
 
-            failure.all {
-                hasClass(HankealueWithoutEndDateException::class.java)
-                messageContains("Public hanke has an alue without an end date")
-                messageContains("id=${hanke.id}")
-            }
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `returns areas when hanke has them`() {
+            val hanke = HankeFactory.createMinimalEntity()
+            hanke.alueet.add(HankealueFactory.createHankeAlueEntity(hankeEntity = hanke))
+
+            val result = hanke.areasForDraft()
+
+            assertThat(result).isSameInstanceAs(hanke.alueet)
+        }
+    }
+
+    @Nested
+    inner class HasFutureAreas {
+        @Test
+        fun `return null when hanke has an area without an end date`() {
+            val alueet = listOf(HankealueFactory.createHankeAlueEntity(haittaLoppuPvm = null))
+
+            val result = alueet.hasFutureAreas()
+
+            assertThat(result).isNull()
         }
 
         @Test
         fun `returns true when hanke has an area that ends after today`() {
-            val hanke = HankeFactory.createMinimalEntity()
-            hanke.alueet.add(
-                HankealueFactory.createHankeAlueEntity(
-                    hankeEntity = hanke,
-                    haittaLoppuPvm = LocalDate.now().plusDays(1),
+            val alueet =
+                listOf(
+                    HankealueFactory.createHankeAlueEntity(
+                        haittaLoppuPvm = LocalDate.now().plusDays(1)
+                    )
                 )
-            )
 
-            val result = Service.hankeHasFutureAreas(hanke)
+            val result = alueet.hasFutureAreas()
 
-            assertThat(result).isTrue()
+            assertThat(result).isNotNull().isTrue()
         }
 
         @Test
         fun `returns false when hanke has an area that ends in the past`() {
-            val hanke = HankeFactory.createMinimalEntity()
-            hanke.alueet.add(
-                HankealueFactory.createHankeAlueEntity(
-                    hankeEntity = hanke,
-                    haittaLoppuPvm = LocalDate.now().minusDays(1),
+            val alueet =
+                listOf(
+                    HankealueFactory.createHankeAlueEntity(
+                        haittaLoppuPvm = LocalDate.now().minusDays(1)
+                    )
                 )
-            )
 
-            val result = Service.hankeHasFutureAreas(hanke)
+            val result = alueet.hasFutureAreas()
 
-            assertThat(result).isFalse()
+            assertThat(result).isNotNull().isFalse()
         }
 
         @Test
         fun `returns false when hanke has an area that ends today`() {
-            val hanke = HankeFactory.createMinimalEntity()
-            hanke.alueet.add(
-                HankealueFactory.createHankeAlueEntity(
-                    hankeEntity = hanke,
-                    haittaLoppuPvm = LocalDate.now(),
-                )
-            )
+            val alueet =
+                listOf(HankealueFactory.createHankeAlueEntity(haittaLoppuPvm = LocalDate.now()))
 
-            val result = Service.hankeHasFutureAreas(hanke)
+            val result = alueet.hasFutureAreas()
 
-            assertThat(result).isFalse()
+            assertThat(result).isNotNull().isFalse()
         }
 
         @Test
         fun `returns true when hanke has both areas that ends before and after today`() {
-            val hanke = HankeFactory.createMinimalEntity()
-            hanke.alueet.add(
-                HankealueFactory.createHankeAlueEntity(
-                    hankeEntity = hanke,
-                    haittaLoppuPvm = LocalDate.now().plusDays(1),
+            val alueet =
+                listOf(
+                    HankealueFactory.createHankeAlueEntity(
+                        haittaLoppuPvm = LocalDate.now().plusDays(1)
+                    ),
+                    HankealueFactory.createHankeAlueEntity(
+                        haittaLoppuPvm = LocalDate.now().minusDays(1)
+                    ),
                 )
-            )
-            hanke.alueet.add(
-                HankealueFactory.createHankeAlueEntity(
-                    hankeEntity = hanke,
-                    haittaLoppuPvm = LocalDate.now().minusDays(1),
-                )
-            )
 
-            val result = Service.hankeHasFutureAreas(hanke)
+            val result = alueet.hasFutureAreas()
 
-            assertThat(result).isTrue()
+            assertThat(result).isNotNull().isTrue()
         }
     }
 

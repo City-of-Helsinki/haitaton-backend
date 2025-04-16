@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.HankeEntity.Companion.endDate
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.domain.HankeReminder
 import fi.hel.haitaton.hanke.domain.HankeStatus
@@ -57,10 +58,17 @@ class HankeCompletionService(
         logger.info { "Checking hanke completion for $id" }
         val hanke = hankeRepository.getReferenceById(id)
 
-        assertHankePublic(hanke)
-        assertHankeHasAreas(hanke)
+        val hasFutureAreas =
+            when (hanke.status) {
+                HankeStatus.COMPLETED -> throw HankeCompletedException(hanke)
+                HankeStatus.PUBLIC -> {
+                    hanke.areasForPublic().hasFutureAreas()
+                        ?: throw HankealueWithoutEndDateException(hanke)
+                }
+                HankeStatus.DRAFT -> hanke.areasForDraft()?.hasFutureAreas() ?: return
+            }
 
-        if (hankeHasFutureAreas(hanke)) {
+        if (hasFutureAreas) {
             logger.info {
                 "Hanke has areas not in the past, not doing anything. ${hanke.logString()}"
             }
@@ -86,8 +94,15 @@ class HankeCompletionService(
         logger.info { "Checking if a reminder needs to be sent to hanke $id" }
         val hanke = hankeRepository.getReferenceById(id)
 
-        assertHankePublic(hanke)
-        assertHankeHasAreas(hanke)
+        val endDate =
+            when (hanke.status) {
+                HankeStatus.COMPLETED -> throw HankeCompletedException(hanke)
+                HankeStatus.PUBLIC -> {
+                    hanke.areasForPublic().endDate()
+                        ?: throw HankealueWithoutEndDateException(hanke)
+                }
+                HankeStatus.DRAFT -> hanke.areasForDraft()?.endDate() ?: return
+            }
 
         if (hanke.sentReminders.contains(reminder)) {
             logger.info {
@@ -96,8 +111,6 @@ class HankeCompletionService(
             }
             return
         }
-
-        val endDate = hanke.endDate() ?: throw HankealueWithoutEndDateException(hanke)
 
         if (endDate.isAfter(reminderDate(reminder))) {
             return
@@ -225,23 +238,28 @@ class HankeCompletionService(
 
     companion object {
 
-        fun assertHankePublic(hanke: HankeEntity) {
-            if (hanke.status != HankeStatus.PUBLIC) throw HankeNotPublicException(hanke)
-        }
-
         fun assertHankeCompleted(hanke: HankeEntity) {
             if (hanke.status != HankeStatus.COMPLETED) throw HankeNotCompletedException(hanke)
         }
 
-        fun assertHankeHasAreas(hanke: HankeEntity) {
-            if (hanke.alueet.isEmpty()) throw PublicHankeHasNoAreasException(hanke)
+        fun HankeEntity.areasForPublic(): MutableList<HankealueEntity> {
+            if (alueet.isEmpty()) throw PublicHankeHasNoAreasException(this)
+            return alueet
         }
 
-        fun hankeHasFutureAreas(hanke: HankeEntity): Boolean =
-            hanke.alueet.any {
-                val loppuPvm = it.haittaLoppuPvm ?: throw HankealueWithoutEndDateException(hanke)
-                loppuPvm.isAfter(LocalDate.now())
+        fun HankeEntity.areasForDraft(): MutableList<HankealueEntity>? {
+            if (alueet.isEmpty()) {
+                logger.info { "Draft hanke has no areas, not doing anything. ${logString()}" }
+                return null
             }
+            return alueet
+        }
+
+        /** Returns null if any areas are missing their end date. */
+        fun List<HankealueEntity>.hasFutureAreas(): Boolean? = any {
+            val loppuPvm = it.haittaLoppuPvm ?: return null
+            loppuPvm.isAfter(LocalDate.now())
+        }
 
         fun hankeHasActiveApplications(hanke: HankeEntity): Boolean {
             val activeApplications =
@@ -262,6 +280,8 @@ class HankeCompletionService(
             when (reminder) {
                 HankeReminder.COMPLETION_14 -> LocalDate.now().plusDays(14)
                 HankeReminder.COMPLETION_5 -> LocalDate.now().plusDays(5)
+                // The deletion date is compared to `completedAt`, while the others are compared to
+                // the current date.
                 HankeReminder.DELETION_5 -> LocalDate.now().minusMonths(6).plusDays(5)
             }
     }
@@ -280,8 +300,8 @@ class HankeCompletedRecently(hanke: HankeEntity, deletionDate: LocalDate?) :
 class HankeNotCompletedException(hanke: HankeEntity) :
     HankeValidityException("Hanke is not completed, it's ${hanke.status}", hanke)
 
-class HankeNotPublicException(hanke: HankeEntity) :
-    HankeValidityException("Hanke is not public, it's ${hanke.status}", hanke)
+class HankeCompletedException(hanke: HankeIdentifier) :
+    HankeValidityException("Hanke has already been completed", hanke)
 
 class PublicHankeHasNoAreasException(hanke: HankeIdentifier) :
     HankeValidityException("Public hanke has no alueet", hanke)
