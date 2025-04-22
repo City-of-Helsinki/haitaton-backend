@@ -371,14 +371,6 @@ class HankeCompletionServiceITest(
 
     @Nested
     inner class IdsForDraftsToComplete {
-        /*
-                fun saveHanke(modifier: HankeEntity.() -> Unit = {}) =
-                    hankeFactory.builder().saveEntity(HankeStatus.DRAFT) {
-                        it.modifiedAt = getCurrentTimeUTCAsLocalTime().minusMonths(6)
-                        it.modifier()
-                    }
-        */
-
         private fun saveHanke(
             status: HankeStatus = HankeStatus.DRAFT,
             modifiedDaysAgo: Long = DAYS_BEFORE_COMPLETING_DRAFT,
