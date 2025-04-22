@@ -16,6 +16,7 @@ import io.mockk.spyk
 import jakarta.mail.Session
 import jakarta.mail.internet.MimeMessage
 import jakarta.mail.internet.MimeMultipart
+import java.time.LocalDate
 import org.apache.commons.text.StringEscapeUtils
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -79,7 +80,8 @@ class EmailSenderServiceTest {
                 .isEqualTo(
                     "Haitaton: Sinut on kutsuttu hankkeelle HAI24-1 " +
                         "/ Du har blivit inbjuden till projektet HAI24-1 " +
-                        "/ You have been invited to project HAI24-1")
+                        "/ You have been invited to project HAI24-1"
+                )
         }
 
         @Test
@@ -119,7 +121,8 @@ class EmailSenderServiceTest {
                 assertThat(textBody).contains(invitationUrl)
                 assertThat(htmlBody)
                     .containsMatch(
-                        """\Q<a href="$invitationUrl">\E\s*\Q$invitationUrl\E\s*</a>""".toRegex())
+                        """\Q<a href="$invitationUrl">\E\s*\Q$invitationUrl\E\s*</a>""".toRegex()
+                    )
             }
 
             @Test
@@ -216,7 +219,8 @@ class EmailSenderServiceTest {
                 .isEqualTo(
                     "Haitaton: Sinut on lisätty hakemukselle " +
                         "/ Du har lagts till i en ansökan " +
-                        "/ You have been added to an application")
+                        "/ You have been added to an application"
+                )
         }
 
         @Test
@@ -282,7 +286,8 @@ class EmailSenderServiceTest {
                 assertThat(textBody).contains("$linkPrefix https://haitaton.hel.fi")
                 assertThat(htmlBody)
                     .contains(
-                        """$linkPrefix <a href="https://haitaton.hel.fi">https://haitaton.hel.fi</a>""")
+                        """$linkPrefix <a href="https://haitaton.hel.fi">https://haitaton.hel.fi</a>"""
+                    )
             }
 
             @Test
@@ -364,7 +369,8 @@ class EmailSenderServiceTest {
 
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Dina användarrättigheter har förändrats ($HANKE_TUNNUS) / Your access right level has been changed ($HANKE_TUNNUS)")
+                    "Haitaton: Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Dina användarrättigheter har förändrats ($HANKE_TUNNUS) / Your access right level has been changed ($HANKE_TUNNUS)"
+                )
         }
 
         @Test
@@ -511,7 +517,8 @@ class EmailSenderServiceTest {
 
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Du har tagits bort från projektet ($HANKE_TUNNUS) / You have been removed from the project ($HANKE_TUNNUS)")
+                    "Haitaton: Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Du har tagits bort från projektet ($HANKE_TUNNUS) / You have been removed from the project ($HANKE_TUNNUS)"
+                )
         }
 
         @Test
@@ -575,10 +582,10 @@ class EmailSenderServiceTest {
                 "$name ($email) har tagit bort dig"
 
             override val deleteInformationText =
-                "från projektet \"$HANKE_NIMI\" ($HANKE_TUNNUS) och du har tagit bort dig från projektet."
+                "från projektet \"$HANKE_NIMI\" ($HANKE_TUNNUS) och du har inte längre tillträde till projektet."
 
             override val deleteInformationHtml =
-                "från projektet <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> och du har tagit bort dig från projektet."
+                "från projektet <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> och du har inte längre tillträde till projektet."
 
             override val signatureLines =
                 listOf(
@@ -600,6 +607,335 @@ class EmailSenderServiceTest {
 
             override val deleteInformationHtml =
                 "from the project <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>, and you no longer have access to the project."
+
+            override val signatureLines =
+                listOf(
+                    "This email was generated automatically – please do not reply to this message.",
+                    "Kind regards,",
+                    "Haitaton services",
+                    "City of Helsinki Urban Environment Division",
+                    "haitaton@hel.fi",
+                )
+        }
+    }
+
+    @Nested
+    inner class HankeEnding {
+        private val notification =
+            HankeEndingReminder(
+                to = TEST_EMAIL,
+                hanketunnus = HANKE_TUNNUS,
+                hankeNimi = HANKE_NIMI,
+                endingDate = LocalDate.of(2024, 7, 13),
+            )
+
+        private fun sendAndCapture(): MimeMessage {
+            val email = slot<MimeMessage>()
+            justRun { mailSender.send(capture(email)) }
+
+            emailSenderService.sendHankeEndingEmail(notification)
+
+            return email.captured
+        }
+
+        @Test
+        fun `has the correct subject`() {
+            val email = sendAndCapture()
+
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Hankkeesi $HANKE_TUNNUS päättymispäivä lähenee / Avslutningsdatum för ditt projekt $HANKE_TUNNUS närmar sig / The end date of your project $HANKE_TUNNUS is approaching"
+                )
+        }
+
+        @Test
+        fun `has a header line in the body`() {
+            val (textBody, htmlBody) = sendAndCapture().bodies()
+
+            val expectedBody =
+                "Hankkeesi $HANKE_TUNNUS päättymispäivä lähenee / Avslutningsdatum för ditt projekt $HANKE_TUNNUS närmar sig / The end date of your project $HANKE_TUNNUS is approaching"
+            assertThat(textBody).contains(expectedBody)
+            assertThat(htmlBody).contains(expectedBody)
+        }
+
+        @Nested
+        open inner class BodyInFinnish {
+            open val endingInformationText =
+                "Hankkeesi $HANKE_NIMI ($HANKE_TUNNUS) ilmoitettu päättymispäivä 13.7.2024 lähenee."
+
+            open val endingInformationHtml =
+                "Hankkeesi <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> ilmoitettu päättymispäivä 13.7.2024 lähenee."
+
+            open val signatureLines =
+                listOf(
+                    "Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.",
+                    "Ystävällisin terveisin,",
+                    "Helsingin kaupungin kaupunkiympäristön toimiala",
+                    "Haitaton-asiointi",
+                    "haitaton@hel.fi",
+                )
+
+            @Test
+            open fun `contains ending information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(endingInformationText)
+                assertThat(htmlBody).contains(endingInformationHtml)
+            }
+
+            @Test
+            open fun `contains the signature`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(signatureLines)
+                assertThat(htmlBody).contains(signatureLines)
+            }
+        }
+
+        @Nested
+        inner class BodyInSwedish : BodyInFinnish() {
+            override val endingInformationText =
+                "Ditt projekt $HANKE_NIMI ($HANKE_TUNNUS) börjar närma sig sitt anmälda avslutningsdatum 13.7.2024."
+
+            override val endingInformationHtml =
+                "Ditt projekt <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> börjar närma sig sitt anmälda avslutningsdatum 13.7.2024."
+
+            override val signatureLines =
+                listOf(
+                    "Det här är ett automatiskt e-postmeddelande – svara inte på det.",
+                    "Med vänlig hälsning,",
+                    "Helsingfors stads stadsmiljösektor",
+                    "Haitaton-ärenden",
+                    "haitaton@hel.fi",
+                )
+        }
+
+        @Nested
+        inner class BodyInEnglish : BodyInFinnish() {
+            override val endingInformationText =
+                "The reported end date 13 Jul 2024 of your project $HANKE_NIMI ($HANKE_TUNNUS) is approaching."
+
+            override val endingInformationHtml =
+                "The reported end date 13 Jul 2024 of your project <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> is approaching."
+
+            override val signatureLines =
+                listOf(
+                    "This email was generated automatically – please do not reply to this message.",
+                    "Kind regards,",
+                    "Haitaton services",
+                    "City of Helsinki Urban Environment Division",
+                    "haitaton@hel.fi",
+                )
+        }
+    }
+
+    @Nested
+    inner class HankeDeletion {
+        private val notification =
+            HankeDeletionReminder(
+                to = TEST_EMAIL,
+                hanketunnus = HANKE_TUNNUS,
+                hankeNimi = HANKE_NIMI,
+                deletionDate = LocalDate.of(2024, 12, 3),
+            )
+
+        private fun sendAndCapture(): MimeMessage {
+            val email = slot<MimeMessage>()
+            justRun { mailSender.send(capture(email)) }
+
+            emailSenderService.sendHankeDeletionReminder(notification)
+
+            return email.captured
+        }
+
+        @Test
+        fun `has the correct subject`() {
+            val email = sendAndCapture()
+
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Hankkeesi $HANKE_TUNNUS poistetaan järjestelmästä / Ditt projekt $HANKE_TUNNUS raderas ur systemet / Your project $HANKE_TUNNUS will be deleted from the system"
+                )
+        }
+
+        @Test
+        fun `has a header line in the body`() {
+            val (textBody, htmlBody) = sendAndCapture().bodies()
+
+            val expectedBody =
+                "Hankkeesi $HANKE_TUNNUS poistetaan järjestelmästä / Ditt projekt $HANKE_TUNNUS raderas ur systemet / Your project $HANKE_TUNNUS will be deleted from the system"
+            assertThat(textBody).contains(expectedBody)
+            assertThat(htmlBody).contains(expectedBody)
+        }
+
+        @Nested
+        open inner class BodyInFinnish {
+            open val endingInformationText =
+                "Hankkeesi $HANKE_NIMI ($HANKE_TUNNUS) poistuu Haitattomasta 3.12.2024."
+
+            open val endingInformationHtml =
+                "Hankkeesi <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> poistuu Haitattomasta 3.12.2024."
+
+            open val signatureLines =
+                listOf(
+                    "Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.",
+                    "Ystävällisin terveisin,",
+                    "Helsingin kaupungin kaupunkiympäristön toimiala",
+                    "Haitaton-asiointi",
+                    "haitaton@hel.fi",
+                )
+
+            @Test
+            open fun `contains ending information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(endingInformationText)
+                assertThat(htmlBody).contains(endingInformationHtml)
+            }
+
+            @Test
+            open fun `contains the signature`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(signatureLines)
+                assertThat(htmlBody).contains(signatureLines)
+            }
+        }
+
+        @Nested
+        inner class BodyInSwedish : BodyInFinnish() {
+            override val endingInformationText =
+                "Ditt projekt $HANKE_NIMI ($HANKE_TUNNUS) raderas ur Haitaton 3.12.2024."
+
+            override val endingInformationHtml =
+                "Ditt projekt <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> raderas ur Haitaton 3.12.2024."
+
+            override val signatureLines =
+                listOf(
+                    "Det här är ett automatiskt e-postmeddelande – svara inte på det.",
+                    "Med vänlig hälsning,",
+                    "Helsingfors stads stadsmiljösektor",
+                    "Haitaton-ärenden",
+                    "haitaton@hel.fi",
+                )
+        }
+
+        @Nested
+        inner class BodyInEnglish : BodyInFinnish() {
+            override val endingInformationText =
+                "Your project $HANKE_NIMI ($HANKE_TUNNUS) will be deleted from Haitaton on 3 Dec 2024."
+
+            override val endingInformationHtml =
+                "Your project <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> will be deleted from Haitaton on 3 Dec 2024."
+
+            override val signatureLines =
+                listOf(
+                    "This email was generated automatically – please do not reply to this message.",
+                    "Kind regards,",
+                    "Haitaton services",
+                    "City of Helsinki Urban Environment Division",
+                    "haitaton@hel.fi",
+                )
+        }
+    }
+
+    @Nested
+    inner class HankeCompleted {
+        private val notification =
+            HankeCompletedNotification(
+                to = TEST_EMAIL,
+                hanketunnus = HANKE_TUNNUS,
+                hankeNimi = HANKE_NIMI,
+            )
+
+        private fun sendAndCapture(): MimeMessage {
+            val email = slot<MimeMessage>()
+            justRun { mailSender.send(capture(email)) }
+
+            emailSenderService.sendHankeCompletedNotification(notification)
+
+            return email.captured
+        }
+
+        @Test
+        fun `has the correct subject`() {
+            val email = sendAndCapture()
+
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Hankkeesi $HANKE_TUNNUS ilmoitettu päättymispäivä on ohitettu / Avslutningsdatum för ditt projekt $HANKE_TUNNUS har passerats / The reported end date of your project $HANKE_TUNNUS has passed"
+                )
+        }
+
+        @Test
+        fun `has a header line in the body`() {
+            val (textBody, htmlBody) = sendAndCapture().bodies()
+
+            val expectedBody =
+                "Hankkeesi $HANKE_TUNNUS ilmoitettu päättymispäivä on ohitettu / Avslutningsdatum för ditt projekt $HANKE_TUNNUS har passerats / The reported end date of your project $HANKE_TUNNUS has passed"
+            assertThat(textBody).contains(expectedBody)
+            assertThat(htmlBody).contains(expectedBody)
+        }
+
+        @Nested
+        open inner class BodyInFinnish {
+            open val endingInformationText =
+                "Hankkeesi $HANKE_NIMI ($HANKE_TUNNUS) ilmoitettu päättymispäivä on ohitettu."
+
+            open val endingInformationHtml =
+                "Hankkeesi <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> ilmoitettu päättymispäivä on ohitettu."
+
+            open val signatureLines =
+                listOf(
+                    "Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.",
+                    "Ystävällisin terveisin,",
+                    "Helsingin kaupungin kaupunkiympäristön toimiala",
+                    "Haitaton-asiointi",
+                    "haitaton@hel.fi",
+                )
+
+            @Test
+            open fun `contains ending information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(endingInformationText)
+                assertThat(htmlBody).contains(endingInformationHtml)
+            }
+
+            @Test
+            open fun `contains the signature`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(signatureLines)
+                assertThat(htmlBody).contains(signatureLines)
+            }
+        }
+
+        @Nested
+        inner class BodyInSwedish : BodyInFinnish() {
+            override val endingInformationText =
+                "Avslutningsdatum för ditt projekt $HANKE_NIMI ($HANKE_TUNNUS) har passerats."
+
+            override val endingInformationHtml =
+                "Avslutningsdatum för ditt projekt <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> har passerats."
+
+            override val signatureLines =
+                listOf(
+                    "Det här är ett automatiskt e-postmeddelande – svara inte på det.",
+                    "Med vänlig hälsning,",
+                    "Helsingfors stads stadsmiljösektor",
+                    "Haitaton-ärenden",
+                    "haitaton@hel.fi",
+                )
+        }
+
+        @Nested
+        inner class BodyInEnglish : BodyInFinnish() {
+            override val endingInformationText =
+                "The reported end date of your project $HANKE_NIMI ($HANKE_TUNNUS) has passed."
+
+            override val endingInformationHtml =
+                "The reported end date of your project <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> has passed."
 
             override val signatureLines =
                 listOf(

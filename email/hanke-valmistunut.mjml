@@ -7,32 +7,31 @@
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Hankkeesi {{hanketunnus}} ilmoitettu päättymispäivä on ohitettu / Hankkeesi {{hanketunnus}}
-                    ilmoitettu päättymispäivä on ohitettu / Hankkeesi {{hanketunnus}} ilmoitettu päättymispäivä on
-                    ohitettu
+                    Hankkeesi {{hanketunnus}} ilmoitettu päättymispäivä on ohitettu / Avslutningsdatum för ditt projekt
+                    {{hanketunnus}} har passerats / The reported end date of your project {{hanketunnus}} has passed
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> ilmoitettu päättymispäivä on ohitettu. Hankkeesi ei
-                    enää näy muille Haitattoman käyttäjille eikä sitä pääse enää muokkamaan. Hanke säilyy Haitattomassa
-                    6 kk, jona aikana pääset tarkastelemaan sitä.
+                    enää näy muille Haitattoman käyttäjille, eikä sitä pääse enää muokkaamaan. Hanke säilyy
+                    Haitattomassa 6 kk, jona aikana pääset tarkastelemaan sitä.
                 </mj-text>
                 <mj-include path="common/signature-fi.partial"/>
 
                 <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
-                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> ilmoitettu päättymispäivä on ohitettu. Hankkeesi ei
-                    enää näy muille Haitattoman käyttäjille eikä sitä pääse enää muokkamaan. Hanke säilyy Haitattomassa
-                    6 kk, jona aikana pääset tarkastelemaan sitä.
+                    Avslutningsdatum för ditt projekt <b>{{hankeNimi}} ({{hanketunnus}})</b> har passerats. Ditt projekt
+                    syns inte längre för andra användare av Haitaton, och det kan inte längre redigeras. Projektet finns
+                    kvar i Haitaton i 6 mån under vilken tid du kan granska det.
                 </mj-text>
                 <mj-include path="common/signature-sv.partial"/>
 
                 <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
-                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> ilmoitettu päättymispäivä on ohitettu. Hankkeesi ei
-                    enää näy muille Haitattoman käyttäjille eikä sitä pääse enää muokkamaan. Hanke säilyy Haitattomassa
-                    6 kk, jona aikana pääset tarkastelemaan sitä.
+                    The reported end date of your project <b>{{hankeNimi}} ({{hanketunnus}})</b> has passed. Your
+                    project will no longer be visible to other Haitaton users, and it can no longer be edited. The
+                    project will be available for viewing in Haitaton for six months.
                 </mj-text>
                 <mj-include path="common/signature-en.partial"/>
             </mj-column>

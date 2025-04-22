@@ -7,11 +7,11 @@
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Hankkeesi {{hanketunnus}} ilmoitettu päättymispäivä lähenee / Hankkeesi {{hanketunnus}} ilmoitettu
-                    päättymispäivä lähenee / Hankkeesi {{hanketunnus}} ilmoitettu päättymispäivä lähenee
+                    Hankkeesi {{hanketunnus}} päättymispäivä lähenee / Avslutningsdatum för ditt projekt {{hanketunnus}}
+                    närmar sig / The end date of your project {{hanketunnus}} is approaching
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> ilmoitettu päättymispäivä {{endingDate}} lähenee.
+                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> ilmoitettu päättymispäivä {{finnishEndingDate}} lähenee.
                     Varmistathan, että hankkeen ja sen töiden aikataulut ovat ajan tasalla. Päivitä tiedot tarvittaessa
                     Haitattomaan tai ota tarvitsemasi tiedot talteen. Huomaathan, että hankkeen päättyminen lukitsee
                     hankkeen ja estää sen näkymisen hankkeen ulkopuolisille.
@@ -21,20 +21,20 @@
                 <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
-                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> ilmoitettu päättymispäivä {{endingDate}} lähenee.
-                    Varmistathan, että hankkeen ja sen töiden aikataulut ovat ajan tasalla. Päivitä tiedot tarvittaessa
-                    Haitattomaan tai ota tarvitsemasi tiedot talteen. Huomaathan, että hankkeen päättyminen lukitsee
-                    hankkeen ja estää sen näkymisen hankkeen ulkopuolisille.
+                    Ditt projekt <b>{{hankeNimi}} ({{hanketunnus}})</b> börjar närma sig sitt anmälda avslutningsdatum
+                    {{finnishEndingDate}}. Försäkra dig om att tidtabellerna för projektet och dess arbeten är uppdaterade.
+                    Uppdatera uppgifterna vid behov i Haitaton eller ta till vara de uppgifter du behöver. Observera att
+                    avslutning av projektet låser projektet och förhindrar att det syns för utomstående.
                 </mj-text>
                 <mj-include path="common/signature-sv.partial"/>
 
                 <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
-                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> ilmoitettu päättymispäivä {{endingDate}} lähenee.
-                    Varmistathan, että hankkeen ja sen töiden aikataulut ovat ajan tasalla. Päivitä tiedot tarvittaessa
-                    Haitattomaan tai ota tarvitsemasi tiedot talteen. Huomaathan, että hankkeen päättyminen lukitsee
-                    hankkeen ja estää sen näkymisen hankkeen ulkopuolisille.
+                    The reported end date {{britishEndingDate}} of your project <b>{{hankeNimi}} ({{hanketunnus}})</b> is
+                    approaching. Please make sure that the schedules of the project and its works are up-to-date. Update
+                    the information to Haitaton, if necessary, or save the information you need. Please note that when a
+                    project ends, the project will become locked, preventing it from being visible to outsiders.
                 </mj-text>
                 <mj-include path="common/signature-en.partial"/>
             </mj-column>
