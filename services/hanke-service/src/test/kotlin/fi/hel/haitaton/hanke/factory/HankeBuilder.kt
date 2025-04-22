@@ -28,6 +28,7 @@ import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.test.AuthenticationMocks
+import java.time.ZonedDateTime
 
 data class HankeBuilder(
     private val hanke: Hanke,
@@ -134,6 +135,9 @@ data class HankeBuilder(
         tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         alue.haittojenhallintasuunnitelma = haittojenhallintasuunnitelma
     }
+
+    fun withHankealue(haittaLoppuPvm: ZonedDateTime?) =
+        withHankealue(alue = HankealueFactory.create(haittaLoppuPvm = haittaLoppuPvm))
 
     fun withNoAreas() = applyToHanke { alueet.clear() }
 

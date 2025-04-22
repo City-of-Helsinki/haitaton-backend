@@ -54,6 +54,13 @@ class HankeCompletionService(
         )
 
     @Transactional
+    fun idsForDraftsToComplete(): List<Int> =
+        hankeRepository.findDraftsToComplete(
+            completionsPerDay,
+            getCurrentTimeUTCAsLocalTime().minusDays(DAYS_BEFORE_COMPLETING_DRAFT),
+        )
+
+    @Transactional
     fun completeHankeIfPossible(id: Int) {
         logger.info { "Checking hanke completion for $id" }
         val hanke = hankeRepository.getReferenceById(id)
@@ -203,6 +210,52 @@ class HankeCompletionService(
         sendDeletionReminders(hanke, deletionDate)
     }
 
+    @Transactional
+    fun completeDraftHankeIfPossible(id: Int) {
+        logger.info { "Checking if hanke $id has been idle for 180 days and could be removed." }
+        val hanke = hankeRepository.getReferenceById(id)
+
+        val modifiedLongAgo =
+            when (hanke.status) {
+                HankeStatus.COMPLETED -> throw HankeNotDraftException(hanke)
+                HankeStatus.PUBLIC -> throw HankeNotDraftException(hanke)
+                HankeStatus.DRAFT ->
+                    hanke.modifiedAt?.isBefore(
+                        getCurrentTimeUTCAsLocalTime().minusDays(DAYS_BEFORE_COMPLETING_DRAFT)
+                    ) ?: false
+            }
+
+        if (!modifiedLongAgo) {
+            logger.info {
+                "Hanke has been modified recently, not doing anything. modifiedAt=${hanke.modifiedAt} ${hanke.logString()}"
+            }
+            return
+        }
+
+        if (hanke.alueet.isNotEmpty() && hanke.alueet.all { it.haittaLoppuPvm != null }) {
+            logger.info {
+                "Draft hanke has end dates for all their areas, not handling it here. ${hanke.logString()}"
+            }
+            return
+        }
+
+        if (hankeHasActiveApplications(hanke)) {
+            logger.info {
+                "Hanke has active applications, not doing anything. ${hanke.logString()}"
+            }
+            return
+        }
+
+        logger.info {
+            "Draft hanke hasn't been updated in a long time, marking it completed. " +
+                "modifiedAt=${hanke.modifiedAt} ${hanke.logString()}"
+        }
+        hanke.status = HankeStatus.COMPLETED
+        hanke.completedAt = OffsetDateTime.now()
+
+        sendCompletionNotifications(hanke)
+    }
+
     private fun sendCompletionNotifications(hanke: HankeEntity) {
         sendEmailToEditors(hanke) {
             HankeCompletedNotification(it.sahkoposti, hanke.nimi, hanke.hankeTunnus)
@@ -237,6 +290,7 @@ class HankeCompletionService(
     }
 
     companion object {
+        const val DAYS_BEFORE_COMPLETING_DRAFT: Long = 180
 
         fun assertHankeCompleted(hanke: HankeEntity) {
             if (hanke.status != HankeStatus.COMPLETED) throw HankeNotCompletedException(hanke)
@@ -296,6 +350,9 @@ class HankeCompletedRecently(hanke: HankeEntity, deletionDate: LocalDate?) :
             " so it can not be deleted before $deletionDate.",
         hanke,
     )
+
+class HankeNotDraftException(hanke: HankeEntity) :
+    HankeValidityException("Hanke is not a draft, it's ${hanke.status}", hanke)
 
 class HankeNotCompletedException(hanke: HankeEntity) :
     HankeValidityException("Hanke is not completed, it's ${hanke.status}", hanke)

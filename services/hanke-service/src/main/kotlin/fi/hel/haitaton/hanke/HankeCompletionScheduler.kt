@@ -93,6 +93,27 @@ class HankeCompletionScheduler(
         }
     }
 
+    @Scheduled(
+        cron = "\${haitaton.hanke.completions.draftCompletionCron}",
+        zone = "Europe/Helsinki",
+    )
+    fun completeDrafts() {
+        if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
+            logger.info { "Hanke completion is disabled, not running daily completion job." }
+            return
+        }
+
+        logger.info(
+            "Trying to obtain lock $LOCK_NAME to start checking for draft hanke that need to be completed."
+        )
+        lockService.withLock(LOCK_NAME, 10, TimeUnit.MINUTES) {
+            val ids = completionService.idsForDraftsToComplete()
+            logger.info { "Got ${ids.size} draft hanke to try to complete." }
+
+            doForEachId(ids) { id -> completionService.completeDraftHankeIfPossible(id) }
+        }
+    }
+
     private fun sendReminders(reminder: HankeReminder) {
         val ids = completionService.idsForReminders(reminder)
 
