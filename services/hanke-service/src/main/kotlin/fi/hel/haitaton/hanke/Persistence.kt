@@ -179,6 +179,22 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
             "order by h.completedAt asc"
     )
     fun findIdsForDeletionReminders(reminderDate: LocalDate, reminder: HankeReminder): List<Int>
+
+    /**
+     * Find drafts that don't have end dates for all their areas and that haven't been edited in
+     * some time.
+     */
+    @Query(
+        "select h.id " +
+            "from HankeEntity h " +
+            "left join HankealueEntity ha on ha.hanke = h " +
+            "where h.status = 'DRAFT' " +
+            "and h.modifiedAt < :date " +
+            "group by h.id " +
+            "having max(case when ha.haittaLoppuPvm is null then 1 else 0 end) > 0 " +
+            "order by h.modifiedAt asc limit :limit"
+    )
+    fun findDraftsToComplete(limit: Int, date: LocalDateTime): List<Int>
 }
 
 interface HankeIdentifier : HasId<Int>, Loggable {

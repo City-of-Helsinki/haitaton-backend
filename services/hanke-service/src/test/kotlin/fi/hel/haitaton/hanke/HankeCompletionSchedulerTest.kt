@@ -95,6 +95,19 @@ class HankeCompletionSchedulerTest {
                 }
             }
         }
+
+        @Nested
+        inner class CompleteDrafts {
+            @Test
+            fun `doesn't do anything`() {
+                hankeCompletionScheduler.completeDrafts()
+
+                verify {
+                    jdbcLockRegistry wasNot Called
+                    completionService wasNot Called
+                }
+            }
+        }
     }
 
     @Nested
@@ -302,6 +315,56 @@ class HankeCompletionSchedulerTest {
                 mockLocking(false)
 
                 hankeCompletionScheduler.sendDeletionReminders()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService wasNot Called
+                }
+            }
+        }
+
+        @Nested
+        inner class CompleteDrafts {
+
+            @Test
+            fun `gets a list of hanke IDs and tries to complete them`() {
+                mockLocking(true)
+                every { completionService.idsForDraftsToComplete() } returns listOf(1, 2, 3)
+
+                hankeCompletionScheduler.completeDrafts()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService.idsForDraftsToComplete()
+                    completionService.completeDraftHankeIfPossible(1)
+                    completionService.completeDraftHankeIfPossible(2)
+                    completionService.completeDraftHankeIfPossible(3)
+                }
+            }
+
+            @Test
+            fun `continues when a hanke has an validity error`() {
+                mockLocking(true)
+                every { completionService.idsForDraftsToComplete() } returns listOf(1, 2, 3)
+                every { completionService.completeDraftHankeIfPossible(2) } throws
+                    HankeNotDraftException(HankeFactory.createEntity())
+
+                hankeCompletionScheduler.completeDrafts()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService.idsForDraftsToComplete()
+                    completionService.completeDraftHankeIfPossible(1)
+                    completionService.completeDraftHankeIfPossible(2)
+                    completionService.completeDraftHankeIfPossible(3)
+                }
+            }
+
+            @Test
+            fun `does nothing when lock can't be obtained after waiting`() {
+                mockLocking(false)
+
+                hankeCompletionScheduler.completeDrafts()
 
                 verifySequence {
                     jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
