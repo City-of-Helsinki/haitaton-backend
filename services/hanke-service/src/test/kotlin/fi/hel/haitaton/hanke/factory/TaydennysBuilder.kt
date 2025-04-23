@@ -62,6 +62,12 @@ data class TaydennysBuilder(
             { copy(emergencyWork = emergencyWork) },
         )
 
+    fun withCableReports(identifiers: List<String>): TaydennysBuilder =
+        updateApplicationData({ invalidHakemusType() }, { copy(cableReports = identifiers) })
+
+    fun withPlacementContracts(identifiers: List<String>): TaydennysBuilder =
+        updateApplicationData({ invalidHakemusType() }, { copy(placementContracts = identifiers) })
+
     fun withWorkDescription(description: String): TaydennysBuilder =
         updateApplicationData(
             { copy(workDescription = description) },

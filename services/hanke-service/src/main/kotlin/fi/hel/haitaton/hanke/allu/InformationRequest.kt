@@ -53,6 +53,8 @@ enum class InformationRequestFieldKey {
                 "emergencyWork" -> OTHER
                 "rockExcavation" -> OTHER
                 "workDescription" -> OTHER
+                "cableReports" -> OTHER
+                "placementContracts" -> OTHER
                 "startTime" -> START_TIME
                 "endTime" -> END_TIME
                 "customerWithContacts" -> CUSTOMER
