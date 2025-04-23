@@ -17,6 +17,7 @@ import org.springframework.transaction.event.TransactionalEventListener
 
 private val logger = KotlinLogging.logger {}
 private val FINNISH_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.uuuu")
+private val BRITISH_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM uuuu")
 
 @ConfigurationProperties(prefix = "haitaton.email")
 data class EmailProperties(
@@ -192,7 +193,9 @@ class EmailSenderService(
             mapOf(
                 "hanketunnus" to data.hanketunnus,
                 "hankeNimi" to data.hankeNimi,
-                "endingDate" to data.endingDate.format(FINNISH_DATE_FORMAT),
+                "finnishEndingDate" to data.endingDate.format(FINNISH_DATE_FORMAT),
+                "britishEndingDate" to data.endingDate.format(BRITISH_DATE_FORMAT),
+                "signatures" to signatures(),
             )
 
         sendHybridEmail(data.to, EmailTemplate.HANKE_ENDING, templateData)
@@ -205,7 +208,9 @@ class EmailSenderService(
             mapOf(
                 "hanketunnus" to data.hanketunnus,
                 "hankeNimi" to data.hankeNimi,
-                "deletionDate" to data.deletionDate.format(FINNISH_DATE_FORMAT),
+                "finnishDeletionDate" to data.deletionDate.format(FINNISH_DATE_FORMAT),
+                "britishDeletionDate" to data.deletionDate.format(BRITISH_DATE_FORMAT),
+                "signatures" to signatures(),
             )
 
         sendHybridEmail(data.to, EmailTemplate.HANKE_DELETION_REMINDER, templateData)
@@ -214,7 +219,12 @@ class EmailSenderService(
     @TransactionalEventListener
     fun sendHankeCompletedNotification(data: HankeCompletedNotification) {
         logger.info { "Sending notification email for hanke completed" }
-        val templateData = mapOf("hanketunnus" to data.hanketunnus, "hankeNimi" to data.hankeNimi)
+        val templateData =
+            mapOf(
+                "hanketunnus" to data.hanketunnus,
+                "hankeNimi" to data.hankeNimi,
+                "signatures" to signatures(),
+            )
         sendHybridEmail(data.to, EmailTemplate.HANKE_COMPLETED, templateData)
     }
 
