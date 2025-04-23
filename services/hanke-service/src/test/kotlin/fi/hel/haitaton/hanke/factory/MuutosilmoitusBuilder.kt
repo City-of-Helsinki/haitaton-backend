@@ -74,6 +74,12 @@ class MuutosilmoitusBuilder(
             { copy(maintenanceWork = maintenanceWork) },
         )
 
+    fun withCableReports(identifiers: List<String>) =
+        updateApplicationData({ invalidHakemusType() }, { copy(cableReports = identifiers) })
+
+    fun withPlacementContracts(identifiers: List<String>) =
+        updateApplicationData({ invalidHakemusType() }, { copy(placementContracts = identifiers) })
+
     fun withCustomerReference(customerReference: String) =
         updateApplicationData(
             { invalidHakemusType() },

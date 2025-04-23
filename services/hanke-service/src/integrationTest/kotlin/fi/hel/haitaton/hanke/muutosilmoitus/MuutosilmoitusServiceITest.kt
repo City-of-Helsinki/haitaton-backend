@@ -36,6 +36,7 @@ import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HaittaFactory.DEFAULT_HHS_PYORALIIKENNE
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory.Companion.withPaperDecisionReceiver
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusAttachmentFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory.Companion.toUpdateRequest
@@ -82,6 +83,7 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verifySequence
 import java.util.UUID
+import kotlin.collections.single
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -98,6 +100,7 @@ class MuutosilmoitusServiceITest(
     @Autowired private val attachmentFactory: MuutosilmoitusAttachmentFactory,
     @Autowired private val hakemusAttachmentFactory: ApplicationAttachmentFactory,
     @Autowired private val hakemusFactory: HakemusFactory,
+    @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
     @Autowired private val attachmentRepository: MuutosilmoitusAttachmentRepository,
     @Autowired private val auditLogRepository: AuditLogRepository,
@@ -520,6 +523,68 @@ class MuutosilmoitusServiceITest(
                         InformationRequestFieldKey.INVOICING_CUSTOMER,
                         InformationRequestFieldKey.ATTACHMENT,
                     ),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `sends other as changed field if there is a change to kaivuilmoitus cable reports`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val hankealue = hankeService.loadHankeById(hanke.id)!!.alueet.single()
+            val hakemus =
+                hakemusFactory
+                    .builder(hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankealue)
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withCableReports(listOf("JS2500450", "JS2500451"))
+                    .save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            verifySequence {
+                alluClient.reportChange(
+                    hakemus.alluid!!,
+                    muutosilmoitus.hakemusData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.OTHER),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `sends other as changed field if there is a change to kaivuilmoitus placement contracts`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val hankealue = hankeService.loadHankeById(hanke.id)!!.alueet.single()
+            val hakemus =
+                hakemusFactory
+                    .builder(hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankealue)
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withPlacementContracts(listOf("SL2500450", "SL2500451"))
+                    .save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            verifySequence {
+                alluClient.reportChange(
+                    hakemus.alluid!!,
+                    muutosilmoitus.hakemusData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.OTHER),
                 )
                 alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
