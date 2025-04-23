@@ -580,6 +580,80 @@ class TaydennysServiceITest(
         }
 
         @Test
+        fun `sends other as changed field if there is a change to kaivuilmoitus cable reports`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val hankealue = hankeService.loadHankeById(hanke.id)!!.alueet.single()
+            val hakemus =
+                hakemusFactory
+                    .builder(hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankealue)
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
+                    .saveEntity()
+            val taydennys =
+                taydennysFactory
+                    .builder(hakemus, alluId)
+                    .withCableReports(listOf("JS2500001"))
+                    .save()
+            val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
+            val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+            every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            verifySequence {
+                alluClient.respondToInformationRequest(
+                    hakemus.alluid!!,
+                    taydennyspyynto.alluId,
+                    updatedTaydennysData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.OTHER),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
+        fun `sends other as changed field if there is a change to kaivuilmoitus placement contracts`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val hankealue = hankeService.loadHankeById(hanke.id)!!.alueet.single()
+            val hakemus =
+                hakemusFactory
+                    .builder(hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankealue)
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
+                    .saveEntity()
+            val taydennys =
+                taydennysFactory
+                    .builder(hakemus)
+                    .withPlacementContracts(listOf("SL2500450", "SL2500451"))
+                    .save()
+            val taydennyspyynto = taydennyspyyntoRepository.findAll().single()
+            val updatedTaydennysData = taydennysService.findTaydennys(hakemus.id)!!.hakemusData
+            justRun { alluClient.respondToInformationRequest(any(), any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+            every { alluClient.getApplicationInformation(hakemus.alluid!!) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            taydennysService.sendTaydennys(taydennys.id, USERNAME)
+
+            verifySequence {
+                alluClient.respondToInformationRequest(
+                    hakemus.alluid!!,
+                    taydennyspyynto.alluId,
+                    updatedTaydennysData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.OTHER),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+                alluClient.getApplicationInformation(hakemus.alluid!!)
+            }
+        }
+
+        @Test
         fun `sends attachment as changed field if there is a change to kaivuilmoitus haittojenhallintasuunnitelma`() {
             val hakemus =
                 hakemusFactory
