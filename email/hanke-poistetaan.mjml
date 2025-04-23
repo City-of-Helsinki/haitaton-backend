@@ -7,11 +7,11 @@
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Hankkeesi {{hanketunnus}} poistetaan järjestelmästä / Hankkeesi {{hanketunnus}} poistetaan
-                    järjestelmästä / Hankkeesi {{hanketunnus}} poistetaan järjestelmästä
+                    Hankkeesi {{hanketunnus}} poistetaan järjestelmästä / Ditt projekt {{hanketunnus}} raderas ur
+                    systemet / Your project {{hanketunnus}} will be deleted from the system
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> poistuu Haitattomasta {{deletionDate}}. Ota
+                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> poistuu Haitattomasta {{finnishDeletionDate}}. Ota
                     tarvitsemasi tiedot talteen ennen hankkeen poistumista. Poistumisen jälkeen hankkeen ja sen
                     hakemusten kaikki tiedot poistuvat, eikä niitä pääse enää palauttamaan.
                 </mj-text>
@@ -20,18 +20,19 @@
                 <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
-                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> poistuu Haitattomasta {{deletionDate}}. Ota
-                    tarvitsemasi tiedot talteen ennen hankkeen poistumista. Poistumisen jälkeen hankkeen ja sen
-                    hakemusten kaikki tiedot poistuvat, eikä niitä pääse enää palauttamaan.
+                    Ditt projekt <b>{{hankeNimi}} ({{hanketunnus}})</b> raderas ur Haitaton {{finnishDeletionDate}}. Ta
+                    till vara de uppgifter du behöver innan projektet försvinner. Efter raderingen försvinner alla
+                    uppgifter om projektet och dess ansökningar, och de kan inte längre återställas.
                 </mj-text>
                 <mj-include path="common/signature-sv.partial"/>
 
                 <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
-                    Hankkeesi <b>{{hankeNimi}} ({{hanketunnus}})</b> poistuu Haitattomasta {{deletionDate}}. Ota
-                    tarvitsemasi tiedot talteen ennen hankkeen poistumista. Poistumisen jälkeen hankkeen ja sen
-                    hakemusten kaikki tiedot poistuvat, eikä niitä pääse enää palauttamaan.
+                    Your project <b>{{hankeNimi}} ({{hanketunnus}})</b> will be deleted from Haitaton on
+                    {{britishDeletionDate}}. Save the information you need before the project is deleted. All
+                    information of the project and its applications will be removed after the project is deleted, and
+                    they cannot be recovered.
                 </mj-text>
                 <mj-include path="common/signature-en.partial"/>
             </mj-column>

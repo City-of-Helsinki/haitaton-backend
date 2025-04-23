@@ -569,12 +569,12 @@ class HankeCompletionServiceITest(
             assertThat(email.subject)
                 .isEqualTo(
                     "Haitaton: Hankkeesi ${hanke.hankeTunnus} ilmoitettu päättymispäivä on ohitettu " +
-                        "/ Hankkeesi ${hanke.hankeTunnus} ilmoitettu päättymispäivä on ohitettu " +
-                        "/ Hankkeesi ${hanke.hankeTunnus} ilmoitettu päättymispäivä on ohitettu"
+                        "/ Avslutningsdatum för ditt projekt ${hanke.hankeTunnus} har passerats " +
+                        "/ The reported end date of your project ${hanke.hankeTunnus} has passed"
                 )
             assertThat(email.textBody())
                 .contains(
-                    "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) ilmoitettu päättymispäivä on ohitettu. Hankkeesi ei enää näy muille Haitattoman käyttäjille eikä sitä pääse enää muokkamaan. Hanke säilyy Haitattomassa 6 kk, jona aikana pääset tarkastelemaan sitä."
+                    "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) ilmoitettu päättymispäivä on ohitettu. Hankkeesi ei enää näy muille Haitattoman käyttäjille, eikä sitä pääse enää muokkaamaan. Hanke säilyy Haitattomassa 6 kk, jona aikana pääset tarkastelemaan sitä."
                 )
         }
     }
@@ -803,8 +803,8 @@ class HankeCompletionServiceITest(
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
-                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
-                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee"
+                            "/ Avslutningsdatum för ditt projekt ${hanke.hankeTunnus} närmar sig " +
+                            "/ The end date of your project ${hanke.hankeTunnus} is approaching"
                     )
                 val day = endDate.dayOfMonth
                 val month = endDate.monthValue
@@ -834,8 +834,8 @@ class HankeCompletionServiceITest(
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
-                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
-                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee"
+                            "/ Avslutningsdatum för ditt projekt ${hanke.hankeTunnus} närmar sig " +
+                            "/ The end date of your project ${hanke.hankeTunnus} is approaching"
                     )
                 val day = endDate.dayOfMonth
                 val month = endDate.monthValue
@@ -971,8 +971,8 @@ class HankeCompletionServiceITest(
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
-                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
-                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee"
+                            "/ Avslutningsdatum för ditt projekt ${hanke.hankeTunnus} närmar sig " +
+                            "/ The end date of your project ${hanke.hankeTunnus} is approaching"
                     )
                 val day = endDate.dayOfMonth
                 val month = endDate.monthValue
@@ -1005,8 +1005,8 @@ class HankeCompletionServiceITest(
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
-                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
-                            "/ Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee"
+                            "/ Avslutningsdatum för ditt projekt ${hanke.hankeTunnus} närmar sig " +
+                            "/ The end date of your project ${hanke.hankeTunnus} is approaching"
                     )
                 val day = endDate.dayOfMonth
                 val month = endDate.monthValue
@@ -1227,8 +1227,8 @@ class HankeCompletionServiceITest(
             assertThat(email.subject)
                 .isEqualTo(
                     "Haitaton: Hankkeesi ${hanke.hankeTunnus} poistetaan järjestelmästä " +
-                        "/ Hankkeesi ${hanke.hankeTunnus} poistetaan järjestelmästä " +
-                        "/ Hankkeesi ${hanke.hankeTunnus} poistetaan järjestelmästä"
+                        "/ Ditt projekt ${hanke.hankeTunnus} raderas ur systemet " +
+                        "/ Your project ${hanke.hankeTunnus} will be deleted from the system"
                 )
             val deletionDate = LocalDate.now().plusDays(date)
             val day = deletionDate.dayOfMonth
@@ -1408,12 +1408,12 @@ class HankeCompletionServiceITest(
             assertThat(email.subject)
                 .isEqualTo(
                     "Haitaton: Hankkeesi ${hanke.hankeTunnus} ilmoitettu päättymispäivä on ohitettu " +
-                        "/ Hankkeesi ${hanke.hankeTunnus} ilmoitettu päättymispäivä on ohitettu " +
-                        "/ Hankkeesi ${hanke.hankeTunnus} ilmoitettu päättymispäivä on ohitettu"
+                        "/ Avslutningsdatum för ditt projekt ${hanke.hankeTunnus} har passerats " +
+                        "/ The reported end date of your project ${hanke.hankeTunnus} has passed"
                 )
             assertThat(email.textBody())
                 .contains(
-                    "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) ilmoitettu päättymispäivä on ohitettu. Hankkeesi ei enää näy muille Haitattoman käyttäjille eikä sitä pääse enää muokkamaan. Hanke säilyy Haitattomassa 6 kk, jona aikana pääset tarkastelemaan sitä."
+                    "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) ilmoitettu päättymispäivä on ohitettu. Hankkeesi ei enää näy muille Haitattoman käyttäjille, eikä sitä pääse enää muokkaamaan. Hanke säilyy Haitattomassa 6 kk, jona aikana pääset tarkastelemaan sitä."
                 )
         }
     }
