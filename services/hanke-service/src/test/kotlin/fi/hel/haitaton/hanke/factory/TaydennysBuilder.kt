@@ -258,6 +258,9 @@ data class TaydennysBuilder(
             tilaaja = tilaaja,
         )
 
+    fun withAdditionalInfo(additionalInfo: String): TaydennysBuilder =
+        updateApplicationData({ invalidHakemusType() }, { copy(additionalInfo = additionalInfo) })
+
     private fun updateApplicationData(
         onCableReport: JohtoselvityshakemusEntityData.() -> JohtoselvityshakemusEntityData,
         onExcavationNotification: KaivuilmoitusEntityData.() -> KaivuilmoitusEntityData,
