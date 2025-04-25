@@ -28,6 +28,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentRepository
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
@@ -51,6 +52,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusDataException
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import fi.hel.haitaton.hanke.hakemus.WrongHakemusTypeException
 import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -76,6 +78,11 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.test.resetCustomerIds
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -592,6 +599,158 @@ class MuutosilmoitusServiceITest(
         }
 
         @Test
+        fun `sends postal address as changed field if there is a change to kaivuilmoitus area street address`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val hankealue = hankeService.loadHankeById(hanke.id)!!.alueet.single()
+            val hakemus =
+                hakemusFactory
+                    .builder(hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankealue)
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val hakemusalue = hakemus.hakemusEntityData.areas!!.single() as KaivuilmoitusAlue
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withAreas(listOf(hakemusalue.copy(katuosoite = "New address")))
+                    .save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            verifySequence {
+                alluClient.reportChange(
+                    hakemus.alluid!!,
+                    muutosilmoitus.hakemusData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.POSTAL_ADDRESS),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `sends geometry as changed field if there is a change to kaivuilmoitus work area`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    tyoalueet =
+                        listOf(
+                            ApplicationFactory.createTyoalue(
+                                geometry = GeometriaFactory.fourthPolygon()
+                            )
+                        ),
+                )
+            val muutosilmoitus =
+                muutosilmoitusFactory.builder(hakemus).withAreas(listOf(area)).save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            verifySequence {
+                alluClient.reportChange(
+                    hakemus.alluid!!,
+                    muutosilmoitus.hakemusData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.GEOMETRY),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `sends attachment as changed field if there are changes only to kaivuilmoitus area properties other than address`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val hankealue = hankeService.loadHankeById(hanke.id)!!.alueet.single()
+            val hakemus =
+                hakemusFactory
+                    .builder(hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankealue)
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val hakemusalue = hakemus.hakemusEntityData.areas!!.single() as KaivuilmoitusAlue
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withAreas(
+                        listOf(
+                            hakemusalue.copy(
+                                tyonTarkoitukset = setOf(TyomaaTyyppi.LIIKENNEVALO),
+                                meluhaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
+                                polyhaitta = Polyhaitta.JATKUVA_POLYHAITTA,
+                                tarinahaitta = Tarinahaitta.EI_TARINAHAITTAA,
+                                kaistahaitta =
+                                    VaikutusAutoliikenteenKaistamaariin
+                                        .YKSI_AJOSUUNTA_POISTUU_KAYTOSTA,
+                                kaistahaittojenPituus =
+                                    AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
+                                lisatiedot = "Uudet lisätiedot",
+                            )
+                        )
+                    )
+                    .save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            verifySequence {
+                alluClient.reportChange(
+                    hakemus.alluid!!,
+                    muutosilmoitus.hakemusData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.ATTACHMENT),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `sends attachment as changed field if there is a change to kaivuilmoitus haittojenhallintasuunnitelma`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
+            val area =
+                ApplicationFactory.createExcavationNotificationArea(
+                    hankealueId = hanke.alueet.single().id!!,
+                    haittojenhallintasuunnitelma =
+                        HaittaFactory.createHaittojenhallintasuunnitelma(
+                            Haittojenhallintatyyppi.PYORALIIKENNE to
+                                "$DEFAULT_HHS_PYORALIIKENNE. Täydennetty."
+                        ),
+                )
+            val muutosilmoitus =
+                muutosilmoitusFactory.builder(hakemus).withAreas(listOf(area)).save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            verifySequence {
+                alluClient.reportChange(
+                    hakemus.alluid!!,
+                    muutosilmoitus.hakemusData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.ATTACHMENT),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
         fun `sends the attachments to Allu and adds it to change list`() {
             val hakemus =
                 hakemusFactory
@@ -648,6 +807,37 @@ class MuutosilmoitusServiceITest(
                     hakemus.alluid!!,
                     any(),
                     setOf(InformationRequestFieldKey.OTHER, InformationRequestFieldKey.ATTACHMENT),
+                )
+                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
+                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
+            }
+        }
+
+        @Test
+        fun `sends other as changed field if there is a change to additional info`() {
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val hankealue = hankeService.loadHankeById(hanke.id)!!.alueet.single()
+            val hakemus =
+                hakemusFactory
+                    .builder(hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields(hankealue)
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withAdditionalInfo("New additional info")
+                    .save()
+            justRun { alluClient.reportChange(any(), any(), any()) }
+            justRun { alluClient.addAttachment(any(), any()) }
+
+            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
+
+            verifySequence {
+                alluClient.reportChange(
+                    hakemus.alluid!!,
+                    muutosilmoitus.hakemusData.toAlluData(hakemus.hanke.hankeTunnus),
+                    setOf(InformationRequestFieldKey.OTHER),
                 )
                 alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
@@ -769,43 +959,6 @@ class MuutosilmoitusServiceITest(
             assertThat(response).isEqualTo(hakemus.toHakemus())
             verifySequence {
                 alluClient.reportChange(any(), any(), setOf(InformationRequestFieldKey.OTHER))
-                alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
-                alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
-            }
-        }
-
-        @Test
-        fun `sends geometry as changed field if there is a change to kaivuilmoitus work area`() {
-            val hakemus =
-                hakemusFactory
-                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
-                    .withMandatoryFields()
-                    .withStatus(ApplicationStatus.WAITING_INFORMATION)
-                    .saveEntity()
-            val hanke = hankeService.loadHankeById(hakemus.hanke.id)!!
-            val area =
-                ApplicationFactory.createExcavationNotificationArea(
-                    hankealueId = hanke.alueet.single().id!!,
-                    tyoalueet =
-                        listOf(
-                            ApplicationFactory.createTyoalue(
-                                geometry = GeometriaFactory.fourthPolygon()
-                            )
-                        ),
-                )
-            val muutosilmoitus =
-                muutosilmoitusFactory.builder(hakemus).withAreas(listOf(area)).save()
-            justRun { alluClient.reportChange(any(), any(), any()) }
-            justRun { alluClient.addAttachment(any(), any()) }
-
-            muutosilmoitusService.send(muutosilmoitus.id, null, USERNAME)
-
-            verifySequence {
-                alluClient.reportChange(
-                    hakemus.alluid!!,
-                    muutosilmoitus.hakemusData.toAlluData(hakemus.hanke.hankeTunnus),
-                    setOf(InformationRequestFieldKey.GEOMETRY),
-                )
                 alluClient.addAttachment(any(), withName(FORM_DATA_PDF_FILENAME))
                 alluClient.addAttachment(any(), withName(HHS_PDF_FILENAME))
             }
