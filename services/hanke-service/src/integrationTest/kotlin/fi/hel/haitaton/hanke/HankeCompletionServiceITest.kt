@@ -1053,8 +1053,9 @@ class HankeCompletionServiceITest(
         fun `throws exception when hanke completion date is too recently`() {
             val hanke =
                 hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(1)
+                    it.completedAt = OffsetDateTime.now().plusDays(1).minusMonths(6)
                 }
+            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now().plusDays(1))
 
             val failure = assertFailure { hankeCompletionService.deleteHanke(hanke.id) }
 
@@ -1183,8 +1184,9 @@ class HankeCompletionServiceITest(
         ) {
             val hanke =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6).minusDays(daysAgo)
+                    it.completedAt = OffsetDateTime.now().minusDays(daysAgo).minusMonths(6)
                 }
+            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now().minusDays(daysAgo))
 
             hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
 
@@ -1197,8 +1199,9 @@ class HankeCompletionServiceITest(
         fun `does nothing when the reminder is not yet due`() {
             val hanke =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(6)
+                    it.completedAt = OffsetDateTime.now().plusDays(6).minusMonths(6)
                 }
+            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now().plusDays(6))
 
             hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
 
@@ -1214,8 +1217,9 @@ class HankeCompletionServiceITest(
         ) {
             val hanke =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(date)
+                    it.completedAt = OffsetDateTime.now().plusDays(date).minusMonths(6)
                 }
+            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now().plusDays(date))
 
             hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
 
@@ -1269,7 +1273,8 @@ class HankeCompletionServiceITest(
                         muuYhteystieto(kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS)
                     }
             hanke.status = HankeStatus.COMPLETED
-            hanke.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(3)
+            hanke.completedAt = OffsetDateTime.now().plusDays(3).minusMonths(6)
+            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now().plusDays(3))
             hankeRepository.save(hanke)
 
             hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)

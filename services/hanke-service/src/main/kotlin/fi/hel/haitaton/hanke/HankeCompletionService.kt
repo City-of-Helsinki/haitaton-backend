@@ -192,7 +192,8 @@ class HankeCompletionService(
         }
         val deletionDate = hanke.deletionDate() ?: throw HankeHasNoCompletionDateException(hanke)
 
-        if (deletionDate.isAfter(LocalDate.now().plusDays(5))) {
+        if (deletionDate.minusDays(5).isAfter(LocalDate.now())) {
+            logger.info { "Deletion notification is not yet due. ${hanke.logString()}" }
             return
         }
 
