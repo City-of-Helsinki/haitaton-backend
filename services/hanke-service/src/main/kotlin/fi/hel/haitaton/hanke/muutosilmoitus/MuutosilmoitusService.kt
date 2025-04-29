@@ -117,7 +117,7 @@ class MuutosilmoitusService(
 
         val hakemusEntity = hakemusRepository.getReferenceById(entity.hakemusId)
         hakemusService.assertYhteystiedotValidity(hakemusEntity.hanke, entity.yhteystiedot, request)
-        hakemusService.assertOrUpdateHankealueet(hakemusEntity.hanke, request)
+        hakemusService.assertOrUpdateHankealueet(hakemusEntity.hanke, request, currentUserId)
 
         val originalContactUserIds = entity.allContactUsers().map { it.id }.toSet()
         val updatedMuutosilmoitusEntity = saveWithUpdate(entity, request, hakemusEntity.hanke.id)
@@ -147,6 +147,7 @@ class MuutosilmoitusService(
         hakemusService.resetAreasIfHankeGenerated(
             muutosilmoitusEntity.hakemusId,
             muutosilmoitusEntity,
+            currentUserId,
         )
 
         attachmentService.deleteAllAttachments(muutosilmoitusEntity)

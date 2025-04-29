@@ -114,7 +114,7 @@ class HankeService(
 
         val loggingEntryHolder = prepareLogging(entity)
         // Transfer field values from request object to entity object
-        updateEntityFieldsFromRequest(hanke, entity)
+        updateEntityFieldsFromRequest(hanke, entity, userId)
         copyYhteystietosToEntity(hanke, entity, userId, loggingEntryHolder, existingYTs)
 
         // Set relevant audit fields:
@@ -323,7 +323,11 @@ class HankeService(
     private fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke =
         HankeMapper.domainFrom(hankeEntity, hankealueService.geometryMapFrom(hankeEntity.alueet))
 
-    private fun updateEntityFieldsFromRequest(hanke: ModifyHankeRequest, entity: HankeEntity) {
+    private fun updateEntityFieldsFromRequest(
+        hanke: ModifyHankeRequest,
+        entity: HankeEntity,
+        currentUserId: String,
+    ) {
         entity.onYKTHanke = hanke.onYKTHanke
         entity.nimi = hanke.nimi
         entity.kuvaus = hanke.kuvaus
@@ -334,7 +338,7 @@ class HankeService(
         entity.tyomaaTyyppi.removeAll(removedTyyppi)
         entity.tyomaaTyyppi.addAll(newTyyppi)
 
-        hankealueService.mergeAlueetToHanke(hanke.alueet, entity)
+        hankealueService.mergeAlueetToHanke(hanke.alueet, entity, currentUserId)
     }
 
     /**
