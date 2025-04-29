@@ -26,6 +26,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusService.Companion.toExistingYhteysti
 import fi.hel.haitaton.hanke.hakemus.HakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
+import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.TaydennysLoggingService
 import fi.hel.haitaton.hanke.logging.TaydennyspyyntoLoggingService
@@ -156,7 +157,7 @@ class TaydennysService(
         }
 
         taydennysRepository.findByApplicationId(application.id)?.also {
-            hakemusService.resetAreasIfHankeGenerated(it.hakemusId(), it)
+            hakemusService.resetAreasIfHankeGenerated(it.hakemusId(), it, ALLU_AUDIT_LOG_USERID)
 
             logger.info { "A täydennys was found. Removing it." }
             attachmentService.deleteAllAttachments(it)
@@ -285,7 +286,7 @@ class TaydennysService(
         val hanke = hakemusEntity.hanke
         val yhteystiedot = taydennysEntity.yhteystiedot
         hakemusService.assertYhteystiedotValidity(hanke, yhteystiedot, request)
-        hakemusService.assertOrUpdateHankealueet(hanke, request)
+        hakemusService.assertOrUpdateHankealueet(hanke, request, currentUserId)
 
         val originalContactUserIds = taydennysEntity.allContactUsers().map { it.id }.toSet()
         val updatedTaydennysEntity = saveWithUpdate(taydennysEntity, request, hanke.id)
@@ -450,7 +451,11 @@ class TaydennysService(
         val taydennysEntity =
             taydennysRepository.findByIdOrNull(id) ?: throw TaydennysNotFoundException(id)
 
-        hakemusService.resetAreasIfHankeGenerated(taydennysEntity.hakemusId(), taydennysEntity)
+        hakemusService.resetAreasIfHankeGenerated(
+            taydennysEntity.hakemusId(),
+            taydennysEntity,
+            currentUserId,
+        )
 
         attachmentService.deleteAllAttachments(taydennysEntity)
         val taydennys = taydennysEntity.toDomain()

@@ -83,7 +83,7 @@ internal class GeometriatServiceITest : IntegrationTest() {
         loadedGeometriat.featureCollection!!
             .features
             .add(loadedGeometriat.featureCollection!!.features[0])
-        geometriatService.saveGeometriat(loadedGeometriat, loadedGeometriat.id)
+        geometriatService.saveGeometriat(loadedGeometriat, loadedGeometriat.id, USERNAME)
 
         // load
         loadedGeometriat = geometriatService.getGeometriat(loadedGeometriat.id!!)
@@ -125,7 +125,7 @@ internal class GeometriatServiceITest : IntegrationTest() {
         geometriat.featureCollection?.crs?.properties = null
 
         assertThrows<GeometriaValidationException> {
-            geometriatService.saveGeometriat(geometriat, null)
+            geometriatService.saveGeometriat(geometriat, null, USERNAME)
         }
     }
 
@@ -135,7 +135,7 @@ internal class GeometriatServiceITest : IntegrationTest() {
         geometriat.featureCollection?.crs?.properties?.set("name", "urn:ogc:def:crs:EPSG::0000")
 
         assertThrows<UnsupportedCoordinateSystemException> {
-            geometriatService.saveGeometriat(geometriat, null)
+            geometriatService.saveGeometriat(geometriat, null, USERNAME)
         }
     }
 
@@ -145,7 +145,7 @@ internal class GeometriatServiceITest : IntegrationTest() {
         fun `sets metadata correctly`() {
             val geometriat = GeometriaFactory.createNew()
 
-            val result = geometriatService.createGeometriat(geometriat)
+            val result = geometriatService.createGeometriat(geometriat, USERNAME)
 
             val savedGeometriat = geometriatService.getGeometriat(result.id!!)
             assertThat(savedGeometriat).isNotNull().all {
@@ -165,7 +165,7 @@ internal class GeometriatServiceITest : IntegrationTest() {
         fun `saves geometries correctly`() {
             val geometriat: Geometriat = GeometriaFactory.create()
 
-            val result = geometriatService.createGeometriat(geometriat)
+            val result = geometriatService.createGeometriat(geometriat, USERNAME)
 
             val savedGeometriat = geometriatService.getGeometriat(result.id!!)
             assertThat(savedGeometriat).isNotNull().all {

@@ -43,7 +43,7 @@ internal class GeometriatServiceTest {
         every { geometriatDao.retrieveGeometriat(geometriaId) } returns oldGeometriat
         every { geometriatDao.updateGeometriat(any()) } just runs
 
-        val savedHankeGeometria = service.saveGeometriat(geometriat, geometriaId)
+        val savedHankeGeometria = service.saveGeometriat(geometriat, geometriaId, USERNAME)
 
         verifySequence {
             geometriatDao.retrieveGeometriat(geometriaId)
@@ -67,7 +67,7 @@ internal class GeometriatServiceTest {
                 firstArg<Geometriat>().apply { id = 42 }
             }
 
-        val savedHankeGeometria = service.saveGeometriat(geometriat, null)
+        val savedHankeGeometria = service.saveGeometriat(geometriat, null, USERNAME)
 
         verifySequence { geometriatDao.createGeometriat(any()) }
         assertThat(savedHankeGeometria).isNotNull().all {
@@ -94,7 +94,7 @@ internal class GeometriatServiceTest {
         every { geometriatDao.retrieveGeometriat(geometriatId) } returns oldGeometriat
         every { geometriatDao.deleteGeometriat(any()) } just runs
 
-        val savedHankeGeometria = service.saveGeometriat(geometriat, geometriatId)
+        val savedHankeGeometria = service.saveGeometriat(geometriat, geometriatId, USERNAME)
 
         verifySequence {
             geometriatDao.retrieveGeometriat(geometriatId)
@@ -116,7 +116,7 @@ internal class GeometriatServiceTest {
         every { geometriatDao.retrieveGeometriat(geometriatId) } returns oldGeometriat
         every { geometriatDao.updateGeometriat(any()) } just runs
 
-        val savedHankeGeometria = service.saveGeometriat(geometriat, geometriatId)
+        val savedHankeGeometria = service.saveGeometriat(geometriat, geometriatId, USERNAME)
 
         verify { geometriatDao.retrieveGeometriat(geometriatId) }
         verify { geometriatDao.updateGeometriat(any()) }
@@ -145,7 +145,7 @@ internal class GeometriatServiceTest {
                     firstArg<Geometriat>().apply { id = 42 }
                 }
 
-            val savedHankeGeometria = service.createGeometriat(geometriat)
+            val savedHankeGeometria = service.createGeometriat(geometriat, USERNAME)
 
             assertThat(savedHankeGeometria).isNotNull().all {
                 prop(Geometriat::version).isEqualTo(0)
@@ -165,7 +165,7 @@ internal class GeometriatServiceTest {
                     firstArg<Geometriat>().apply { id = 42 }
                 }
 
-            val savedHankeGeometria = service.createGeometriat(geometriat)
+            val savedHankeGeometria = service.createGeometriat(geometriat, USERNAME)
 
             assertThat(savedHankeGeometria).isNotNull().all {
                 isNotSameInstanceAs(geometriat)
