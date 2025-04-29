@@ -70,6 +70,10 @@ fun LocalDateTime.zonedDateTime(): ZonedDateTime = ZonedDateTime.of(this, TZ_UTC
  */
 fun getCurrentTimeUTCAsLocalTime(): LocalDateTime = getCurrentTimeUTC().toLocalDateTime()
 
+/**
+ * Don't call this outside controllers. If the code is called from scheduled methods, this will
+ * throw a NullPointerException.
+ */
 fun currentUserId(): String = SecurityContextHolder.getContext().userId()
 
 fun SecurityContext.userId(): String = authentication.name
