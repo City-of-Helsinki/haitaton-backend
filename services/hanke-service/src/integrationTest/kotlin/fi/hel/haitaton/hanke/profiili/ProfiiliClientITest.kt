@@ -177,7 +177,7 @@ class ProfiiliClientITest {
             assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $ACCESS_TOKEN")
             assertThat(request.getHeader("Accept")).isEqualTo(MediaType.APPLICATION_JSON_VALUE)
             assertThat(request.getHeader("Content-Type"))
-                .isEqualTo(MediaType.APPLICATION_FORM_URLENCODED_VALUE + ";charset=UTF-8")
+                .isEqualTo(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         }
 
         @Test

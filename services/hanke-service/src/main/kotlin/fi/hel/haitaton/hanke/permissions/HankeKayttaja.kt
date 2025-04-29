@@ -81,7 +81,8 @@ class HankekayttajaEntity(
     var permission: PermissionEntity?,
 
     /** Invitation data including e.g. the sign in token. */
-    @OneToOne(mappedBy = "hankekayttaja") var kayttajakutsu: KayttajakutsuEntity? = null,
+    @OneToOne(mappedBy = "hankekayttaja", cascade = [CascadeType.ALL])
+    var kayttajakutsu: KayttajakutsuEntity? = null,
 
     /** Identifier of the inviter. */
     @Column(name = "kutsuja_id") var kutsujaId: UUID? = null,
@@ -89,14 +90,14 @@ class HankekayttajaEntity(
         fetch = FetchType.LAZY,
         mappedBy = "hankeKayttaja",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     var yhteyshenkilot: MutableList<HankeYhteyshenkiloEntity> = mutableListOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hankekayttaja",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     var hakemusyhteyshenkilot: MutableList<HakemusyhteyshenkiloEntity> = mutableListOf(),
 ) {
@@ -183,7 +184,7 @@ interface HankekayttajaRepository : JpaRepository<HankekayttajaEntity, UUID> {
 
     fun findByHankeIdAndSahkopostiIn(
         hankeId: Int,
-        sahkopostit: List<String>
+        sahkopostit: List<String>,
     ): List<HankekayttajaEntity>
 
     fun findByPermissionId(permissionId: Int): HankekayttajaEntity?
