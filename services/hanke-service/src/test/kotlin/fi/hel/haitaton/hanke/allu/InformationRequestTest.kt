@@ -43,5 +43,27 @@ class InformationRequestTest {
 
             assertThat(result).isEqualTo(InformationRequestFieldKey.ATTACHMENT)
         }
+
+        @Test
+        fun `returns ATTACHMENT if name matches areas with lisatiedot`() {
+            val result =
+                InformationRequestFieldKey.fromHaitatonFieldName(
+                    "areas[0].lisatiedot",
+                    ApplicationType.EXCAVATION_NOTIFICATION,
+                )
+
+            assertThat(result).isEqualTo(InformationRequestFieldKey.ATTACHMENT)
+        }
+
+        @Test
+        fun `returns POSTAL_ADDRESS if name matches areas with katuosoite`() {
+            val result =
+                InformationRequestFieldKey.fromHaitatonFieldName(
+                    "areas[0].katuosoite",
+                    ApplicationType.EXCAVATION_NOTIFICATION,
+                )
+
+            assertThat(result).isEqualTo(InformationRequestFieldKey.POSTAL_ADDRESS)
+        }
     }
 }

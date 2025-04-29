@@ -1,7 +1,14 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusEntity
+import fi.hel.haitaton.hanke.paatos.Paatos
+import fi.hel.haitaton.hanke.paatos.PaatosResponse
+import java.time.OffsetDateTime
 import java.time.ZonedDateTime
+import java.util.UUID
 
 data class HankkeenHakemuksetResponse(val applications: List<HankkeenHakemusResponse>)
 
@@ -12,22 +19,26 @@ data class HankkeenHakemusResponse(
     val applicationIdentifier: String?,
     val applicationType: ApplicationType,
     val applicationData: HankkeenHakemusDataResponse,
+    @JsonInclude(Include.NON_NULL) val muutosilmoitus: HankkeenHakemusMuutosilmoitusResponse?,
+    val paatokset: Map<String, List<PaatosResponse>>,
 ) {
     constructor(
-        hakemus: Hakemus,
-        includeAreas: Boolean = false,
+        hakemus: HakemusEntity,
+        muutosilmoitus: MuutosilmoitusEntity?,
+        paatokset: List<Paatos>,
+        includeAreas: Boolean,
     ) : this(
         hakemus.id,
         hakemus.alluid,
         hakemus.alluStatus,
         hakemus.applicationIdentifier,
         hakemus.applicationType,
-        when (hakemus.applicationData) {
-            is JohtoselvityshakemusData ->
-                HankkeenHakemusDataResponse(hakemus.applicationData, includeAreas)
-            is KaivuilmoitusData ->
-                HankkeenHakemusDataResponse(hakemus.applicationData, includeAreas)
+        when (val data = hakemus.hakemusEntityData) {
+            is JohtoselvityshakemusEntityData -> HankkeenHakemusDataResponse(data, includeAreas)
+            is KaivuilmoitusEntityData -> HankkeenHakemusDataResponse(data, includeAreas)
         },
+        muutosilmoitus?.let { HankkeenHakemusMuutosilmoitusResponse(muutosilmoitus, includeAreas) },
+        paatokset.map { it.toResponse() }.groupBy { it.hakemustunnus },
     )
 }
 
@@ -38,7 +49,7 @@ data class HankkeenHakemusDataResponse(
     val areas: List<Hakemusalue>?,
 ) {
     constructor(
-        cableReportApplicationData: JohtoselvityshakemusData,
+        cableReportApplicationData: JohtoselvityshakemusEntityData,
         includeAreas: Boolean,
     ) : this(
         cableReportApplicationData.name,
@@ -48,12 +59,31 @@ data class HankkeenHakemusDataResponse(
     )
 
     constructor(
-        kaivuilmoitusEntityData: KaivuilmoitusData,
+        kaivuilmoitusEntityData: KaivuilmoitusEntityData,
         includeAreas: Boolean,
     ) : this(
         kaivuilmoitusEntityData.name,
         kaivuilmoitusEntityData.startTime,
         kaivuilmoitusEntityData.endTime,
         if (includeAreas) kaivuilmoitusEntityData.areas else null,
+    )
+}
+
+data class HankkeenHakemusMuutosilmoitusResponse(
+    val id: UUID,
+    val sent: OffsetDateTime?,
+    val applicationData: HankkeenHakemusDataResponse,
+) {
+    constructor(
+        muutosilmoitus: MuutosilmoitusEntity,
+        includeAreas: Boolean,
+    ) : this(
+        id = muutosilmoitus.id,
+        sent = muutosilmoitus.sent,
+        applicationData =
+            when (val data = muutosilmoitus.hakemusData) {
+                is JohtoselvityshakemusEntityData -> HankkeenHakemusDataResponse(data, includeAreas)
+                is KaivuilmoitusEntityData -> HankkeenHakemusDataResponse(data, includeAreas)
+            },
     )
 }

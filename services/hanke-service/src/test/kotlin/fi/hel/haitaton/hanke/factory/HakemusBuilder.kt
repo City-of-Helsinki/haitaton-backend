@@ -156,7 +156,13 @@ data class HakemusBuilder(
         emergencyWork: Boolean = false,
     ): HakemusBuilder =
         updateApplicationData(
-            { throw InvalidParameterException("Not available for cable reports.") },
+            {
+                copy(
+                    constructionWork = constructionWork,
+                    maintenanceWork = maintenanceWork,
+                    emergencyWork = emergencyWork,
+                )
+            },
             {
                 copy(
                     constructionWork = constructionWork,

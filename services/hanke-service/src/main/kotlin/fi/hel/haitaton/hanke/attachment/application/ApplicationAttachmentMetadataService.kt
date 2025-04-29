@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentMetadataWithType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
@@ -20,7 +21,7 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class ApplicationAttachmentMetadataService(
-    private val attachmentRepository: ApplicationAttachmentRepository,
+    private val attachmentRepository: ApplicationAttachmentRepository
 ) {
     @Transactional(readOnly = true)
     fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadata> =
@@ -41,7 +42,7 @@ class ApplicationAttachmentMetadataService(
         size: Long,
         blobLocation: String,
         attachmentType: ApplicationAttachmentType,
-        applicationId: Long
+        applicationId: Long,
     ): ApplicationAttachmentMetadata {
         val entity =
             ApplicationAttachmentEntity(
@@ -58,6 +59,26 @@ class ApplicationAttachmentMetadataService(
         return attachmentRepository.save(entity).toDomain().also {
             logger.info { "Saved attachment metadata ${it.id} for application $applicationId" }
         }
+    }
+
+    @Transactional
+    fun create(
+        attachment: AttachmentMetadataWithType,
+        hakemusId: Long,
+    ): ApplicationAttachmentMetadata {
+        val hakemusAttachmentEntity =
+            ApplicationAttachmentEntity(
+                id = null,
+                fileName = attachment.fileName,
+                contentType = attachment.contentType,
+                size = attachment.size,
+                createdByUserId = attachment.createdByUserId,
+                createdAt = attachment.createdAt,
+                blobLocation = attachment.blobLocation,
+                applicationId = hakemusId,
+                attachmentType = attachment.attachmentType,
+            )
+        return attachmentRepository.save(hakemusAttachmentEntity).toDomain()
     }
 
     @Transactional
@@ -78,7 +99,7 @@ class ApplicationAttachmentMetadataService(
             logger.warn {
                 "Application $applicationId has reached the allowed amount of attachments."
             }
-            throw AttachmentLimitReachedException(applicationId, ALLOWED_ATTACHMENT_COUNT)
+            throw AttachmentLimitReachedException(applicationId)
         }
     }
 

@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.taydennys
 
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
@@ -26,6 +26,7 @@ private val logger = KotlinLogging.logger {}
 class TaydennysAttachmentMetadataService(
     private val attachmentRepository: TaydennysAttachmentRepository,
     private val hakemusAttachmentRepository: ApplicationAttachmentRepository,
+    private val hakemusAttachmentService: ApplicationAttachmentMetadataService,
 ) {
     @Transactional(readOnly = true)
     fun getMetadataList(taydennysId: UUID): List<TaydennysAttachmentMetadata> =
@@ -68,7 +69,7 @@ class TaydennysAttachmentMetadataService(
             logger.warn {
                 "Täydennys ${taydennys.id} has reached the allowed total amount of attachments for it and its hakemus."
             }
-            throw AttachmentLimitReachedException(taydennys.id, ALLOWED_ATTACHMENT_COUNT)
+            throw AttachmentLimitReachedException(taydennys)
         }
     }
 
@@ -111,19 +112,7 @@ class TaydennysAttachmentMetadataService(
         attachment: TaydennysAttachmentMetadata,
         hakemusEntity: HakemusEntity,
     ) {
-        val hakemusAttachmentEntity =
-            ApplicationAttachmentEntity(
-                id = null,
-                fileName = attachment.fileName,
-                contentType = attachment.contentType,
-                size = attachment.size,
-                createdByUserId = attachment.createdByUserId,
-                createdAt = attachment.createdAt,
-                blobLocation = attachment.blobLocation,
-                applicationId = hakemusEntity.id,
-                attachmentType = attachment.attachmentType,
-            )
-        hakemusAttachmentRepository.save(hakemusAttachmentEntity)
+        hakemusAttachmentService.create(attachment, hakemusEntity.id)
         attachmentRepository.deleteById(attachment.id)
     }
 }

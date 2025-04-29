@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.logging
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadataDto
+import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentMetadataDto
 import fi.hel.haitaton.hanke.banners.BannerResponse
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.domain.Hanke
@@ -53,7 +54,7 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
                     disclosureLogService.saveForTaydennys(it.taydennys, currentUserId())
                 }
                 result.muutosilmoitus?.let {
-                    disclosureLogService.saveForMuutosilmoitus(it, currentUserId())
+                    disclosureLogService.saveForMuutosilmoitus(it.muutosilmoitus, currentUserId())
                 }
             }
             is Hanke -> disclosureLogService.saveForHanke(result, currentUserId())
@@ -69,6 +70,7 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
             // Some classes cannot hold personal information, so they are skipped
             is ApplicationAttachmentMetadataDto -> return
             is TaydennysAttachmentMetadataDto -> return
+            is MuutosilmoitusAttachmentMetadataDto -> return
             is HakemusDeletionResultDto -> return
             is HankeAttachmentMetadataDto -> return
             is HankeKayttajaController.TunnistautuminenResponse -> return

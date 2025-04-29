@@ -17,6 +17,9 @@ import fi.hel.haitaton.hanke.hakemus.HakemusWithExtras
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
+import fi.hel.haitaton.hanke.hakemus.HankkeenHakemusDataResponse
+import fi.hel.haitaton.hanke.hakemus.HankkeenHakemusMuutosilmoitusResponse
+import fi.hel.haitaton.hanke.hakemus.HankkeenHakemusResponse
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusalue
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
@@ -24,7 +27,8 @@ import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.PaperDecisionReceiver
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
-import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusEntity
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusWithExtras
 import fi.hel.haitaton.hanke.paatos.Paatos
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.taydennys.TaydennysWithExtras
@@ -129,8 +133,63 @@ class HakemusFactory(
                 valmistumisilmoitukset = valmistumisilmoitukset.groupBy { it.type },
             )
 
-        fun createSeveral(n: Long, applicationType: ApplicationType) =
-            (1..n).map { i -> create(id = i, applicationType = applicationType) }
+        fun createSeveralHankkeenHakemusResponses(
+            includeAreas: Boolean
+        ): List<HankkeenHakemusResponse> =
+            listOf(
+                createHankkeenHakemusResponse(
+                    1,
+                    ApplicationType.CABLE_REPORT,
+                    MuutosilmoitusFactory.createEntity(),
+                    includeAreas,
+                ),
+                createHankkeenHakemusResponse(2, ApplicationType.CABLE_REPORT, null, includeAreas),
+                createHankkeenHakemusResponse(
+                    3,
+                    ApplicationType.EXCAVATION_NOTIFICATION,
+                    MuutosilmoitusFactory.createEntity(),
+                    includeAreas,
+                ),
+                createHankkeenHakemusResponse(
+                    4,
+                    ApplicationType.EXCAVATION_NOTIFICATION,
+                    null,
+                    includeAreas,
+                ),
+            )
+
+        fun createHankkeenHakemusResponse(
+            id: Long = 1,
+            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
+            muutosilmoitus: MuutosilmoitusEntity? = null,
+            includeAreas: Boolean = false,
+        ): HankkeenHakemusResponse {
+            val data =
+                when (applicationType) {
+                    ApplicationType.CABLE_REPORT ->
+                        HankkeenHakemusDataResponse(
+                            ApplicationFactory.createCableReportApplicationData(),
+                            includeAreas,
+                        )
+                    ApplicationType.EXCAVATION_NOTIFICATION ->
+                        HankkeenHakemusDataResponse(
+                            ApplicationFactory.createExcavationNotificationData(),
+                            includeAreas,
+                        )
+                }
+
+            return HankkeenHakemusResponse(
+                id = id,
+                alluid = null,
+                alluStatus = null,
+                applicationIdentifier = null,
+                applicationType = applicationType,
+                applicationData = data,
+                muutosilmoitus =
+                    muutosilmoitus?.let { HankkeenHakemusMuutosilmoitusResponse(it, includeAreas) },
+                paatokset = mapOf(),
+            )
+        }
 
         fun createHakemusData(type: ApplicationType): HakemusData =
             when (type) {
@@ -248,8 +307,16 @@ class HakemusFactory(
             paatokset: List<Paatos> = listOf(),
             taydennyspyynto: Taydennyspyynto? = null,
             taydennys: TaydennysWithExtras? = null,
-            muutosilmoitus: Muutosilmoitus? = null,
+            muutosilmoitus: MuutosilmoitusWithExtras? = null,
         ) = HakemusWithExtras(this, paatokset, taydennyspyynto, taydennys, muutosilmoitus)
+
+        fun HakemusData.withPaperDecisionReceiver(
+            paperDecisionReceiver: PaperDecisionReceiver?
+        ): HakemusData =
+            when (this) {
+                is JohtoselvityshakemusData -> copy(paperDecisionReceiver = paperDecisionReceiver)
+                is KaivuilmoitusData -> copy(paperDecisionReceiver = paperDecisionReceiver)
+            }
 
         fun hakemusDataForRegistryKeyTest(tyyppi: CustomerType): KaivuilmoitusData {
             val hakija =

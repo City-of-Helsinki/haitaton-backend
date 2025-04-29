@@ -11,7 +11,6 @@ import fi.hel.haitaton.hanke.factory.HaittaFactory.TORMAYSTARKASTELU_DEFAULT_AUT
 import fi.hel.haitaton.hanke.factory.HaittaFactory.TORMAYSTARKASTELU_ZERO_AUTOLIIKENNELUOKITTELU
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.modify
 import fi.hel.haitaton.hanke.test.Asserts.failedWith
@@ -35,8 +34,7 @@ private const val BLANK = "   \t\n\t   "
 class HankePublicValidatorTest {
 
     companion object {
-        private fun completeHanke() =
-            HankeFactory.create().withHankealue().withYhteystiedot().withTormaystarkasteluTulos()
+        private fun completeHanke() = HankeFactory.create().withHankealue().withYhteystiedot()
 
         @JvmStatic
         private fun draftHankkeet(): Stream<Arguments> =

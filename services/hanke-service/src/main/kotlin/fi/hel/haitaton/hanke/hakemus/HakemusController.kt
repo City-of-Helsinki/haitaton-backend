@@ -109,11 +109,9 @@ class HakemusController(
         logger.info {
             "Finding applications for hanke $hankeTunnus with areas ${if (areas) "included" else "excluded"}"
         }
-        val hakemukset = hakemusService.hankkeenHakemukset(hankeTunnus)
+        val hakemukset = hakemusService.hankkeenHakemuksetResponses(hankeTunnus, areas)
         logger.info { "Found ${hakemukset.size} applications for hanke $hankeTunnus" }
-        return HankkeenHakemuksetResponse(
-            hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus, areas) }
-        )
+        return HankkeenHakemuksetResponse(hakemukset)
     }
 
     @PostMapping("/hakemukset")

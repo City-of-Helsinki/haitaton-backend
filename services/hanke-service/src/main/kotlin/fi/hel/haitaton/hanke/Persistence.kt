@@ -1,13 +1,16 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
+import fi.hel.haitaton.hanke.domain.HankeReminder
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.domain.Loggable
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.CollectionTable
+import jakarta.persistence.Column
 import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -19,7 +22,10 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -43,11 +49,16 @@ class HankeEntity(
     var createdAt: LocalDateTime? = null,
     var modifiedByUserId: String? = null,
     var modifiedAt: LocalDateTime? = null,
+    var completedAt: OffsetDateTime? = null,
     var generated: Boolean = false,
     // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
     // can be a performance problem if there is a need to do bulk inserts.
     // Using SEQUENCE would allow getting multiple ids more efficiently.
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override var id: Int = 0,
+    @Column(name = "sent_reminders", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Suppress("JpaAttributeTypeInspection")
+    var sentReminders: Array<HankeReminder> = arrayOf(),
 
     // related
     // orphanRemoval is needed for even explicit child-object removal. JPA weirdness...
@@ -55,21 +66,21 @@ class HankeEntity(
         fetch = FetchType.LAZY,
         mappedBy = "hanke",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     var yhteystiedot: MutableList<HankeYhteystietoEntity> = mutableListOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hanke",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     var alueet: MutableList<HankealueEntity> = mutableListOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hanke",
         cascade = [CascadeType.ALL],
-        orphanRemoval = true
+        orphanRemoval = true,
     )
     var liitteet: MutableList<HankeAttachmentEntity> = mutableListOf(),
 ) : HankeIdentifier {
@@ -93,6 +104,11 @@ class HankeEntity(
         }
     }
 
+    fun endDate(): LocalDate? = alueet.endDate()
+
+    fun deletionDate(): LocalDate? =
+        completedAt?.plusMonths(6)?.atZoneSameInstant(ZoneId.of("Europe/Helsinki"))?.toLocalDate()
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is HankeEntity) return false
@@ -110,6 +126,13 @@ class HankeEntity(
         result = 31 * result + id
         return result
     }
+
+    companion object {
+        fun List<HankealueEntity>.endDate(): LocalDate? =
+            this.map { it.haittaLoppuPvm }
+                .let { if (null in it) null else it.filterNotNull() }
+                ?.maxOrNull()
+    }
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
@@ -119,16 +142,66 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
 
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
 
-    override fun findAll(): List<HankeEntity>
-
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
+
+    @Query("select h.status from HankeEntity h where h.id = :id")
+    fun findStatusById(id: Int): HankeStatus?
+
+    @Query(
+        "select h.id " +
+            "from HankeEntity h " +
+            "left join HankealueEntity ha on ha.hanke = h " +
+            "where h.status in ('PUBLIC', 'DRAFT') " +
+            "group by h.id " +
+            "having coalesce(max(ha.haittaLoppuPvm), '1990-01-01') < CURRENT_DATE " +
+            "order by h.modifiedAt asc limit :limit"
+    )
+    fun findHankeToComplete(limit: Int): List<Int>
+
+    @Query(
+        "select h.id from HankeEntity h " +
+            "left join HankealueEntity ha on ha.hanke = h " +
+            "where h.status in ('PUBLIC', 'DRAFT') " +
+            "and not array_contains(h.sentReminders, :reminder) " +
+            "group by h.id " +
+            "having coalesce(max(ha.haittaLoppuPvm), '1990-01-01') <= :reminderDate " +
+            "order by h.modifiedAt asc limit :limit"
+    )
+    fun findHankeToRemind(limit: Int, reminderDate: LocalDate, reminder: HankeReminder): List<Int>
+
+    @Query("select h.id from HankeEntity h where h.completedAt <= :date order by h.completedAt asc")
+    fun findHankeToDelete(date: OffsetDateTime): List<Int>
+
+    @Query(
+        "select h.id from HankeEntity h " +
+            "where date(h.completedAt) <= :reminderDate " +
+            "and not array_contains(h.sentReminders, :reminder) " +
+            "order by h.completedAt asc"
+    )
+    fun findIdsForDeletionReminders(reminderDate: LocalDate, reminder: HankeReminder): List<Int>
+
+    /**
+     * Find drafts that don't have end dates for all their areas and that haven't been edited in
+     * some time.
+     */
+    @Query(
+        "select h.id " +
+            "from HankeEntity h " +
+            "left join HankealueEntity ha on ha.hanke = h " +
+            "where h.status = 'DRAFT' " +
+            "and h.modifiedAt < :date " +
+            "group by h.id " +
+            "having max(case when ha.haittaLoppuPvm is null then 1 else 0 end) > 0 " +
+            "order by h.modifiedAt asc limit :limit"
+    )
+    fun findDraftsToComplete(limit: Int, date: LocalDateTime): List<Int>
 }
 
-interface HankeIdentifier : HasId<Int> {
+interface HankeIdentifier : HasId<Int>, Loggable {
     override val id: Int
     val hankeTunnus: String
 
-    fun logString() = "Hanke: (id=${id}, tunnus=${hankeTunnus})"
+    override fun logString() = "Hanke: (id=${id}, tunnus=${hankeTunnus})"
 }
 
 enum class CounterType {
@@ -179,7 +252,7 @@ interface IdCounterRepository : JpaRepository<IdCounter, CounterType> {
             WHERE counterType = :counterType
             RETURNING counterType, value
             """,
-        nativeQuery = true
+        nativeQuery = true,
     )
     fun incrementAndGet(counterType: String): List<IdCounter>
 }

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.NotInChangeLogView
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import io.swagger.v3.oas.annotations.media.Schema
+import java.time.LocalDate
 import java.time.ZonedDateTime
 
 @Schema(description = "The project within which applications are processed.")
@@ -17,7 +17,7 @@ data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(
         description = "Hanke identity for external purposes, set by the service.",
-        example = "HAI24-123"
+        example = "HAI24-123",
     )
     override val hankeTunnus: String,
     //
@@ -64,6 +64,10 @@ data class Hanke(
     @field:Schema(description = "Timestamp of last modification, set by the service.")
     var modifiedAt: ZonedDateTime?,
     //
+    @JsonView(NotInChangeLogView::class)
+    @field:Schema(description = "The date the completed hanke will be automatically deleted.")
+    var deletionDate: LocalDate?,
+    //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Hanke current status, set by the service.")
     var status: HankeStatus? = HankeStatus.DRAFT,
@@ -100,7 +104,7 @@ data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(
         description = "Work site street address. Required for the hanke to be published.",
-        maxLength = 2000
+        maxLength = 2000,
     )
     var tyomaaKatuosoite: String? = null
 
@@ -121,10 +125,6 @@ data class Hanke(
     )
     var alueet = mutableListOf<SavedHankealue>()
 
-    @JsonView(NotInChangeLogView::class)
-    @field:Schema(description = "Collision review result, set by the service.")
-    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
-
     override fun extractYhteystiedot(): List<HankeYhteystieto> =
         listOfNotNull(omistajat, rakennuttajat, toteuttajat, muut).flatten()
 }
@@ -141,16 +141,17 @@ enum class HankeStatus {
     PUBLIC,
 
     /**
-     * After the end dates of all hankealue have passed, a hanke is considered finished. It's
-     * anonymized and at least mostly hidden in the UI.
+     * After the end dates of all hankealue have passed and all related applications are completed,
+     * the hanke is locked (no edits possible) for some months, after which it's permanently
+     * deleted.
      */
-    ENDED,
+    COMPLETED,
 }
 
 enum class Hankevaihe {
     OHJELMOINTI,
     SUUNNITTELU,
-    RAKENTAMINEN
+    RAKENTAMINEN,
 }
 
 enum class TyomaaTyyppi {
@@ -184,5 +185,11 @@ enum class TyomaaTyyppi {
     KUVAUKSET,
     LUMENPUDOTUS,
     YLEISOTILAISUUS,
-    VAIHTOLAVA
+    VAIHTOLAVA,
+}
+
+enum class HankeReminder {
+    COMPLETION_5,
+    COMPLETION_14,
+    DELETION_5,
 }

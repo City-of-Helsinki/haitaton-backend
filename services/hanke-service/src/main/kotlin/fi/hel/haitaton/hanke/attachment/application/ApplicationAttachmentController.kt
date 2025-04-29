@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
-import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -35,13 +34,11 @@ private val logger = KotlinLogging.logger {}
 @RequestMapping("/hakemukset/{applicationId}/liitteet")
 @SecurityRequirement(name = "bearerAuth")
 class ApplicationAttachmentController(
-    private val applicationAttachmentService: ApplicationAttachmentService,
+    private val applicationAttachmentService: ApplicationAttachmentService
 ) {
 
     @GetMapping
-    @Operation(
-        summary = "Get metadata from application attachments",
-    )
+    @Operation(summary = "Get metadata from application attachments")
     @ApiResponses(
         value =
             [
@@ -49,7 +46,7 @@ class ApplicationAttachmentController(
                 ApiResponse(
                     description = "Application not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
             ]
     )
@@ -61,7 +58,16 @@ class ApplicationAttachmentController(
     }
 
     @GetMapping("/{attachmentId}/content")
-    @Operation(summary = "Download attachment file")
+    @Operation(
+        summary = "Download attachment file",
+        description =
+            """
+               Download the content for the given attachment.
+
+               If the attachment is a power of attorney (valtakirja), it can't
+               be downloaded because of privacy concerns.
+            """,
+    )
     @ApiResponses(
         value =
             [
@@ -69,7 +75,12 @@ class ApplicationAttachmentController(
                 ApiResponse(
                     description = "Attachment not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+                ApiResponse(
+                    description = "Attachment is valtakirja",
+                    responseCode = "403",
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
             ]
     )
@@ -89,7 +100,7 @@ class ApplicationAttachmentController(
     @Operation(
         summary = "Upload attachment for application",
         description =
-            "Upload attachment. Sent to Allu if application has been sent but it is not yet in handling."
+            "Upload attachment. Sent to Allu if application has been sent but it is not yet in handling.",
     )
     @ApiResponses(
         value =
@@ -98,17 +109,17 @@ class ApplicationAttachmentController(
                 ApiResponse(
                     description = "Application not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
                 ApiResponse(
                     description = "Attachment invalid",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
                 ApiResponse(
                     description = "Application already in Allu",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
             ]
     )
@@ -116,7 +127,7 @@ class ApplicationAttachmentController(
     fun postAttachment(
         @PathVariable applicationId: Long,
         @RequestParam("tyyppi") tyyppi: ApplicationAttachmentType,
-        @RequestParam("liite") attachment: MultipartFile
+        @RequestParam("liite") attachment: MultipartFile,
     ): ApplicationAttachmentMetadataDto {
         return applicationAttachmentService.addAttachment(applicationId, tyyppi, attachment)
     }
@@ -125,7 +136,7 @@ class ApplicationAttachmentController(
     @Operation(
         summary = "Delete attachment from application",
         description =
-            "Can be deleted if application has not been sent to Allu. Don't delete if application has alluId."
+            "Can be deleted if application has not been sent to Allu. Don't delete if application has alluId.",
     )
     @ApiResponses(
         value =
@@ -134,12 +145,12 @@ class ApplicationAttachmentController(
                 ApiResponse(
                     description = "Attachment not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
                 ApiResponse(
                     description = "Application already in Allu",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
             ]
     )
@@ -157,13 +168,5 @@ class ApplicationAttachmentController(
     fun alluDataError(ex: ApplicationInAlluException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2009
-    }
-
-    @ExceptionHandler(ValtakirjaForbiddenException::class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    @Hidden
-    fun valtakirjaForbiddenException(ex: ValtakirjaForbiddenException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI3004
     }
 }

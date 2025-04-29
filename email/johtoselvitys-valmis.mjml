@@ -6,11 +6,17 @@
         <mj-include path="common/header-content.partial"/>
         <mj-section>
             <mj-column>
-                <mj-text mj-class="header-txt">Johtoselvitys {{applicationIdentifier}} / Ledningsutredning {{applicationIdentifier}} / Cable report {{applicationIdentifier}}</mj-text>
+                <mj-text mj-class="header-txt">Johtoselvitys {{applicationIdentifier}} / Ledningsutredning
+                    {{applicationIdentifier}} / Cable report {{applicationIdentifier}}
+                </mj-text>
                 <mj-text mj-class="basic-txt">
                     Hakemanne johtoselvitys {{applicationIdentifier}} on käsitelty. Lataa selvitys Haitattomasta <a
                         href="{{baseUrl}}/fi/hakemus/{{applicationId}}">{{baseUrl}}/fi/hakemus/{{applicationId}}
                 </a> ja tutustu sen sisältöön huolellisesti.
+                </mj-text>
+                <mj-text>
+                    Huomioithan, että johtoselvitys poistuu Haitattomasta 6 kuukauden päästä hakemuksen voimassaoloajan
+                    päätyttyä, joten tallennathan päätöksen itsellesi ennen sitä.
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     Miten onnistuimme? Kerro mielipiteesi <a href="https://ecv.microsoft.com/zepZlZSdnT">täällä</a>.
@@ -21,8 +27,8 @@
                 <mj-text mj-class="signature">
                     Helsingin kaupunki
                     <br/>
-					Kaupunkiympäristön asukas- ja yrityspalvelut
-					<br/>
+                    Kaupunkiympäristön asukas- ja yrityspalvelut
+                    <br/>
                     Alueiden käyttö ja valvonta
                     <br/>
                     Johtotietopalvelu
@@ -32,7 +38,7 @@
                     johtotietopalvelu@hel.fi
                 </mj-text>
 
-                <mj-divider mj-class="language-separator" />
+                <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
                     Ledningsutredningen {{applicationIdentifier}} ni ansökt om har behandlats. Ladda ned utredningen
@@ -41,7 +47,11 @@
                         {{baseUrl}}/sv/ansokan/{{applicationId}}
                     </a>
                     och läs
-                    innehållet i den noggrannt.
+                    innehållet i den noggrann.
+                </mj-text>
+                <mj-text>
+                    Observera att ledningsutredningen avlägsnas från Haitaton 6 månader efter att giltighetstiden för
+                    ansökan gått ut, så spara beslutet själv före det.
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     Hur lyckades vi? Ge din åsikt <a
@@ -54,8 +64,8 @@
                 <mj-text mj-class="signature">
                     Helsingfors stad
                     <br/>
-					Stadsmiljös boende- och företagstjänster
-					<br/>
+                    Stadsmiljös boende- och företagstjänster
+                    <br/>
                     Användning och tillsyn av områden
                     <br/>
                     Ledningstjänsten
@@ -65,14 +75,18 @@
                     johtotietopalvelu@hel.fi
                 </mj-text>
 
-                <mj-divider mj-class="language-separator" />
+                <mj-divider mj-class="language-separator"/>
 
                 <mj-text mj-class="basic-txt">
-                    Cable report {{applicationIdentifier}} that you requested has been processed. Download the
+                    The cable report {{applicationIdentifier}} that you requested has been processed. Download the
                     report
                     via Haitaton <a href="{{baseUrl}}/en/application/{{applicationId}}">
                     {{baseUrl}}/en/application/{{applicationId}}
                 </a> and read it carefully.
+                </mj-text>
+                <mj-text>
+                    Please note that the cable report will be deleted from Haitaton six months after the application’s
+                    validity period has ended. Please download and save the decision before this.
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     How did we do? Please share your opinion <a
@@ -85,8 +99,8 @@
                 <mj-text mj-class="signature">
                     City of Helsinki
                     <br/>
-					Urban Environment Resident and Business Services
-					<br/>
+                    Urban Environment Resident and Business Services
+                    <br/>
                     Land Use and Monitoring
                     <br/>
                     Cable Location Service

@@ -10,40 +10,31 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaari
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
 
-data class PublicHankeYhteystieto(val organisaatioNimi: String?, val osasto: String?)
+data class PublicHankeYhteystieto(val organisaatioNimi: String?)
 
-fun hankeYhteystietoToPublic(yhteystieto: HankeYhteystieto) =
-    PublicHankeYhteystieto(yhteystieto.organisaatioNimi, yhteystieto.osasto)
+fun HankeYhteystieto.toPublic(): PublicHankeYhteystieto =
+    when (tyyppi) {
+        YhteystietoTyyppi.YKSITYISHENKILO -> PublicHankeYhteystieto(null)
+        else -> PublicHankeYhteystieto(nimi)
+    }
 
-data class PublicGeometriat(
-    val id: Int,
-    val version: Int,
-    val createdAt: ZonedDateTime,
-    val modifiedAt: ZonedDateTime?,
-    val featureCollection: FeatureCollection?
-)
+data class PublicGeometriat(val featureCollection: FeatureCollection?)
 
-fun geometriatToPublic(geometriat: Geometriat) =
-    PublicGeometriat(
-        geometriat.id!!,
-        geometriat.version,
-        geometriat.createdAt!!,
-        geometriat.modifiedAt,
-        geometriat.featureCollection
-    )
+fun Geometriat.toPublic() = PublicGeometriat(featureCollection)
 
 data class PublicHankealue(
-    var id: Int?,
-    var hankeId: Int?,
-    var haittaAlkuPvm: ZonedDateTime? = null,
-    var haittaLoppuPvm: ZonedDateTime? = null,
-    var geometriat: PublicGeometriat? = null,
-    var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
-    var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
-    var meluHaitta: Meluhaitta? = null,
-    var polyHaitta: Polyhaitta? = null,
-    var tarinaHaitta: Tarinahaitta? = null,
-    var nimi: String,
+    val id: Int?,
+    val hankeId: Int?,
+    val haittaAlkuPvm: ZonedDateTime?,
+    val haittaLoppuPvm: ZonedDateTime?,
+    val geometriat: PublicGeometriat?,
+    val kaistaHaitta: VaikutusAutoliikenteenKaistamaariin?,
+    val kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus?,
+    val meluHaitta: Meluhaitta?,
+    val polyHaitta: Polyhaitta?,
+    val tarinaHaitta: Tarinahaitta?,
+    val nimi: String,
+    val tormaystarkastelu: TormaystarkasteluTulos?,
 )
 
 data class PublicHanke(
@@ -54,45 +45,37 @@ data class PublicHanke(
     val alkuPvm: ZonedDateTime,
     val loppuPvm: ZonedDateTime,
     val vaihe: Hankevaihe,
-    val tyomaaTyyppi: MutableSet<TyomaaTyyppi>,
-    val tormaystarkasteluTulos: TormaystarkasteluTulos,
+    val tyomaaTyyppi: Set<TyomaaTyyppi>,
     val omistajat: List<PublicHankeYhteystieto>,
     val alueet: List<PublicHankealue>,
 )
 
-fun hankealueToPublic(alue: SavedHankealue): PublicHankealue {
-    return PublicHankealue(
-        alue.id,
-        alue.hankeId,
-        alue.haittaAlkuPvm,
-        alue.haittaLoppuPvm,
-        alue.geometriat?.let { geometriatToPublic(it) },
-        alue.kaistaHaitta,
-        alue.kaistaPituusHaitta,
-        alue.meluHaitta,
-        alue.polyHaitta,
-        alue.tarinaHaitta,
-        alue.nimi,
+fun SavedHankealue.toPublic() =
+    PublicHankealue(
+        id,
+        hankeId,
+        haittaAlkuPvm,
+        haittaLoppuPvm,
+        geometriat?.toPublic(),
+        kaistaHaitta,
+        kaistaPituusHaitta,
+        meluHaitta,
+        polyHaitta,
+        tarinaHaitta,
+        nimi,
+        tormaystarkasteluTulos,
     )
-}
 
-fun hankeToPublic(hanke: Hanke): PublicHanke {
-    val omistajat =
-        hanke.omistajat.filter { it.organisaatioNimi != null }.map { hankeYhteystietoToPublic(it) }
-
-    val alueet = hanke.alueet.map { hankealueToPublic(it) }
-
-    return PublicHanke(
-        hanke.id,
-        hanke.hankeTunnus,
-        hanke.nimi,
-        hanke.kuvaus!!,
-        hanke.alkuPvm!!,
-        hanke.loppuPvm!!,
-        hanke.vaihe!!,
-        hanke.tyomaaTyyppi,
-        hanke.tormaystarkasteluTulos!!,
-        omistajat,
-        alueet,
+fun Hanke.toPublic() =
+    PublicHanke(
+        id,
+        hankeTunnus,
+        nimi,
+        kuvaus!!,
+        alkuPvm!!,
+        loppuPvm!!,
+        vaihe!!,
+        tyomaaTyyppi,
+        omistajat.map { it.toPublic() },
+        alueet.map { it.toPublic() },
     )
-}

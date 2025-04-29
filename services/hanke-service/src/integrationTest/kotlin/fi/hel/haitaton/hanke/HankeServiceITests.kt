@@ -88,6 +88,8 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifySequence
+import java.time.LocalDate
+import java.time.OffsetDateTime
 import net.pwall.mustache.Template
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -170,6 +172,21 @@ class HankeServiceITests(
             val response = hankeService.loadHankeById(hanke.id)
 
             assertThat(response).isNotNull().prop(Hanke::id).isEqualTo(hanke.id)
+        }
+
+        @Test
+        fun `returns hanke deletion date for a completed hanke`() {
+            val hanke =
+                hankeFactory.builder(USERNAME).saveEntity(HankeStatus.COMPLETED) {
+                    it.completedAt = OffsetDateTime.parse("2025-04-09T01:41:13+03:00")
+                }
+
+            val response = hankeService.loadHankeById(hanke.id)
+
+            assertThat(response)
+                .isNotNull()
+                .prop(Hanke::deletionDate)
+                .isEqualTo(LocalDate.parse("2025-10-09"))
         }
 
         @Test
@@ -264,7 +281,6 @@ class HankeServiceITests(
                 prop(Hanke::alkuPvm).isNull()
                 prop(Hanke::loppuPvm).isNull()
                 prop(Hanke::alueet).isEmpty()
-                prop(Hanke::tormaystarkasteluTulos).isNull()
             }
         }
 

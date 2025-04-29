@@ -1,4 +1,8 @@
 haitaton:
+  allu:
+    # Allu update service is mocked in test, but the scheduling seems to be active.
+    # Set a ridiculously long initial delay, so it's never actually called.
+    updateInitialDelayMilliSeconds: 6000000000
   azure:
     blob:
       decisions: paatokset-test
@@ -14,6 +18,9 @@ haitaton:
     hanke-editing: true
   gdpr:
     disabled: true
+  hanke:
+    completions:
+      max-per-run: 3
   map-service:
     url: http://localhost:3004
   profiili-api:

@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentAuthorizer
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
+import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentService
 import fi.hel.haitaton.hanke.attachment.taydennys.TaydennysAttachmentService
 import fi.hel.haitaton.hanke.banners.BannerService
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
@@ -18,6 +19,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.DisclosureLoggingAspect
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusAuthorizer
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusService
 import fi.hel.haitaton.hanke.paatos.PaatosAuthorizer
 import fi.hel.haitaton.hanke.paatos.PaatosService
@@ -98,6 +100,10 @@ class IntegrationTestConfiguration {
     @Bean fun hanketunnusService(): HanketunnusService = mockk()
 
     @Bean fun jdbcOperations(): JdbcOperations = mockk()
+
+    @Bean fun muutosilmoitusAttachmentService(): MuutosilmoitusAttachmentService = mockk()
+
+    @Bean fun muutosilmoitusAuthorizer(): MuutosilmoitusAuthorizer = mockk()
 
     @Bean fun muutosilmoitusService(): MuutosilmoitusService = mockk()
 

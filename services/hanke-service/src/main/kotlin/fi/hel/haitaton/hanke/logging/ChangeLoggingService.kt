@@ -30,4 +30,9 @@ abstract class ChangeLoggingService<ID, T : HasId<ID>>(
     open fun logDeleteFromAllu(before: T) {
         auditLogService.create(AuditLogService.deleteEntryForAllu(objectType, before))
     }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    open fun logDeleteFromHaitaton(before: T) {
+        auditLogService.create(AuditLogService.deleteEntryForHaitaton(objectType, before))
+    }
 }

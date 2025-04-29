@@ -45,4 +45,5 @@ data class FeatureFlags(val features: Map<Feature, Boolean>) {
 
 enum class Feature {
     HANKE_EDITING,
+    HANKE_COMPLETION,
 }

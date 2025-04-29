@@ -62,20 +62,21 @@ data class TaydennysBuilder(
             { copy(emergencyWork = emergencyWork) },
         )
 
+    fun withCableReports(identifiers: List<String>): TaydennysBuilder =
+        updateApplicationData({ invalidHakemusType() }, { copy(cableReports = identifiers) })
+
+    fun withPlacementContracts(identifiers: List<String>): TaydennysBuilder =
+        updateApplicationData({ invalidHakemusType() }, { copy(placementContracts = identifiers) })
+
     fun withWorkDescription(description: String): TaydennysBuilder =
         updateApplicationData(
             { copy(workDescription = description) },
             { copy(workDescription = description) },
         )
 
-    fun withStreetAddress(streetAddress: String): TaydennysBuilder =
+    fun withStreetAddress(address: String): TaydennysBuilder =
         updateApplicationData(
-            {
-                copy(
-                    postalAddress =
-                        postalAddress?.copy(streetAddress = StreetAddress(streetAddress))
-                )
-            },
+            { copy(postalAddress = postalAddress?.copy(streetAddress = StreetAddress(address))) },
             { invalidHakemusType() },
         )
 
@@ -256,6 +257,9 @@ data class TaydennysBuilder(
             taydennysyhteystieto = yhteystietoEntity,
             tilaaja = tilaaja,
         )
+
+    fun withAdditionalInfo(additionalInfo: String): TaydennysBuilder =
+        updateApplicationData({ invalidHakemusType() }, { copy(additionalInfo = additionalInfo) })
 
     private fun updateApplicationData(
         onCableReport: JohtoselvityshakemusEntityData.() -> JohtoselvityshakemusEntityData,

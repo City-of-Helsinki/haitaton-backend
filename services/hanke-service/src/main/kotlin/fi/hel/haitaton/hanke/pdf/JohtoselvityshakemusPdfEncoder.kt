@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.pdf
 
 import com.lowagie.text.Document
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.AttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 
@@ -16,7 +16,7 @@ object JohtoselvityshakemusPdfEncoder {
         data: JohtoselvityshakemusData,
         totalArea: Float?,
         areas: List<Float?>,
-        attachments: List<ApplicationAttachmentMetadata>,
+        attachments: List<AttachmentMetadata>,
     ): ByteArray = createDocument { document, _ ->
         formatJohtoselvitysPdf(document, data, totalArea, areas, attachments)
     }
@@ -26,7 +26,7 @@ object JohtoselvityshakemusPdfEncoder {
         data: JohtoselvityshakemusData,
         totalArea: Float?,
         areas: List<Float?>,
-        attachments: List<ApplicationAttachmentMetadata>,
+        attachments: List<AttachmentMetadata>,
     ) {
 
         document.title("Johtoselvityshakemus")

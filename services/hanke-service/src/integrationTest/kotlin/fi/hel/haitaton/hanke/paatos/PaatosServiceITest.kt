@@ -29,6 +29,7 @@ import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
+import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.paatos.PaatosTila.KORVATTU
 import fi.hel.haitaton.hanke.paatos.PaatosTila.NYKYINEN
 import fi.hel.haitaton.hanke.paatos.PaatosTyyppi.PAATOS
@@ -177,6 +178,60 @@ class PaatosServiceITest(
     }
 
     @Nested
+    inner class FindByHakemusIds {
+        @Test
+        fun `returns empty list when there are no decisions`() {
+            val result = paatosService.findByHakemusIds(listOf(100L, 101L))
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns decisions only for the requested applications when they exist for several`() {
+            val hakemus1 =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(alluId = 11)
+                    .withName("First")
+                    .save()
+            val hakemus1Paatokset =
+                listOf(
+                    paatosFactory.save(hakemus1, "KP2400001", PAATOS, KORVATTU),
+                    paatosFactory.save(hakemus1, "KP2400001-1", PAATOS, NYKYINEN),
+                )
+            val hakemus2 =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(alluId = 12)
+                    .withName("Second")
+                    .save()
+            val hakemus2Paatokset =
+                listOf(
+                    paatosFactory.save(hakemus2, "KP2400002", PAATOS, KORVATTU),
+                    paatosFactory.save(hakemus2, "KP2400002", TOIMINNALLINEN_KUNTO, KORVATTU),
+                    paatosFactory.save(hakemus2, "KP2400002-1", PAATOS, NYKYINEN),
+                    paatosFactory.save(hakemus2, "KP2400002-1", TOIMINNALLINEN_KUNTO, NYKYINEN),
+                    paatosFactory.save(hakemus2, "KP2400002-1", TYO_VALMIS, NYKYINEN),
+                )
+            val hakemus3 =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(alluId = 13)
+                    .withName("Third")
+                    .save()
+            paatosFactory.save(hakemus3, "KP2400003", PAATOS, KORVATTU)
+            paatosFactory.save(hakemus3, "KP2400003-1", PAATOS, NYKYINEN)
+
+            val result = paatosService.findByHakemusIds(listOf(hakemus2.id, hakemus1.id))
+
+            assertThat(result).hasSameElementsAs(hakemus1Paatokset + hakemus2Paatokset)
+        }
+    }
+
+    @Nested
     inner class SaveKaivuilmoituksenPaatos {
         private val event =
             ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.DECISION)
@@ -281,7 +336,8 @@ class PaatosServiceITest(
     inner class SaveKaivuilmoituksenToiminnallinenKunto {
         private val event =
             ApplicationHistoryFactory.createEvent(
-                newStatus = ApplicationStatus.OPERATIONAL_CONDITION)
+                newStatus = ApplicationStatus.OPERATIONAL_CONDITION
+            )
 
         private fun setupAlluMocks() {
             every { alluClient.getOperationalConditionPdf(alluId) } returns PDF_BYTES
@@ -313,7 +369,8 @@ class PaatosServiceITest(
                 prop(TestFile::contentLength).isEqualTo(PDF_BYTES.size)
                 prop(TestFile::contentDisposition)
                     .isEqualTo(
-                        "attachment; filename*=UTF-8''$hakemustunnus-toiminnallinen-kunto.pdf")
+                        "attachment; filename*=UTF-8''$hakemustunnus-toiminnallinen-kunto.pdf"
+                    )
                 prop(TestFile::content).transform { it.toBytes() }.isEqualTo(PDF_BYTES)
             }
             verifyAlluMocks()

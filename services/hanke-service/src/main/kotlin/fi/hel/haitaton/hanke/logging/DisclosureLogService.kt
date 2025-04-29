@@ -30,6 +30,9 @@ import org.springframework.stereotype.Service
 /** Special username for Allu service. */
 const val ALLU_AUDIT_LOG_USERID = "Allu"
 
+/** Special username for Haitaton itself. */
+const val HAITATON_AUDIT_LOG_USERID = "Haitaton"
+
 /** Special username for Helsinki Profiili. */
 const val PROFIILI_AUDIT_LOG_USERID = "Helsinki Profiili"
 

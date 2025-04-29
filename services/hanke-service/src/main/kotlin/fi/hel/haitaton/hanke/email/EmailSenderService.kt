@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.getResourceAsText
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import jakarta.mail.internet.MimeMessage
+import java.time.format.DateTimeFormatter
 import mu.KotlinLogging
 import net.pwall.mustache.Template
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.event.TransactionalEventListener
 
 private val logger = KotlinLogging.logger {}
+private val FINNISH_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.uuuu")
+private val BRITISH_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM uuuu")
 
 @ConfigurationProperties(prefix = "haitaton.email")
 data class EmailProperties(
@@ -36,10 +39,13 @@ enum class EmailTemplate(val value: String) {
     APPLICATION_NOTIFICATION("kayttaja-lisatty-hakemus"),
     CABLE_REPORT_DONE("johtoselvitys-valmis"),
     EXCAVATION_NOTIFICATION_DECISION("kaivuilmoitus-paatos"),
-    INVITATION_HANKE("kayttaja-lisatty-hanke"),
-    REMOVAL_FROM_HANKE_NOTIFICATION("kayttaja-poistettu-hanke"),
+    HANKE_COMPLETED("hanke-valmistunut"),
+    HANKE_DELETION_REMINDER("hanke-poistetaan"),
+    HANKE_ENDING("hanke-paattyy"),
     INFORMATION_REQUEST("taydennyspyynto"),
     INFORMATION_REQUEST_CANCELED("taydennyspyynto-peruttu"),
+    INVITATION_HANKE("kayttaja-lisatty-hanke"),
+    REMOVAL_FROM_HANKE_NOTIFICATION("kayttaja-poistettu-hanke"),
 }
 
 @Service
@@ -178,6 +184,48 @@ class EmailSenderService(
             )
 
         sendHybridEmail(data.to, EmailTemplate.INFORMATION_REQUEST_CANCELED, templateData)
+    }
+
+    @TransactionalEventListener
+    fun sendHankeEndingEmail(data: HankeEndingReminder) {
+        logger.info { "Sending reminder email for hanke ending soon" }
+        val templateData =
+            mapOf(
+                "hanketunnus" to data.hanketunnus,
+                "hankeNimi" to data.hankeNimi,
+                "finnishEndingDate" to data.endingDate.format(FINNISH_DATE_FORMAT),
+                "britishEndingDate" to data.endingDate.format(BRITISH_DATE_FORMAT),
+                "signatures" to signatures(),
+            )
+
+        sendHybridEmail(data.to, EmailTemplate.HANKE_ENDING, templateData)
+    }
+
+    @TransactionalEventListener
+    fun sendHankeDeletionReminder(data: HankeDeletionReminder) {
+        logger.info { "Sending reminder email for hanke being deleted soon" }
+        val templateData =
+            mapOf(
+                "hanketunnus" to data.hanketunnus,
+                "hankeNimi" to data.hankeNimi,
+                "finnishDeletionDate" to data.deletionDate.format(FINNISH_DATE_FORMAT),
+                "britishDeletionDate" to data.deletionDate.format(BRITISH_DATE_FORMAT),
+                "signatures" to signatures(),
+            )
+
+        sendHybridEmail(data.to, EmailTemplate.HANKE_DELETION_REMINDER, templateData)
+    }
+
+    @TransactionalEventListener
+    fun sendHankeCompletedNotification(data: HankeCompletedNotification) {
+        logger.info { "Sending notification email for hanke completed" }
+        val templateData =
+            mapOf(
+                "hanketunnus" to data.hanketunnus,
+                "hankeNimi" to data.hankeNimi,
+                "signatures" to signatures(),
+            )
+        sendHybridEmail(data.to, EmailTemplate.HANKE_COMPLETED, templateData)
     }
 
     private fun sendHybridEmail(to: String, template: EmailTemplate, data: Map<String, Any>) {

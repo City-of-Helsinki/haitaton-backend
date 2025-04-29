@@ -1,5 +1,7 @@
-FROM public.ecr.aws/docker/library/eclipse-temurin:17 AS build
+FROM registry.access.redhat.com/ubi9/openjdk-17:latest AS build
 WORKDIR /workspace/app
+
+USER root
 
 COPY gradlew settings.gradle.kts ./
 COPY gradle/ ./gradle/
@@ -10,8 +12,10 @@ RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon :services:hank
 RUN mkdir -p services/hanke-service/build/dependency && \
     (cd services/hanke-service/build/dependency; jar -xf ../libs/*SNAPSHOT.jar)
 
-FROM public.ecr.aws/docker/library/eclipse-temurin:17
+FROM registry.access.redhat.com/ubi9/openjdk-17-runtime:latest
 VOLUME /tmp
+
+WORKDIR /
 
 ARG DEPENDENCY=/workspace/app/services/hanke-service/build/dependency
 COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
@@ -19,5 +23,9 @@ COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
 COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
 COPY scripts/wait-for-it.sh ./
 
+# Fix RuntimeException: Fontconfig head is null
+USER root
+RUN microdnf -y install fontconfig && microdnf clean all
+USER default
 
 ENTRYPOINT ["./wait-for-it.sh", "db:5432", "--timeout=50", "--strict", "--", "java", "-cp", "app:app/lib/*", "fi.hel.haitaton.hanke.ApplicationKt"]

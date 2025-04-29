@@ -30,6 +30,7 @@ enum class HankeError(val errorMessage: String) {
     HAI1030("Problem with classification of geometries"),
     HAI1031("Invalid state: Missing needed data"),
     HAI1032("Invalid Hankealue data"),
+    HAI1034("Hanke has been completed, operation is forbidden"),
     HAI2001("Application not found"),
     HAI2002("Incompatible application data type"),
     HAI2003("Application is already processing in Allu and can no longer be updated."),
@@ -58,7 +59,10 @@ enum class HankeError(val errorMessage: String) {
     HAI4007("Verified name not found in Profiili"),
     HAI5001("Decision not found"),
     HAI6001("Taydennys not found"),
-    HAI6002("Taydennys has no changes");
+    HAI6002("Taydennys has no changes"),
+    HAI7001("Muutosilmoitus not found"),
+    HAI7002("Muutosilmoitus is already sent to Allu, operation prohibited."),
+    HAI7003("Muutosilmoitus has no changes");
 
     val errorCode: String
         get() = name
@@ -92,5 +96,10 @@ class HankeYhteystietoNotFoundException(val hanke: HankeIdentifier, ytId: Int) :
     )
 
 class HankeAlluConflictException(message: String) : RuntimeException(message)
+
+class HankeAlreadyCompletedException(hankeId: Int) :
+    RuntimeException(
+        "Hanke has already been completed, so the operation is not allowed. hankeId=$hankeId"
+    )
 
 class DatabaseStateException(message: String) : RuntimeException(message)

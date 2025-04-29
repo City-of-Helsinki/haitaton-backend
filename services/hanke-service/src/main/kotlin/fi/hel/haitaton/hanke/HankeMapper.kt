@@ -8,8 +8,6 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
-import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 
 object HankeMapper {
 
@@ -33,8 +31,9 @@ object HankeMapper {
                     createdAt = createdAt?.zonedDateTime(),
                     modifiedBy = modifiedByUserId,
                     modifiedAt = modifiedAt?.zonedDateTime(),
+                    deletionDate = deletionDate(),
                     status = status,
-                    generated = generated
+                    generated = generated,
                 )
             }
             .apply {
@@ -46,7 +45,6 @@ object HankeMapper {
                 tyomaaKatuosoite = entity.tyomaaKatuosoite
                 tyomaaTyyppi = entity.tyomaaTyyppi
                 alueet = alueList(entity.hankeTunnus, entity.alueet, geometriaData)
-                tormaystarkasteluTulos = tormaystarkasteluTulos(entity)
             }
 
     private fun contacts(entity: HankeEntity): Map<ContactType, List<HankeYhteystieto>> =
@@ -55,7 +53,7 @@ object HankeMapper {
     private fun alueList(
         hankeTunnus: String?,
         alueet: List<HankealueEntity>,
-        geometriaData: Map<Int, Geometriat?>
+        geometriaData: Map<Int, Geometriat?>,
     ): MutableList<SavedHankealue> =
         alueet.map { alue(hankeTunnus, it, geometriaData[it.geometriat]) }.toMutableList()
 
@@ -77,30 +75,4 @@ object HankeMapper {
                 haittojenhallintasuunnitelma = haittojenhallintasuunnitelma.toMap(),
             )
         }
-
-    private fun tormaystarkasteluTulos(entity: HankeEntity): TormaystarkasteluTulos? {
-        val tulokset = entity.alueet.mapNotNull { it.tormaystarkasteluTulos }
-        return if (tulokset.isEmpty()) {
-            null
-        } else {
-            TormaystarkasteluTulos(
-                autoliikenne =
-                    tulokset
-                        .maxBy { it.autoliikenne }
-                        .let {
-                            Autoliikenneluokittelu(
-                                it.autoliikenne,
-                                it.haitanKesto,
-                                it.katuluokka,
-                                it.autoliikennemaara,
-                                it.kaistahaitta,
-                                it.kaistapituushaitta
-                            )
-                        },
-                pyoraliikenneindeksi = tulokset.maxOf { it.pyoraliikenne },
-                linjaautoliikenneindeksi = tulokset.maxOf { it.linjaautoliikenne },
-                raitioliikenneindeksi = tulokset.maxOf { it.raitioliikenne },
-            )
-        }
-    }
 }

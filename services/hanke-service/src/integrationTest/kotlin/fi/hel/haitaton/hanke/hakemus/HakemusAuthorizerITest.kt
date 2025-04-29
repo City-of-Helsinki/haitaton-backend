@@ -6,9 +6,11 @@ import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.isTrue
 import assertk.assertions.messageContains
+import fi.hel.haitaton.hanke.HankeAlreadyCompletedException
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.CreateHakemusRequestFactory
@@ -38,11 +40,12 @@ class HakemusAuthorizerITest(
     inner class AuthorizeHakemusId {
         @Test
         fun `throws exception if application doesn't exist`() {
-            assertFailure { authorizer.authorizeHakemusId(applicationId, VIEW.name) }
-                .all {
-                    hasClass(HakemusNotFoundException::class)
-                    messageContains(applicationId.toString())
-                }
+            val failure = assertFailure { authorizer.authorizeHakemusId(applicationId, VIEW.name) }
+
+            failure.all {
+                hasClass(HakemusNotFoundException::class)
+                messageContains(applicationId.toString())
+            }
         }
 
         @Test
@@ -50,11 +53,12 @@ class HakemusAuthorizerITest(
             val hanke = hankeFactory.saveMinimal()
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
-            assertFailure { authorizer.authorizeHakemusId(application.id, VIEW.name) }
-                .all {
-                    hasClass(HakemusNotFoundException::class)
-                    messageContains(application.id.toString())
-                }
+            val failure = assertFailure { authorizer.authorizeHakemusId(application.id, VIEW.name) }
+
+            failure.all {
+                hasClass(HakemusNotFoundException::class)
+                messageContains(application.id.toString())
+            }
         }
 
         @Test
@@ -63,13 +67,14 @@ class HakemusAuthorizerITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 
-            assertFailure {
-                    authorizer.authorizeHakemusId(application.id, PermissionCode.DELETE.name)
-                }
-                .all {
-                    hasClass(HakemusNotFoundException::class)
-                    messageContains(application.id.toString())
-                }
+            val failure = assertFailure {
+                authorizer.authorizeHakemusId(application.id, PermissionCode.DELETE.name)
+            }
+
+            failure.all {
+                hasClass(HakemusNotFoundException::class)
+                messageContains(application.id.toString())
+            }
         }
 
         @Test
@@ -78,7 +83,37 @@ class HakemusAuthorizerITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 
-            assertThat(authorizer.authorizeHakemusId(application.id, VIEW.name)).isTrue()
+            val result = authorizer.authorizeHakemusId(application.id, VIEW.name)
+
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `throws exception when editing a hakemus from a completed hanke`() {
+            val hanke = hankeFactory.saveMinimal(status = HankeStatus.COMPLETED)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
+            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
+
+            val failure = assertFailure {
+                authorizer.authorizeHakemusId(application.id, PermissionCode.EDIT_APPLICATIONS.name)
+            }
+
+            failure.all {
+                hasClass(HankeAlreadyCompletedException::class)
+                messageContains("Hanke has already been completed, so the operation is not allowed")
+                messageContains("hankeId=${hanke.id}")
+            }
+        }
+
+        @Test
+        fun `returns true when viewing a hakemus from a completed hanke`() {
+            val hanke = hankeFactory.saveMinimal(status = HankeStatus.COMPLETED)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
+            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
+
+            val result = authorizer.authorizeHakemusId(application.id, VIEW.name)
+
+            assertThat(result).isTrue()
         }
     }
 
@@ -91,11 +126,12 @@ class HakemusAuthorizerITest(
             val request =
                 CreateHakemusRequestFactory.johtoselvitysRequest(hankeTunnus = hankeTunnus)
 
-            assertFailure { authorizer.authorizeCreate(request) }
-                .all {
-                    hasClass(HankeNotFoundException::class)
-                    messageContains("hankeTunnus $hankeTunnus")
-                }
+            val failure = assertFailure { authorizer.authorizeCreate(request) }
+
+            failure.all {
+                hasClass(HankeNotFoundException::class)
+                messageContains("hankeTunnus $hankeTunnus")
+            }
         }
 
         @Test
@@ -105,11 +141,12 @@ class HakemusAuthorizerITest(
                 CreateHakemusRequestFactory.johtoselvitysRequest(hankeTunnus = hankeTunnus)
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 
-            assertFailure { authorizer.authorizeCreate(request) }
-                .all {
-                    hasClass(HankeNotFoundException::class)
-                    messageContains("hankeTunnus $hankeTunnus")
-                }
+            val failure = assertFailure { authorizer.authorizeCreate(request) }
+
+            failure.all {
+                hasClass(HankeNotFoundException::class)
+                messageContains("hankeTunnus $hankeTunnus")
+            }
         }
 
         @Test
@@ -121,6 +158,23 @@ class HakemusAuthorizerITest(
 
             assertThat(authorizer.authorizeCreate(request)).isTrue()
         }
+
+        @Test
+        fun `throws exception when creating a hakemus to a completed hanke`() {
+            val hanke =
+                hankeFactory.saveMinimal(hankeTunnus = hankeTunnus, status = HankeStatus.COMPLETED)
+            val request =
+                CreateHakemusRequestFactory.johtoselvitysRequest(hankeTunnus = hankeTunnus)
+            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
+
+            val failure = assertFailure { authorizer.authorizeCreate(request) }
+
+            failure.all {
+                hasClass(HankeAlreadyCompletedException::class)
+                messageContains("Hanke has already been completed, so the operation is not allowed")
+                messageContains("hankeId=${hanke.id}")
+            }
+        }
     }
 
     @Nested
@@ -129,11 +183,14 @@ class HakemusAuthorizerITest(
 
         @Test
         fun `throws exception if applicationId is not found`() {
-            assertFailure { authorizer.authorizeAttachment(applicationId, attachmentId, VIEW.name) }
-                .all {
-                    hasClass(HakemusNotFoundException::class)
-                    messageContains(applicationId.toString())
-                }
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(applicationId, attachmentId, VIEW.name)
+            }
+
+            failure.all {
+                hasClass(HakemusNotFoundException::class)
+                messageContains(applicationId.toString())
+            }
         }
 
         @Test
@@ -141,13 +198,14 @@ class HakemusAuthorizerITest(
             val hanke = hankeFactory.saveMinimal()
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
-            assertFailure {
-                    authorizer.authorizeAttachment(application.id, attachmentId, VIEW.name)
-                }
-                .all {
-                    hasClass(HakemusNotFoundException::class)
-                    messageContains(application.id.toString())
-                }
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(application.id, attachmentId, VIEW.name)
+            }
+
+            failure.all {
+                hasClass(HakemusNotFoundException::class)
+                messageContains(application.id.toString())
+            }
         }
 
         @Test
@@ -156,13 +214,14 @@ class HakemusAuthorizerITest(
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
-            assertFailure {
-                    authorizer.authorizeAttachment(application.id, attachmentId, EDIT.name)
-                }
-                .all {
-                    hasClass(HakemusNotFoundException::class)
-                    messageContains(application.id.toString())
-                }
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(application.id, attachmentId, EDIT.name)
+            }
+
+            failure.all {
+                hasClass(HakemusNotFoundException::class)
+                messageContains(application.id.toString())
+            }
         }
 
         @Test
@@ -171,13 +230,14 @@ class HakemusAuthorizerITest(
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
-            assertFailure {
-                    authorizer.authorizeAttachment(application.id, attachmentId, VIEW.name)
-                }
-                .all {
-                    hasClass(AttachmentNotFoundException::class)
-                    messageContains(attachmentId.toString())
-                }
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(application.id, attachmentId, VIEW.name)
+            }
+
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachmentId.toString())
+            }
         }
 
         @Test
@@ -190,13 +250,14 @@ class HakemusAuthorizerITest(
                 applicationAttachmentFactory.save(application = application2).withContent().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
-            assertFailure {
-                    authorizer.authorizeAttachment(application.id, attachment.id!!, VIEW.name)
-                }
-                .all {
-                    hasClass(AttachmentNotFoundException::class)
-                    messageContains(attachment.id.toString())
-                }
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(application.id, attachment.id!!, VIEW.name)
+            }
+
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachment.id.toString())
+            }
         }
 
         @Test
@@ -207,21 +268,59 @@ class HakemusAuthorizerITest(
                 applicationAttachmentFactory.save(application = application).withContent().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
-            assertThat(authorizer.authorizeAttachment(application.id, attachment.id!!, VIEW.name))
-                .isTrue()
+            val result = authorizer.authorizeAttachment(application.id, attachment.id!!, VIEW.name)
+
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `throws exception when editing a hakemus attachment from a completed hanke`() {
+            val hanke = hankeFactory.saveMinimal(status = HankeStatus.COMPLETED)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
+            val attachment =
+                applicationAttachmentFactory.save(application = application).withContent().value
+            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KAIKKI_OIKEUDET)
+
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(
+                    application.id,
+                    attachment.id!!,
+                    PermissionCode.EDIT_APPLICATIONS.name,
+                )
+            }
+
+            failure.all {
+                hasClass(HankeAlreadyCompletedException::class)
+                messageContains("Hanke has already been completed, so the operation is not allowed")
+                messageContains("hankeId=${hanke.id}")
+            }
+        }
+
+        @Test
+        fun `returns true when viewing a hakemus attachment from a completed hanke`() {
+            val hanke = hankeFactory.saveMinimal(status = HankeStatus.COMPLETED)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
+            val attachment =
+                applicationAttachmentFactory.save(application = application).withContent().value
+            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
+
+            val result = authorizer.authorizeAttachment(application.id, attachment.id!!, VIEW.name)
+
+            assertThat(result).isTrue()
         }
 
         @Test
         fun `throws error if enum value not found`() {
-            assertFailure {
-                    authorizer.authorizeAttachment(applicationId, attachmentId, "Not real")
-                }
-                .all {
-                    hasClass(IllegalArgumentException::class)
-                    messageContains(
-                        "No enum constant fi.hel.haitaton.hanke.permissions.PermissionCode.Not real"
-                    )
-                }
+            val failure = assertFailure {
+                authorizer.authorizeAttachment(applicationId, attachmentId, "Not real")
+            }
+
+            failure.all {
+                hasClass(IllegalArgumentException::class)
+                messageContains(
+                    "No enum constant fi.hel.haitaton.hanke.permissions.PermissionCode.Not real"
+                )
+            }
         }
     }
 }

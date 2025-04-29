@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
+import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.ModifyGeometriaRequest
@@ -27,6 +28,7 @@ import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.test.AuthenticationMocks
+import java.time.ZonedDateTime
 
 data class HankeBuilder(
     private val hanke: Hanke,
@@ -68,6 +70,14 @@ data class HankeBuilder(
 
     /** Save the entity with [save], and - for convenience - get the saved entity from DB. */
     fun saveEntity(): HankeEntity = hankeRepository.getReferenceById(save().id)
+
+    /** Create the hanke and save it with an overridden status. */
+    fun saveEntity(status: HankeStatus, modifier: (HankeEntity) -> Unit = {}): HankeEntity {
+        val entity = hankeRepository.getReferenceById(save().id)
+        entity.status = status
+        modifier(entity)
+        return hankeRepository.save(entity)
+    }
 
     /**
      * Save a hanke that has the generated field set. The hanke is created like it would be created
@@ -125,6 +135,11 @@ data class HankeBuilder(
         tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         alue.haittojenhallintasuunnitelma = haittojenhallintasuunnitelma
     }
+
+    fun withHankealue(haittaLoppuPvm: ZonedDateTime?) =
+        withHankealue(alue = HankealueFactory.create(haittaLoppuPvm = haittaLoppuPvm))
+
+    fun withNoAreas() = applyToHanke { alueet.clear() }
 
     fun withPerustaja(perustaja: HankekayttajaInput): HankeBuilder =
         this.copy(

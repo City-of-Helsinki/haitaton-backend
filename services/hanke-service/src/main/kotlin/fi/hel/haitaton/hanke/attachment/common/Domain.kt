@@ -5,17 +5,17 @@ import fi.hel.haitaton.hanke.allu.AttachmentMetadata as AlluAttachmentMetadata
 import java.time.OffsetDateTime
 import java.util.UUID
 
-sealed interface AttachmentMetadata {
+interface AttachmentMetadata {
     val id: UUID
     val fileName: String
     val contentType: String
     val size: Long
     val createdByUserId: String
     val createdAt: OffsetDateTime
-    val blobLocation: String?
+    val blobLocation: String
 }
 
-sealed interface AttachmentMetadataWithType : AttachmentMetadata {
+interface AttachmentMetadataWithType : AttachmentMetadata {
     val attachmentType: ApplicationAttachmentType
 
     fun toAlluAttachment(content: ByteArray): AlluAttachment {
@@ -40,8 +40,19 @@ data class HankeAttachmentMetadata(
     override val createdByUserId: String,
     override val createdAt: OffsetDateTime,
     override val blobLocation: String,
-    val hankeId: Int,
-) : AttachmentMetadata
+    val hanketunnus: String,
+) : AttachmentMetadata {
+    fun toDto(): HankeAttachmentMetadataDto =
+        HankeAttachmentMetadataDto(
+            id = id,
+            fileName = fileName,
+            contentType = contentType,
+            size = size,
+            createdAt = createdAt,
+            hankeTunnus = hanketunnus,
+            createdByUserId = createdByUserId,
+        )
+}
 
 data class ApplicationAttachmentMetadata(
     override val id: UUID,
