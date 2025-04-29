@@ -233,7 +233,7 @@ class HakemusService(
 
         assertGeometryValidity(request.areas)
         assertYhteystiedotValidity(applicationEntity.hanke, applicationEntity.yhteystiedot, request)
-        assertOrUpdateHankealueet(applicationEntity.hanke, request)
+        assertOrUpdateHankealueet(applicationEntity.hanke, request, userId)
 
         val originalContactUserIds = applicationEntity.allContactUsers().map { it.id }.toSet()
         val updatedHakemusEntity = saveWithUpdate(applicationEntity, request)
@@ -866,11 +866,21 @@ class HakemusService(
      * Assert that the geometries are compatible with the hanke area geometries or update the hanke
      * geometries if this is in a generated hanke.
      */
-    fun assertOrUpdateHankealueet(hankeEntity: HankeEntity, request: HakemusUpdateRequest) {
+    fun assertOrUpdateHankealueet(
+        hankeEntity: HankeEntity,
+        request: HakemusUpdateRequest,
+        currentUserId: String,
+    ) {
         if (!hankeEntity.generated) {
             request.areas?.let { areas -> assertGeometryCompatibility(hankeEntity.id, areas) }
         } else if (request is JohtoselvityshakemusUpdateRequest) {
-            updateHankealueet(hankeEntity, request.areas, request.startTime, request.endTime)
+            updateHankealueet(
+                hankeEntity,
+                request.areas,
+                request.startTime,
+                request.endTime,
+                currentUserId,
+            )
         }
     }
 
@@ -901,7 +911,7 @@ class HakemusService(
         }
     }
 
-    fun resetAreasIfHankeGenerated(hakemusId: Long, loggable: Loggable) {
+    fun resetAreasIfHankeGenerated(hakemusId: Long, loggable: Loggable, currentUserId: String) {
         val hakemus = hakemusRepository.getReferenceById(hakemusId)
         val hanke = hakemus.hanke
         val data = hakemus.hakemusEntityData
@@ -910,7 +920,7 @@ class HakemusService(
                 "Entity was attached to a generated hanke. Resetting the hanke areas to match the original hakemus. " +
                     "${hanke.logString()} ${hakemus.logString()} ${loggable.logString()}"
             }
-            updateHankealueet(hanke, data.areas, data.startTime, data.endTime)
+            updateHankealueet(hanke, data.areas, data.startTime, data.endTime, currentUserId)
         }
     }
 
@@ -920,12 +930,13 @@ class HakemusService(
         areas: List<JohtoselvitysHakemusalue>?,
         startTime: ZonedDateTime?,
         endTime: ZonedDateTime?,
+        currentUserId: String,
     ) {
         val hankealueet =
             HankealueService.createHankealueetFromApplicationAreas(areas, startTime, endTime)
         hankeEntity.alueet.clear()
         hankeEntity.alueet.addAll(
-            hankealueService.createAlueetFromCreateRequest(hankealueet, hankeEntity)
+            hankealueService.createAlueetFromCreateRequest(hankealueet, hankeEntity, currentUserId)
         )
     }
 

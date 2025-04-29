@@ -17,12 +17,21 @@ import org.springframework.stereotype.Service
 @Service
 class HankealueService(
     private val geometriatService: GeometriatService,
-    private val tormaystarkasteluService: TormaystarkasteluLaskentaService
+    private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
 ) {
 
-    fun mergeAlueetToHanke(incoming: List<ModifyHankealueRequest>, existingHanke: HankeEntity) {
+    fun mergeAlueetToHanke(
+        incoming: List<ModifyHankealueRequest>,
+        existingHanke: HankeEntity,
+        currentUserId: String,
+    ) {
         mergeDataInto(incoming, existingHanke.alueet) { source, target ->
-            copyNonNullHankealueFieldsToEntity(existingHanke.hankeTunnus, source, target)
+            copyNonNullHankealueFieldsToEntity(
+                existingHanke.hankeTunnus,
+                source,
+                target,
+                currentUserId,
+            )
         }
         existingHanke.alueet.forEach { it.hanke = existingHanke }
     }
@@ -36,7 +45,8 @@ class HankealueService(
     fun copyNonNullHankealueFieldsToEntity(
         hankeTunnus: String,
         source: Hankealue,
-        target: HankealueEntity?
+        target: HankealueEntity?,
+        currentUserId: String,
     ): HankealueEntity {
         val result = target ?: HankealueEntity(nimi = source.nimi, tormaystarkasteluTulos = null)
 
@@ -53,7 +63,7 @@ class HankealueService(
         source.tarinaHaitta?.let { result.tarinaHaitta = it }
         source.geometriat?.let {
             it.resetFeatureProperties(hankeTunnus)
-            val saved = geometriatService.saveGeometriat(it, result.geometriat)
+            val saved = geometriatService.saveGeometriat(it, result.geometriat, currentUserId)
             result.geometriat = saved?.id
         }
         result.nimi = source.nimi
@@ -67,13 +77,19 @@ class HankealueService(
 
     fun createAlueetFromCreateRequest(
         alueet: List<NewHankealue>,
-        entity: HankeEntity
+        entity: HankeEntity,
+        currentUserId: String,
     ): List<HankealueEntity> =
-        alueet.map { createAlueFromCreateRequest(entity.hankeTunnus, it).apply { hanke = entity } }
+        alueet.map {
+            createAlueFromCreateRequest(entity.hankeTunnus, it, currentUserId).apply {
+                hanke = entity
+            }
+        }
 
     private fun createAlueFromCreateRequest(
         hanketunnus: String,
         source: NewHankealue,
+        currentUserId: String,
     ): HankealueEntity {
         val result = HankealueEntity(nimi = source.nimi, tormaystarkasteluTulos = null)
 
@@ -90,7 +106,7 @@ class HankealueService(
         result.tarinaHaitta = source.tarinaHaitta
         source.geometriat?.let {
             it.resetFeatureProperties(hanketunnus)
-            val saved = geometriatService.createGeometriat(it)
+            val saved = geometriatService.createGeometriat(it, currentUserId)
             result.geometriat = saved.id
         }
 
