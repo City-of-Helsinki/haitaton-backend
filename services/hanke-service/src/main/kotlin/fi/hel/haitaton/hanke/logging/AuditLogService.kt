@@ -75,16 +75,10 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
             )
 
         fun <ID, T : HasId<ID>> deleteEntryForAllu(type: ObjectType, deletedObject: T) =
-            AuditLogEntry(
-                operation = Operation.DELETE,
-                status = Status.SUCCESS,
-                userId = ALLU_AUDIT_LOG_USERID,
-                userRole = UserRole.SERVICE,
-                objectId = deletedObject.id!!.toString(),
-                objectType = type,
-                objectBefore = deletedObject.toChangeLogJsonString(),
-                objectAfter = null,
-            )
+            deleteEntryForService(type, deletedObject, ALLU_AUDIT_LOG_USERID)
+
+        fun <ID, T : HasId<ID>> deleteEntryForHaitaton(type: ObjectType, deletedObject: T) =
+            deleteEntryForService(type, deletedObject, HAITATON_AUDIT_LOG_USERID)
 
         fun <ID, T : HasId<ID>> createEntry(userId: String, type: ObjectType, createdObject: T) =
             AuditLogEntry(
@@ -127,5 +121,21 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
                 )
             }
         }
+
+        private fun <ID, T : HasId<ID>> deleteEntryForService(
+            type: ObjectType,
+            deletedObject: T,
+            userId: String,
+        ) =
+            AuditLogEntry(
+                operation = Operation.DELETE,
+                status = Status.SUCCESS,
+                userId = userId,
+                userRole = UserRole.SERVICE,
+                objectId = deletedObject.id!!.toString(),
+                objectType = type,
+                objectBefore = deletedObject.toChangeLogJsonString(),
+                objectAfter = null,
+            )
     }
 }

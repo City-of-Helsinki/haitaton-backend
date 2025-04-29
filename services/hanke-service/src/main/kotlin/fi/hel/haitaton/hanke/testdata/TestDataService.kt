@@ -4,8 +4,10 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContent
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.FileClient
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentRepository
 import fi.hel.haitaton.hanke.hakemus.AlluUpdateService
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.paatos.PaatosEntity
 import fi.hel.haitaton.hanke.paatos.PaatosRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
@@ -23,6 +25,8 @@ class TestDataService(
     private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
     private val taydennysAttachmentRepository: TaydennysAttachmentRepository,
     private val paatosRepository: PaatosRepository,
+    private val muutosilmoitusRepository: MuutosilmoitusRepository,
+    private val muutosilmoitusAttachmentRepository: MuutosilmoitusAttachmentRepository,
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val fileClient: FileClient,
     private val alluUpdateService: AlluUpdateService,
@@ -43,8 +47,14 @@ class TestDataService(
         }
         taydennyspyyntoRepository.deleteAll()
 
-        logger.warn { "Removing all päätökset and täydennykset." }
+        logger.warn { "Removing all päätökset." }
         paatosRepository.findAll().forEach { deletePaatosWithAttachments(it) }
+
+        logger.warn { "Removing all muutosilmoitukset." }
+        muutosilmoitusAttachmentRepository.findAll().forEach {
+            attachmentContentService.delete(it.blobLocation)
+        }
+        muutosilmoitusRepository.deleteAll()
     }
 
     fun triggerAlluUpdates() {

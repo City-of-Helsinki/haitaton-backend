@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory.withYhteyshenki
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.PermissionFactory
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusService
 import fi.hel.haitaton.hanke.paatos.PaatosService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.taydennys.TaydennysService
@@ -46,6 +47,7 @@ class HakemusHistoryServiceTest {
     private val taydennysService: TaydennysService = mockk()
     private val paatosService: PaatosService = mockk()
     private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
+    private val muutosilmoitusService: MuutosilmoitusService = mockk(relaxUnitFun = true)
     private val publisher: ApplicationEventPublisher = mockk()
 
     private val historyService: HakemusHistoryService =
@@ -55,6 +57,7 @@ class HakemusHistoryServiceTest {
             taydennysService,
             paatosService,
             hankeKayttajaService,
+            muutosilmoitusService,
             publisher,
         )
 
@@ -72,6 +75,7 @@ class HakemusHistoryServiceTest {
             taydennysService,
             paatosService,
             hankeKayttajaService,
+            muutosilmoitusService,
             publisher,
         )
     }
@@ -87,7 +91,7 @@ class HakemusHistoryServiceTest {
         private val identifier = ApplicationHistoryFactory.DEFAULT_APPLICATION_IDENTIFIER
 
         @Test
-        fun `sends email to the contacts when hakemus gets a decision`() {
+        fun `sends email to the contacts when a johtoselvityshakemus gets a decision`() {
             every { hakemusRepository.getOneByAlluid(42) } returns applicationEntityWithCustomer()
             justRun {
                 publisher.publishEvent(
@@ -101,6 +105,7 @@ class HakemusHistoryServiceTest {
 
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
+                muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(any())
                 publisher.publishEvent(
                     JohtoselvitysCompleteEmail(receiver, applicationId, identifier)
                 )
@@ -142,6 +147,9 @@ class HakemusHistoryServiceTest {
 
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
+                if (applicationStatus == ApplicationStatus.DECISION) {
+                    muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(any())
+                }
                 publisher.publishEvent(
                     KaivuilmoitusDecisionEmail(receiver, applicationId, identifier)
                 )
@@ -187,6 +195,7 @@ class HakemusHistoryServiceTest {
                 .contains("No receivers found for hakemus DECISION ready email, not sending any.")
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
+                muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(any())
                 hakemusRepository.save(any())
                 alluStatusRepository.getReferenceById(1)
             }

@@ -14,12 +14,14 @@ import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.TaydennysAttachmentFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.paatos.PaatosRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
@@ -36,11 +38,13 @@ class TestDataServiceITest : IntegrationTest() {
     @Autowired private lateinit var paatosRepository: PaatosRepository
     @Autowired private lateinit var taydennysRepository: TaydennysRepository
     @Autowired private lateinit var taydennyspyyntoRepository: TaydennyspyyntoRepository
+    @Autowired private lateinit var muutosilmoitusRepository: MuutosilmoitusRepository
     @Autowired private lateinit var hakemusFactory: HakemusFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
     @Autowired private lateinit var paatosFactory: PaatosFactory
     @Autowired private lateinit var taydennysFactory: TaydennysFactory
     @Autowired private lateinit var taydennysAttachmentFactory: TaydennysAttachmentFactory
+    @Autowired private lateinit var muutosilmoitusFactory: MuutosilmoitusFactory
     @Autowired private lateinit var fileClient: MockFileClient
 
     @Nested
@@ -123,6 +127,15 @@ class TestDataServiceITest : IntegrationTest() {
             testDataService.unlinkApplicationsFromAllu()
 
             assertThat(fileClient.listBlobs(Container.PAATOKSET)).isEmpty()
+        }
+
+        @Test
+        fun `deletes muutosilmoitukset`() {
+            muutosilmoitusFactory.builder().save()
+
+            testDataService.unlinkApplicationsFromAllu()
+
+            assertThat(muutosilmoitusRepository.findAll()).isEmpty()
         }
     }
 }

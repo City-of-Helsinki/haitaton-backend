@@ -86,7 +86,7 @@ class HankeAttachmentEntity(
             createdByUserId,
             createdAt,
             blobLocation,
-            hanke.id,
+            hanke.hankeTunnus,
         )
 
     override fun equals(other: Any?): Boolean {

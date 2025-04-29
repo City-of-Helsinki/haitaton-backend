@@ -14,14 +14,11 @@ class HakemusDataResponseDeserializer : JsonDeserializer<HakemusDataResponse>() 
         val root = parser.readValueAsTree<ObjectNode>()
 
         val dataClass =
-            when (val typeString = root.path("applicationType").textValue()) {
-                ApplicationType.CABLE_REPORT.name -> JohtoselvitysHakemusDataResponse::class.java
-                ApplicationType.EXCAVATION_NOTIFICATION.name ->
-                    KaivuilmoitusDataResponse::class.java
-                else -> throw IllegalArgumentException("Unsupported application type $typeString")
+            when (ApplicationType.valueOf(root.path("applicationType").textValue())) {
+                ApplicationType.CABLE_REPORT -> JohtoselvitysHakemusDataResponse::class.java
+                ApplicationType.EXCAVATION_NOTIFICATION -> KaivuilmoitusDataResponse::class.java
             }
 
-        val hakemusData = OBJECT_MAPPER.treeToValue(root, dataClass)
-        return hakemusData
+        return OBJECT_MAPPER.treeToValue(root, dataClass)
     }
 }

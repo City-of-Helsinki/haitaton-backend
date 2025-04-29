@@ -18,6 +18,7 @@ TRUNCATE TABLE
     kayttajakutsu,
     muutosilmoituksen_yhteyshenkilo,
     muutosilmoituksen_yhteystieto,
+    muutosilmoituksen_liite,
     muutosilmoitus,
     paatos,
     permissions,

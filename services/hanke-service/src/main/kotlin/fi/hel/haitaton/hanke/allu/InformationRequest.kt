@@ -33,6 +33,13 @@ enum class InformationRequestFieldKey {
     OTHER;
 
     companion object {
+        fun fromHaitatonFieldNames(names: List<String>, applicationType: ApplicationType) =
+            names
+                .mapNotNull {
+                    InformationRequestFieldKey.fromHaitatonFieldName(it, applicationType)
+                }
+                .toSet()
+
         fun fromHaitatonFieldName(
             name: String,
             applicationType: ApplicationType,
@@ -46,6 +53,8 @@ enum class InformationRequestFieldKey {
                 "emergencyWork" -> OTHER
                 "rockExcavation" -> OTHER
                 "workDescription" -> OTHER
+                "cableReports" -> OTHER
+                "placementContracts" -> OTHER
                 "startTime" -> START_TIME
                 "endTime" -> END_TIME
                 "customerWithContacts" -> CUSTOMER
@@ -54,6 +63,7 @@ enum class InformationRequestFieldKey {
                 "representativeWithContacts" -> REPRESENTATIVE
                 "invoicingCustomer" -> INVOICING_CUSTOMER
                 "attachment" -> ATTACHMENT
+                "additionalInfo" -> OTHER
                 else -> {
                     when {
                         name.matches(Regex("areas\\[\\d+]")) &&
@@ -62,6 +72,14 @@ enum class InformationRequestFieldKey {
                         name.matches(
                             Regex("areas\\[\\d+]\\.haittojenhallintasuunnitelma\\[[A-Z]+]")
                         ) -> ATTACHMENT
+                        name.matches(Regex("areas\\[\\d+]\\.katuosoite")) -> POSTAL_ADDRESS
+                        name.matches(Regex("areas\\[\\d+]\\.tyonTarkoitukset")) -> ATTACHMENT
+                        name.matches(Regex("areas\\[\\d+]\\.meluhaitta")) -> ATTACHMENT
+                        name.matches(Regex("areas\\[\\d+]\\.polyhaitta")) -> ATTACHMENT
+                        name.matches(Regex("areas\\[\\d+]\\.tarinahaitta")) -> ATTACHMENT
+                        name.matches(Regex("areas\\[\\d+]\\.kaistahaitta")) -> ATTACHMENT
+                        name.matches(Regex("areas\\[\\d+]\\.kaistahaittojenPituus")) -> ATTACHMENT
+                        name.matches(Regex("areas\\[\\d+]\\.lisatiedot")) -> ATTACHMENT
                         else -> null
                     }
                 }

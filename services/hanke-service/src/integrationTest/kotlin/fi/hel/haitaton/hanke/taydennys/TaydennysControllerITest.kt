@@ -512,7 +512,11 @@ class TaydennysControllerITest(@Autowired override val mockMvc: MockMvc) : Contr
                 taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { taydennysService.sendTaydennys(id, USERNAME) } throws
-                NoChangesException(TaydennysFactory.createEntity(), HakemusFactory.create())
+                NoChangesException(
+                    "täydennys",
+                    TaydennysFactory.createEntity(),
+                    HakemusFactory.create(),
+                )
 
             post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI6002))
 
@@ -573,6 +577,29 @@ class TaydennysControllerITest(@Autowired override val mockMvc: MockMvc) : Contr
                 taydennysService.sendTaydennys(id, USERNAME)
             }
         }
+
+        @Test
+        fun `returns the updated hakemus and logs outgoing personal information`() {
+            val hakemus = HakemusFactory.create()
+            every {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { taydennysService.sendTaydennys(id, USERNAME) } returns hakemus
+
+            val response = post(url).andExpect(status().isOk).andReturnContent()
+
+            val expectedResponse = hakemus.toResponse()
+            JSONAssert.assertEquals(
+                expectedResponse.toJsonString(),
+                response,
+                JSONCompareMode.NON_EXTENSIBLE,
+            )
+            verifySequence {
+                taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
+                taydennysService.sendTaydennys(id, USERNAME)
+                disclosureLogService.saveForHakemusResponse(expectedResponse, USERNAME)
+            }
+        }
     }
 
     @Nested
@@ -610,13 +637,13 @@ class TaydennysControllerITest(@Autowired override val mockMvc: MockMvc) : Contr
         }
 
         @Test
-        fun `deletes taydennys`() {
+        fun `returns 204 when taydennys is deleted`() {
             every {
                 taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             justRun { taydennysService.delete(id, USERNAME) }
 
-            delete(url).andExpect(status().isOk).andExpect(content().string(""))
+            delete(url).andExpect(status().isNoContent).andExpect(content().string(""))
 
             verifySequence {
                 taydennysAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)

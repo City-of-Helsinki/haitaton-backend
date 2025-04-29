@@ -134,11 +134,12 @@ class TaydennysController(private val taydennysService: TaydennysService) {
         taydennysService.sendTaydennys(id, currentUserId()).toResponse()
 
     @DeleteMapping("/taydennykset/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a täydennys", description = "Deletes a täydennys.")
     @ApiResponses(
         value =
             [
-                ApiResponse(description = "Täydennys deleted, no body", responseCode = "200"),
+                ApiResponse(description = "Täydennys deleted, no body", responseCode = "204"),
                 ApiResponse(
                     description = "A täydennys was not found with the given id",
                     responseCode = "404",
@@ -148,7 +149,9 @@ class TaydennysController(private val taydennysService: TaydennysService) {
     )
     @PreAuthorize("@taydennysAuthorizer.authorize(#id, 'EDIT_APPLICATIONS')")
     fun delete(@PathVariable id: UUID) {
+        logger.info { "Deleting täydennys with id $id..." }
         taydennysService.delete(id, currentUserId())
+        logger.info { "Deleted täydennys with id $id." }
     }
 
     @ExceptionHandler(InvalidHakemusDataException::class)

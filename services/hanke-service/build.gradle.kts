@@ -8,7 +8,7 @@ group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
 
 val sentryVersion = "7.19.0"
-val geoToolsVersion = "32.2"
+val geoToolsVersion = "33.0"
 
 repositories {
     mavenCentral().content { excludeModule("javax.media", "jai_core") }
@@ -54,10 +54,10 @@ spotless {
 }
 
 plugins {
-    val kotlinVersion = "2.1.10"
-    id("org.springframework.boot") version "3.3.5"
+    val kotlinVersion = "2.1.20"
+    id("org.springframework.boot") version "3.3.10"
     id("io.spring.dependency-management") version "1.1.7"
-    id("com.diffplug.spotless") version "7.0.2"
+    id("com.diffplug.spotless") version "7.0.3"
     kotlin("jvm") version kotlinVersion
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
     kotlin("plugin.spring") version kotlinVersion
@@ -65,7 +65,7 @@ plugins {
     kotlin("plugin.jpa") version kotlinVersion
     idea
     id("jacoco")
-    id("io.freefair.mjml.java") version "8.12.1"
+    id("io.freefair.mjml.java") version "8.13.1"
 }
 
 dependencies {
@@ -78,22 +78,16 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
-    implementation("ch.qos.logback.access:tomcat:2.0.3") {
-        // logback-access has dependencies incompatible with Spring Boot 3.3
-        // https://github.com/qos-ch/logback-access/issues/17
-        exclude("org.apache.tomcat")
-        exclude("jakarta.servlet")
-    }
-    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+    implementation("ch.qos.logback.access:logback-access-tomcat:2.0.6")
+    implementation("net.logstash.logback:logstash-logback-encoder:8.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.9.2")
-    implementation("commons-io:commons-io:2.18.0")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.9.9")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("com.auth0:java-jwt:4.5.0")
 
     implementation("org.postgresql:postgresql")
@@ -102,7 +96,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testImplementation("io.mockk:mockk:1.13.16")
+    testImplementation("io.mockk:mockk:1.14.0")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
     testImplementation("com.squareup.okhttp3:mockwebserver")
@@ -119,7 +113,7 @@ dependencies {
     implementation("org.locationtech.jts.io:jts-io-common:1.20.0")
 
     // Testcontainers
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.0"))
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
@@ -135,7 +129,7 @@ dependencies {
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
-    implementation(platform("com.azure:azure-sdk-bom:1.2.31"))
+    implementation(platform("com.azure:azure-sdk-bom:1.2.33"))
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity")
@@ -187,7 +181,8 @@ tasks {
         mustRunAfter("test", "integrationTest")
         reports { xml.required.set(true) }
         executionData.setFrom(
-            fileTree(layout.buildDirectory).include("/jacoco/test.exec", "/jacoco/integrationTest.exec")
+            fileTree(layout.buildDirectory)
+                .include("/jacoco/test.exec", "/jacoco/integrationTest.exec")
         )
     }
 

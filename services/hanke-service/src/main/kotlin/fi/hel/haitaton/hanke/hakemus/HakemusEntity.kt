@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
+import fi.hel.haitaton.hanke.domain.HasYhteystietoEntities
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.CascadeType
@@ -27,7 +27,7 @@ import org.hibernate.annotations.Type
 data class HakemusEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override val id: Long,
     override var alluid: Int?,
-    @Enumerated(EnumType.STRING) var alluStatus: ApplicationStatus?,
+    @Enumerated(EnumType.STRING) override var alluStatus: ApplicationStatus?,
     override var applicationIdentifier: String?,
     var userId: String?,
     @Enumerated(EnumType.STRING) override val applicationType: ApplicationType,
@@ -43,7 +43,8 @@ data class HakemusEntity(
     )
     @MapKey(name = "rooli")
     @BatchSize(size = 100)
-    var yhteystiedot: MutableMap<ApplicationContactType, HakemusyhteystietoEntity> = mutableMapOf(),
+    override var yhteystiedot: MutableMap<ApplicationContactType, HakemusyhteystietoEntity> =
+        mutableMapOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hakemus",
@@ -52,7 +53,7 @@ data class HakemusEntity(
     )
     @BatchSize(size = 100)
     val valmistumisilmoitukset: MutableList<ValmistumisilmoitusEntity> = mutableListOf(),
-) : HakemusIdentifier {
+) : HakemusIdentifier, HasAlluStatus, HasYhteystietoEntities<HakemusyhteyshenkiloEntity> {
     fun toMetadata(): HakemusMetaData =
         HakemusMetaData(
             id = id,
@@ -69,7 +70,8 @@ data class HakemusEntity(
             when (hakemusEntityData) {
                 is JohtoselvityshakemusEntityData ->
                     (this.hakemusEntityData as JohtoselvityshakemusEntityData).toHakemusData(
-                        yhteystiedot)
+                        yhteystiedot
+                    )
                 is KaivuilmoitusEntityData ->
                     (this.hakemusEntityData as KaivuilmoitusEntityData).toHakemusData(yhteystiedot)
             }
@@ -86,11 +88,4 @@ data class HakemusEntity(
                 valmistumisilmoitukset.map { it.toDomain() }.groupBy { it.type },
         )
     }
-
-    /** Returns all distinct contact users for this application. */
-    fun allContactUsers(): List<HankekayttajaEntity> =
-        yhteystiedot.values
-            .flatMap { it.yhteyshenkilot }
-            .map { it.hankekayttaja }
-            .distinctBy { it.id }
 }

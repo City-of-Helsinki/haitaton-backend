@@ -19,7 +19,7 @@
 
                 <mj-text mj-class="basic-txt">
                     {{deletedByName}} ({{deletedByEmail}}) har tagit bort dig från projektet <b>{{hankeNimi}} ({{hankeTunnus}})</b>
-                    och du har tagit bort dig från projektet.
+                    och du har inte längre tillträde till projektet.
                 </mj-text>
                 <mj-include path="common/signature-sv.partial"/>
 

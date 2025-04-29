@@ -1,17 +1,21 @@
 package fi.hel.haitaton.hanke.attachment.common
 
+import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
+import fi.hel.haitaton.hanke.domain.Loggable
 import java.util.UUID
 
 class AttachmentLimitReachedException : RuntimeException {
     constructor(
-        applicationId: Long,
-        limit: Int,
-    ) : super("Attachment amount limit reached, limit=$limit, applicationId=$applicationId")
+        applicationId: Long
+    ) : super(
+        "Attachment amount limit reached, limit=$ALLOWED_ATTACHMENT_COUNT, applicationId=$applicationId"
+    )
 
     constructor(
-        taydennysId: UUID,
-        limit: Int,
-    ) : super("Attachment amount limit reached, limit=$limit, taydennysId=$taydennysId")
+        entity: Loggable
+    ) : super(
+        "Attachment amount limit reached, limit=$ALLOWED_ATTACHMENT_COUNT, ${entity.logString()}"
+    )
 }
 
 class AttachmentInvalidException(str: String) :

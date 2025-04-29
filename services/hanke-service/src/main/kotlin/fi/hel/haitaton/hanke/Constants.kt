@@ -1,8 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -11,11 +8,7 @@ const val SRID = 3879
 
 const val COORDINATE_SYSTEM_URN = "urn:ogc:def:crs:EPSG::$SRID"
 
-val OBJECT_MAPPER =
-    jacksonObjectMapper().apply {
-        this.registerModule(JavaTimeModule())
-        this.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-    }
+val OBJECT_MAPPER = createObjectMapper()
 
 val TZ_UTC: ZoneOffset = ZoneOffset.UTC
 

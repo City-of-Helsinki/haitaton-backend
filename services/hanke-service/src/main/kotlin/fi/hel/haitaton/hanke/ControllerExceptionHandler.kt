@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationInAlluException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.ValtakirjaForbiddenException
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import fi.hel.haitaton.hanke.hakemus.HakemusAlreadyProcessingException
@@ -15,6 +16,7 @@ import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteyshenkiloException
 import fi.hel.haitaton.hanke.hakemus.InvalidHakemusyhteystietoException
 import fi.hel.haitaton.hanke.hakemus.InvalidHiddenRegistryKey
 import fi.hel.haitaton.hanke.hakemus.WrongHakemusTypeException
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusAlreadySentException
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -129,6 +131,15 @@ class ControllerExceptionHandler {
         return HankeError.HAI2001
     }
 
+    @ExceptionHandler(HankeAlreadyCompletedException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun hankeAlreadyCompleted(ex: HankeAlreadyCompletedException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI1034
+    }
+
     @ExceptionHandler(ApplicationInAlluException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
@@ -230,6 +241,22 @@ class ControllerExceptionHandler {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI3003
+    }
+
+    @ExceptionHandler(ValtakirjaForbiddenException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @Hidden
+    fun valtakirjaForbiddenException(ex: ValtakirjaForbiddenException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI3004
+    }
+
+    @ExceptionHandler(MuutosilmoitusAlreadySentException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun muutosilmoitusAlreadySentException(ex: MuutosilmoitusAlreadySentException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI7002
     }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)

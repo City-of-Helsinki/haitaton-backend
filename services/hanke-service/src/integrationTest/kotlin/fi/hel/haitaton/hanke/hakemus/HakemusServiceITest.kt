@@ -5,6 +5,7 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.contains
+import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.containsOnly
 import assertk.assertions.each
@@ -54,6 +55,7 @@ import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
+import fi.hel.haitaton.hanke.factory.MuutosilmoitusAttachmentFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
 import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.PaperDecisionReceiverFactory
@@ -76,10 +78,12 @@ import fi.hel.haitaton.hanke.logging.AlluContactWithRole
 import fi.hel.haitaton.hanke.logging.AlluCustomerWithRole
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
+import fi.hel.haitaton.hanke.logging.HAITATON_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
-import fi.hel.haitaton.hanke.muutosilmoitus.Muutosilmoitus
+import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusWithExtras
 import fi.hel.haitaton.hanke.paatos.PaatosTila
+import fi.hel.haitaton.hanke.paatos.PaatosTyyppi
 import fi.hel.haitaton.hanke.pdf.withName
 import fi.hel.haitaton.hanke.pdf.withNames
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
@@ -145,6 +149,7 @@ class HakemusServiceITest(
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val alluClient: AlluClient,
     @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
+    @Autowired private val muutosilmoitusAttachmentFactory: MuutosilmoitusAttachmentFactory,
     @Autowired private val taydennyspyyntoFactory: TaydennyspyyntoFactory,
     @Autowired private val taydennysFactory: TaydennysFactory,
     @Autowired private val taydennysAttachmentFactory: TaydennysAttachmentFactory,
@@ -362,13 +367,75 @@ class HakemusServiceITest(
             val response = hakemusService.getWithExtras(hakemus.id)
 
             assertThat(response.muutosilmoitus).isNotNull().all {
-                prop(Muutosilmoitus::id).isEqualTo(muutosilmoitus.id)
-                prop(Muutosilmoitus::hakemusData).isInstanceOf(KaivuilmoitusData::class).all {
-                    prop(HakemusData::name).isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_NAME)
-                    prop(HakemusData::startTime).isEqualTo(DateFactory.getStartDatetime())
-                    prop(HakemusData::yhteystiedot).hasSize(2)
-                }
+                prop(MuutosilmoitusWithExtras::id).isEqualTo(muutosilmoitus.id)
+                prop(MuutosilmoitusWithExtras::hakemusData)
+                    .isInstanceOf(KaivuilmoitusData::class)
+                    .all {
+                        prop(HakemusData::name)
+                            .isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_NAME)
+                        prop(HakemusData::startTime).isEqualTo(DateFactory.getStartDatetime())
+                        prop(HakemusData::yhteystiedot).hasSize(2)
+                    }
             }
+        }
+
+        @Test
+        fun `returns muutokset with muutosilmoitus when it differs from the hakemus`() {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISION)
+                    .saveEntity()
+            val muutosilmoitus =
+                muutosilmoitusFactory
+                    .builder(hakemus)
+                    .withWorkDescription("New Description")
+                    .withAdditionalInfo("New additional info.")
+                    .save()
+
+            val response = hakemusService.getWithExtras(hakemus.id)
+
+            assertThat(response.muutosilmoitus).isNotNull().all {
+                prop(MuutosilmoitusWithExtras::id).isEqualTo(muutosilmoitus.id)
+                prop(MuutosilmoitusWithExtras::hakemusData)
+                    .isInstanceOf(KaivuilmoitusData::class)
+                    .all {
+                        prop(KaivuilmoitusData::workDescription).isEqualTo("New Description")
+                        prop(KaivuilmoitusData::additionalInfo).isEqualTo("New additional info.")
+                    }
+                prop(MuutosilmoitusWithExtras::muutokset)
+                    .containsExactlyInAnyOrder("workDescription", "additionalInfo")
+            }
+        }
+
+        @Test
+        fun `returns liitteet with muutosilmoitus`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.WAITING_INFORMATION)
+                    .saveEntity()
+            val muutosilmoitus = muutosilmoitusFactory.builder(hakemus).save()
+            muutosilmoitusAttachmentFactory.save(
+                fileName = "First",
+                muutosilmoitus = muutosilmoitus,
+            )
+            muutosilmoitusAttachmentFactory.save(
+                fileName = "Second",
+                muutosilmoitus = muutosilmoitus,
+            )
+
+            val response = hakemusService.getWithExtras(hakemus.id)
+
+            assertThat(response.muutosilmoitus)
+                .isNotNull()
+                .prop(MuutosilmoitusWithExtras::liitteet)
+                .all {
+                    hasSize(2)
+                    extracting { it.fileName }.containsExactlyInAnyOrder("First", "Second")
+                }
         }
     }
 
@@ -404,7 +471,7 @@ class HakemusServiceITest(
                 val result = hakemusService.hankkeenHakemukset(hakemus.hankeTunnus)
 
                 val expectedHakemus = hakemusService.getById(hakemus.id)
-                assertThat(result).hasSameElementsAs(listOf(expectedHakemus))
+                assertThat(result).containsExactly(expectedHakemus)
             }
         }
 
@@ -417,7 +484,205 @@ class HakemusServiceITest(
                 val result = hakemusService.hankkeenHakemukset(hakemus.hankeTunnus)
 
                 val expectedHakemus = hakemusService.getById(hakemus.id)
-                assertThat(result).hasSameElementsAs(listOf(expectedHakemus))
+                assertThat(result).containsExactly(expectedHakemus)
+            }
+        }
+    }
+
+    @Nested
+    inner class HankkeenHakemuksetWithMuutosilmoitukset {
+
+        @Test
+        fun `throws not found when hanke does not exist`() {
+            val hankeTunnus = "HAI-1234"
+
+            assertFailure { hakemusService.hankkeenHakemuksetResponses(hankeTunnus, false) }
+                .all {
+                    hasClass(HankeNotFoundException::class)
+                    messageContains(hankeTunnus)
+                }
+        }
+
+        @Test
+        fun `returns an empty result when there are no applications`() {
+            val hankeInitial = hankeFactory.builder(USERNAME).save()
+
+            val result = hakemusService.hankkeenHakemuksetResponses(hankeInitial.hankeTunnus, false)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns correct hakemukset`() {
+            val targetHanke = hankeFactory.saveMinimal()
+            val targetHakemus1 = hakemusFactory.builder(targetHanke).saveEntity()
+            val targetHakemus2 =
+                hakemusFactory
+                    .builder(targetHanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .saveEntity()
+            val targetHakemus3 = hakemusFactory.builder(targetHanke).saveEntity()
+            val muutosilmoitus1 = muutosilmoitusFactory.builder(targetHakemus1).save()
+            val muutosilmoitus2 = muutosilmoitusFactory.builder(targetHakemus2).save()
+            val otherHanke = hankeFactory.saveMinimal()
+            val otherHakemus1 = hakemusFactory.builder(otherHanke).saveEntity()
+            val otherHakemus2 =
+                hakemusFactory
+                    .builder(otherHanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                    .saveEntity()
+            hakemusFactory.builder(otherHanke).saveEntity()
+            muutosilmoitusFactory.builder(otherHakemus1).save()
+            muutosilmoitusFactory.builder(otherHakemus2).save()
+
+            val result = hakemusService.hankkeenHakemuksetResponses(targetHanke.hankeTunnus, false)
+
+            assertThat(result)
+                .extracting { it.id }
+                .containsExactlyInAnyOrder(targetHakemus1.id, targetHakemus2.id, targetHakemus3.id)
+            assertThat(result)
+                .extracting { it.muutosilmoitus?.id }
+                .containsExactlyInAnyOrder(muutosilmoitus1.id, muutosilmoitus2.id, null)
+        }
+
+        @Nested
+        inner class WithJohtoselvityshakemus {
+            @Test
+            fun `returns applications`() {
+                val hakemus = hakemusFactory.builderWithGeneratedHanke().save()
+
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
+
+                val expectedHakemus = hakemusRepository.getReferenceById(hakemus.id)
+                val expectedResponse =
+                    HankkeenHakemusResponse(expectedHakemus, null, listOf(), false)
+                assertThat(result).containsExactly(expectedResponse)
+            }
+
+            @Test
+            fun `returns muutosilmoitus when hakemus has one`() {
+                val hakemusEntity = hakemusFactory.builderWithGeneratedHanke().saveEntity()
+                val hakemus = hakemusService.getById(hakemusEntity.id)
+                val muutosilmoitus = muutosilmoitusFactory.builder(hakemusEntity).saveEntity()
+
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
+
+                val expectedMuutosilmoitus =
+                    HankkeenHakemusMuutosilmoitusResponse(
+                        muutosilmoitus.id,
+                        muutosilmoitus.sent,
+                        HankkeenHakemusDataResponse(
+                            muutosilmoitus.hakemusData as JohtoselvityshakemusEntityData,
+                            false,
+                        ),
+                    )
+                assertThat(result)
+                    .single()
+                    .prop(HankkeenHakemusResponse::muutosilmoitus)
+                    .isEqualTo(expectedMuutosilmoitus)
+            }
+
+            @Test
+            fun `returns paatokset when hakemus has them`() {
+                val hakemustunnus = "JS2500014"
+                val hakemusEntity =
+                    hakemusFactory
+                        .builderWithGeneratedHanke()
+                        .withStatus(identifier = hakemustunnus)
+                        .withMandatoryFields()
+                        .saveEntity()
+                val hakemus = hakemusService.getById(hakemusEntity.id)
+                val paatos = paatosFactory.save(hakemus, tyyppi = PaatosTyyppi.PAATOS).toResponse()
+
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
+
+                assertThat(result)
+                    .single()
+                    .prop(HankkeenHakemusResponse::paatokset)
+                    .containsOnly(hakemustunnus to listOf(paatos))
+            }
+        }
+
+        @Nested
+        inner class WithKaivuilmoitus {
+            @Test
+            fun `returns applications`() {
+                val hakemus = hakemusFactory.builder(ApplicationType.EXCAVATION_NOTIFICATION).save()
+
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
+
+                val expectedHakemus = hakemusRepository.getReferenceById(hakemus.id)
+                val expectedResponse =
+                    HankkeenHakemusResponse(expectedHakemus, null, listOf(), false)
+                assertThat(result).containsExactly(expectedResponse)
+            }
+
+            @Test
+            fun `returns muutosilmoitus when hakemus has one`() {
+                val hakemusEntity =
+                    hakemusFactory.builder(ApplicationType.EXCAVATION_NOTIFICATION).saveEntity()
+                val hakemus = hakemusService.getById(hakemusEntity.id)
+                val muutosilmoitus = muutosilmoitusFactory.builder(hakemusEntity).saveEntity()
+
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
+
+                val expectedMuutosilmoitus =
+                    HankkeenHakemusMuutosilmoitusResponse(
+                        muutosilmoitus.id,
+                        muutosilmoitus.sent,
+                        HankkeenHakemusDataResponse(
+                            muutosilmoitus.hakemusData as KaivuilmoitusEntityData,
+                            false,
+                        ),
+                    )
+                assertThat(result)
+                    .single()
+                    .prop(HankkeenHakemusResponse::muutosilmoitus)
+                    .isEqualTo(expectedMuutosilmoitus)
+            }
+
+            @Test
+            fun `returns paatokset when hakemus has them`() {
+                val hakemustunnus = "KP2500141-2"
+                val hakemusEntity =
+                    hakemusFactory
+                        .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                        .withStatus(identifier = hakemustunnus)
+                        .withMandatoryFields()
+                        .saveEntity()
+                val hakemus = hakemusService.getById(hakemusEntity.id)
+                val paatos = paatosFactory.save(hakemus, tyyppi = PaatosTyyppi.PAATOS).toResponse()
+                val toiminnallinenKunto =
+                    paatosFactory
+                        .save(hakemus, tyyppi = PaatosTyyppi.TOIMINNALLINEN_KUNTO)
+                        .toResponse()
+                val tyoValmis =
+                    paatosFactory.save(hakemus, tyyppi = PaatosTyyppi.TYO_VALMIS).toResponse()
+                val oldHakemustunnus = "KP2500141"
+                val oldPaatos =
+                    paatosFactory
+                        .save(
+                            hakemus,
+                            hakemustunnus = oldHakemustunnus,
+                            tyyppi = PaatosTyyppi.PAATOS,
+                        )
+                        .toResponse()
+                val oldToiminnallinenKunto =
+                    paatosFactory
+                        .save(
+                            hakemus,
+                            hakemustunnus = oldHakemustunnus,
+                            tyyppi = PaatosTyyppi.TOIMINNALLINEN_KUNTO,
+                        )
+                        .toResponse()
+
+                val result = hakemusService.hankkeenHakemuksetResponses(hakemus.hankeTunnus, false)
+
+                assertThat(result)
+                    .single()
+                    .prop(HankkeenHakemusResponse::paatokset)
+                    .containsOnly(
+                        hakemustunnus to listOf(paatos, toiminnallinenKunto, tyoValmis),
+                        oldHakemustunnus to listOf(oldPaatos, oldToiminnallinenKunto),
+                    )
             }
         }
     }
@@ -1291,6 +1556,7 @@ class HakemusServiceITest(
                             .copy(
                                 cableReports = listOf(DEFAULT_CABLE_REPORT_APPLICATION_IDENTIFIER),
                                 cableReportDone = true,
+                                rockExcavation = null,
                             )
                             .setOrdererForRepresentative(currentUser.id)
                     expectedCableReportAlluRequest =
@@ -1896,6 +2162,106 @@ class HakemusServiceITest(
             hakemusService.cancelAndDelete(hakemus, USERNAME)
 
             assertThat(hakemusRepository.findAll()).isEmpty()
+        }
+    }
+
+    @Nested
+    inner class DeleteFromCompletedHanke {
+        private val alluId = 570
+
+        @Test
+        fun `throws an exception when the application is not completed`() {
+            val hakemus =
+                hakemusFactory.builder().withStatus(ApplicationStatus.PENDING, alluId).save()
+
+            val failure = assertFailure { hakemusService.deleteFromCompletedHanke(hakemus.id) }
+
+            failure.all {
+                hasClass(HakemusInWrongStatusException::class)
+                messageContains("Hakemus is in the wrong status for this operation")
+                messageContains("status=PENDING")
+                messageContains("allowed statuses=FINISHED, ARCHIVED, DECISION")
+                messageContains("id=${hakemus.id}")
+                messageContains("alluId=$alluId")
+            }
+            assertThat(hakemusRepository.findAll()).hasSize(1)
+        }
+
+        @Test
+        fun `deletes the application and all it's attachments`() {
+            val application =
+                hakemusFactory.builder().withStatus(ApplicationStatus.ARCHIVED).saveEntity()
+            attachmentFactory.save(application = application).withContent()
+            attachmentFactory.save(application = application).withContent()
+
+            hakemusService.deleteFromCompletedHanke(application.id)
+
+            assertThat(hakemusRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).isEmpty()
+        }
+
+        @Test
+        fun `also deletes a draft application`() {
+            val application = hakemusFactory.builder().withNoAlluFields().saveEntity()
+
+            hakemusService.deleteFromCompletedHanke(application.id)
+
+            assertThat(hakemusRepository.findAll()).isEmpty()
+        }
+
+        @Test
+        fun `deletes the application and attachment metadata even when attachment content deletion fails`() {
+            val application =
+                hakemusFactory.builder().withStatus(ApplicationStatus.DECISION).saveEntity()
+            attachmentFactory.save(application = application).withContent()
+            attachmentFactory.save(application = application).withContent()
+            fileClient.connected = false
+
+            hakemusService.deleteFromCompletedHanke(application.id)
+
+            assertThat(hakemusRepository.findAll()).isEmpty()
+            assertThat(applicationAttachmentRepository.findAll()).isEmpty()
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(2)
+        }
+
+        @Test
+        fun `writes audit log for the deleted application`() {
+            TestUtils.addMockedRequestIp()
+            val hakemus = hakemusFactory.builder().withStatus(ApplicationStatus.FINISHED).save()
+            auditLogRepository.deleteAll()
+
+            hakemusService.deleteFromCompletedHanke(hakemus.id)
+
+            assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.DELETE) {
+                hasServiceActor(HAITATON_AUDIT_LOG_USERID)
+                withTarget {
+                    prop(AuditLogTarget::id).isEqualTo(hakemus.id.toString())
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.HAKEMUS)
+                    hasObjectBefore(hakemus)
+                    hasNoObjectAfter()
+                }
+            }
+        }
+
+        @Test
+        fun `deletes yhteystiedot and yhteyshenkilot but no hankekayttaja`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withStatus(ApplicationStatus.FINISHED)
+                    .hakija()
+                    .tyonSuorittaja()
+                    .rakennuttaja()
+                    .asianhoitaja()
+                    .save()
+
+            hakemusService.deleteFromCompletedHanke(hakemus.id)
+
+            assertThat(hakemusRepository.findAll()).isEmpty()
+            assertThat(hakemusyhteystietoRepository.findAll()).isEmpty()
+            assertThat(hakemusyhteyshenkiloRepository.findAll()).isEmpty()
+            assertThat(hankekayttajaRepository.count())
+                .isEqualTo(5) // Hanke founder + one kayttaja for each role
         }
     }
 

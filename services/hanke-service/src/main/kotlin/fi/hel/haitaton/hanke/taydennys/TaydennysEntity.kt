@@ -1,12 +1,12 @@
 package fi.hel.haitaton.hanke.taydennys
 
+import fi.hel.haitaton.hanke.domain.HasYhteystietoEntities
 import fi.hel.haitaton.hanke.hakemus.ApplicationContactType
 import fi.hel.haitaton.hanke.hakemus.ApplicationType
 import fi.hel.haitaton.hanke.hakemus.HakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusEntityData
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusEntityData
-import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
@@ -43,9 +43,9 @@ class TaydennysEntity(
     )
     @MapKey(name = "rooli")
     @BatchSize(size = 100)
-    var yhteystiedot: MutableMap<ApplicationContactType, TaydennysyhteystietoEntity> =
+    override var yhteystiedot: MutableMap<ApplicationContactType, TaydennysyhteystietoEntity> =
         mutableMapOf(),
-) : TaydennysIdentifier {
+) : TaydennysIdentifier, HasYhteystietoEntities<TaydennysyhteyshenkiloEntity> {
 
     fun toDomain(): Taydennys {
         val yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto> =
@@ -72,11 +72,4 @@ class TaydennysEntity(
     override fun hakemusId(): Long = taydennyspyynto.applicationId
 
     override fun hakemustyyppi(): ApplicationType = hakemusData.applicationType
-
-    /** Returns all distinct contact users for this täydennys. */
-    fun allContactUsers(): List<HankekayttajaEntity> =
-        yhteystiedot.values
-            .flatMap { it.yhteyshenkilot }
-            .map { it.hankekayttaja }
-            .distinctBy { it.id }
 }

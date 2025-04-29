@@ -29,6 +29,13 @@ class FileScanClient(
             logger.info { "Initialized file scan client with base-url: $clamAvUrl" }
         }
 
+    fun scanAttachment(filename: String, content: ByteArray) {
+        val scanResult = scan(listOf(FileScanInput(filename, content)))
+        if (scanResult.hasInfected()) {
+            throw AttachmentInvalidException("Infected file detected, see previous logs.")
+        }
+    }
+
     fun scan(files: List<FileScanInput>): List<FileResult> {
         logger.info { "Scanning ${files.size} files." }
 
@@ -87,7 +94,7 @@ data class FileScanData(val result: List<FileResult>)
 data class FileResult(
     val name: String,
     @JsonProperty("is_infected") val isInfected: Boolean?,
-    val viruses: List<String>
+    val viruses: List<String>,
 )
 
 class FileScanException(message: String) : RuntimeException(message)

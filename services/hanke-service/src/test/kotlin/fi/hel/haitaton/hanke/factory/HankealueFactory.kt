@@ -13,6 +13,7 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
+import java.time.LocalDate
 import java.time.ZonedDateTime
 
 object HankealueFactory {
@@ -83,14 +84,19 @@ object HankealueFactory {
         )
     }
 
-    fun createHankeAlueEntity(mockId: Int = 1, hankeEntity: HankeEntity): HankealueEntity {
+    fun createHankeAlueEntity(
+        mockId: Int = 1,
+        hankeEntity: HankeEntity = HankeFactory.createMinimalEntity(),
+        haittaAlkuPvm: LocalDate? = DateFactory.getStartDatetime().toLocalDate(),
+        haittaLoppuPvm: LocalDate? = DateFactory.getEndDatetime().toLocalDate(),
+    ): HankealueEntity {
         val alue = create(id = mockId).apply { geometriat?.id = mockId }
         return HankealueEntity(
                 id = alue.id!!,
                 hanke = hankeEntity,
                 geometriat = alue.geometriat?.id,
-                haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate(),
-                haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate(),
+                haittaAlkuPvm = haittaAlkuPvm,
+                haittaLoppuPvm = haittaLoppuPvm,
                 kaistaHaitta = alue.kaistaHaitta,
                 kaistaPituusHaitta = alue.kaistaPituusHaitta,
                 meluHaitta = alue.meluHaitta,

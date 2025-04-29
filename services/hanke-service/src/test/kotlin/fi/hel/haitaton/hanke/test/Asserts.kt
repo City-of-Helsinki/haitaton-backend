@@ -16,8 +16,11 @@ import assertk.assertions.prop
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.NullNode
 import com.fasterxml.jackson.databind.node.TextNode
+import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.hakemus.Hakemusalue
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
 import fi.hel.haitaton.hanke.hakemus.StreetAddress
+import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.validation.ValidationResult
 import fi.hel.haitaton.hanke.zonedDateTime
 import jakarta.mail.internet.MimeMessage
@@ -27,8 +30,23 @@ import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.TemporalAmount
 import java.util.UUID
+import org.geojson.Polygon
 
 object Asserts {
+
+    fun Assert<Hanke>.hasSameGeometryAs(hakemusalueet: List<Hakemusalue>) {
+        given { hanke ->
+            val hankeCoordinates =
+                hanke.alueet
+                    .flatMap { it.geometriat!!.featureCollection!!.features }
+                    .map { it.geometry as Polygon }
+                    .map { it.coordinates }
+            assertThat(hankeCoordinates)
+                .hasSameElementsAs(
+                    hakemusalueet.map { it.geometries().flatMap { g -> g.coordinates } }
+                )
+        }
+    }
 
     fun Assert<OffsetDateTime?>.isRecent(offset: TemporalAmount = Duration.ofMinutes(1)) {
         val now = OffsetDateTime.now()

@@ -45,6 +45,16 @@ class HankeKayttajaService(
     fun getKayttajatByHankeId(hankeId: Int): List<HankeKayttajaDto> =
         hankekayttajaRepository.findByHankeId(hankeId).map { it.toDto() }
 
+    @Transactional
+    fun getHankeKayttajatWithPermission(
+        hankeId: Int,
+        permission: PermissionCode,
+    ): List<HankeKayttaja> =
+        hankekayttajaRepository
+            .findByHankeId(hankeId)
+            .filter { hasPermission(it, permission) }
+            .map { it.toDomain() }
+
     @Transactional(readOnly = true)
     fun getKayttajaForHanke(kayttajaId: UUID, hankeId: Int): HankekayttajaEntity {
         val kayttaja =

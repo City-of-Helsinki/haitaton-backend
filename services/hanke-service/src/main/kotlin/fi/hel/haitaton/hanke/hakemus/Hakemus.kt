@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.hakemus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.checkChange
 import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.domain.Loggable
 import fi.hel.haitaton.hanke.valmistumisilmoitus.Valmistumisilmoitus
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.ZonedDateTime
@@ -20,14 +21,14 @@ private val ZERO_UUID = UUID(0, 0)
 data class Hakemus(
     override val id: Long,
     override val alluid: Int?,
-    val alluStatus: ApplicationStatus?,
+    override val alluStatus: ApplicationStatus?,
     override val applicationIdentifier: String?,
     override val applicationType: ApplicationType,
     val applicationData: HakemusData,
     val hankeTunnus: String,
     val hankeId: Int,
     val valmistumisilmoitukset: Map<ValmistumisilmoitusType, List<Valmistumisilmoitus>>,
-) : HakemusIdentifier {
+) : HakemusIdentifier, HasAlluStatus {
     fun toResponse(): HakemusResponse =
         HakemusResponse(
             id = id,
@@ -277,14 +278,35 @@ data class KaivuilmoitusData(
     }
 }
 
-interface HakemusIdentifier : HasId<Long> {
+interface HakemusIdentifier : HasId<Long>, Loggable {
     override val id: Long
     val alluid: Int?
     val applicationIdentifier: String?
     val applicationType: ApplicationType
 
-    fun logString() =
+    override fun logString() =
         "Hakemus: (id=$id, alluId=$alluid, identifier=$applicationIdentifier, type=$applicationType)"
+}
+
+interface HasAlluStatus {
+    val applicationType: ApplicationType
+    val alluStatus: ApplicationStatus?
+
+    fun completedStatuses() =
+        when (applicationType) {
+            ApplicationType.CABLE_REPORT -> COMPLETED_CABLE_REPORT_STATUSES
+            ApplicationType.EXCAVATION_NOTIFICATION -> COMPLETED_EXCAVATION_NOTIFICATION_STATUSES
+        }
+
+    fun hasCompletedStatus(): Boolean = alluStatus in completedStatuses()
+
+    companion object {
+        private val COMPLETED_EXCAVATION_NOTIFICATION_STATUSES: Set<ApplicationStatus> =
+            setOf(ApplicationStatus.FINISHED, ApplicationStatus.ARCHIVED)
+
+        private val COMPLETED_CABLE_REPORT_STATUSES: Set<ApplicationStatus> =
+            COMPLETED_EXCAVATION_NOTIFICATION_STATUSES + ApplicationStatus.DECISION
+    }
 }
 
 /** Without application data, just the identifiers and metadata. */

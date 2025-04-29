@@ -13,9 +13,7 @@ import org.springframework.stereotype.Service
 private val logger = KotlinLogging.logger {}
 
 @Service
-class HankeAttachmentContentService(
-    private val fileClient: FileClient,
-) {
+class HankeAttachmentContentService(private val fileClient: FileClient) {
     /** Uploads and returns the location of the created blob. */
     fun upload(fileName: String, contentType: MediaType, content: ByteArray, hankeId: Int): String {
         val blobPath = generateBlobPath(hankeId)
@@ -33,6 +31,15 @@ class HankeAttachmentContentService(
         logger.info { "Deleting attachment content from hanke attachment ${attachment.id}..." }
         fileClient.delete(Container.HANKE_LIITTEET, attachment.blobLocation)
     }
+
+    fun delete(blobPath: String) =
+        fileClient.delete(Container.HANKE_LIITTEET, blobPath).also {
+            if (it) {
+                logger.info { "Attachment content at $blobPath deleted" }
+            } else {
+                logger.warn { "Attachment content at $blobPath not found" }
+            }
+        }
 
     fun deleteAllForHanke(hankeId: Int) {
         fileClient.deleteAllByPrefix(Container.HANKE_LIITTEET, prefix(hankeId))
