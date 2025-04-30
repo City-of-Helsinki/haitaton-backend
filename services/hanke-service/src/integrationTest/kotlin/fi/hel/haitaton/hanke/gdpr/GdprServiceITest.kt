@@ -76,9 +76,11 @@ class GdprServiceITest(
             val hanke1 = hankeFactory.saveMinimal()
             val hanke2 = hankeFactory.saveMinimal()
             permissionRepository.save(
-                PermissionFactory.createEntity(userId = USERNAME, hankeId = hanke1.id))
+                PermissionFactory.createEntity(id = 0, userId = USERNAME, hankeId = hanke1.id)
+            )
             permissionRepository.save(
-                PermissionFactory.createEntity(userId = USERNAME, hankeId = hanke2.id))
+                PermissionFactory.createEntity(id = 0, userId = USERNAME, hankeId = hanke2.id)
+            )
 
             val result = gdprService.findGdprInfo(USERNAME)
 
@@ -173,15 +175,9 @@ class GdprServiceITest(
         @Test
         fun `returns organization info when user is hakemusyhteyshenkilo`() {
             val toteuttajaYhteystieto =
-                HakemusyhteystietoFactory.create(
-                    nimi = "Yritys Oy",
-                    registryKey = "4134328-8",
-                )
+                HakemusyhteystietoFactory.create(nimi = "Yritys Oy", registryKey = "4134328-8")
             val omistajaYhteystieto =
-                HakemusyhteystietoFactory.create(
-                    nimi = "Omistaja Oy",
-                    registryKey = "3213212-0",
-                )
+                HakemusyhteystietoFactory.create(nimi = "Omistaja Oy", registryKey = "3213212-0")
             val hanke = hankeFactory.saveMinimal(generated = true)
             val kayttaja = hankekayttajaFactory.saveIdentifiedUser(hanke.id, userId = USERNAME)
             hakemusFactory
@@ -636,7 +632,7 @@ fun Assert<CollectionNode>.hasCollectionWithChildren(key: String, vararg child: 
 
 fun Assert<CollectionNode>.hasCollectionChild(
     key: String,
-    body: Assert<CollectionNode>.() -> Unit
+    body: Assert<CollectionNode>.() -> Unit,
 ) {
     hasChild(key) { isInstanceOf(CollectionNode::class).all(body) }
 }
@@ -644,7 +640,7 @@ fun Assert<CollectionNode>.hasCollectionChild(
 fun Assert<CollectionNode>.hasOrganisaatio(
     nimi: String,
     ytunnus: String? = null,
-    osasto: String? = null
+    osasto: String? = null,
 ) {
     prop(CollectionNode::children)
         .transform { it.filter { child -> child.key == "organisaatio" } }

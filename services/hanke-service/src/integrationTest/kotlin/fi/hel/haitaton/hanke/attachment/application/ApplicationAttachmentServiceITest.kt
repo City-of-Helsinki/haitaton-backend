@@ -246,7 +246,10 @@ class ApplicationAttachmentServiceITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME)
             val attachments =
                 (1..ALLOWED_ATTACHMENT_COUNT).map {
-                    ApplicationAttachmentFactory.createEntity(applicationId = application.id)
+                    ApplicationAttachmentFactory.createEntity(
+                        id = null,
+                        applicationId = application.id,
+                    )
                 }
             attachmentRepository.saveAll(attachments)
             mockClamAv.enqueue(response(body(results = successResult())))
