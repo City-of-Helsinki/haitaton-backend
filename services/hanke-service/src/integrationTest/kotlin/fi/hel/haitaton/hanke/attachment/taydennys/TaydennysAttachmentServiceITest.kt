@@ -188,7 +188,7 @@ class TaydennysAttachmentServiceITest(
             val taydennys = taydennysFactory.builder().save()
             val attachments =
                 (1..ALLOWED_ATTACHMENT_COUNT).map {
-                    TaydennysAttachmentFactory.Companion.createEntity(taydennysId = taydennys.id)
+                    TaydennysAttachmentFactory.createEntity(id = null, taydennysId = taydennys.id)
                 }
             attachmentRepository.saveAll(attachments)
             mockClamAv.enqueue(response(body(results = successResult())))

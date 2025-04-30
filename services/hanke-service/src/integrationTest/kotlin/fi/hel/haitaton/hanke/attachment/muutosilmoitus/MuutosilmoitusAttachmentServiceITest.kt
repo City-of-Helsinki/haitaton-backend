@@ -200,7 +200,8 @@ class MuutosilmoitusAttachmentServiceITest(
             val attachments =
                 (1..ALLOWED_ATTACHMENT_COUNT).map {
                     MuutosilmoitusAttachmentFactory.createEntity(
-                        muutosilmoitusId = muutosilmoitus.id
+                        id = null,
+                        muutosilmoitusId = muutosilmoitus.id,
                     )
                 }
             attachmentRepository.saveAll(attachments)
