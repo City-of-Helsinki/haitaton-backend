@@ -455,8 +455,6 @@ class HankeKayttajaService(
         kayttaja.kayttajakutsu?.let { tunniste ->
             logger.info { "Deleting old tunniste ${tunniste.id}" }
             kayttajakutsuRepository.delete(tunniste)
-            // Flush to avoid unique key collision on hanke_kayttaja_id
-            kayttajakutsuRepository.flush()
             logService.logDelete(tunniste.toDomain(), currentUserId)
         }
         kayttaja.kayttajakutsu = createKutsu(kayttaja, currentUserId)
