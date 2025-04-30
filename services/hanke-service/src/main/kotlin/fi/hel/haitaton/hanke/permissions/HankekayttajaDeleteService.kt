@@ -1,11 +1,12 @@
 package fi.hel.haitaton.hanke.permissions
 
+import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.email.RemovalFromHankeNotificationEmail
-import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusEntity
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
 import fi.hel.haitaton.hanke.logging.PermissionLoggingService
 import java.util.UUID
@@ -27,6 +28,7 @@ class HankekayttajaDeleteService(
     private val hankeKayttajaLoggingService: HankeKayttajaLoggingService,
     private val permissionLoggingService: PermissionLoggingService,
     private val applicationEventPublisher: ApplicationEventPublisher,
+    private val hankeRepository: HankeRepository,
 ) {
     @Transactional(readOnly = true)
     fun checkForDelete(kayttajaId: UUID): DeleteInfo {
@@ -63,10 +65,14 @@ class HankekayttajaDeleteService(
             throw OnlyOmistajaContactException(kayttajaId, offendingOmistajat.map { it.id!! })
         }
 
-        val activeHakemukset = getHakemuksetForKayttaja(kayttajaId).filter { it.alluStatus != null }
+        val hakemukset = getHakemuksetForKayttaja(kayttajaId)
+        val activeHakemukset = hakemukset.filter { it.alluStatus != null }
         if (activeHakemukset.isNotEmpty()) {
             throw HasActiveApplicationsException(kayttajaId, activeHakemukset.map { it.id })
         }
+
+        val kayttajaBefore = kayttaja.toDomain()
+        clearFromYhteystiedot(kayttajaId, hakemukset, hanke.id)
 
         kayttaja.permission?.also {
             logger.info {
@@ -74,6 +80,7 @@ class HankekayttajaDeleteService(
                     "Permission: id=${it.id}, userId=${it.userId}, " +
                     "hankeId=${hanke.id}, kayttooikeustaso=${it.kayttooikeustaso}"
             }
+            kayttaja.permission = null
             permissionRepository.delete(it)
             permissionLoggingService.logDelete(it.toDomain(), userId)
         }
@@ -83,7 +90,7 @@ class HankekayttajaDeleteService(
         hankekayttajaRepository.saveAll(kutsutut)
 
         hankekayttajaRepository.delete(kayttaja)
-        hankeKayttajaLoggingService.logDelete(kayttaja.toDomain(), userId)
+        hankeKayttajaLoggingService.logDelete(kayttajaBefore, userId)
 
         applicationEventPublisher.publishEvent(
             RemovalFromHankeNotificationEmail(
@@ -92,7 +99,36 @@ class HankekayttajaDeleteService(
                 hanke.nimi,
                 currentUser.fullName(),
                 currentUser.sahkoposti,
-            ))
+            )
+        )
+    }
+
+    /**
+     * Hibernate 6.6 seems to be more careful about the context checks when deleting entities.
+     * Having the entities loaded anywhere in the context means that removing them causes
+     * TransientObjectExceptions.
+     *
+     * Removing the yhteyshenkilot with the removed hankekayttaja from the respective collections of
+     * the hakemukset and hanke since they have been loaded to the context earlier.
+     *
+     * There should be some combination of cascade annotations that does this, but I haven't gotten
+     * any to work properly.
+     */
+    private fun clearFromYhteystiedot(
+        kayttajaId: UUID,
+        hakemukset: List<HakemusEntity>,
+        hankeId: Int,
+    ) {
+        hakemukset.forEach { hakemus ->
+            hakemus.yhteystiedot.forEach { (_, yhteystieto) ->
+                yhteystieto.yhteyshenkilot.removeAll { it.hankekayttaja.id == kayttajaId }
+            }
+        }
+
+        val hankeEntity = hankeRepository.getReferenceById(hankeId)
+        hankeEntity.yhteystiedot.forEach { yhteystieto ->
+            yhteystieto.yhteyshenkilot.removeAll { it.hankeKayttaja.id == kayttajaId }
+        }
     }
 
     private fun isTheOnlyKaikkiOikeudetKayttaja(kayttaja: HankekayttajaEntity): Boolean {
@@ -105,7 +141,7 @@ class HankekayttajaDeleteService(
     }
 
     @Transactional(readOnly = true)
-    fun getHakemuksetForKayttaja(kayttajaId: UUID): List<Hakemus> =
+    fun getHakemuksetForKayttaja(kayttajaId: UUID): List<HakemusEntity> =
         getHakemuksetForKayttaja(getKayttaja(kayttajaId))
 
     private fun getKayttaja(kayttajaId: UUID): HankekayttajaEntity =
@@ -114,19 +150,18 @@ class HankekayttajaDeleteService(
 
     private fun onlyOmistajanYhteyshenkiloIn(
         kayttaja: HankekayttajaEntity,
-        hanke: Hanke
+        hanke: Hanke,
     ): List<HankeYhteystieto> {
         return hanke.omistajat.filter {
             it.yhteyshenkilot.size == 1 && it.yhteyshenkilot.first().id == kayttaja.id
         }
     }
 
-    private fun getHakemuksetForKayttaja(kayttaja: HankekayttajaEntity): List<Hakemus> =
+    private fun getHakemuksetForKayttaja(kayttaja: HankekayttajaEntity): List<HakemusEntity> =
         kayttaja.hakemusyhteyshenkilot
             .map { it.hakemusyhteystieto }
             .map { it.application }
             .distinctBy { it.id }
-            .map { it.toHakemus() }
 
     data class DeleteInfo(
         val activeHakemukset: List<HakemusDetails>,
@@ -139,9 +174,9 @@ class HankekayttajaDeleteService(
             val alluStatus: ApplicationStatus?,
         ) {
             constructor(
-                hakemus: Hakemus
+                hakemus: HakemusEntity
             ) : this(
-                hakemus.applicationData.name,
+                hakemus.hakemusEntityData.name,
                 hakemus.applicationIdentifier,
                 hakemus.alluStatus,
             )
@@ -152,9 +187,11 @@ class HankekayttajaDeleteService(
 class OnlyOmistajaContactException(kayttajaId: UUID, yhteystietoId: List<Int>) :
     RuntimeException(
         "Hankekayttaja is the only contact for an omistaja. Cannot delete. " +
-            "hankekayttajaId=$kayttajaId, yhteystietoIds=${yhteystietoId.joinToString(", ")}")
+            "hankekayttajaId=$kayttajaId, yhteystietoIds=${yhteystietoId.joinToString(", ")}"
+    )
 
 class HasActiveApplicationsException(kayttajaId: UUID, hakemusIds: List<Long>) :
     RuntimeException(
         "Hankekayttaja is a contact in active applications. Cannot delete. " +
-            "hankekayttajaId=$kayttajaId, applicationIds=${hakemusIds.joinToString(", ")}")
+            "hankekayttajaId=$kayttajaId, applicationIds=${hakemusIds.joinToString(", ")}"
+    )

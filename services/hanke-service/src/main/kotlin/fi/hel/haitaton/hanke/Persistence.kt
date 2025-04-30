@@ -162,7 +162,7 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
         "select h.id from HankeEntity h " +
             "left join HankealueEntity ha on ha.hanke = h " +
             "where h.status in ('PUBLIC', 'DRAFT') " +
-            "and not array_contains(h.sentReminders, :reminder) " +
+            "and not array_includes(h.sentReminders, :reminder) " +
             "group by h.id " +
             "having coalesce(max(ha.haittaLoppuPvm), '1990-01-01') <= :reminderDate " +
             "order by h.modifiedAt asc limit :limit"
@@ -175,7 +175,7 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
     @Query(
         "select h.id from HankeEntity h " +
             "where date(h.completedAt) <= :reminderDate " +
-            "and not array_contains(h.sentReminders, :reminder) " +
+            "and not array_includes(h.sentReminders, :reminder) " +
             "order by h.completedAt asc"
     )
     fun findIdsForDeletionReminders(reminderDate: LocalDate, reminder: HankeReminder): List<Int>

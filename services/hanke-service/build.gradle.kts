@@ -55,7 +55,7 @@ spotless {
 
 plugins {
     val kotlinVersion = "2.1.20"
-    id("org.springframework.boot") version "3.3.10"
+    id("org.springframework.boot") version "3.4.5"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.diffplug.spotless") version "7.0.3"
     kotlin("jvm") version kotlinVersion
@@ -91,7 +91,7 @@ dependencies {
     implementation("com.auth0:java-jwt:4.5.0")
 
     implementation("org.postgresql:postgresql")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
@@ -99,7 +99,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.14.0")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
-    testImplementation("com.squareup.okhttp3:mockwebserver")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation("com.icegreen:greenmail-junit5:2.1.3")
 
     // Pdf generation
