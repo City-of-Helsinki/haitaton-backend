@@ -29,10 +29,19 @@ object AccessRules {
                         "/testdata/trigger-allu",
                     )
                     .permitAll()
-                    .requestMatchers(HttpMethod.POST, "/testdata/unlink-applications")
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/testdata/unlink-applications",
+                        "/testdata/delete-e2e-test-data",
+                    )
                     .permitAll()
             }
-            .csrf { it.ignoringRequestMatchers("/testdata/unlink-applications") }
+            .csrf {
+                it.ignoringRequestMatchers(
+                    "/testdata/unlink-applications",
+                    "testdata/delete-e2e-test-data",
+                )
+            }
             .authorizeHttpRequests { it.anyRequest().authenticated() }
             .exceptionHandling {
                 it.authenticationEntryPoint { request, response, authenticationException ->
