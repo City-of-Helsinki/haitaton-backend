@@ -104,7 +104,7 @@ dependencies {
 
     // Pdf generation
     implementation("com.github.librepdf:openpdf:2.0.3")
-    implementation("org.apache.xmlgraphics:fop:2.10")
+    implementation("org.apache.xmlgraphics:fop:2.11")
 
     // Geotools
     implementation("org.geotools:gt-wms:$geoToolsVersion")
