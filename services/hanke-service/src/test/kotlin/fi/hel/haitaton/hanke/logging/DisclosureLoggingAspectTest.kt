@@ -32,12 +32,14 @@ class DisclosureLoggingAspectTest {
     @BeforeEach
     fun cleanup() {
         clearAllMocks()
+        SecurityContextHolder.clearContext()
     }
 
     @AfterEach
     fun checkMocks() {
         checkUnnecessaryStub()
         confirmVerified(disclosureLogService)
+        SecurityContextHolder.clearContext()
     }
 
     @Nested
@@ -110,7 +112,8 @@ class DisclosureLoggingAspectTest {
                 messageContains("Mixed types inside a list")
                 messageContains("Expected type: fi.hel.haitaton.hanke.domain.Hanke")
                 messageContains(
-                    "Actual types: fi.hel.haitaton.hanke.domain.Hanke, kotlin.String, kotlin.Int")
+                    "Actual types: fi.hel.haitaton.hanke.domain.Hanke, kotlin.String, kotlin.Int"
+                )
             }
         }
 
@@ -139,7 +142,8 @@ class DisclosureLoggingAspectTest {
             mockAuthentication()
 
             disclosureLoggingAspect.logResponse(
-                ResponseEntity.ofNullable(ProfiiliFactory.DEFAULT_NAMES))
+                ResponseEntity.ofNullable(ProfiiliFactory.DEFAULT_NAMES)
+            )
 
             verifySequence {
                 disclosureLogService.saveForProfiiliNimi(ProfiiliFactory.DEFAULT_NAMES, USERNAME)
@@ -178,7 +182,8 @@ class DisclosureLoggingAspectTest {
                 messageContains("Mixed types inside a list")
                 messageContains("Expected type: fi.hel.haitaton.hanke.domain.Hanke")
                 messageContains(
-                    "Actual types: fi.hel.haitaton.hanke.domain.Hanke, kotlin.String, kotlin.Int")
+                    "Actual types: fi.hel.haitaton.hanke.domain.Hanke, kotlin.String, kotlin.Int"
+                )
             }
         }
 

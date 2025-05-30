@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -33,19 +34,20 @@ class OAuth2ResourceServerSecurityConfiguration(
     @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
     private val issuerUri: String,
     @Value("\${spring.security.oauth2.resourceserver.jwt.audiences}") private val audience: String,
+    private val tokenValidator: LogoutTokenValidator,
 ) {
 
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         AccessRules.configureHttpAccessRules(http)
-        http.oauth2ResourceServer { it.jwt {} }
+        http.oauth2ResourceServer { jwt -> defaultJwtDecoder() }
+
+        http.securityMatcher("/backchannel-logout").oauth2ResourceServer {
+            it.jwt { jwt -> jwt.decoder(logoutJwtDecoder()) }
+        }
+
         return http.build()
     }
-
-    fun adGroupValidator(): OAuth2TokenValidator<Jwt> = AdGroupValidator(adFilterProperties)
-
-    fun audienceValidator(): OAuth2TokenValidator<Jwt?> =
-        JwtClaimValidator<List<String>>(JwtClaimNames.AUD) { aud -> aud.contains(audience) }
 
     /**
      * Custom decoder that verifies the AD groups and audience of the token on top of the default
@@ -54,17 +56,40 @@ class OAuth2ResourceServerSecurityConfiguration(
      * Adopted from:
      * https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#oauth2resourceserver-jwt-validation-custom
      */
-    @Bean
-    fun jwtDecoder(): JwtDecoder {
+    @Bean("defaultJwtDecoder")
+    @Primary
+    fun defaultJwtDecoder(): JwtDecoder {
         val jwtDecoder = JwtDecoders.fromIssuerLocation(issuerUri) as NimbusJwtDecoder
 
-        val adGroupValidator = adGroupValidator()
-        val audienceValidator = audienceValidator()
+        val adGroupValidator = AdGroupValidator(adFilterProperties)
+        val audienceValidator =
+            JwtClaimValidator<List<String>>(JwtClaimNames.AUD) { aud -> aud.contains(audience) }
         val defaultValidator = JwtValidators.createDefaultWithIssuer(issuerUri)
         val combinedValidator =
             DelegatingOAuth2TokenValidator(defaultValidator, audienceValidator, adGroupValidator)
 
         jwtDecoder.setJwtValidator(combinedValidator)
+
+        return jwtDecoder
+    }
+
+    /**
+     * Custom decoder for logout tokens that verifies the claims required for backchannel logout.
+     *
+     * This is used for the backchannel logout endpoint.
+     */
+    @Bean("logoutJwtDecoder")
+    fun logoutJwtDecoder(): JwtDecoder {
+        val jwtDecoder: NimbusJwtDecoder =
+            JwtDecoders.fromIssuerLocation(issuerUri) as NimbusJwtDecoder
+
+        val issuerValidator: OAuth2TokenValidator<Jwt> =
+            JwtValidators.createDefaultWithIssuer(issuerUri)
+
+        val validator: OAuth2TokenValidator<Jwt> =
+            DelegatingOAuth2TokenValidator(issuerValidator, tokenValidator)
+
+        jwtDecoder.setJwtValidator(validator)
 
         return jwtDecoder
     }
