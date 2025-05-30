@@ -326,7 +326,7 @@ class MuutosilmoitusServiceITest(
             muutosilmoitusService.delete(muutosilmoitus.id, USERNAME)
 
             assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.DELETE) {
-                hasUserActor(USERNAME, TestUtils.mockedIp)
+                hasUserActor(USERNAME, TestUtils.MOCKED_IP)
                 withTarget {
                     prop(AuditLogTarget::id).isEqualTo(muutosilmoitus.id.toString())
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.MUUTOSILMOITUS)

@@ -846,7 +846,7 @@ class UpdateHankeITests(
             )
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertThat(hankeLogs).single().isSuccess(Operation.UPDATE) {
-            hasUserActor("test7358", TestUtils.mockedIp)
+            hasUserActor("test7358", TestUtils.MOCKED_IP)
             withTarget {
                 hasId(hanke.id)
                 hasTargetType(ObjectType.HANKE)
@@ -888,7 +888,7 @@ class UpdateHankeITests(
             )
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertThat(hankeLogs).single().isSuccess(Operation.UPDATE) {
-            hasUserActor("test7358", TestUtils.mockedIp)
+            hasUserActor("test7358", TestUtils.MOCKED_IP)
             withTarget {
                 hasId(hanke.id)
                 hasTargetType(ObjectType.HANKE)
@@ -932,7 +932,7 @@ class UpdateHankeITests(
             )
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertThat(hankeLogs).single().isSuccess(Operation.UPDATE) {
-            hasUserActor("test7358", TestUtils.mockedIp)
+            hasUserActor("test7358", TestUtils.MOCKED_IP)
             withTarget {
                 hasId(hanke.id)
                 hasTargetType(ObjectType.HANKE)

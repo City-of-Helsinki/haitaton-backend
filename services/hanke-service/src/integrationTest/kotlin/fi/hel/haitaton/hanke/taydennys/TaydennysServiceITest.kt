@@ -1308,7 +1308,7 @@ class TaydennysServiceITest(
             taydennysService.delete(taydennys.id, USERNAME)
 
             assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.DELETE) {
-                hasUserActor(USERNAME, TestUtils.mockedIp)
+                hasUserActor(USERNAME, TestUtils.MOCKED_IP)
                 withTarget {
                     prop(AuditLogTarget::id).isEqualTo(taydennys.id.toString())
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.TAYDENNYS)

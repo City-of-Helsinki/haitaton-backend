@@ -25,7 +25,6 @@ import jakarta.persistence.Table
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
-import java.time.ZoneId
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -107,7 +106,10 @@ class HankeEntity(
     fun endDate(): LocalDate? = alueet.endDate()
 
     fun deletionDate(): LocalDate? =
-        completedAt?.plusMonths(6)?.atZoneSameInstant(ZoneId.of("Europe/Helsinki"))?.toLocalDate()
+        completedAt
+            ?.plusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+            ?.atZoneSameInstant(TZ_UTC)
+            ?.toLocalDate()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

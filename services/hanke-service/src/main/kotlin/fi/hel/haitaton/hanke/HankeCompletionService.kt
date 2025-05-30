@@ -13,6 +13,7 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttaja
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
+import java.time.Clock
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import mu.KotlinLogging
@@ -39,17 +40,23 @@ class HankeCompletionService(
     fun idsToComplete(): List<Int> = hankeRepository.findHankeToComplete(completionsPerDay)
 
     @Transactional(readOnly = true)
-    fun idsForReminders(reminder: HankeReminder): List<Int> =
-        hankeRepository.findHankeToRemind(completionsPerDay, reminderDate(reminder), reminder)
+    fun idsForReminders(reminder: HankeReminder, clock: Clock = Clock.system(TZ_UTC)): List<Int> =
+        hankeRepository.findHankeToRemind(
+            completionsPerDay,
+            reminderDate(reminder, clock),
+            reminder,
+        )
 
     @Transactional(readOnly = true)
-    fun idsToDelete(): List<Int> =
-        hankeRepository.findHankeToDelete(OffsetDateTime.now().minusMonths(6))
+    fun idsToDelete(clock: Clock = Clock.systemUTC()): List<Int> =
+        hankeRepository.findHankeToDelete(
+            OffsetDateTime.now(clock).minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+        )
 
     @Transactional(readOnly = true)
-    fun idsForDeletionReminders(): List<Int> =
+    fun idsForDeletionReminders(clock: Clock = Clock.systemUTC()): List<Int> =
         hankeRepository.findIdsForDeletionReminders(
-            reminderDate(HankeReminder.DELETION_5),
+            reminderDate(HankeReminder.DELETION_5, clock),
             HankeReminder.DELETION_5,
         )
 
@@ -97,7 +104,11 @@ class HankeCompletionService(
     }
 
     @Transactional
-    fun sendReminderIfNecessary(id: Int, reminder: HankeReminder) {
+    fun sendReminderIfNecessary(
+        id: Int,
+        reminder: HankeReminder,
+        clock: Clock = Clock.system(TZ_UTC),
+    ) {
         logger.info { "Checking if a reminder needs to be sent to hanke $id" }
         val hanke = hankeRepository.getReferenceById(id)
 
@@ -119,11 +130,11 @@ class HankeCompletionService(
             return
         }
 
-        if (endDate.isAfter(reminderDate(reminder))) {
+        if (endDate.isAfter(reminderDate(reminder, clock))) {
             return
         }
 
-        if (!endDate.isAfter(LocalDate.now())) {
+        if (!endDate.isAfter(LocalDate.now(clock))) {
             logger.info {
                 "Hanke is due to be completed, not sending reminders anymore. ${hanke.logString()}"
             }
@@ -135,7 +146,7 @@ class HankeCompletionService(
 
         if (
             reminder == HankeReminder.COMPLETION_14 &&
-                !endDate.isAfter(reminderDate(HankeReminder.COMPLETION_5))
+                !endDate.isAfter(reminderDate(HankeReminder.COMPLETION_5, clock))
         ) {
             logger.info {
                 "Hanke is due to be sent the next reminder, so not sending this one. " +
@@ -178,7 +189,7 @@ class HankeCompletionService(
     }
 
     @Transactional
-    fun sendDeletionRemindersIfNecessary(id: Int) {
+    fun sendDeletionRemindersIfNecessary(id: Int, clock: Clock = Clock.systemUTC()) {
         logger.info { "Trying to send deletion reminders for hanke $id" }
         val hanke = hankeRepository.getReferenceById(id)
 
@@ -192,12 +203,12 @@ class HankeCompletionService(
         }
         val deletionDate = hanke.deletionDate() ?: throw HankeHasNoCompletionDateException(hanke)
 
-        if (deletionDate.minusDays(5).isAfter(LocalDate.now())) {
+        if (deletionDate.minusDays(5).isAfter(LocalDate.now(clock))) {
             logger.info { "Deletion notification is not yet due. ${hanke.logString()}" }
             return
         }
 
-        if (!deletionDate.isAfter(LocalDate.now())) {
+        if (!deletionDate.isAfter(LocalDate.now(clock))) {
             logger.info {
                 "Hanke is due to be deleted, not sending reminders anymore. ${hanke.logString()}"
             }
@@ -331,13 +342,16 @@ class HankeCompletionService(
             return activeApplications.isNotEmpty()
         }
 
-        fun reminderDate(reminder: HankeReminder): LocalDate =
+        fun reminderDate(reminder: HankeReminder, clock: Clock): LocalDate =
             when (reminder) {
-                HankeReminder.COMPLETION_14 -> LocalDate.now().plusDays(14)
-                HankeReminder.COMPLETION_5 -> LocalDate.now().plusDays(5)
+                HankeReminder.COMPLETION_14 -> LocalDate.now(clock).plusDays(14)
+                HankeReminder.COMPLETION_5 -> LocalDate.now(clock).plusDays(5)
                 // The deletion date is compared to `completedAt`, while the others are compared to
                 // the current date.
-                HankeReminder.DELETION_5 -> LocalDate.now().minusMonths(6).plusDays(5)
+                HankeReminder.DELETION_5 ->
+                    LocalDate.now(clock)
+                        .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+                        .plusDays(5)
             }
     }
 }

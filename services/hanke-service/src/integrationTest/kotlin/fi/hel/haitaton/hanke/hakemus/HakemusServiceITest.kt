@@ -2082,7 +2082,7 @@ class HakemusServiceITest(
             hakemusService.cancelAndDelete(hakemus, USERNAME)
 
             assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.DELETE) {
-                hasUserActor(USERNAME, TestUtils.mockedIp)
+                hasUserActor(USERNAME, TestUtils.MOCKED_IP)
                 withTarget {
                     prop(AuditLogTarget::id).isEqualTo(hakemus.id.toString())
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.HAKEMUS)
