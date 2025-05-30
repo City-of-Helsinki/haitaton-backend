@@ -83,6 +83,11 @@ haitaton:
   profiili-api:
     graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
     audience: ${PROFIILI_AUDIENCE:profile-api-test}
+  security:
+    user-session:
+      cleanup:
+        # By default, run every five minutes.
+        interval: ${HAITATON_USER_SESSION_CLEANUP_INTERVAL:300000}
   testdata:
     enabled: ${HAITATON_TESTDATA_ENABLED:false}  # For dev and test environments, enable the testdata controller for resetting data
 

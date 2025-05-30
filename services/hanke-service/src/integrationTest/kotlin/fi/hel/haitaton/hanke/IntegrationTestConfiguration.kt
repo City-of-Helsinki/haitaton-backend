@@ -30,6 +30,10 @@ import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.profiili.ProfiiliService
 import fi.hel.haitaton.hanke.security.AccessRules
+import fi.hel.haitaton.hanke.security.LogoutService
+import fi.hel.haitaton.hanke.security.UserSessionCache
+import fi.hel.haitaton.hanke.security.UserSessionRepository
+import fi.hel.haitaton.hanke.security.UserSessionService
 import fi.hel.haitaton.hanke.taydennys.TaydennysAuthorizer
 import fi.hel.haitaton.hanke.taydennys.TaydennysService
 import fi.hel.haitaton.hanke.testdata.TestDataService
@@ -108,6 +112,8 @@ class IntegrationTestConfiguration {
 
     @Bean fun jdbcOperations(): JdbcOperations = mockk()
 
+    @Bean fun logoutService(): LogoutService = mockk()
+
     @Bean fun muutosilmoitusAttachmentService(): MuutosilmoitusAttachmentService = mockk()
 
     @Bean fun muutosilmoitusAuthorizer(): MuutosilmoitusAuthorizer = mockk()
@@ -135,6 +141,17 @@ class IntegrationTestConfiguration {
     @Bean fun tormaysService(): TormaystarkasteluTormaysService = mockk()
 
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
+
+    @Bean
+    fun userSessionCache(): UserSessionCache {
+        val mock = mockk<UserSessionCache>(relaxUnitFun = true)
+        every { mock.isSessionKnown(any()) } returns true
+        return mock
+    }
+
+    @Bean fun userSessionRepository(): UserSessionRepository = mockk()
+
+    @Bean fun userSessionService(): UserSessionService = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {
