@@ -36,6 +36,7 @@ class HankeAuthorizerTest {
     @BeforeEach
     fun clearMocks() {
         clearAllMocks()
+        SecurityContextHolder.clearContext()
         mockAuthentication()
     }
 
@@ -43,6 +44,7 @@ class HankeAuthorizerTest {
     fun checkMocks() {
         checkUnnecessaryStub()
         confirmVerified(permissionService, hankeRepository)
+        SecurityContextHolder.clearContext()
     }
 
     private fun mockAuthentication() {
