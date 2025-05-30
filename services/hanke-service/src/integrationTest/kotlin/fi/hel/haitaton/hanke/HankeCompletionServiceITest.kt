@@ -44,6 +44,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasNoObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasServiceActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
+import fi.hel.haitaton.hanke.test.TestUtils.FIXED_CLOCK
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -204,24 +205,31 @@ class HankeCompletionServiceITest(
                 hankeFactory
                     .builder()
                     .withHankealue(
-                        HankealueFactory.create(haittaLoppuPvm = ZonedDateTime.now().plusDays(4))
+                        HankealueFactory.create(
+                            haittaLoppuPvm = ZonedDateTime.now(FIXED_CLOCK).plusDays(4)
+                        )
                     )
                     .saveEntity(HankeStatus.PUBLIC)
             val onTheDayHanke =
                 hankeFactory
                     .builder()
                     .withHankealue(
-                        HankealueFactory.create(haittaLoppuPvm = ZonedDateTime.now().plusDays(5))
+                        HankealueFactory.create(
+                            haittaLoppuPvm = ZonedDateTime.now(FIXED_CLOCK).plusDays(5)
+                        )
                     )
                     .saveEntity(HankeStatus.PUBLIC)
             hankeFactory
                 .builder()
                 .withHankealue(
-                    HankealueFactory.create(haittaLoppuPvm = ZonedDateTime.now().plusDays(6))
+                    HankealueFactory.create(
+                        haittaLoppuPvm = ZonedDateTime.now(FIXED_CLOCK).plusDays(6)
+                    )
                 )
                 .saveEntity(HankeStatus.PUBLIC)
 
-            val result = hankeCompletionService.idsForReminders(HankeReminder.COMPLETION_5)
+            val result =
+                hankeCompletionService.idsForReminders(HankeReminder.COMPLETION_5, FIXED_CLOCK)
 
             assertThat(result).containsExactly(justBeforeHanke.id, onTheDayHanke.id)
         }
@@ -232,19 +240,24 @@ class HankeCompletionServiceITest(
                 hankeFactory
                     .builder()
                     .withHankealue(
-                        HankealueFactory.create(haittaLoppuPvm = ZonedDateTime.now().plusDays(5))
+                        HankealueFactory.create(
+                            haittaLoppuPvm = ZonedDateTime.now(FIXED_CLOCK).plusDays(5)
+                        )
                     )
                     .saveEntity(HankeStatus.PUBLIC) { it.sentReminders = arrayOf() }
             hankeFactory
                 .builder()
                 .withHankealue(
-                    HankealueFactory.create(haittaLoppuPvm = ZonedDateTime.now().plusDays(5))
+                    HankealueFactory.create(
+                        haittaLoppuPvm = ZonedDateTime.now(FIXED_CLOCK).plusDays(5)
+                    )
                 )
                 .saveEntity(HankeStatus.PUBLIC) {
                     it.sentReminders = arrayOf(HankeReminder.COMPLETION_5)
                 }
 
-            val result = hankeCompletionService.idsForReminders(HankeReminder.COMPLETION_5)
+            val result =
+                hankeCompletionService.idsForReminders(HankeReminder.COMPLETION_5, FIXED_CLOCK)
 
             assertThat(result).containsExactly(unsentHanke.id)
         }
@@ -263,17 +276,25 @@ class HankeCompletionServiceITest(
         fun `only returns hanke the completion date is at least 6 months in the past`() {
             val over6MonthsAgo =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6).minusDays(1)
+                    it.completedAt =
+                        OffsetDateTime.now(FIXED_CLOCK)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+                            .minusDays(1)
                 }
             val exactly6MonthsAgo =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6)
+                    it.completedAt =
+                        OffsetDateTime.now(FIXED_CLOCK)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
                 }
             hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(1)
+                it.completedAt =
+                    OffsetDateTime.now(FIXED_CLOCK)
+                        .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+                        .plusDays(1)
             }
 
-            val result = hankeCompletionService.idsToDelete()
+            val result = hankeCompletionService.idsToDelete(FIXED_CLOCK)
 
             assertThat(result).containsExactly(over6MonthsAgo.id, exactly6MonthsAgo.id)
         }
@@ -283,11 +304,14 @@ class HankeCompletionServiceITest(
             val hankkeet =
                 listOf(30, 2, 25, 15, 4).map { date ->
                     hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                        it.completedAt = OffsetDateTime.now().minusMonths(7).withDayOfMonth(date)
+                        it.completedAt =
+                            OffsetDateTime.now(FIXED_CLOCK)
+                                .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION + 1)
+                                .withDayOfMonth(date)
                     }
                 }
 
-            val result = hankeCompletionService.idsToDelete()
+            val result = hankeCompletionService.idsToDelete(FIXED_CLOCK)
 
             // max-per-run is set to 3 in application-test.yml
             assertThat(result)
@@ -314,17 +338,26 @@ class HankeCompletionServiceITest(
         fun `only returns hanke the completion date is at least 6 months in the past`() {
             val justBeforeHanke =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(4)
+                    it.completedAt =
+                        OffsetDateTime.now(FIXED_CLOCK)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+                            .plusDays(4)
                 }
             val onTheDayHanke =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(5)
+                    it.completedAt =
+                        OffsetDateTime.now(FIXED_CLOCK)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+                            .plusDays(5)
                 }
             hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(6)
+                it.completedAt =
+                    OffsetDateTime.now(FIXED_CLOCK)
+                        .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+                        .plusDays(6)
             }
 
-            val result = hankeCompletionService.idsForDeletionReminders()
+            val result = hankeCompletionService.idsForDeletionReminders(FIXED_CLOCK)
 
             assertThat(result).containsExactly(justBeforeHanke.id, onTheDayHanke.id)
         }
@@ -333,15 +366,21 @@ class HankeCompletionServiceITest(
         fun `returns only hanke where the reminder hasn't been sent already`() {
             val unsentHanke =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(5)
+                    it.completedAt =
+                        OffsetDateTime.now(FIXED_CLOCK)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+                            .plusDays(5)
                     it.sentReminders = arrayOf()
                 }
             hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                it.completedAt = OffsetDateTime.now().minusMonths(6).plusDays(5)
+                it.completedAt =
+                    OffsetDateTime.now(FIXED_CLOCK)
+                        .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+                        .plusDays(5)
                 it.sentReminders = arrayOf(HankeReminder.DELETION_5)
             }
 
-            val result = hankeCompletionService.idsForDeletionReminders()
+            val result = hankeCompletionService.idsForDeletionReminders(FIXED_CLOCK)
 
             assertThat(result).containsExactly(unsentHanke.id)
         }
@@ -351,11 +390,14 @@ class HankeCompletionServiceITest(
             val hankkeet =
                 listOf(30, 2, 25, 15, 4).map { date ->
                     hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                        it.completedAt = OffsetDateTime.now().minusMonths(7).withDayOfMonth(date)
+                        it.completedAt =
+                            OffsetDateTime.now(FIXED_CLOCK)
+                                .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION + 1)
+                                .withDayOfMonth(date)
                     }
                 }
 
-            val result = hankeCompletionService.idsForDeletionReminders()
+            val result = hankeCompletionService.idsForDeletionReminders(FIXED_CLOCK)
 
             // max-per-run is set to 3 in application-test.yml
             assertThat(result)
@@ -1053,7 +1095,10 @@ class HankeCompletionServiceITest(
         fun `throws exception when hanke completion date is too recently`() {
             val hanke =
                 hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().plusDays(1).minusMonths(6)
+                    it.completedAt =
+                        OffsetDateTime.now()
+                            .plusDays(1)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
                 }
             assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now().plusDays(1))
 
@@ -1070,7 +1115,10 @@ class HankeCompletionServiceITest(
         fun `does nothing when hanke has active applications`() {
             val hanke =
                 hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6)
+                    it.completedAt =
+                        OffsetDateTime.now()
+                            .minusDays(1)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
                 }
             hakemusFactory.builder(hanke).withStatus(ApplicationStatus.DECISIONMAKING).save()
 
@@ -1086,7 +1134,10 @@ class HankeCompletionServiceITest(
         fun `deletes the hanke with attachments and applications`() {
             val hanke =
                 hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6)
+                    it.completedAt =
+                        OffsetDateTime.now()
+                            .minusDays(1)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
                 }
             hakemusFactory
                 .builder(hanke, ApplicationType.CABLE_REPORT)
@@ -1114,7 +1165,10 @@ class HankeCompletionServiceITest(
         fun `logs the deletion to audit logs`() {
             val hanke =
                 hankeFactory.builder().withNoAreas().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6)
+                    it.completedAt =
+                        OffsetDateTime.now()
+                            .minusDays(1)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
                 }
             auditLogRepository.deleteAll()
 
@@ -1152,7 +1206,8 @@ class HankeCompletionServiceITest(
         fun `does nothing when notification has already been sent`() {
             val hanke =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusMonths(6)
+                    it.completedAt =
+                        OffsetDateTime.now().minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
                     it.sentReminders = arrayOf(HankeReminder.DELETION_5)
                 }
 
@@ -1184,9 +1239,13 @@ class HankeCompletionServiceITest(
         ) {
             val hanke =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().minusDays(daysAgo).minusMonths(6)
+                    it.completedAt =
+                        OffsetDateTime.now(FIXED_CLOCK)
+                            .minusDays(daysAgo)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
                 }
-            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now().minusDays(daysAgo))
+            assertThat(hanke.deletionDate())
+                .isEqualTo(LocalDate.now(FIXED_CLOCK).minusDays(daysAgo))
 
             hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
 
@@ -1199,11 +1258,14 @@ class HankeCompletionServiceITest(
         fun `does nothing when the reminder is not yet due`() {
             val hanke =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().plusDays(6).minusMonths(6)
+                    it.completedAt =
+                        OffsetDateTime.now(FIXED_CLOCK)
+                            .plusDays(6)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
                 }
-            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now().plusDays(6))
+            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now(FIXED_CLOCK).plusDays(6))
 
-            hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
+            hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id, FIXED_CLOCK)
 
             assertThat(greenMail.receivedMessages).isEmpty()
             val updatedHanke = hankeRepository.getReferenceById(hanke.id)
@@ -1217,11 +1279,14 @@ class HankeCompletionServiceITest(
         ) {
             val hanke =
                 hankeFactory.builder().saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.now().plusDays(date).minusMonths(6)
+                    it.completedAt =
+                        OffsetDateTime.now(FIXED_CLOCK)
+                            .plusDays(date)
+                            .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
                 }
-            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now().plusDays(date))
+            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now(FIXED_CLOCK).plusDays(date))
 
-            hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
+            hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id, FIXED_CLOCK)
 
             val updatedHanke = hankeRepository.getReferenceById(hanke.id)
             assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.DELETION_5)
@@ -1234,7 +1299,7 @@ class HankeCompletionServiceITest(
                         "/ Ditt projekt ${hanke.hankeTunnus} raderas ur systemet " +
                         "/ Your project ${hanke.hankeTunnus} will be deleted from the system"
                 )
-            val deletionDate = LocalDate.now().plusDays(date)
+            val deletionDate = OffsetDateTime.now(FIXED_CLOCK).plusDays(date)
             val day = deletionDate.dayOfMonth
             val month = deletionDate.monthValue
             val year = deletionDate.year
@@ -1250,7 +1315,12 @@ class HankeCompletionServiceITest(
                 hankeFactory
                     .builder()
                     .withHankealue(
-                        HankealueFactory.create(haittaLoppuPvm = ZonedDateTime.now().plusDays(5))
+                        HankealueFactory.create(
+                            haittaLoppuPvm =
+                                OffsetDateTime.now(FIXED_CLOCK)
+                                    .plusDays(5)
+                                    .atZoneSameInstant(TZ_UTC)
+                        )
                     )
                     .saveWithYhteystiedot {
                         omistaja(
@@ -1273,11 +1343,14 @@ class HankeCompletionServiceITest(
                         muuYhteystieto(kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS)
                     }
             hanke.status = HankeStatus.COMPLETED
-            hanke.completedAt = OffsetDateTime.now().plusDays(3).minusMonths(6)
-            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now().plusDays(3))
+            hanke.completedAt =
+                OffsetDateTime.now(FIXED_CLOCK)
+                    .plusDays(3)
+                    .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+            assertThat(hanke.deletionDate()).isEqualTo(LocalDate.now(FIXED_CLOCK).plusDays(3))
             hankeRepository.save(hanke)
 
-            hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id)
+            hankeCompletionService.sendDeletionRemindersIfNecessary(hanke.id, FIXED_CLOCK)
 
             assertThat(greenMail.receivedMessages).hasSize(3)
             val recipients = greenMail.receivedMessages.map { it.allRecipients.single().toString() }
@@ -1424,6 +1497,7 @@ class HankeCompletionServiceITest(
     }
 
     companion object {
+
         @JvmField
         @RegisterExtension
         val greenMail: GreenMailExtension =
