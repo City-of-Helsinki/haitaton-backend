@@ -1,14 +1,19 @@
 package fi.hel.haitaton.hanke.test
 
+import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
+import java.time.Clock
+import java.time.Instant
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 
 object TestUtils {
-    const val mockedIp = "127.0.0.1"
+    val FIXED_CLOCK: Clock = Clock.fixed(Instant.parse("2025-04-09T01:41:13+03:00"), TZ_UTC)
 
-    fun addMockedRequestIp(ip: String = mockedIp) {
+    const val MOCKED_IP = "127.0.0.1"
+
+    fun addMockedRequestIp(ip: String = MOCKED_IP) {
         val request = MockHttpServletRequest()
         request.remoteAddr = ip
         RequestContextHolder.setRequestAttributes(ServletRequestAttributes(request))

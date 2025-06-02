@@ -31,3 +31,5 @@ const val HANKETUNNUS_PREFIX = "HAI"
 const val ALLOWED_ATTACHMENT_COUNT = 20
 
 const val HANKEALUE_DEFAULT_NAME = "Hankealue"
+
+const val MONTHS_BEFORE_DELETION: Long = 6
