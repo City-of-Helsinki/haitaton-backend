@@ -85,7 +85,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.9.10")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.9.11")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("com.auth0:java-jwt:4.5.0")
