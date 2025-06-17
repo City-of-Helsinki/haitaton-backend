@@ -42,7 +42,7 @@ data class TormaystarkasteluTulos(
                 autoliikenne.indeksi,
                 pyoraliikenneindeksi,
                 linjaautoliikenneindeksi,
-                raitioliikenneindeksi
+                raitioliikenneindeksi,
             )
         val type =
             when (max) {
@@ -77,7 +77,7 @@ data class Autoliikenneluokittelu(
             katuluokka,
             liikennemaara,
             kaistahaitta,
-            kaistapituushaitta
+            kaistapituushaitta,
         ),
         haitanKesto,
         katuluokka,
@@ -90,7 +90,7 @@ data class Autoliikenneluokittelu(
 @Schema(description = "Traffic nuisance index type")
 data class LiikennehaittaindeksiType(
     @JsonView(ChangeLogView::class) val indeksi: Float,
-    @JsonView(ChangeLogView::class) val tyyppi: IndeksiType
+    @JsonView(ChangeLogView::class) val tyyppi: IndeksiType,
 )
 
 enum class IndeksiType {
@@ -104,15 +104,15 @@ enum class IndeksiType {
 @Table(name = "tormaystarkastelutulos")
 class TormaystarkasteluTulosEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Int = 0,
-    val autoliikenne: Float,
-    @Column(name = "haitan_kesto") val haitanKesto: Int,
-    val katuluokka: Int,
-    val autoliikennemaara: Int,
-    val kaistahaitta: Int,
-    val kaistapituushaitta: Int,
-    val pyoraliikenne: Float,
-    val linjaautoliikenne: Float,
-    val raitioliikenne: Float,
+    var autoliikenne: Float,
+    @Column(name = "haitan_kesto") var haitanKesto: Int,
+    var katuluokka: Int,
+    var autoliikennemaara: Int,
+    var kaistahaitta: Int,
+    var kaistapituushaitta: Int,
+    var pyoraliikenne: Float,
+    var linjaautoliikenne: Float,
+    var raitioliikenne: Float,
     @OneToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "hankealue_id")
     val hankealue: HankealueEntity,

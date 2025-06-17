@@ -114,21 +114,45 @@ class HankealueService(
     }
 
     fun updateTormaystarkastelu(alue: HankealueEntity) {
-        alue.tormaystarkasteluTulos =
-            tormaystarkasteluService.calculateTormaystarkastelu(alue)?.let {
-                TormaystarkasteluTulosEntity(
-                    autoliikenne = it.autoliikenne.indeksi,
-                    haitanKesto = it.autoliikenne.haitanKesto,
-                    katuluokka = it.autoliikenne.katuluokka,
-                    autoliikennemaara = it.autoliikenne.liikennemaara,
-                    kaistahaitta = it.autoliikenne.kaistahaitta,
-                    kaistapituushaitta = it.autoliikenne.kaistapituushaitta,
-                    pyoraliikenne = it.pyoraliikenneindeksi,
-                    linjaautoliikenne = it.linjaautoliikenneindeksi,
-                    raitioliikenne = it.raitioliikenneindeksi,
-                    hankealue = alue,
-                )
+        val tormaystarkasteluTulos = tormaystarkasteluService.calculateTormaystarkastelu(alue)
+        if (tormaystarkasteluTulos != null) {
+            if (alue.tormaystarkasteluTulos == null) {
+                alue.tormaystarkasteluTulos =
+                    TormaystarkasteluTulosEntity(
+                        autoliikenne = tormaystarkasteluTulos.autoliikenne.indeksi,
+                        haitanKesto = tormaystarkasteluTulos.autoliikenne.haitanKesto,
+                        katuluokka = tormaystarkasteluTulos.autoliikenne.katuluokka,
+                        autoliikennemaara = tormaystarkasteluTulos.autoliikenne.liikennemaara,
+                        kaistahaitta = tormaystarkasteluTulos.autoliikenne.kaistahaitta,
+                        kaistapituushaitta = tormaystarkasteluTulos.autoliikenne.kaistapituushaitta,
+                        pyoraliikenne = tormaystarkasteluTulos.pyoraliikenneindeksi,
+                        linjaautoliikenne = tormaystarkasteluTulos.linjaautoliikenneindeksi,
+                        raitioliikenne = tormaystarkasteluTulos.raitioliikenneindeksi,
+                        hankealue = alue,
+                    )
+            } else {
+                alue.tormaystarkasteluTulos!!.autoliikenne =
+                    tormaystarkasteluTulos.autoliikenne.indeksi
+                alue.tormaystarkasteluTulos!!.haitanKesto =
+                    tormaystarkasteluTulos.autoliikenne.haitanKesto
+                alue.tormaystarkasteluTulos!!.katuluokka =
+                    tormaystarkasteluTulos.autoliikenne.katuluokka
+                alue.tormaystarkasteluTulos!!.autoliikennemaara =
+                    tormaystarkasteluTulos.autoliikenne.liikennemaara
+                alue.tormaystarkasteluTulos!!.kaistahaitta =
+                    tormaystarkasteluTulos.autoliikenne.kaistahaitta
+                alue.tormaystarkasteluTulos!!.kaistapituushaitta =
+                    tormaystarkasteluTulos.autoliikenne.kaistapituushaitta
+                alue.tormaystarkasteluTulos!!.pyoraliikenne =
+                    tormaystarkasteluTulos.pyoraliikenneindeksi
+                alue.tormaystarkasteluTulos!!.linjaautoliikenne =
+                    tormaystarkasteluTulos.linjaautoliikenneindeksi
+                alue.tormaystarkasteluTulos!!.raitioliikenne =
+                    tormaystarkasteluTulos.raitioliikenneindeksi
             }
+        } else {
+            alue.tormaystarkasteluTulos = null
+        }
     }
 
     companion object {
