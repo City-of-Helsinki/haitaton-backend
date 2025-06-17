@@ -103,7 +103,7 @@ dependencies {
     testImplementation("com.icegreen:greenmail-junit5:2.1.3")
 
     // Pdf generation
-    implementation("com.github.librepdf:openpdf:2.0.3")
+    implementation("com.github.librepdf:openpdf:2.2.2")
     implementation("org.apache.xmlgraphics:fop:2.11")
 
     // Geotools
