@@ -940,24 +940,25 @@ class HakemusService(
         )
     }
 
-    /** Creates a new [HakemusEntity] based on the given [request] and saves it. */
+    /** Updates a [HakemusEntity] based on the given [request] and saves it. */
     private fun saveWithUpdate(
         hakemusEntity: HakemusEntity,
         request: HakemusUpdateRequest,
     ): HakemusEntity {
-        logger.info { "Creating and saving new hakemus data. ${hakemusEntity.logString()}" }
-        val updatedApplicationEntity =
-            hakemusEntity.copy(
-                hakemusEntityData = request.toEntityData(hakemusEntity.hakemusEntityData),
-                yhteystiedot = updateYhteystiedot(hakemusEntity, request.customersByRole()),
-            )
-        if (updatedApplicationEntity.hanke.generated) {
-            updatedApplicationEntity.hanke.nimi = request.name
+        logger.info { "Updating hakemus entity in-place. ${hakemusEntity.logString()}" }
+
+        hakemusEntity.hakemusEntityData = request.toEntityData(hakemusEntity.hakemusEntityData)
+        updateYhteystiedot(hakemusEntity, request.customersByRole())
+
+        if (hakemusEntity.hanke.generated) {
+            hakemusEntity.hanke.nimi = request.name
         }
-        updateTormaystarkastelut(updatedApplicationEntity.hakemusEntityData)?.let {
-            updatedApplicationEntity.hakemusEntityData = it
+
+        updateTormaystarkastelut(hakemusEntity.hakemusEntityData)?.let {
+            hakemusEntity.hakemusEntityData = it
         }
-        return hakemusRepository.save(updatedApplicationEntity)
+
+        return hakemusRepository.save(hakemusEntity)
     }
 
     /** Calculate the traffic nuisance indexes for each work area of an application. */
@@ -1003,32 +1004,37 @@ class HakemusService(
     private fun updateYhteystiedot(
         hakemusEntity: HakemusEntity,
         newYhteystiedot: Map<ApplicationContactType, CustomerWithContactsRequest?>,
-    ): MutableMap<ApplicationContactType, HakemusyhteystietoEntity> {
-        val updatedYhteystiedot = mutableMapOf<ApplicationContactType, HakemusyhteystietoEntity>()
+    ) {
         ApplicationContactType.entries.forEach { rooli ->
-            updateYhteystieto(rooli, hakemusEntity, newYhteystiedot[rooli])?.let {
-                updatedYhteystiedot[rooli] = it
-            }
+            updateYhteystieto(rooli, hakemusEntity, newYhteystiedot[rooli])
         }
-        return updatedYhteystiedot
     }
 
     private fun updateYhteystieto(
         rooli: ApplicationContactType,
         hakemusEntity: HakemusEntity,
         customerWithContactsRequest: CustomerWithContactsRequest?,
-    ): HakemusyhteystietoEntity? {
+    ) {
         if (customerWithContactsRequest == null) {
             // customer was deleted
-            return null
-        }
-        return hakemusEntity.yhteystiedot[rooli]?.let {
-            val newHenkilot = customerWithContactsRequest.toExistingYhteystietoEntity(it)
-            newHenkilot.map { hankekayttajaId ->
-                it.yhteyshenkilot.add(newHakemusyhteyshenkiloEntity(hankekayttajaId, it))
+            hakemusEntity.yhteystiedot[rooli]?.let { hakemusEntity.yhteystiedot.remove(rooli) }
+        } else {
+            if (hakemusEntity.yhteystiedot[rooli] != null) {
+                // customer was updated
+                val existingYhteystieto = hakemusEntity.yhteystiedot[rooli]!!
+                val newHenkilot =
+                    customerWithContactsRequest.toExistingYhteystietoEntity(existingYhteystieto)
+                newHenkilot.map { hankekayttajaId ->
+                    existingYhteystieto.yhteyshenkilot.add(
+                        newHakemusyhteyshenkiloEntity(hankekayttajaId, existingYhteystieto)
+                    )
+                }
+            } else {
+                // customer was added
+                hakemusEntity.yhteystiedot[rooli] =
+                    customerWithContactsRequest.toNewHakemusyhteystietoEntity(rooli, hakemusEntity)
             }
-            it
-        } ?: customerWithContactsRequest.toNewHakemusyhteystietoEntity(rooli, hakemusEntity)
+        }
     }
 
     private fun CustomerWithContactsRequest.toNewHakemusyhteystietoEntity(
