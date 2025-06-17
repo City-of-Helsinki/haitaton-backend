@@ -1021,7 +1021,7 @@ class HakemusService(
         } else {
             if (hakemusEntity.yhteystiedot[rooli] != null) {
                 // customer was updated
-                val existingYhteystieto = hakemusEntity.yhteystiedot[rooli]!!
+                val existingYhteystieto = hakemusEntity.yhteystiedot.getValue(rooli)
                 val newHenkilot =
                     customerWithContactsRequest.toExistingYhteystietoEntity(existingYhteystieto)
                 newHenkilot.map { hankekayttajaId ->
