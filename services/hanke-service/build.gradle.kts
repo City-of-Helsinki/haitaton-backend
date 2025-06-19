@@ -65,7 +65,7 @@ plugins {
     kotlin("plugin.jpa") version kotlinVersion
     idea
     id("jacoco")
-    id("io.freefair.mjml.java") version "8.13.1"
+    id("io.freefair.mjml.java") version "8.14"
 }
 
 dependencies {
