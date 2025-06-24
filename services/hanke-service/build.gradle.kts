@@ -166,6 +166,7 @@ tasks {
             showStackTraces = true
             exceptionFormat = TestExceptionFormat.FULL
         }
+        exclude("**/*ManualTest*")
     }
 
     create("copyEmailTemplates", Copy::class) {

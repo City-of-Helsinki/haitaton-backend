@@ -1,7 +1,9 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import fi.hel.haitaton.hanke.allu.AlluEventError
+import fi.hel.haitaton.hanke.allu.AlluEventErrorEntity
+import fi.hel.haitaton.hanke.allu.AlluEventErrorRepository
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
-import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.email.InformationRequestEmail
@@ -16,6 +18,7 @@ import java.time.OffsetDateTime
 import mu.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
@@ -24,6 +27,7 @@ private val logger = KotlinLogging.logger {}
 class HakemusHistoryService(
     private val hakemusRepository: HakemusRepository,
     private val alluStatusRepository: AlluStatusRepository,
+    private val alluEventErrorRepository: AlluEventErrorRepository,
     private val taydennysService: TaydennysService,
     private val paatosService: PaatosService,
     private val hankeKayttajaService: HankeKayttajaService,
@@ -36,30 +40,55 @@ class HakemusHistoryService(
     fun getLastUpdateTime() = alluStatusRepository.getLastUpdateTime()
 
     @Transactional
-    fun handleHakemusUpdates(
-        applicationHistories: List<ApplicationHistory>,
-        updateTime: OffsetDateTime,
-    ) {
-        applicationHistories.forEach { handleHakemusUpdate(it) }
+    fun setLastUpdateTime(time: OffsetDateTime) {
         val status = alluStatusRepository.getReferenceById(1)
-        status.historyLastUpdated = updateTime
+        status.historyLastUpdated = time
     }
 
-    private fun handleHakemusUpdate(applicationHistory: ApplicationHistory) {
-        val application = hakemusRepository.getOneByAlluid(applicationHistory.applicationId)
+    @Transactional
+    fun saveErrors(errors: List<AlluEventError>) {
+        alluEventErrorRepository.saveAll(
+            errors.map {
+                AlluEventErrorEntity(
+                    alluId = it.alluId,
+                    eventTime = it.eventTime,
+                    newStatus = it.newStatus,
+                    applicationIdentifier = it.applicationIdentifier,
+                    targetStatus = it.targetStatus,
+                    stackTrace = it.stackTrace,
+                )
+            }
+        )
+    }
+
+    @Transactional(readOnly = true)
+    fun getAllErrors(): List<AlluEventError> =
+        alluEventErrorRepository.findAll().map { it.toDomain() }
+
+    @Transactional
+    fun deleteError(error: AlluEventError) {
+        alluEventErrorRepository.deleteById(error.id)
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun handleApplicationEvent(alluId: Int, event: ApplicationStatusEvent) {
+        val application = hakemusRepository.getOneByAlluid(alluId)
         if (application == null) {
             logger.error {
-                "Allu had events for a hakemus we don't have anymore. alluId=${applicationHistory.applicationId}"
+                "Allu had an event for a hakemus we don't have anymore. alluId=${alluId}"
             }
             return
         }
-        applicationHistory.events
-            .sortedBy { it.eventTime }
-            .forEach { handleApplicationEvent(application, it) }
-        hakemusRepository.save(application)
-    }
 
-    private fun handleApplicationEvent(application: HakemusEntity, event: ApplicationStatusEvent) {
+        logger.info {
+            "Handling application event: " +
+                "id=${application.id}, " +
+                "alluId=${application.alluid}, " +
+                "application identifier=${event.applicationIdentifier}, " +
+                "new status=${event.newStatus}, " +
+                "event time=${event.eventTime}"
+        }
+
         fun updateStatus() {
             application.alluStatus = event.newStatus
             application.applicationIdentifier = event.applicationIdentifier
@@ -125,7 +154,7 @@ class HakemusHistoryService(
             }
             ApplicationStatus.HANDLING -> {
                 logger.info {
-                    "A hakemus has has entered handling. Checking if there's a täydennyspyyntö for the hakemus."
+                    "A hakemus has has entered handling. Checking if there's a täydennyspyyntö for the hakemus: ${application.logString()}"
                 }
                 taydennysService.removeTaydennyspyyntoIfItExists(application)
                 updateStatus()
