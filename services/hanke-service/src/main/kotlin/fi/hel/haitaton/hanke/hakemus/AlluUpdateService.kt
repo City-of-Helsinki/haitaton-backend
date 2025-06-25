@@ -36,7 +36,7 @@ class AlluUpdateService(
      * Handles new updates from Allu, fetching application histories for all applications with
      * alluIds.
      */
-    private fun handleNewUpdates(errors: List<AlluEventError>) {
+    private fun handleNewUpdates(pastErrors: List<AlluEventError>) {
         val ids = historyService.getAllAlluIds()
         if (ids.isNotEmpty()) {
             val lastUpdate = historyService.getLastUpdateTime()
@@ -54,7 +54,7 @@ class AlluUpdateService(
 
             if (applicationHistories.isNotEmpty()) {
                 val (succeed, failed, skipped) =
-                    processApplicationHistories(applicationHistories, errors)
+                    processApplicationHistories(applicationHistories, pastErrors)
                 logger.info {
                     "Handled ${applicationHistories.size} application history updates from $lastUpdate, succeeded: $succeed, failed: $failed, skipped: $skipped"
                 }
@@ -184,14 +184,14 @@ class AlluUpdateService(
     }
 
     /** Handles updates for previously failed applications by fetching their histories from Allu. */
-    private fun handleFailedUpdates(errors: List<AlluEventError>) {
-        if (errors.isEmpty()) {
+    private fun handleFailedUpdates(pastErrors: List<AlluEventError>) {
+        if (pastErrors.isEmpty()) {
             logger.info("No past errors found, skipping Allu history update for them.")
             return
         }
 
-        val ids = errors.map { it.alluId }.distinct()
-        val updateTime = errors.minOf { it.eventTime }.minusMillis(1)
+        val ids = pastErrors.map { it.alluId }.distinct()
+        val updateTime = pastErrors.minOf { it.eventTime }.minusMillis(1)
 
         logger.info {
             "Preparing to update ${ids.size} previously failed applications from Allu since ${updateTime}."
@@ -203,7 +203,7 @@ class AlluUpdateService(
 
         if (applicationHistories.isNotEmpty()) {
             val (succeed, failed, skipped) =
-                processApplicationHistories(applicationHistories, errors, false)
+                processApplicationHistories(applicationHistories, pastErrors, false)
             logger.info {
                 "Updated ${applicationHistories.size} application histories from $updateTime, succeeded: $succeed, failed: $failed, skipped: $skipped"
             }
