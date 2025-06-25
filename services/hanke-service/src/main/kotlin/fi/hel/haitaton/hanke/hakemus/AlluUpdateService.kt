@@ -6,7 +6,6 @@ import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.minusMillis
 import java.time.OffsetDateTime
-import kotlin.collections.forEach
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -54,7 +53,8 @@ class AlluUpdateService(
             }
 
             if (applicationHistories.isNotEmpty()) {
-                val (succeed, failed, skipped) = handleHakemusUpdates(applicationHistories, errors)
+                val (succeed, failed, skipped) =
+                    processApplicationHistories(applicationHistories, errors)
                 logger.info {
                     "Handled ${applicationHistories.size} application history updates from $lastUpdate, succeeded: $succeed, failed: $failed, skipped: $skipped"
                 }
@@ -72,11 +72,11 @@ class AlluUpdateService(
         }
     }
 
-    private fun handleHakemusUpdates(
+    private fun processApplicationHistories(
         applicationHistories: List<ApplicationHistory>,
         pastErrors: List<AlluEventError>,
         skipPastFailures: Boolean = true,
-    ): Triple<Int, Int, Int> {
+    ): UpdateSummary {
         var success = 0
         var failure = 0
         var skipped = 0
@@ -137,7 +137,7 @@ class AlluUpdateService(
             }
         }
 
-        return Triple(success, failure, skipped)
+        return UpdateSummary(success, failure, skipped)
     }
 
     /**
@@ -203,7 +203,7 @@ class AlluUpdateService(
 
         if (applicationHistories.isNotEmpty()) {
             val (succeed, failed, skipped) =
-                handleHakemusUpdates(applicationHistories, errors, false)
+                processApplicationHistories(applicationHistories, errors, false)
             logger.info {
                 "Updated ${applicationHistories.size} application histories from $updateTime, succeeded: $succeed, failed: $failed, skipped: $skipped"
             }
@@ -216,6 +216,8 @@ class AlluUpdateService(
             )
         }
     }
+
+    data class UpdateSummary(val success: Int, val failure: Int, val skipped: Int)
 
     data class ApplicationEventResult(
         val applicationHistory: ApplicationHistory? = null,
