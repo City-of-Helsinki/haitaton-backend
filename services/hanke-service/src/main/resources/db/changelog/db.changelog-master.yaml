@@ -245,3 +245,5 @@ databaseChangeLog:
       file: db/changelog/changesets/107-add-completion-date-to-hanke.sql
   - include:
       file: db/changelog/changesets/108-add-sent-reminders-to-hanke.sql
+  - include:
+      file: db/changelog/changesets/109-create-table-for-allu-event-errors.sql

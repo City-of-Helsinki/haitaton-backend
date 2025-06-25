@@ -3,14 +3,12 @@ package fi.hel.haitaton.hanke.hakemus
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.contains
-import fi.hel.haitaton.hanke.allu.AlluStatus
+import fi.hel.haitaton.hanke.allu.AlluEventErrorRepository
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
 import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
-import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.asList
-import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.withEvent
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory.withYhteyshenkilo
@@ -29,7 +27,6 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verifySequence
-import java.time.OffsetDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -44,6 +41,7 @@ import org.springframework.context.ApplicationEventPublisher
 class HakemusHistoryServiceTest {
     private val hakemusRepository: HakemusRepository = mockk()
     private val alluStatusRepository: AlluStatusRepository = mockk()
+    private val alluEventErrorRepository: AlluEventErrorRepository = mockk()
     private val taydennysService: TaydennysService = mockk()
     private val paatosService: PaatosService = mockk()
     private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
@@ -54,6 +52,7 @@ class HakemusHistoryServiceTest {
         HakemusHistoryService(
             hakemusRepository,
             alluStatusRepository,
+            alluEventErrorRepository,
             taydennysService,
             paatosService,
             hankeKayttajaService,
@@ -83,34 +82,30 @@ class HakemusHistoryServiceTest {
     @Nested
     @ExtendWith(OutputCaptureExtension::class)
     inner class HandleApplicationUpdates {
-        private val alluid = 42
+        private val alluId = 42
         private val applicationId = 13L
         private val hankeTunnus = "HAI23-1"
         private val receiver = HakemusyhteyshenkiloFactory.DEFAULT_SAHKOPOSTI
-        private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
         private val identifier = ApplicationHistoryFactory.DEFAULT_APPLICATION_IDENTIFIER
 
         @Test
         fun `sends email to the contacts when a johtoselvityshakemus gets a decision`() {
-            every { hakemusRepository.getOneByAlluid(42) } returns applicationEntityWithCustomer()
+            every { hakemusRepository.getOneByAlluid(alluId) } returns
+                applicationEntityWithCustomer()
             justRun {
                 publisher.publishEvent(
                     JohtoselvitysCompleteEmail(receiver, applicationId, identifier)
                 )
             }
-            every { hakemusRepository.save(any()) } answers { firstArg() }
-            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
 
-            historyService.handleHakemusUpdates(createHistories(), updateTime)
+            historyService.handleApplicationEvent(alluId, createEvent())
 
             verifySequence {
-                hakemusRepository.getOneByAlluid(42)
+                hakemusRepository.getOneByAlluid(alluId)
                 muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(any())
                 publisher.publishEvent(
                     JohtoselvitysCompleteEmail(receiver, applicationId, identifier)
                 )
-                hakemusRepository.save(any())
-                alluStatusRepository.getReferenceById(1)
             }
         }
 
@@ -122,15 +117,13 @@ class HakemusHistoryServiceTest {
         fun `sends email to the contacts when a kaivuilmoitus gets a decision`(
             applicationStatus: ApplicationStatus
         ) {
-            every { hakemusRepository.getOneByAlluid(42) } returns
+            every { hakemusRepository.getOneByAlluid(alluId) } returns
                 applicationEntityWithCustomer(type = ApplicationType.EXCAVATION_NOTIFICATION)
             justRun {
                 publisher.publishEvent(
                     KaivuilmoitusDecisionEmail(receiver, applicationId, identifier)
                 )
             }
-            every { hakemusRepository.save(any()) } answers { firstArg() }
-            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
 
             val saveMethod =
                 when (applicationStatus) {
@@ -143,7 +136,7 @@ class HakemusHistoryServiceTest {
                 }
             justRun { saveMethod(any(), any()) }
 
-            historyService.handleHakemusUpdates(createHistories(applicationStatus), updateTime)
+            historyService.handleApplicationEvent(alluId, createEvent(applicationStatus))
 
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
@@ -154,50 +147,37 @@ class HakemusHistoryServiceTest {
                     KaivuilmoitusDecisionEmail(receiver, applicationId, identifier)
                 )
                 saveMethod(any(), any())
-                hakemusRepository.save(any())
-                alluStatusRepository.getReferenceById(1)
             }
         }
 
         @Test
         fun `doesn't send email when status is not decision`() {
-            every { hakemusRepository.getOneByAlluid(42) } returns applicationEntityWithCustomer()
-            every { hakemusRepository.save(any()) } answers { firstArg() }
-            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { hakemusRepository.getOneByAlluid(alluId) } returns
+                applicationEntityWithCustomer()
 
-            val histories =
-                ApplicationHistoryFactory.create(alluid)
-                    .withEvent(
-                        applicationIdentifier = identifier,
-                        newStatus = ApplicationStatus.DECISIONMAKING,
-                    )
-                    .asList()
+            val event =
+                ApplicationHistoryFactory.createEvent(
+                    applicationIdentifier = identifier,
+                    newStatus = ApplicationStatus.DECISIONMAKING,
+                )
 
-            historyService.handleHakemusUpdates(histories, updateTime)
+            historyService.handleApplicationEvent(alluId, event)
 
-            verifySequence {
-                hakemusRepository.getOneByAlluid(42)
-                hakemusRepository.save(any())
-                alluStatusRepository.getReferenceById(1)
-            }
+            verifySequence { hakemusRepository.getOneByAlluid(42) }
         }
 
         @Test
         fun `logs error when there are no receivers`(output: CapturedOutput) {
-            every { hakemusRepository.getOneByAlluid(42) } returns
+            every { hakemusRepository.getOneByAlluid(alluId) } returns
                 applicationEntityWithoutCustomer()
-            every { hakemusRepository.save(any()) } answers { firstArg() }
-            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
 
-            historyService.handleHakemusUpdates(createHistories(), updateTime)
+            historyService.handleApplicationEvent(alluId, createEvent())
 
             assertThat(output)
                 .contains("No receivers found for hakemus DECISION ready email, not sending any.")
             verifySequence {
                 hakemusRepository.getOneByAlluid(42)
                 muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(any())
-                hakemusRepository.save(any())
-                alluStatusRepository.getReferenceById(1)
             }
         }
 
@@ -207,24 +187,18 @@ class HakemusHistoryServiceTest {
             status: ApplicationStatus,
             output: CapturedOutput,
         ) {
-            every { hakemusRepository.getOneByAlluid(alluid) } returns
+            every { hakemusRepository.getOneByAlluid(alluId) } returns
                 applicationEntityWithoutCustomer()
-            every { hakemusRepository.save(any()) } answers { firstArg() }
-            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
 
-            historyService.handleHakemusUpdates(createHistories(status), updateTime)
+            historyService.handleApplicationEvent(alluId, createEvent(status))
 
             assertThat(output).all {
                 contains("Got $status update for a cable report.")
                 contains("id=$applicationId")
-                contains("alluId=$alluid")
+                contains("alluId=$alluId")
                 contains("identifier=$identifier")
             }
-            verifySequence {
-                hakemusRepository.getOneByAlluid(42)
-                hakemusRepository.save(any())
-                alluStatusRepository.getReferenceById(1)
-            }
+            verifySequence { hakemusRepository.getOneByAlluid(42) }
         }
 
         private fun applicationEntityWithoutCustomer(
@@ -234,7 +208,7 @@ class HakemusHistoryServiceTest {
             val entity =
                 HakemusFactory.createEntity(
                     id = id,
-                    alluid = alluid,
+                    alluid = alluId,
                     applicationIdentifier = identifier,
                     userId = USERNAME,
                     hanke = HankeFactory.createMinimalEntity(id = 1, hankeTunnus = hankeTunnus),
@@ -256,9 +230,10 @@ class HakemusHistoryServiceTest {
             return entity
         }
 
-        private fun createHistories(status: ApplicationStatus = ApplicationStatus.DECISION) =
-            ApplicationHistoryFactory.create(alluid)
-                .withEvent(applicationIdentifier = identifier, newStatus = status)
-                .asList()
+        private fun createEvent(status: ApplicationStatus = ApplicationStatus.DECISION) =
+            ApplicationHistoryFactory.createEvent(
+                applicationIdentifier = identifier,
+                newStatus = status,
+            )
     }
 }
