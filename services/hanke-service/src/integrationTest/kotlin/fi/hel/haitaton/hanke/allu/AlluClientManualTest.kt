@@ -7,13 +7,13 @@ class AlluClientManualTest {
 
     @Test
     fun `load decision`() {
-        val webCliebt =
+        val webClient =
             WebClient.builder()
                 .codecs { codecs -> codecs.defaultCodecs().maxInMemorySize(100 * 1024 * 1024) }
                 .build()
         val alluClient =
             AlluClient(
-                webCliebt,
+                webClient,
                 AlluProperties(
                     System.getenv("ALLU_BASE_URL"),
                     System.getenv("ALLU_USERNAME"),
