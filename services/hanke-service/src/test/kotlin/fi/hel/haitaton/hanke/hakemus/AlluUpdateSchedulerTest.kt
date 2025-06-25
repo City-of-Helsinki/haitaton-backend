@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.hakemus
 
-import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.configuration.LockService
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -18,7 +17,6 @@ import org.springframework.integration.jdbc.lock.JdbcLockRegistry
 
 class AlluUpdateSchedulerTest {
     private val alluUpdateService: AlluUpdateService = mockk()
-    private val alluClient: AlluClient = mockk()
     private val historyService: HakemusHistoryService = mockk()
     private val jdbcLockRegistry: JdbcLockRegistry = mockk()
     private val lockService = LockService(jdbcLockRegistry)
@@ -33,7 +31,7 @@ class AlluUpdateSchedulerTest {
     @AfterEach
     fun confirmMocks() {
         checkUnnecessaryStub()
-        confirmVerified(historyService, alluClient, jdbcLockRegistry)
+        confirmVerified(alluUpdateService, historyService, jdbcLockRegistry)
     }
 
     @Test
@@ -44,7 +42,7 @@ class AlluUpdateSchedulerTest {
 
         verifyOrder {
             jdbcLockRegistry.obtain(AlluUpdateScheduler.LOCK_NAME)
-            alluClient wasNot Called
+            alluUpdateService wasNot Called
             historyService wasNot Called
         }
     }
