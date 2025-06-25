@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.DEFAULT_EVENT_TIM
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.asList
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.withDefaultEvents
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory.withEvent
+import fi.hel.haitaton.hanke.minusMillis
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -194,7 +195,7 @@ class AlluUpdateServiceTest {
             every {
                 alluClient.getApplicationStatusHistories(
                     listOf(24),
-                    error1.eventTime.minusSeconds(1),
+                    error1.eventTime.minusMillis(1),
                 )
             } returns histories
             justRun { historyService.handleApplicationEvent(24, event1) }
@@ -210,7 +211,7 @@ class AlluUpdateServiceTest {
                 historyService.setLastUpdateTime(any())
                 alluClient.getApplicationStatusHistories(
                     listOf(24),
-                    error1.eventTime.minusSeconds(1),
+                    error1.eventTime.minusMillis(1),
                 )
                 historyService.handleApplicationEvent(24, event1)
                 historyService.deleteError(error1)
@@ -241,7 +242,7 @@ class AlluUpdateServiceTest {
             every {
                 alluClient.getApplicationStatusHistories(
                     listOf(24),
-                    error1.eventTime.minusSeconds(1),
+                    error1.eventTime.minusMillis(1),
                 )
             } returns emptyList()
 
@@ -254,7 +255,7 @@ class AlluUpdateServiceTest {
                 historyService.setLastUpdateTime(any())
                 alluClient.getApplicationStatusHistories(
                     listOf(24),
-                    error1.eventTime.minusSeconds(1),
+                    error1.eventTime.minusMillis(1),
                 )
             }
         }
@@ -276,10 +277,7 @@ class AlluUpdateServiceTest {
             every { historyService.getAllAlluIds() } returns listOf()
             justRun { historyService.setLastUpdateTime(any()) }
             every {
-                alluClient.getApplicationStatusHistories(
-                    listOf(24),
-                    error.eventTime.minusSeconds(1),
-                )
+                alluClient.getApplicationStatusHistories(listOf(24), error.eventTime.minusMillis(1))
             } returns histories
             justRun { historyService.handleApplicationEvent(24, histories[0].events.first()) }
             justRun { historyService.deleteError(error) }
@@ -290,10 +288,7 @@ class AlluUpdateServiceTest {
                 historyService.getAllErrors()
                 historyService.getAllAlluIds()
                 historyService.setLastUpdateTime(any())
-                alluClient.getApplicationStatusHistories(
-                    listOf(24),
-                    error.eventTime.minusSeconds(1),
-                )
+                alluClient.getApplicationStatusHistories(listOf(24), error.eventTime.minusMillis(1))
                 historyService.handleApplicationEvent(24, histories[0].events.first())
                 historyService.deleteError(error)
             }

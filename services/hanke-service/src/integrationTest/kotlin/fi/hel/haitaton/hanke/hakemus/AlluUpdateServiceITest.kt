@@ -44,6 +44,7 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.firstReceivedMessage
+import fi.hel.haitaton.hanke.minusMillis
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
@@ -924,6 +925,76 @@ class AlluUpdateServiceITest(
             }
         }
 
+        @Test
+        fun `skips updates for an application that has previous errors`(output: CapturedOutput) {
+            assertThat(hakemusRepository.findAll()).isEmpty()
+            assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+                .isEqualTo(placeholderUpdateTime)
+            val hanke = hankeFactory.saveMinimal()
+            hakemusFactory.builder(USERNAME, hanke).withStatus(alluId = alluId).save()
+            val errorEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
+            hakemusHistoryService.saveErrors(
+                listOf(
+                    ApplicationHistoryFactory.createError(
+                        alluId = alluId,
+                        eventTime = errorEventTime,
+                        newStatus = ApplicationStatus.WAITING_INFORMATION,
+                        stackTrace = "Test error",
+                    )
+                )
+            )
+            val newHistory =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
+                        newStatus = ApplicationStatus.HANDLING,
+                        eventTime = errorEventTime.plusSeconds(30),
+                    )
+                    .asList()
+            val errorHistory =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(
+                        newStatus = ApplicationStatus.WAITING_INFORMATION,
+                        eventTime = errorEventTime,
+                    )
+                    .asList()
+            every {
+                alluClient.getApplicationStatusHistories(
+                    listOf(alluId),
+                    placeholderUpdateTime.toZonedDateTime(),
+                )
+            } returns newHistory
+            every {
+                alluClient.getApplicationStatusHistories(
+                    listOf(alluId),
+                    errorEventTime.minusMillis(1),
+                )
+            } returns errorHistory
+            every { alluClient.getInformationRequest(alluId) } returns
+                AlluFactory.createInformationRequest(applicationAlluId = alluId)
+
+            updateService.handleUpdates()
+
+            assertThat(output)
+                .contains(
+                    "Skipping application history with 1 events for application $alluId due to its past errors"
+                )
+            assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isRecent()
+            val application = hakemusRepository.findAll().single()
+            assertThat(application.alluStatus).isEqualTo(ApplicationStatus.WAITING_INFORMATION)
+
+            verifySequence {
+                alluClient.getApplicationStatusHistories(
+                    listOf(alluId),
+                    placeholderUpdateTime.toZonedDateTime(),
+                )
+                alluClient.getApplicationStatusHistories(
+                    listOf(alluId),
+                    errorEventTime.minusMillis(1),
+                )
+                alluClient.getInformationRequest(alluId)
+            }
+        }
+
         private fun getPdfMethod(applicationStatus: ApplicationStatus) =
             when (applicationStatus) {
                 ApplicationStatus.DECISION -> alluClient::getDecisionPdf
@@ -978,7 +1049,7 @@ class AlluUpdateServiceITest(
                 )
             } returns emptyList()
             every {
-                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusSeconds(1))
+                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusMillis(1))
             } returns history
             every { alluClient.getInformationRequest(alluId) } returns
                 AlluFactory.createInformationRequest(applicationAlluId = alluId)
@@ -997,7 +1068,7 @@ class AlluUpdateServiceITest(
                     listOf(alluId),
                     placeholderUpdateTime.toZonedDateTime(),
                 )
-                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusSeconds(1))
+                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusMillis(1))
                 alluClient.getInformationRequest(alluId)
             }
         }
@@ -1045,7 +1116,7 @@ class AlluUpdateServiceITest(
                 )
             } returns emptyList()
             every {
-                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusSeconds(1))
+                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusMillis(1))
             } returns history
             every { alluClient.getInformationRequest(alluId) } throws exception
 
@@ -1071,7 +1142,7 @@ class AlluUpdateServiceITest(
                     listOf(alluId),
                     placeholderUpdateTime.toZonedDateTime(),
                 )
-                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusSeconds(1))
+                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusMillis(1))
                 alluClient.getInformationRequest(alluId)
             }
         }

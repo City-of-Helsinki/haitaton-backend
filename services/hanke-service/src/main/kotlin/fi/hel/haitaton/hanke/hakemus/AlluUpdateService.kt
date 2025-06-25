@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluEventError
 import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
+import fi.hel.haitaton.hanke.minusMillis
 import java.time.OffsetDateTime
 import kotlin.collections.forEach
 import mu.KotlinLogging
@@ -85,7 +86,7 @@ class AlluUpdateService(
                         newErrors.any { it.alluId == applicationHistory.applicationId })
             ) {
                 logger.warn {
-                    "Skipping application history with ${applicationHistory.events.size} events for application ${applicationHistory.applicationId} due to its errors"
+                    "Skipping application history with ${applicationHistory.events.size} events for application ${applicationHistory.applicationId} due to its past errors"
                 }
                 skipped++
             } else if (
@@ -187,7 +188,7 @@ class AlluUpdateService(
         }
 
         val ids = errors.map { it.alluId }.distinct()
-        val updateTime = errors.minOf { it.eventTime }.minusSeconds(1)
+        val updateTime = errors.minOf { it.eventTime }.minusMillis(1)
 
         logger.info {
             "Preparing to update ${ids.size} previously failed applications from Allu since ${updateTime}."
