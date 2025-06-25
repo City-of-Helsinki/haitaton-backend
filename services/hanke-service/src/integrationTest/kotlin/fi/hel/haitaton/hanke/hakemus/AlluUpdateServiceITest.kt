@@ -118,7 +118,7 @@ class AlluUpdateServiceITest(
     inner class HandleNewUpdates {
 
         @Test
-        fun `updates the last updated time with empty histories`() {
+        fun `does not update the last updated time with empty histories`() {
             assertThat(alluEventErrorRepository.findAll()).isEmpty()
             assertThat(hakemusRepository.findAll()).isEmpty()
             assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
@@ -126,7 +126,8 @@ class AlluUpdateServiceITest(
 
             updateService.handleUpdates()
 
-            assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isRecent()
+            assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+                .isEqualTo(placeholderUpdateTime)
         }
 
         @Test

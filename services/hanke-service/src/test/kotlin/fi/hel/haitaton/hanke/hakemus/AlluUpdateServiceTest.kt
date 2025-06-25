@@ -46,14 +46,12 @@ class AlluUpdateServiceTest {
     fun `updates only last update time when no alluIds or errors`() {
         every { historyService.getAllErrors() } returns listOf()
         every { historyService.getAllAlluIds() } returns listOf()
-        justRun { historyService.setLastUpdateTime(any()) }
 
         alluUpdateService.handleUpdates()
 
         verifySequence {
             historyService.getAllErrors()
             historyService.getAllAlluIds()
-            historyService.setLastUpdateTime(any())
             alluClient wasNot Called
         }
     }
@@ -191,7 +189,6 @@ class AlluUpdateServiceTest {
             val event2 = histories.single().events.last()
             every { historyService.getAllErrors() } returns listOf(error1, error2)
             every { historyService.getAllAlluIds() } returns listOf()
-            justRun { historyService.setLastUpdateTime(any()) }
             every {
                 alluClient.getApplicationStatusHistories(
                     listOf(24),
@@ -208,7 +205,6 @@ class AlluUpdateServiceTest {
             verifyOrder {
                 historyService.getAllErrors()
                 historyService.getAllAlluIds()
-                historyService.setLastUpdateTime(any())
                 alluClient.getApplicationStatusHistories(
                     listOf(24),
                     error1.eventTime.minusMillis(1),
@@ -238,7 +234,6 @@ class AlluUpdateServiceTest {
                 )
             every { historyService.getAllErrors() } returns listOf(error1, error2)
             every { historyService.getAllAlluIds() } returns listOf()
-            justRun { historyService.setLastUpdateTime(any()) }
             every {
                 alluClient.getApplicationStatusHistories(
                     listOf(24),
@@ -252,7 +247,6 @@ class AlluUpdateServiceTest {
             verifyOrder {
                 historyService.getAllErrors()
                 historyService.getAllAlluIds()
-                historyService.setLastUpdateTime(any())
                 alluClient.getApplicationStatusHistories(
                     listOf(24),
                     error1.eventTime.minusMillis(1),
@@ -275,7 +269,6 @@ class AlluUpdateServiceTest {
             val error = ApplicationHistoryFactory.createError(alluId = 24, eventTime = eventTime)
             every { historyService.getAllErrors() } returns listOf(error)
             every { historyService.getAllAlluIds() } returns listOf()
-            justRun { historyService.setLastUpdateTime(any()) }
             every {
                 alluClient.getApplicationStatusHistories(listOf(24), error.eventTime.minusMillis(1))
             } returns histories
@@ -287,7 +280,6 @@ class AlluUpdateServiceTest {
             verifyOrder {
                 historyService.getAllErrors()
                 historyService.getAllAlluIds()
-                historyService.setLastUpdateTime(any())
                 alluClient.getApplicationStatusHistories(listOf(24), error.eventTime.minusMillis(1))
                 historyService.handleApplicationEvent(24, histories[0].events.first())
                 historyService.deleteError(error)

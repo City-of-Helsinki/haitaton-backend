@@ -38,10 +38,10 @@ class AlluUpdateService(
      * alluIds.
      */
     private fun handleNewUpdates(errors: List<AlluEventError>) {
-        val currentTime = OffsetDateTime.now()
         val ids = historyService.getAllAlluIds()
         if (ids.isNotEmpty()) {
             val lastUpdate = historyService.getLastUpdateTime()
+            val currentTime = OffsetDateTime.now()
 
             logger.info {
                 "Preparing to update ${ids.size} applications from Allu since $lastUpdate"
@@ -61,12 +61,15 @@ class AlluUpdateService(
             } else {
                 logger.info("No application histories found in Allu for the Haitaton applications.")
             }
+
+            historyService.setLastUpdateTime(currentTime)
+            logger.info {
+                "Updated last update time to $currentTime for Allu application histories."
+            }
         } else {
             // Allu handles an empty list as "all", which we don't want.
             logger.info("There are no applications to update, skipping Allu history update.")
         }
-
-        historyService.setLastUpdateTime(currentTime)
     }
 
     private fun handleHakemusUpdates(
