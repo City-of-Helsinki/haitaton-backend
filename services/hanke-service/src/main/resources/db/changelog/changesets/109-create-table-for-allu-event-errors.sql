@@ -1,12 +1,12 @@
 --liquibase formatted sql
 --changeset Teemu Hiltunen:109-create-table-for-allu-event-errors
---comment: Create table for Allu events
+--comment: Create table for Allu event errors
 
 CREATE TABLE allu_event_error
 (
     id                      serial                   NOT NULL PRIMARY KEY,
     alluid                  int                      NOT NULL,
-    eventtime               timestamp                NOT NULL,
+    eventtime               timestamp with time zone NOT NULL,
     newstatus               varchar                  NOT NULL,
     applicationidentifier   varchar                  NOT NULL,
     targetstatus            varchar,
