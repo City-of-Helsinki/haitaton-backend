@@ -8,7 +8,6 @@ import fi.hel.haitaton.hanke.minusMillis
 import java.time.OffsetDateTime
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
@@ -18,7 +17,6 @@ class AlluUpdateService(
     private val historyService: HakemusHistoryService,
 ) {
     /** Handles updates from Allu - first new updates, then previously failed updates. */
-    @Transactional
     fun handleUpdates() {
         val errors = historyService.getAllErrors()
         logger.info {

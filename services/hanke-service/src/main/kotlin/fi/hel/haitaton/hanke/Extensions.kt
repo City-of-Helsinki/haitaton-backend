@@ -8,6 +8,7 @@ import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.OffsetTime
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 
 fun Any?.toJsonString(): String = OBJECT_MAPPER.writeValueAsString(this)
@@ -78,5 +79,5 @@ fun LocalDate.minusMonthsPreserveEndOfMonth(months: Long): LocalDate {
 }
 
 fun ZonedDateTime.minusMillis(millis: Long): ZonedDateTime {
-    return this.minusNanos(millis * 1_000_000)
+    return this.minus(millis, ChronoUnit.MILLIS)
 }

@@ -26,10 +26,10 @@ data class AlluEventError(
 @Table(name = "allu_event_error")
 class AlluEventErrorEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Long = 0,
-    val alluId: Int?,
-    val eventTime: ZonedDateTime?,
-    @Enumerated(EnumType.STRING) val newStatus: ApplicationStatus?,
-    val applicationIdentifier: String?,
+    val alluId: Int,
+    val eventTime: ZonedDateTime,
+    @Enumerated(EnumType.STRING) val newStatus: ApplicationStatus,
+    val applicationIdentifier: String,
     @Enumerated(EnumType.STRING) val targetStatus: ApplicationStatus?,
     val stackTrace: String?,
     val createdAt: Instant? = Instant.now(),
@@ -37,10 +37,10 @@ class AlluEventErrorEntity(
     fun toDomain(): AlluEventError =
         AlluEventError(
             id = id,
-            alluId = alluId!!,
-            eventTime = eventTime!!,
-            newStatus = newStatus!!,
-            applicationIdentifier = applicationIdentifier!!,
+            alluId = alluId,
+            eventTime = eventTime,
+            newStatus = newStatus,
+            applicationIdentifier = applicationIdentifier,
             targetStatus = targetStatus,
             stackTrace = stackTrace,
         )
