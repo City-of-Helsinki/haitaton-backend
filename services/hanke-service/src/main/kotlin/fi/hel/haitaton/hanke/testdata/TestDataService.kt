@@ -5,7 +5,7 @@ import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.FileClient
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.muutosilmoitus.MuutosilmoitusAttachmentRepository
-import fi.hel.haitaton.hanke.hakemus.AlluUpdateService
+import fi.hel.haitaton.hanke.hakemus.AlluUpdateScheduler
 import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.paatos.PaatosEntity
@@ -29,7 +29,7 @@ class TestDataService(
     private val muutosilmoitusAttachmentRepository: MuutosilmoitusAttachmentRepository,
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val fileClient: FileClient,
-    private val alluUpdateService: AlluUpdateService,
+    private val alluUpdateService: AlluUpdateScheduler,
 ) {
     @Transactional
     fun unlinkApplicationsFromAllu() {
@@ -59,7 +59,7 @@ class TestDataService(
 
     fun triggerAlluUpdates() {
         logger.info { "Manually triggered Allu updates..." }
-        alluUpdateService.checkApplicationStatuses()
+        alluUpdateService.checkApplicationHistories()
         logger.info { "Manual Allu updates done." }
     }
 

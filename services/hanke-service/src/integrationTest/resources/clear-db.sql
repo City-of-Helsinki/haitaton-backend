@@ -1,4 +1,5 @@
 TRUNCATE TABLE
+    allu_event_error,
     application_attachment,
     applications,
     audit_logs,

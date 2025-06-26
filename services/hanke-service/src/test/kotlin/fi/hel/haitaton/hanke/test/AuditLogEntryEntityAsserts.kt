@@ -49,7 +49,7 @@ object AuditLogEntryEntityAsserts {
             prop(AuditLogActor::userId).isEqualTo(userId)
         }
 
-    fun Assert<AuditLogEvent>.hasMockedIp(ipAddress: String = TestUtils.mockedIp) =
+    fun Assert<AuditLogEvent>.hasMockedIp(ipAddress: String = TestUtils.MOCKED_IP) =
         prop(AuditLogEvent::actor).prop(AuditLogActor::ipAddress).isEqualTo(ipAddress)
 
     fun Assert<AuditLogEvent>.withTarget(body: Assert<AuditLogTarget>.() -> Unit) =

@@ -79,6 +79,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.AuthenticationMocks
 import fi.hel.haitaton.hanke.test.TestUtils
+import fi.hel.haitaton.hanke.test.TestUtils.FIXED_CLOCK
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.checkUnnecessaryStub
@@ -178,7 +179,7 @@ class HankeServiceITests(
         fun `returns hanke deletion date for a completed hanke`() {
             val hanke =
                 hankeFactory.builder(USERNAME).saveEntity(HankeStatus.COMPLETED) {
-                    it.completedAt = OffsetDateTime.parse("2025-04-09T01:41:13+03:00")
+                    it.completedAt = OffsetDateTime.now(FIXED_CLOCK)
                 }
 
             val response = hankeService.loadHankeById(hanke.id)
@@ -186,7 +187,9 @@ class HankeServiceITests(
             assertThat(response)
                 .isNotNull()
                 .prop(Hanke::deletionDate)
-                .isEqualTo(LocalDate.parse("2025-10-09"))
+                .isEqualTo(
+                    LocalDate.now(FIXED_CLOCK).plusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
+                )
         }
 
         @Test
@@ -641,7 +644,7 @@ class HankeServiceITests(
             assertEquals("1", event.appVersion)
             assertEquals("testUser", event.actor.userId)
             assertEquals(UserRole.USER, event.actor.role)
-            assertEquals(TestUtils.mockedIp, event.actor.ipAddress)
+            assertEquals(TestUtils.MOCKED_IP, event.actor.ipAddress)
             assertEquals(hanke.id.toString(), event.target.id)
             assertEquals(ObjectType.HANKE, event.target.type)
             assertNull(event.target.objectAfter)
@@ -683,7 +686,7 @@ class HankeServiceITests(
                 event.transform { it.appVersion }.isEqualTo("1")
                 event.transform { it.actor.userId }.isEqualTo("testUser")
                 event.transform { it.actor.role }.isEqualTo(UserRole.USER)
-                event.transform { it.actor.ipAddress }.isEqualTo(TestUtils.mockedIp)
+                event.transform { it.actor.ipAddress }.isEqualTo(TestUtils.MOCKED_IP)
             }
             val omistajaId = hanke.omistajat[0].id!!
             val omistajaEvent = deleteLogs.findByTargetId(omistajaId).message.auditEvent

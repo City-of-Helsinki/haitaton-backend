@@ -509,7 +509,6 @@ class HakemusServiceTest {
         private val beforeStart: LocalDate = LocalDate.parse("2024-08-07")
         private val endDate: ZonedDateTime = ZonedDateTime.parse("2024-08-12T00:00Z")
 
-        private val id = 16984L
         private val alluId = 4141
         private val applicationIdentifier = "JS2400014"
         private val hanke = HankeFactory.createEntity()
@@ -518,15 +517,18 @@ class HakemusServiceTest {
                 startTime = startDate,
                 endTime = endDate,
             )
-        private val hakemus =
+
+        private fun hakemus(
+            hakemusEntityData: HakemusEntityData? = null,
+            alluStatus: ApplicationStatus? = ApplicationStatus.PENDING,
+        ) =
             HakemusFactory.createEntity(
-                id = id,
                 alluid = alluId,
-                alluStatus = ApplicationStatus.PENDING,
+                alluStatus = alluStatus,
                 applicationIdentifier = applicationIdentifier,
                 userId = USERNAME,
                 applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                hakemusEntityData = hakemusData,
+                hakemusEntityData = hakemusEntityData ?: hakemusData,
                 hanke = hanke,
             )
 
@@ -546,6 +548,8 @@ class HakemusServiceTest {
             ilmoitusType: ValmistumisilmoitusType,
             date: LocalDate,
         ) {
+            val hakemus = hakemus()
+            val id = hakemus.id
             every { hakemusRepository.findOneById(id) } returns hakemus
             justRun { alluClient.reportCompletionDate(ilmoitusType, alluId, date) }
 
@@ -562,6 +566,8 @@ class HakemusServiceTest {
         fun `throws exception when date is before the start date of the application`(
             ilmoitusType: ValmistumisilmoitusType
         ) {
+            val hakemus = hakemus()
+            val id = hakemus.id
             every { hakemusRepository.findOneById(id) } returns hakemus
 
             val failure = assertFailure {
@@ -582,14 +588,16 @@ class HakemusServiceTest {
         @ParameterizedTest
         @EnumSource(ValmistumisilmoitusType::class)
         fun `throws exception when date is in the future`(ilmoitusType: ValmistumisilmoitusType) {
-            every { hakemusRepository.findOneById(id) } returns
-                hakemus.copy(
+            val hakemus =
+                hakemus(
                     hakemusEntityData =
                         hakemusData.copy(
                             startTime = ZonedDateTime.now().minusDays(5),
                             endTime = ZonedDateTime.now().plusDays(5),
                         )
                 )
+            val id = hakemus.id
+            every { hakemusRepository.findOneById(id) } returns hakemus
 
             val failure = assertFailure {
                 hakemusService.reportCompletionDate(ilmoitusType, hakemus.id, tomorrow)
@@ -659,7 +667,9 @@ class HakemusServiceTest {
             ilmoitusType: ValmistumisilmoitusType,
             status: ApplicationStatus,
         ) {
-            every { hakemusRepository.findOneById(id) } returns hakemus.copy(alluStatus = status)
+            val hakemus = hakemus(alluStatus = status)
+            val id = hakemus.id
+            every { hakemusRepository.findOneById(id) } returns hakemus
             justRun { alluClient.reportCompletionDate(ilmoitusType, alluId, today) }
 
             hakemusService.reportCompletionDate(ilmoitusType, hakemus.id, today)
@@ -676,7 +686,9 @@ class HakemusServiceTest {
             ilmoitusType: ValmistumisilmoitusType,
             status: ApplicationStatus?,
         ) {
-            every { hakemusRepository.findOneById(id) } returns hakemus.copy(alluStatus = status)
+            val hakemus = hakemus(alluStatus = status)
+            val id = hakemus.id
+            every { hakemusRepository.findOneById(id) } returns hakemus
 
             val failure = assertFailure {
                 hakemusService.reportCompletionDate(ilmoitusType, hakemus.id, today)
