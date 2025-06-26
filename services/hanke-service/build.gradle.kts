@@ -8,7 +8,7 @@ group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
 
 val sentryVersion = "7.19.0"
-val geoToolsVersion = "33.0"
+val geoToolsVersion = "33.1"
 
 repositories {
     mavenCentral().content { excludeModule("javax.media", "jai_core") }
@@ -54,7 +54,7 @@ spotless {
 }
 
 plugins {
-    val kotlinVersion = "2.1.20"
+    val kotlinVersion = "2.1.21"
     id("org.springframework.boot") version "3.4.5"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.diffplug.spotless") version "7.0.3"
@@ -85,18 +85,18 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.9.9")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.9.10")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("com.auth0:java-jwt:4.5.0")
 
     implementation("org.postgresql:postgresql")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testImplementation("io.mockk:mockk:1.14.0")
+    testImplementation("io.mockk:mockk:1.14.2")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
@@ -104,7 +104,7 @@ dependencies {
 
     // Pdf generation
     implementation("com.github.librepdf:openpdf:2.0.3")
-    implementation("org.apache.xmlgraphics:fop:2.10")
+    implementation("org.apache.xmlgraphics:fop:2.11")
 
     // Geotools
     implementation("org.geotools:gt-wms:$geoToolsVersion")
@@ -129,7 +129,7 @@ dependencies {
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
-    implementation(platform("com.azure:azure-sdk-bom:1.2.33"))
+    implementation(platform("com.azure:azure-sdk-bom:1.2.34"))
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity")
@@ -166,6 +166,7 @@ tasks {
             showStackTraces = true
             exceptionFormat = TestExceptionFormat.FULL
         }
+        exclude("**/*ManualTest*")
     }
 
     create("copyEmailTemplates", Copy::class) {
