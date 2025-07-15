@@ -42,3 +42,6 @@ azurite-debug.log
 
 # Kotlin 2 cache directory
 /.kotlin
+
+/CLAUDE.md
+/*.txt

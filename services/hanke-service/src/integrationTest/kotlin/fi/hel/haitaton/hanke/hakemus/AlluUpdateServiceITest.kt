@@ -20,6 +20,7 @@ import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluClient
+import fi.hel.haitaton.hanke.allu.AlluEventError
 import fi.hel.haitaton.hanke.allu.AlluEventErrorEntity
 import fi.hel.haitaton.hanke.allu.AlluEventErrorRepository
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
@@ -42,10 +43,13 @@ import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
+import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.minusMillis
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
+import fi.hel.haitaton.hanke.paatos.PaatosRepository
+import fi.hel.haitaton.hanke.paatos.PaatosTyyppi
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
@@ -87,6 +91,8 @@ class AlluUpdateServiceITest(
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
+    @Autowired private val paatosRepository: PaatosRepository,
+    @Autowired private val paatosFactory: PaatosFactory,
     @Autowired private val alluClient: AlluClient,
     @Autowired private val fileClient: MockFileClient,
 ) : IntegrationTest() {
@@ -102,6 +108,7 @@ class AlluUpdateServiceITest(
     private val identifier = DEFAULT_APPLICATION_IDENTIFIER
     /** The timestamp used in the initial DB migration. */
     private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")
+    private val eventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
 
     @BeforeEach
     fun clearMocks() {
@@ -133,7 +140,7 @@ class AlluUpdateServiceITest(
         @Test
         fun `updates the hakemus statuses in the correct order`() {
             hakemusFactory.builder(USERNAME).withStatus(alluId = alluId).save()
-            val firstEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
+            val firstEventTime = eventTime
             val history =
                 ApplicationHistoryFactory.create(alluId)
                     .withEvent(firstEventTime.plusDays(5), ApplicationStatus.PENDING)
@@ -149,7 +156,13 @@ class AlluUpdateServiceITest(
 
             updateService.handleUpdates()
 
-            assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isRecent()
+            assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+                .isEqualTo(
+                    history
+                        .maxOf { it.events.maxOf { event -> event.eventTime } }
+                        .minusMillis(1)
+                        .toOffsetDateTime()
+                )
             val application = hakemusRepository.getOneByAlluid(alluId)
             assertThat(application)
                 .isNotNull()
@@ -228,7 +241,13 @@ class AlluUpdateServiceITest(
 
             updateService.handleUpdates()
 
-            assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isRecent()
+            assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+                .isEqualTo(
+                    history
+                        .maxOf { it.events.maxOf { event -> event.eventTime } }
+                        .minusMillis(1)
+                        .toOffsetDateTime()
+                )
             val applications = hakemusRepository.findAll()
             assertThat(applications).hasSize(2)
             assertThat(applications.map { it.alluid }).containsExactlyInAnyOrder(alluId, alluId + 2)
@@ -575,8 +594,7 @@ class AlluUpdateServiceITest(
             updateService.handleUpdates()
 
             assertThat(taydennyspyyntoRepository.findAll()).single().all {
-                prop(TaydennyspyyntoEntity::alluId)
-                    .isEqualTo(AlluFactory.DEFAULT_INFORMATION_REQUEST_ID)
+                prop(TaydennyspyyntoEntity::alluId).isEqualTo(alluId)
                 prop(TaydennyspyyntoEntity::applicationId).isEqualTo(hakemus.id)
                 prop(TaydennyspyyntoEntity::kentat)
                     .containsOnly(
@@ -817,7 +835,7 @@ class AlluUpdateServiceITest(
                         .withEvent(
                             applicationIdentifier = "JS2300083",
                             newStatus = ApplicationStatus.WAITING_INFORMATION,
-                            eventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z"),
+                            eventTime = eventTime,
                         ),
                     ApplicationHistoryFactory.create(alluId + 2).withDefaultEvents("JS2300084"),
                 )
@@ -832,7 +850,12 @@ class AlluUpdateServiceITest(
 
             updateService.handleUpdates()
 
-            assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isRecent()
+            assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+                .isEqualTo(
+                    ZonedDateTime.parse("2023-01-09T14:37:09.135Z")
+                        .minusMillis(1)
+                        .toOffsetDateTime()
+                )
             val applications = hakemusRepository.findAll()
             assertThat(applications.map { it.alluStatus })
                 .containsExactlyInAnyOrder(
@@ -845,8 +868,7 @@ class AlluUpdateServiceITest(
                 prop(AlluEventErrorEntity::newStatus)
                     .isEqualTo(ApplicationStatus.WAITING_INFORMATION)
                 prop(AlluEventErrorEntity::applicationIdentifier).isEqualTo("JS2300083")
-                prop(AlluEventErrorEntity::eventTime)
-                    .isEqualTo(ZonedDateTime.parse("2022-09-05T14:15:16Z"))
+                prop(AlluEventErrorEntity::eventTime).isEqualTo(eventTime)
                 prop(AlluEventErrorEntity::stackTrace).isEqualTo(exception.stackTraceToString())
             }
 
@@ -872,23 +894,23 @@ class AlluUpdateServiceITest(
                     .withEvents(
                         ApplicationHistoryFactory.createEvent(
                             newStatus = ApplicationStatus.PENDING,
-                            eventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z"),
+                            eventTime = eventTime,
                         ),
                         ApplicationHistoryFactory.createEvent(
                             newStatus = ApplicationStatus.HANDLING,
-                            eventTime = ZonedDateTime.parse("2022-09-05T14:16:16Z"),
+                            eventTime = eventTime.plusMinutes(1),
                         ),
                         ApplicationHistoryFactory.createEvent(
                             newStatus = ApplicationStatus.WAITING_INFORMATION,
-                            eventTime = ZonedDateTime.parse("2022-09-05T14:17:16Z"),
+                            eventTime = eventTime.plusMinutes(2),
                         ),
                         ApplicationHistoryFactory.createEvent(
                             newStatus = ApplicationStatus.HANDLING,
-                            eventTime = ZonedDateTime.parse("2022-09-05T14:18:16Z"),
+                            eventTime = eventTime.plusMinutes(3),
                         ),
                         ApplicationHistoryFactory.createEvent(
                             newStatus = ApplicationStatus.PENDING_CLIENT,
-                            eventTime = ZonedDateTime.parse("2022-09-05T14:19:16Z"),
+                            eventTime = eventTime.plusMinutes(4),
                         ),
                     )
                     .asList()
@@ -912,8 +934,7 @@ class AlluUpdateServiceITest(
                     .isEqualTo(ApplicationStatus.WAITING_INFORMATION)
                 prop(AlluEventErrorEntity::applicationIdentifier)
                     .isEqualTo(DEFAULT_APPLICATION_IDENTIFIER)
-                prop(AlluEventErrorEntity::eventTime)
-                    .isEqualTo(ZonedDateTime.parse("2022-09-05T14:17:16Z"))
+                prop(AlluEventErrorEntity::eventTime).isEqualTo(eventTime.plusMinutes(2))
                 prop(AlluEventErrorEntity::stackTrace).isEqualTo(exception.stackTraceToString())
             }
 
@@ -933,7 +954,8 @@ class AlluUpdateServiceITest(
                 .isEqualTo(placeholderUpdateTime)
             val hanke = hankeFactory.saveMinimal()
             hakemusFactory.builder(USERNAME, hanke).withStatus(alluId = alluId).save()
-            val errorEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
+            val errorEventTime = eventTime
+            val latestEventTime = eventTime.plusSeconds(30)
             hakemusHistoryService.saveErrors(
                 listOf(
                     ApplicationHistoryFactory.createError(
@@ -946,17 +968,7 @@ class AlluUpdateServiceITest(
             )
             val newHistory =
                 ApplicationHistoryFactory.create(alluId)
-                    .withEvent(
-                        newStatus = ApplicationStatus.HANDLING,
-                        eventTime = errorEventTime.plusSeconds(30),
-                    )
-                    .asList()
-            val errorHistory =
-                ApplicationHistoryFactory.create(alluId)
-                    .withEvent(
-                        newStatus = ApplicationStatus.WAITING_INFORMATION,
-                        eventTime = errorEventTime,
-                    )
+                    .withEvent(newStatus = ApplicationStatus.HANDLING, eventTime = latestEventTime)
                     .asList()
             every {
                 alluClient.getApplicationStatusHistories(
@@ -964,12 +976,6 @@ class AlluUpdateServiceITest(
                     placeholderUpdateTime.toZonedDateTime(),
                 )
             } returns newHistory
-            every {
-                alluClient.getApplicationStatusHistories(
-                    listOf(alluId),
-                    errorEventTime.minusMillis(1),
-                )
-            } returns errorHistory
             every { alluClient.getInformationRequest(alluId) } returns
                 AlluFactory.createInformationRequest(applicationAlluId = alluId)
 
@@ -977,9 +983,10 @@ class AlluUpdateServiceITest(
 
             assertThat(output)
                 .contains(
-                    "Skipping application history with 1 events for application $alluId due to its past errors"
+                    "Skipping application history 1/1 due to its past errors: applicationId=42, events: eventTime=2022-09-05T14:15:46Z, applicationIdentifier=JS2300001, newStatus=HANDLING"
                 )
-            assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isRecent()
+            assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+                .isEqualTo(latestEventTime.minusMillis(1).toOffsetDateTime())
             val application = hakemusRepository.findAll().single()
             assertThat(application.alluStatus).isEqualTo(ApplicationStatus.WAITING_INFORMATION)
 
@@ -988,11 +995,259 @@ class AlluUpdateServiceITest(
                     listOf(alluId),
                     placeholderUpdateTime.toZonedDateTime(),
                 )
+                alluClient.getInformationRequest(alluId)
+            }
+        }
+
+        @Test
+        fun `filters duplicate events`(output: CapturedOutput) {
+            assertThat(hakemusRepository.findAll()).isEmpty()
+            assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+                .isEqualTo(placeholderUpdateTime)
+            val hanke = hankeFactory.saveMinimal()
+            hakemusFactory.builder(USERNAME, hanke).withStatus(alluId = alluId).save()
+            val eventTime = eventTime
+            val newHistory =
+                ApplicationHistoryFactory.create(alluId)
+                    .withEvent(newStatus = ApplicationStatus.HANDLING, eventTime = eventTime)
+                    .withEvent(newStatus = ApplicationStatus.HANDLING, eventTime = eventTime)
+                    .asList()
+            every {
                 alluClient.getApplicationStatusHistories(
                     listOf(alluId),
-                    errorEventTime.minusMillis(1),
+                    placeholderUpdateTime.toZonedDateTime(),
                 )
-                alluClient.getInformationRequest(alluId)
+            } returns newHistory
+
+            updateService.handleUpdates()
+
+            assertThat(output)
+                .contains(
+                    "Found 1 duplicate events from Allu for application 42. These will be ignored: eventTime=2022-09-05T14:15:16Z, applicationIdentifier=JS2300001, newStatus=HANDLING"
+                )
+            assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+                .isEqualTo(eventTime.minusMillis(1).toOffsetDateTime())
+            val application = hakemusRepository.findAll().single()
+            assertThat(application.alluStatus).isEqualTo(ApplicationStatus.HANDLING)
+
+            verifySequence {
+                alluClient.getApplicationStatusHistories(
+                    listOf(alluId),
+                    placeholderUpdateTime.toZonedDateTime(),
+                )
+            }
+        }
+
+        @Nested
+        inner class DecisionDuplicateHandling {
+
+            @Test
+            fun `reports an error when handling DECISION event when PAATOS already exists for the same hakemustunnus`(
+                output: CapturedOutput
+            ) {
+                val hakemus =
+                    hakemusFactory
+                        .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                        .withMandatoryFields()
+                        .withStatus(status = ApplicationStatus.DECISIONMAKING, alluId = alluId)
+                        .save()
+
+                paatosFactory.save(hakemus = hakemus)
+
+                val history =
+                    ApplicationHistoryFactory.create(alluId)
+                        .withEvent(
+                            applicationIdentifier = hakemus.applicationIdentifier!!,
+                            newStatus = ApplicationStatus.DECISION,
+                        )
+                        .asList()
+
+                every {
+                    alluClient.getApplicationStatusHistories(
+                        listOf(alluId),
+                        placeholderUpdateTime.toZonedDateTime(),
+                    )
+                } returns history
+                every { alluClient.getDecisionPdf(alluId) } returns PDF_BYTES
+                every { alluClient.getApplicationInformation(alluId) } returns
+                    AlluFactory.createAlluApplicationResponse()
+
+                updateService.handleUpdates()
+
+                val paatos = paatosRepository.findByHakemusId(hakemus.id).single()
+                assertThat(paatos.hakemustunnus).isEqualTo(hakemus.applicationIdentifier)
+                assertThat(paatos.tyyppi).isEqualTo(PaatosTyyppi.PAATOS)
+
+                val updatedHakemus = hakemusRepository.findOneById(hakemus.id)!!
+                assertThat(updatedHakemus.alluid).isEqualTo(alluId)
+                assertThat(updatedHakemus.alluStatus).isEqualTo(ApplicationStatus.DECISIONMAKING)
+
+                verifySequence {
+                    alluClient.getApplicationStatusHistories(
+                        listOf(alluId),
+                        placeholderUpdateTime.toZonedDateTime(),
+                    )
+                    alluClient.getDecisionPdf(alluId)
+                    alluClient.getApplicationInformation(alluId)
+                }
+                assertThat(output)
+                    .contains(
+                        "ERROR: duplicate key value violates unique constraint \"uk_paatos_hakemustunnus_tyyppi\""
+                    )
+            }
+
+            @Test
+            fun `processes DECISIONMAKING followed by DECISION events correctly`() {
+                val hakemus =
+                    hakemusFactory
+                        .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                        .withMandatoryFields()
+                        .withStatus(status = ApplicationStatus.HANDLING, alluId = alluId)
+                        .save()
+
+                val history =
+                    ApplicationHistoryFactory.create(alluId)
+                        .withEvent(
+                            applicationIdentifier = hakemus.applicationIdentifier!!,
+                            newStatus = ApplicationStatus.DECISIONMAKING,
+                            eventTime = eventTime.minusMinutes(10),
+                        )
+                        .withEvent(
+                            applicationIdentifier = hakemus.applicationIdentifier!!,
+                            newStatus = ApplicationStatus.DECISION,
+                            eventTime = eventTime,
+                        )
+                        .asList()
+
+                every {
+                    alluClient.getApplicationStatusHistories(
+                        listOf(alluId),
+                        placeholderUpdateTime.toZonedDateTime(),
+                    )
+                } returns history
+                every { alluClient.getDecisionPdf(alluId) } returns PDF_BYTES
+                every { alluClient.getApplicationInformation(alluId) } returns
+                    AlluFactory.createAlluApplicationResponse()
+
+                updateService.handleUpdates()
+
+                val paatosEntries = paatosRepository.findByHakemusId(hakemus.id)
+                assertThat(paatosEntries).hasSize(1)
+                assertThat(paatosEntries.first().hakemustunnus)
+                    .isEqualTo(hakemus.applicationIdentifier)
+                assertThat(paatosEntries.first().tyyppi).isEqualTo(PaatosTyyppi.PAATOS)
+
+                val updatedHakemus = hakemusRepository.findOneById(hakemus.id)!!
+                assertThat(updatedHakemus.alluid).isEqualTo(alluId)
+                assertThat(updatedHakemus.alluStatus).isEqualTo(ApplicationStatus.DECISION)
+
+                verifySequence {
+                    alluClient.getApplicationStatusHistories(
+                        listOf(alluId),
+                        placeholderUpdateTime.toZonedDateTime(),
+                    )
+                    alluClient.getDecisionPdf(alluId)
+                    alluClient.getApplicationInformation(alluId)
+                }
+            }
+
+            @Test
+            fun `handles DECISIONMAKING status without creating paatos entry`() {
+                val hakemus =
+                    hakemusFactory
+                        .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                        .withMandatoryFields()
+                        .withStatus(status = ApplicationStatus.HANDLING, alluId = alluId)
+                        .save()
+
+                val history =
+                    ApplicationHistoryFactory.create(alluId)
+                        .withEvent(
+                            applicationIdentifier = hakemus.applicationIdentifier!!,
+                            newStatus = ApplicationStatus.DECISIONMAKING,
+                        )
+                        .asList()
+
+                every {
+                    alluClient.getApplicationStatusHistories(
+                        listOf(alluId),
+                        placeholderUpdateTime.toZonedDateTime(),
+                    )
+                } returns history
+
+                updateService.handleUpdates()
+
+                val paatosEntries = paatosRepository.findByHakemusId(hakemus.id)
+                assertThat(paatosEntries).isEmpty()
+
+                val updatedHakemus = hakemusRepository.findOneById(hakemus.id)!!
+                assertThat(updatedHakemus.alluid).isEqualTo(alluId)
+                assertThat(updatedHakemus.alluStatus).isEqualTo(ApplicationStatus.DECISIONMAKING)
+
+                verifySequence {
+                    alluClient.getApplicationStatusHistories(
+                        listOf(alluId),
+                        placeholderUpdateTime.toZonedDateTime(),
+                    )
+                }
+            }
+
+            @Test
+            fun `handles rapid DECISIONMAKING to DECISION transition without duplicate key errors`() {
+                val hakemus =
+                    hakemusFactory
+                        .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                        .withMandatoryFields()
+                        .withStatus(status = ApplicationStatus.HANDLING, alluId = alluId)
+                        .save()
+
+                val baseTime = eventTime
+                val history =
+                    ApplicationHistoryFactory.create(alluId)
+                        .withEvent(
+                            applicationIdentifier = hakemus.applicationIdentifier!!,
+                            newStatus = ApplicationStatus.DECISIONMAKING,
+                            eventTime = baseTime,
+                        )
+                        .withEvent(
+                            applicationIdentifier = hakemus.applicationIdentifier!!,
+                            newStatus = ApplicationStatus.DECISION,
+                            eventTime = baseTime.plusSeconds(1),
+                        )
+                        .asList()
+
+                every {
+                    alluClient.getApplicationStatusHistories(
+                        listOf(alluId),
+                        placeholderUpdateTime.toZonedDateTime(),
+                    )
+                } returns history
+                every { alluClient.getDecisionPdf(alluId) } returns PDF_BYTES
+                every { alluClient.getApplicationInformation(alluId) } returns
+                    AlluFactory.createAlluApplicationResponse()
+
+                updateService.handleUpdates()
+
+                val paatosEntries = paatosRepository.findByHakemusId(hakemus.id)
+                assertThat(paatosEntries).hasSize(1)
+                assertThat(paatosEntries.first().hakemustunnus)
+                    .isEqualTo(hakemus.applicationIdentifier)
+                assertThat(paatosEntries.first().tyyppi).isEqualTo(PaatosTyyppi.PAATOS)
+
+                val updatedHakemus = hakemusRepository.findOneById(hakemus.id)!!
+                assertThat(updatedHakemus.alluid).isEqualTo(alluId)
+                assertThat(updatedHakemus.alluStatus).isEqualTo(ApplicationStatus.DECISION)
+
+                assertThat(alluEventErrorRepository.findAll()).isEmpty()
+
+                verifySequence {
+                    alluClient.getApplicationStatusHistories(
+                        listOf(alluId),
+                        placeholderUpdateTime.toZonedDateTime(),
+                    )
+                    alluClient.getDecisionPdf(alluId)
+                    alluClient.getApplicationInformation(alluId)
+                }
             }
         }
 
@@ -1015,7 +1270,6 @@ class AlluUpdateServiceITest(
                 .builder(USERNAME, hanke)
                 .withStatus(status = ApplicationStatus.HANDLING, alluId = alluId)
                 .save()
-            val eventTime = ZonedDateTime.parse("2022-09-05T14:17:16Z")
             hakemusHistoryService.saveErrors(
                 listOf(
                     ApplicationHistoryFactory.createError(
@@ -1026,32 +1280,12 @@ class AlluUpdateServiceITest(
                     )
                 )
             )
-            val history =
-                ApplicationHistoryFactory.create(alluId)
-                    .withEvents(
-                        ApplicationHistoryFactory.createEvent(
-                            newStatus = ApplicationStatus.WAITING_INFORMATION,
-                            eventTime = eventTime,
-                        ),
-                        ApplicationHistoryFactory.createEvent(
-                            newStatus = ApplicationStatus.HANDLING,
-                            eventTime = eventTime.plusSeconds(10),
-                        ),
-                        ApplicationHistoryFactory.createEvent(
-                            newStatus = ApplicationStatus.PENDING_CLIENT,
-                            eventTime = eventTime.plusSeconds(20),
-                        ),
-                    )
-                    .asList()
             every {
                 alluClient.getApplicationStatusHistories(
                     listOf(alluId),
                     placeholderUpdateTime.toZonedDateTime(),
                 )
             } returns emptyList()
-            every {
-                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusMillis(1))
-            } returns history
             every { alluClient.getInformationRequest(alluId) } returns
                 AlluFactory.createInformationRequest(applicationAlluId = alluId)
 
@@ -1059,80 +1293,60 @@ class AlluUpdateServiceITest(
 
             assertThat(output).doesNotContain("ERROR")
             assertThat(alluEventErrorRepository.findAll()).isEmpty()
-            assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
+            assertThat(taydennyspyyntoRepository.findAll()).single().all {
+                prop(TaydennyspyyntoEntity::alluId).isEqualTo(alluId)
+            }
             assertThat(hakemusRepository.findAll()).single().all {
                 prop(HakemusEntity::alluid).isEqualTo(alluId)
-                prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.PENDING_CLIENT)
+                prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.WAITING_INFORMATION)
             }
             verifySequence {
                 alluClient.getApplicationStatusHistories(
                     listOf(alluId),
                     placeholderUpdateTime.toZonedDateTime(),
                 )
-                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusMillis(1))
                 alluClient.getInformationRequest(alluId)
             }
         }
 
         @Test
-        fun `gracefully handle again failing history`(output: CapturedOutput) {
+        fun `does not delete error if event fails again`(output: CapturedOutput) {
             val hanke = hankeFactory.saveMinimal()
-            hakemusFactory
-                .builder(USERNAME, hanke)
-                .withStatus(status = ApplicationStatus.HANDLING, alluId = alluId)
-                .save()
-            val exception = RuntimeException("Test error")
-            val eventTime = ZonedDateTime.parse("2022-09-05T14:17:16Z")
-            hakemusHistoryService.saveErrors(
-                listOf(
-                    ApplicationHistoryFactory.createError(
-                        alluId = alluId,
-                        eventTime = eventTime,
-                        newStatus = ApplicationStatus.WAITING_INFORMATION,
-                        stackTrace = exception.stackTraceToString(),
-                    )
+            val hakemus =
+                hakemusFactory
+                    .builder(USERNAME, hanke)
+                    .withStatus(status = ApplicationStatus.HANDLING, alluId = alluId)
+                    .save()
+            val exception = RuntimeException("Test exception")
+            val error =
+                ApplicationHistoryFactory.createError(
+                    alluId = alluId,
+                    eventTime = eventTime,
+                    newStatus = ApplicationStatus.WAITING_INFORMATION,
+                    applicationIdentifier = hakemus.applicationIdentifier!!,
+                    stackTrace = exception.stackTraceToString(),
                 )
-            )
-            val history =
-                ApplicationHistoryFactory.create(alluId)
-                    .withEvents(
-                        ApplicationHistoryFactory.createEvent(
-                            newStatus = ApplicationStatus.WAITING_INFORMATION,
-                            eventTime = eventTime,
-                        ),
-                        ApplicationHistoryFactory.createEvent(
-                            newStatus = ApplicationStatus.HANDLING,
-                            eventTime = eventTime.plusSeconds(10),
-                        ),
-                        ApplicationHistoryFactory.createEvent(
-                            newStatus = ApplicationStatus.PENDING_CLIENT,
-                            eventTime = eventTime.plusSeconds(20),
-                        ),
-                    )
-                    .asList()
+            hakemusHistoryService.saveErrors(listOf(error))
             every {
                 alluClient.getApplicationStatusHistories(
                     listOf(alluId),
                     placeholderUpdateTime.toZonedDateTime(),
                 )
             } returns emptyList()
-            every {
-                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusMillis(1))
-            } returns history
             every { alluClient.getInformationRequest(alluId) } throws exception
 
             updateService.handleUpdates()
 
             assertThat(output).contains("ERROR")
-            assertThat(alluEventErrorRepository.findAll()).single().all {
-                prop(AlluEventErrorEntity::alluId).isEqualTo(alluId)
-                prop(AlluEventErrorEntity::newStatus)
-                    .isEqualTo(ApplicationStatus.WAITING_INFORMATION)
-                prop(AlluEventErrorEntity::applicationIdentifier)
-                    .isEqualTo(DEFAULT_APPLICATION_IDENTIFIER)
-                prop(AlluEventErrorEntity::eventTime).isEqualTo(eventTime)
-                prop(AlluEventErrorEntity::stackTrace).isEqualTo(exception.stackTraceToString())
+            val errorInDatabase = alluEventErrorRepository.findAll().single().toDomain()
+            assertThat(errorInDatabase).all {
+                prop(AlluEventError::alluId).isEqualTo(alluId)
+                prop(AlluEventError::eventTime).isEqualTo(eventTime)
+                prop(AlluEventError::newStatus).isEqualTo(ApplicationStatus.WAITING_INFORMATION)
+                prop(AlluEventError::applicationIdentifier).isEqualTo(hakemus.applicationIdentifier)
+                prop(AlluEventError::stackTrace).isEqualTo(exception.stackTraceToString())
             }
+            assertThat(errorInDatabase.stackTrace).isEqualTo(exception.stackTraceToString())
             assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
             assertThat(hakemusRepository.findAll()).single().all {
                 prop(HakemusEntity::alluid).isEqualTo(alluId)
@@ -1143,7 +1357,6 @@ class AlluUpdateServiceITest(
                     listOf(alluId),
                     placeholderUpdateTime.toZonedDateTime(),
                 )
-                alluClient.getApplicationStatusHistories(listOf(alluId), eventTime.minusMillis(1))
                 alluClient.getInformationRequest(alluId)
             }
         }

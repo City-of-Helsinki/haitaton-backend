@@ -20,7 +20,39 @@ data class AlluEventError(
     val applicationIdentifier: String,
     val targetStatus: ApplicationStatus? = null,
     val stackTrace: String? = null,
-)
+) {
+    constructor(
+        history: ApplicationHistory,
+        event: ApplicationStatusEvent,
+        stackTrace: String?,
+    ) : this(
+        id = 0,
+        alluId = history.applicationId,
+        eventTime = event.eventTime,
+        newStatus = event.newStatus,
+        applicationIdentifier = event.applicationIdentifier,
+        targetStatus = event.targetStatus,
+        stackTrace = stackTrace,
+    )
+
+    fun toLogString(): String =
+        "alluId=$alluId, applicationIdentifier=$applicationIdentifier, newStatus=$newStatus"
+
+    fun toApplicationStatusEvent() =
+        ApplicationStatusEvent(
+            eventTime = eventTime,
+            newStatus = newStatus,
+            applicationIdentifier = applicationIdentifier,
+            targetStatus = targetStatus,
+        )
+
+    fun toApplicationHistory(): ApplicationHistory =
+        ApplicationHistory(
+            applicationId = alluId,
+            events = listOf(toApplicationStatusEvent()),
+            supervisionEvents = emptyList(),
+        )
+}
 
 @Entity
 @Table(name = "allu_event_error")

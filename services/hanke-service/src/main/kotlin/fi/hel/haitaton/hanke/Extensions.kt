@@ -81,3 +81,11 @@ fun LocalDate.minusMonthsPreserveEndOfMonth(months: Long): LocalDate {
 fun ZonedDateTime.minusMillis(millis: Long): ZonedDateTime {
     return this.minus(millis, ChronoUnit.MILLIS)
 }
+
+fun <T> List<T>.multisectDifference(other: List<T>): List<T> {
+    val result = this.toMutableList()
+    for (item in other) {
+        result.remove(item)
+    }
+    return result
+}

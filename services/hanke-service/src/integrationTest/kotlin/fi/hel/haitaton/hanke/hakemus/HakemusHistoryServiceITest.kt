@@ -381,8 +381,7 @@ class HakemusHistoryServiceITest(
             historyService.handleApplicationEvent(alluId, event)
 
             assertThat(taydennyspyyntoRepository.findAll()).single().all {
-                prop(TaydennyspyyntoEntity::alluId)
-                    .isEqualTo(AlluFactory.DEFAULT_INFORMATION_REQUEST_ID)
+                prop(TaydennyspyyntoEntity::alluId).isEqualTo(alluId)
                 prop(TaydennyspyyntoEntity::applicationId).isEqualTo(hakemus.id)
                 prop(TaydennyspyyntoEntity::kentat)
                     .containsOnly(

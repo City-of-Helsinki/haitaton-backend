@@ -70,15 +70,8 @@ object ApplicationHistoryFactory {
         alluId: Int = DEFAULT_APPLICATION_ID,
         eventTime: ZonedDateTime = DEFAULT_EVENT_TIME,
         newStatus: ApplicationStatus = DEFAULT_STATUS,
+        applicationIdentifier: String = DEFAULT_APPLICATION_IDENTIFIER,
         stackTrace: String? = null,
     ): AlluEventError =
-        AlluEventError(
-            0,
-            alluId,
-            eventTime,
-            newStatus,
-            DEFAULT_APPLICATION_IDENTIFIER,
-            null,
-            stackTrace,
-        )
+        AlluEventError(0, alluId, eventTime, newStatus, applicationIdentifier, null, stackTrace)
 }

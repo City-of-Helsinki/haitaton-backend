@@ -1,11 +1,14 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluEventError
 import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.minusMillis
+import fi.hel.haitaton.hanke.multisectDifference
 import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 
@@ -20,9 +23,8 @@ class AlluUpdateService(
     fun handleUpdates() {
         val errors = historyService.getAllErrors()
         logger.info {
-            "There are ${errors.size} past errors before this history update. Allu IDs: ${errors.map { it.alluId }}"
+            "There are ${errors.size} past errors before this history update: ${errors.joinToString(" : ") { it.toLogString() }}"
         }
-        logger.info { "Handling new Allu updates..." }
         handleNewUpdates(errors)
         logger.info { "New Allu updates handled." }
         logger.info { "Handling previously failed Allu updates..." }
@@ -36,102 +38,112 @@ class AlluUpdateService(
      */
     private fun handleNewUpdates(pastErrors: List<AlluEventError>) {
         val ids = historyService.getAllAlluIds()
-        if (ids.isNotEmpty()) {
-            val lastUpdate = historyService.getLastUpdateTime()
-            val currentTime = OffsetDateTime.now()
-
-            logger.info {
-                "Preparing to update ${ids.size} applications from Allu since $lastUpdate"
-            }
-
-            val applicationHistories =
-                alluClient.getApplicationStatusHistories(ids, lastUpdate.toZonedDateTime())
-            logger.info {
-                "Received ${applicationHistories.size} application histories from Allu since $lastUpdate"
-            }
-
-            if (applicationHistories.isNotEmpty()) {
-                val (succeed, failed, skipped) =
-                    processApplicationHistories(applicationHistories, pastErrors)
-                logger.info {
-                    "Handled ${applicationHistories.size} application history updates from $lastUpdate, succeeded: $succeed, failed: $failed, skipped: $skipped"
-                }
-            } else {
-                logger.info("No application histories found in Allu for the Haitaton applications.")
-            }
-
-            historyService.setLastUpdateTime(currentTime)
-            logger.info {
-                "Updated last update time to $currentTime for Allu application histories."
-            }
-        } else {
+        if (ids.isEmpty()) {
             // Allu handles an empty list as "all", which we don't want.
             logger.info("There are no applications to update, skipping Allu history update.")
+            return
         }
+
+        logger.info { "Handling new Allu updates..." }
+
+        val lastUpdate = historyService.getLastUpdateTime()
+        val currentTime = ZonedDateTime.now(TZ_UTC)
+        val applicationHistories = fetchApplicationHistories(ids, lastUpdate)
+        val updateTime: ZonedDateTime
+
+        if (applicationHistories.isNotEmpty()) {
+
+            val summary = processApplicationHistories(applicationHistories, pastErrors)
+
+            logger.info {
+                "Handled ${applicationHistories.size} application histories from Allu since $lastUpdate. Summary=${summary.toLogString()}"
+            }
+
+            val (succeed, _, skipped) = summary
+
+            if (skipped.isNotEmpty()) {
+                updateTime = skipped.minOf { it.events.minOf { event -> event.eventTime } }
+                logger.info {
+                    "Next update time is the earliest skipped application history event."
+                }
+            } else if (succeed.isNotEmpty()) {
+                updateTime = succeed.maxOf { it.events.maxOf { event -> event.eventTime } }
+                logger.info {
+                    "Next update time is the latest successful application history event."
+                }
+            } else {
+                updateTime = currentTime
+                logger.info {
+                    "No skipped or successful updates found, setting next update time to current time: $updateTime"
+                }
+            }
+        } else {
+            logger.info("No application histories found in Allu for the Haitaton applications.")
+            updateTime = currentTime
+        }
+
+        val newUpdateTime = updateTime.minusMillis(1).toOffsetDateTime()
+        historyService.setLastUpdateTime(newUpdateTime)
+        logger.info { "Updated last update time to $newUpdateTime for Allu application histories." }
+    }
+
+    private fun fetchApplicationHistories(
+        ids: List<Int>,
+        lastUpdate: OffsetDateTime,
+    ): List<ApplicationHistory> {
+        logger.info { "Preparing to update ${ids.size} applications from Allu since $lastUpdate" }
+
+        val histories = alluClient.getApplicationStatusHistories(ids, lastUpdate.toZonedDateTime())
+        logger.info {
+            "Received ${histories.size} application histories from Allu since $lastUpdate"
+        }
+
+        return histories
     }
 
     private fun processApplicationHistories(
         applicationHistories: List<ApplicationHistory>,
         pastErrors: List<AlluEventError>,
-        skipPastFailures: Boolean = true,
     ): UpdateSummary {
-        var success = 0
-        var failure = 0
-        var skipped = 0
-        val saveNewErrors = skipPastFailures // If we skip past failures, we save new errors
+        val success = mutableListOf<ApplicationHistory>()
+        val failure = mutableListOf<ApplicationHistory>()
+        val skipped = mutableListOf<ApplicationHistory>()
         val newErrors = mutableListOf<AlluEventError>()
-        applicationHistories.forEach { applicationHistory ->
+        applicationHistories.forEachIndexed { i, applicationHistory ->
             if (
-                skipPastFailures &&
-                    (pastErrors.any { it.alluId == applicationHistory.applicationId } ||
-                        newErrors.any { it.alluId == applicationHistory.applicationId })
+                pastErrors.any { it.alluId == applicationHistory.applicationId } ||
+                    newErrors.any { it.alluId == applicationHistory.applicationId }
             ) {
                 logger.warn {
-                    "Skipping application history with ${applicationHistory.events.size} events for application ${applicationHistory.applicationId} due to its past errors"
+                    "Skipping application history ${i+1}/${applicationHistories.size} due to its past errors: ${applicationHistory.toLogString()}"
                 }
-                skipped++
-            } else if (
-                !skipPastFailures &&
-                    pastErrors.none { it.alluId == applicationHistory.applicationId }
-            ) {
-                logger.warn {
-                    "Skipping application history with ${applicationHistory.events.size} events for application ${applicationHistory.applicationId} due to it not having past errors"
-                }
-                skipped++
+                skipped.add(applicationHistory)
             } else {
                 logger.info {
-                    "Handling application history with ${applicationHistory.events.size} events for application ${applicationHistory.applicationId}"
+                    "Handling application history ${i+1}/${applicationHistories.size}: ${applicationHistory.toLogString()}"
                 }
-                val result = handleHakemusUpdate(applicationHistory, pastErrors)
+                val result = processApplicationHistory(applicationHistory)
                 if (result.isSuccess) {
                     logger.info {
-                        "Successfully handled application history with ${applicationHistory.events.size} events for application ${applicationHistory.applicationId}"
+                        "Successfully handled application history ${i+1}/${applicationHistories.size}: ${applicationHistory.toLogString()}"
                     }
-                    success++
+                    success.add(applicationHistory)
                 } else {
                     logger.error {
-                        "Failed to handle application history with ${applicationHistory.events.size} events for application ${applicationHistory.applicationId}"
+                        "Failed to handle application history ${i+1}/${applicationHistories.size}: ${applicationHistory.toLogString()}"
                     }
-                    failure++
+                    failure.add(applicationHistory)
                     newErrors.add(
-                        AlluEventError(
-                            id = 0, // ID is auto-generated by the database
-                            alluId = applicationHistory.applicationId,
-                            eventTime = result.event!!.eventTime,
-                            newStatus = result.event.newStatus,
-                            applicationIdentifier = result.event.applicationIdentifier,
-                            targetStatus = result.event.targetStatus,
-                            stackTrace = result.stackTrace!!,
-                        )
+                        AlluEventError(applicationHistory, result.event!!, result.stackTrace)
                     )
                 }
             }
         }
 
-        if (saveNewErrors && newErrors.isNotEmpty()) {
+        if (newErrors.isNotEmpty()) {
             historyService.saveErrors(newErrors)
             logger.info {
-                "Saved ${newErrors.size} new errors for Allu events that failed to process. Allu IDs: ${newErrors.map { it.alluId }}"
+                "Saved ${newErrors.size} new errors for Allu events that failed to process: ${newErrors.joinToString(" : ") { it.toLogString() }}"
             }
         }
 
@@ -144,78 +156,110 @@ class AlluUpdateService(
      * @return In case of an error, returns a result with the event that caused the error and the
      *   error message.
      */
-    private fun handleHakemusUpdate(
-        applicationHistory: ApplicationHistory,
-        errors: List<AlluEventError>,
+    private fun processApplicationHistory(
+        applicationHistory: ApplicationHistory
     ): ApplicationEventResult {
-        applicationHistory.events
-            .sortedBy { it.eventTime }
-            .forEach { event ->
-                logger.info {
-                    "Handling event of time ${event.eventTime} for application ${applicationHistory.applicationId} (${event.applicationIdentifier}) with new status ${event.newStatus}"
-                }
-                try {
-                    historyService.handleApplicationEvent(applicationHistory.applicationId, event)
-                    logger.info {
-                        "Successfully handled event of time ${event.eventTime} for application ${applicationHistory.applicationId} (${event.applicationIdentifier}) with new status ${event.newStatus}"
-                    }
-                    val pastError =
-                        errors.find {
-                            it.alluId == applicationHistory.applicationId &&
-                                it.eventTime == event.eventTime
-                        }
-                    if (pastError != null) {
-                        logger.info {
-                            "Removing past error of time ${pastError.eventTime} for application ${applicationHistory.applicationId} (${event.applicationIdentifier}) after successful update"
-                        }
-                        historyService.deleteError(pastError)
-                    }
-                } catch (e: Exception) {
-                    logger.error(e) {
-                        "Error while handling event of time ${event.eventTime} for new status ${event.newStatus} for application ${applicationHistory.applicationId} (${event.applicationIdentifier})"
-                    }
-                    return ApplicationEventResult.failure(event, e.stackTraceToString())
-                }
+        val events =
+            applicationHistory.events
+                .distinctBy { "${it.eventTime} - ${it.newStatus}" }
+                .sortedBy { it.eventTime }
+        val duplicateEvents = applicationHistory.events.multisectDifference(events)
+        if (duplicateEvents.isNotEmpty()) {
+            logger.warn {
+                "Found ${duplicateEvents.size} duplicate events from Allu for application ${applicationHistory.applicationId}. These will be ignored: ${duplicateEvents.joinToString(" : ") { it.toLogString() }}"
             }
+        }
+        logger.info {
+            "Processing ${events.size} events for application ${applicationHistory.applicationId}: ${events.joinToString(" : ") { it.toLogString() }}"
+        }
+        events.forEachIndexed { i, event ->
+            logger.info {
+                "Handling event ${i+1}/${events.size} for application ${applicationHistory.applicationId}: ${event.toLogString()}"
+            }
+            try {
+                historyService.handleApplicationEvent(applicationHistory.applicationId, event)
+                logger.info {
+                    "Successfully handled event ${i+1}/${events.size} for application ${applicationHistory.applicationId}: ${event.toLogString()}"
+                }
+            } catch (e: Exception) {
+                logger.error(e) {
+                    "Error while handling event ${i+1}/${events.size} for application ${applicationHistory.applicationId}: ${event.toLogString()}"
+                }
+                return ApplicationEventResult.failure(event, e.stackTraceToString())
+            }
+        }
 
         return ApplicationEventResult.success(applicationHistory)
     }
 
-    /** Handles updates for previously failed applications by fetching their histories from Allu. */
-    private fun handleFailedUpdates(pastErrors: List<AlluEventError>) {
-        if (pastErrors.isEmpty()) {
+    /** Handles updates for previously failed applications. */
+    private fun handleFailedUpdates(errors: List<AlluEventError>) {
+        if (errors.isEmpty()) {
             logger.info("No past errors found, skipping Allu history update for them.")
             return
-        }
-
-        val ids = pastErrors.map { it.alluId }.distinct()
-        val updateTime = pastErrors.minOf { it.eventTime }.minusMillis(1)
-
-        logger.info {
-            "Preparing to update ${ids.size} previously failed applications from Allu since ${updateTime}."
-        }
-        val applicationHistories = alluClient.getApplicationStatusHistories(ids, updateTime)
-        logger.info {
-            "Received ${applicationHistories.size} application histories from Allu since $updateTime"
-        }
-
-        if (applicationHistories.isNotEmpty()) {
-            val (succeed, failed, skipped) =
-                processApplicationHistories(applicationHistories, pastErrors, false)
-            logger.info {
-                "Updated ${applicationHistories.size} application histories from $updateTime, succeeded: $succeed, failed: $failed, skipped: $skipped"
-            }
         } else {
-            logger.error(
-                "No application histories found in Allu for previously failed applications: $ids"
-            )
-            throw IllegalStateException(
-                "No application histories found in Allu for previously failed applications: $ids"
-            )
+            val summary = processErrors(errors)
+            logger.info {
+                "Handled ${errors.size} previously failed application history updates. Summary: ${summary.toLogString()}"
+            }
         }
     }
 
-    data class UpdateSummary(val success: Int, val failure: Int, val skipped: Int)
+    /**
+     * Processes previously failed Allu events.
+     *
+     * @return A summary of the update process, including successful and failed updates.
+     */
+    private fun processErrors(errors: List<AlluEventError>): UpdateSummary {
+        val success = mutableListOf<ApplicationHistory>()
+        val failure = mutableListOf<ApplicationHistory>()
+        errors.forEachIndexed { i, error ->
+            logger.info {
+                "Handling previously failed event ${i+1}/${errors.size}: ${error.toLogString()}"
+            }
+            val result = processError(error)
+            if (result.isSuccess) {
+                historyService.deleteError(error)
+                logger.info {
+                    "Successfully handled previously failed event ${i+1}/${errors.size}: ${error.toLogString()}"
+                }
+                success.add(error.toApplicationHistory())
+            } else {
+                logger.error {
+                    "Failed again to handle previously failed event ${i+1}/${errors.size}: ${error.toLogString()}"
+                }
+                failure.add(error.toApplicationHistory())
+            }
+        }
+        return UpdateSummary(success, failure, emptyList())
+    }
+
+    /**
+     * Handles a single previosly failed application history event.
+     *
+     * @return In case of an error, returns a result with the event that caused the error and the
+     *   error message.
+     */
+    private fun processError(error: AlluEventError): ApplicationEventResult {
+        val event = error.toApplicationStatusEvent()
+        try {
+            historyService.handleApplicationEvent(error.alluId, event)
+        } catch (e: Exception) {
+            logger.error(e) { "Error while handling earlier error: ${error.toLogString()}" }
+            return ApplicationEventResult.failure(event, e.stackTraceToString())
+        }
+
+        return ApplicationEventResult.success(error.toApplicationHistory())
+    }
+
+    data class UpdateSummary(
+        val success: List<ApplicationHistory>,
+        val failure: List<ApplicationHistory>,
+        val skipped: List<ApplicationHistory>,
+    ) {
+        fun toLogString(): String =
+            "success=${success.size}, failure=${failure.size}, skipped=${skipped.size}"
+    }
 
     data class ApplicationEventResult(
         val applicationHistory: ApplicationHistory? = null,
