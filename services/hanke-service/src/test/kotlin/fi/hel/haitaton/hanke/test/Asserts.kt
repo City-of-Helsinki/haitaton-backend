@@ -25,6 +25,7 @@ import fi.hel.haitaton.hanke.validation.ValidationResult
 import fi.hel.haitaton.hanke.zonedDateTime
 import jakarta.mail.internet.MimeMessage
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
@@ -51,6 +52,19 @@ object Asserts {
     fun Assert<OffsetDateTime?>.isRecent(offset: TemporalAmount = Duration.ofMinutes(1)) {
         val now = OffsetDateTime.now()
         isNotNull().isBetween(now.minus(offset), now)
+    }
+
+    fun Assert<Instant?>.isRecentInstant(offset: TemporalAmount = Duration.ofMinutes(1)) {
+        val now = Instant.now()
+        isNotNull().isBetween(now.minus(offset), now)
+    }
+
+    fun Assert<Instant?>.isGreaterThan(other: Instant?) {
+        given { instant ->
+            assertThat(instant).isNotNull()
+            assertThat(other).isNotNull()
+            assertThat(instant!! > other!!).isTrue()
+        }
     }
 
     fun Assert<ZonedDateTime?>.isRecentZDT(offset: TemporalAmount = Duration.ofMinutes(1)) {

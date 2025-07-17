@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.allu.AlluEventError
 import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
@@ -65,20 +64,4 @@ object ApplicationHistoryFactory {
 
     /** Return a singleton list with this history. */
     fun ApplicationHistory.asList(): List<ApplicationHistory> = listOf(this)
-
-    fun createError(
-        alluId: Int = DEFAULT_APPLICATION_ID,
-        eventTime: ZonedDateTime = DEFAULT_EVENT_TIME,
-        newStatus: ApplicationStatus = DEFAULT_STATUS,
-        stackTrace: String? = null,
-    ): AlluEventError =
-        AlluEventError(
-            0,
-            alluId,
-            eventTime,
-            newStatus,
-            DEFAULT_APPLICATION_IDENTIFIER,
-            null,
-            stackTrace,
-        )
 }

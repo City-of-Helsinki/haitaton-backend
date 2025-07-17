@@ -12,6 +12,10 @@ haitaton:
     updateInitialDelayMilliSeconds: ${ALLU_UPDATE_INITIAL_DELAY:60000}
     updateIntervalMilliSeconds: ${ALLU_UPDATE_INTERVAL:60000}
     username: ${ALLU_USERNAME:fake_user}
+    # By default, run every day at 22:12:28 (Helsinki time).
+    eventDeleteCron: ${HAITATON_ALLU_EVENT_DELETE_CRON:28 12 22 * * *}
+    # By default, delete events older than 90 days.
+    eventDeleteExpirationDays: ${HAITATON_ALLU_EVENT_DELETE_EXPIRATION_DAYS:90}
   api:
     disabled: ${HAITATON_API_DISABLED:false}
   azure:
