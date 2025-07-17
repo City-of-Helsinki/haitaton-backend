@@ -96,7 +96,7 @@ class TaydennysService(
         val entity =
             TaydennyspyyntoEntity(
                 applicationId = hakemus.id,
-                alluId = request.applicationId,
+                alluId = request.informationRequestId,
                 kentat =
                     request.fields.associate { it.fieldKey to it.requestDescription }.toMutableMap(),
             )

@@ -201,7 +201,8 @@ class TaydennysServiceITest(
             taydennysService.saveTaydennyspyyntoFromAllu(hakemus)
 
             assertThat(taydennyspyyntoRepository.findAll()).single().all {
-                prop(TaydennyspyyntoEntity::alluId).isEqualTo(alluId)
+                prop(TaydennyspyyntoEntity::alluId)
+                    .isEqualTo(AlluFactory.DEFAULT_INFORMATION_REQUEST_ID)
                 prop(TaydennyspyyntoEntity::applicationId).isEqualTo(hakemus.id)
                 prop(TaydennyspyyntoEntity::kentat)
                     .containsOnly(

@@ -247,3 +247,7 @@ databaseChangeLog:
       file: db/changelog/changesets/108-add-sent-reminders-to-hanke.sql
   - include:
       file: db/changelog/changesets/109-create-table-for-allu-event-errors.sql
+  - include:
+      file: db/changelog/changesets/110-create-table-for-allu-events.sql
+  - include:
+      file: db/changelog/changesets/111-drop-table-for-allu-event-errors.sql

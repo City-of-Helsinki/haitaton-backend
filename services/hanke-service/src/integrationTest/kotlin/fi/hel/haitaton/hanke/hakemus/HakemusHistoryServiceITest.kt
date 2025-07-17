@@ -2,53 +2,32 @@ package fi.hel.haitaton.hanke.hakemus
 
 import assertk.all
 import assertk.assertThat
-import assertk.assertions.contains
-import assertk.assertions.containsExactlyInAnyOrder
-import assertk.assertions.containsOnly
-import assertk.assertions.doesNotContain
-import assertk.assertions.each
-import assertk.assertions.extracting
 import assertk.assertions.hasSize
-import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import assertk.assertions.isNotNull
+import assertk.assertions.isGreaterThan
 import assertk.assertions.prop
-import assertk.assertions.single
-import assertk.assertions.startsWith
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.IntegrationTest
+import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.allu.AlluClient
+import fi.hel.haitaton.hanke.allu.AlluEventEntity
+import fi.hel.haitaton.hanke.allu.AlluEventRepository
+import fi.hel.haitaton.hanke.allu.AlluEventStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
-import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
-import fi.hel.haitaton.hanke.attachment.PDF_BYTES
-import fi.hel.haitaton.hanke.attachment.azure.Container
-import fi.hel.haitaton.hanke.attachment.common.MockFileClient
-import fi.hel.haitaton.hanke.attachment.common.TestFile
-import fi.hel.haitaton.hanke.factory.AlluFactory
+import fi.hel.haitaton.hanke.allu.findPendingAndFailedEventsGrouped
+import fi.hel.haitaton.hanke.factory.AlluEventFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
-import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
-import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
-import fi.hel.haitaton.hanke.factory.TaydennysFactory
-import fi.hel.haitaton.hanke.firstReceivedMessage
-import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
-import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
-import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
-import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
-import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
+import fi.hel.haitaton.hanke.findByOrderByAlluIdAscEventTimeAsc
+import fi.hel.haitaton.hanke.test.Asserts.isGreaterThan
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
-import io.mockk.verify
 import io.mockk.verifySequence
-import jakarta.mail.internet.MimeMessage
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -56,27 +35,17 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
 
-@ExtendWith(OutputCaptureExtension::class)
 class HakemusHistoryServiceITest(
     @Autowired private val historyService: HakemusHistoryService,
-    @Autowired private val hakemusRepository: HakemusRepository,
-    @Autowired private val muutosilmoitusRepository: MuutosilmoitusRepository,
-    @Autowired private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
-    @Autowired private val taydennysRepository: TaydennysRepository,
-    @Autowired private val hakemusFactory: HakemusFactory,
-    @Autowired private val taydennysFactory: TaydennysFactory,
-    @Autowired private val hankeFactory: HankeFactory,
-    @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
-    @Autowired private val muutosilmoitusFactory: MuutosilmoitusFactory,
+    @Autowired private val alluEventRepository: AlluEventRepository,
     @Autowired private val alluClient: AlluClient,
-    @Autowired private val fileClient: MockFileClient,
+    @Autowired private val alluEventFactory: AlluEventFactory,
+    @Autowired private val hakemusFactory: HakemusFactory,
 ) : IntegrationTest() {
+
     companion object {
         @JvmField
         @RegisterExtension
@@ -84,6 +53,8 @@ class HakemusHistoryServiceITest(
             GreenMailExtension(ServerSetupTest.SMTP)
                 .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
     }
+
+    private val alluId = 42
 
     @BeforeEach
     fun clearMocks() {
@@ -97,449 +68,188 @@ class HakemusHistoryServiceITest(
     }
 
     @Nested
-    inner class HandleApplicationUpdates {
-
-        private val alluId = 42
-        private val identifier = ApplicationHistoryFactory.DEFAULT_APPLICATION_IDENTIFIER
+    @ExtendWith(OutputCaptureExtension::class)
+    inner class ProcessApplicationHistories {
 
         @Test
-        fun `does nothing when hakemus is not in Haitaton`() {
-            assertThat(hakemusRepository.findAll()).isEmpty()
-
-            historyService.handleApplicationEvent(
-                99999,
-                ApplicationStatusEvent(
-                    ZonedDateTime.now(),
-                    ApplicationStatus.PENDING,
-                    "JS2400001-12",
-                    null,
+        fun `processes pending events in correct order`() {
+            val eventTime = ZonedDateTime.now(TZ_UTC)
+            alluEventFactory.saveEventEntity(
+                alluId,
+                ApplicationHistoryFactory.createEvent(
+                    eventTime,
+                    ApplicationStatus.WAITING_INFORMATION,
                 ),
             )
+            alluEventFactory.saveEventEntity(
+                alluId,
+                ApplicationHistoryFactory.createEvent(
+                    eventTime.minusDays(1),
+                    ApplicationStatus.HANDLING,
+                ),
+            )
+            alluEventFactory.saveEventEntity(
+                alluId,
+                ApplicationHistoryFactory.createEvent(
+                    eventTime.minusDays(2),
+                    ApplicationStatus.PENDING,
+                ),
+            )
+            alluEventFactory.saveEventEntity(
+                alluId,
+                ApplicationHistoryFactory.createEvent(
+                    eventTime.plusDays(1),
+                    ApplicationStatus.INFORMATION_RECEIVED,
+                ),
+            )
+            alluEventFactory.saveEventEntity(
+                alluId,
+                ApplicationHistoryFactory.createEvent(
+                    eventTime.plusDays(2),
+                    ApplicationStatus.DECISION,
+                ),
+            )
+            var entities = alluEventRepository.findPendingAndFailedEventsGrouped()[alluId]!!
+            assertThat(entities).hasSize(5)
+            assertThat(entities[0].newStatus).isEqualTo(ApplicationStatus.PENDING)
+            assertThat(entities[1].newStatus).isEqualTo(ApplicationStatus.HANDLING)
+            assertThat(entities[2].newStatus).isEqualTo(ApplicationStatus.WAITING_INFORMATION)
+            assertThat(entities[3].newStatus).isEqualTo(ApplicationStatus.INFORMATION_RECEIVED)
+            assertThat(entities[4].newStatus).isEqualTo(ApplicationStatus.DECISION)
 
-            assertThat(hakemusRepository.findAll()).isEmpty()
+            historyService.processApplicationHistories(emptyList())
+
+            entities =
+                alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(
+                    listOf(AlluEventStatus.PROCESSED)
+                )
+            assertThat(entities).hasSize(5)
+            assertThat(entities[1].processedAt).isGreaterThan(entities[0].processedAt)
+            assertThat(entities[2].processedAt).isGreaterThan(entities[1].processedAt)
+            assertThat(entities[3].processedAt).isGreaterThan(entities[2].processedAt)
+            assertThat(entities[4].processedAt).isGreaterThan(entities[3].processedAt)
         }
 
         @Test
-        fun `doesn't update status or identifier when the update status is REPLACED`() {
-            val originalTunnus = "JS2400001-12"
-            hakemusFactory
-                .builder(USERNAME)
-                .withStatus(
-                    alluId = alluId,
-                    status = ApplicationStatus.DECISION,
-                    identifier = originalTunnus,
-                )
-                .save()
+        fun `marks handled event as PROCESSED`() {
             val event =
-                ApplicationHistoryFactory.createEvent(
-                    newStatus = ApplicationStatus.REPLACED,
-                    applicationIdentifier = "JS2400001-13",
-                )
+                ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.HANDLING)
+            val history = ApplicationHistoryFactory.create(alluId, event)
 
-            historyService.handleApplicationEvent(alluId, event)
+            historyService.processApplicationHistories(listOf(history))
 
-            assertThat(hakemusRepository.findAll()).single().all {
-                prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.DECISION)
-                prop(HakemusEntity::applicationIdentifier).isEqualTo(originalTunnus)
+            val entity = alluEventRepository.findAll().single()
+            assertThat(entity).all {
+                prop(AlluEventEntity::alluId).isEqualTo(alluId)
+                prop(AlluEventEntity::eventTime).isEqualTo(event.eventTime.toOffsetDateTime())
+                prop(AlluEventEntity::newStatus).isEqualTo(event.newStatus)
+                prop(AlluEventEntity::applicationIdentifier).isEqualTo(event.applicationIdentifier)
+                prop(AlluEventEntity::status).isEqualTo(AlluEventStatus.PROCESSED)
             }
         }
 
         @Test
-        fun `sends email to the contacts when a johtoselvityshakemus gets a decision`() {
-            val hanke = hankeFactory.saveMinimal()
-            val hakija = hankeKayttajaFactory.saveUser(hankeId = hanke.id)
+        fun `marks successfully handled failed event as PROCESSED`() {
+            val event =
+                ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.HANDLING)
+            alluEventFactory.saveEventEntity(alluId, event, AlluEventStatus.FAILED)
+
+            historyService.processApplicationHistories(emptyList())
+
+            val entity = alluEventRepository.findAll().single()
+            assertThat(entity.status).isEqualTo(AlluEventStatus.PROCESSED)
+        }
+
+        @Test
+        fun `does not change status for failing event retry`() {
             hakemusFactory
-                .builder(USERNAME, hanke)
-                .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
-                .hakija(hakija)
+                .builder(USERNAME, applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
+                .withStatus(ApplicationStatus.DECISIONMAKING, alluId)
                 .saveEntity()
             val event =
-                ApplicationHistoryFactory.createEvent(
-                    newStatus = ApplicationStatus.DECISION,
-                    applicationIdentifier = identifier,
-                )
+                ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.DECISION)
+            alluEventFactory.saveEventEntity(alluId, event, AlluEventStatus.FAILED)
+            every { alluClient.getDecisionPdf(alluId) } throws RuntimeException("Test failure")
 
-            historyService.handleApplicationEvent(alluId, event)
+            historyService.processApplicationHistories(emptyList())
 
-            val email = greenMail.firstReceivedMessage()
-            assertThat(email.allRecipients).hasSize(1)
-            assertThat(email.allRecipients[0].toString()).isEqualTo(hakija.sahkoposti)
-            assertThat(email.subject)
-                .isEqualTo(
-                    "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier"
-                )
+            val entity = alluEventRepository.findAll().single()
+            assertThat(entity.status).isEqualTo(AlluEventStatus.FAILED)
+            verifySequence { alluClient.getDecisionPdf(alluId) }
         }
 
-        @ParameterizedTest
-        @EnumSource(
-            ApplicationStatus::class,
-            names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"],
-        )
-        fun `sends email to the contacts when a kaivuilmoitus gets a decision`(
-            applicationStatus: ApplicationStatus
-        ) {
-            val identifier = "KP2300001"
-            val hanke = hankeFactory.saveMinimal()
-            val hakija = hankeKayttajaFactory.saveUser(hankeId = hanke.id)
+        @Test
+        fun `handles next pending event after successful retry`() {
+            val event1 =
+                ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.PENDING)
+            val event2 =
+                ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.HANDLING)
+            alluEventFactory.saveEventEntity(alluId, event1, AlluEventStatus.FAILED)
+            alluEventFactory.saveEventEntity(alluId, event2, AlluEventStatus.PENDING)
+
+            historyService.processApplicationHistories(emptyList())
+
+            val entities = alluEventRepository.findByOrderByAlluIdAscEventTimeAsc()
+            assertThat(entities).hasSize(2)
+            assertThat(entities[0].status).isEqualTo(AlluEventStatus.PROCESSED)
+            assertThat(entities[1].status).isEqualTo(AlluEventStatus.PROCESSED)
+        }
+
+        @Test
+        fun `marks successfully handled pending event as PROCESSED`() {
+            val event =
+                ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.HANDLING)
+            alluEventFactory.saveEventEntity(alluId, event, AlluEventStatus.PENDING)
+
+            historyService.processApplicationHistories(emptyList())
+
+            val entity = alluEventRepository.findAll().single()
+            assertThat(entity.status).isEqualTo(AlluEventStatus.PROCESSED)
+        }
+
+        @Test
+        fun `marks failing pending event as FAILED`() {
             hakemusFactory
-                .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
-                .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
-                .hakija(hakija)
+                .builder(USERNAME, applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
+                .withStatus(ApplicationStatus.DECISIONMAKING, alluId)
                 .saveEntity()
             val event =
-                ApplicationHistoryFactory.createEvent(
-                    newStatus = applicationStatus,
-                    applicationIdentifier = identifier,
-                )
-            mockAlluDownload(applicationStatus)
-            every { alluClient.getApplicationInformation(alluId) } returns
-                AlluFactory.createAlluApplicationResponse(id = alluId, applicationId = identifier)
+                ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.DECISION)
+            alluEventFactory.saveEventEntity(alluId, event, AlluEventStatus.PENDING)
+            every { alluClient.getDecisionPdf(alluId) } throws RuntimeException("Test failure")
 
-            historyService.handleApplicationEvent(alluId, event)
+            historyService.processApplicationHistories(emptyList())
 
-            val email = greenMail.firstReceivedMessage()
-            assertThat(email.allRecipients).hasSize(1)
-            assertThat(email.allRecipients[0].toString()).isEqualTo(hakija.sahkoposti)
-            assertThat(email.subject)
-                .isEqualTo(
-                    "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Beslut om grävningsanmälan KP2300001 kan laddas ner / The decision concerning an excavation notification KP2300001 can be downloaded"
-                )
-            verifyAlluDownload(applicationStatus)
-            verify { alluClient.getApplicationInformation(alluId) }
+            val entity = alluEventRepository.findAll().single()
+            assertThat(entity.status).isEqualTo(AlluEventStatus.FAILED)
+            verifySequence { alluClient.getDecisionPdf(alluId) }
         }
+    }
 
-        @ParameterizedTest
-        @EnumSource(
-            ApplicationStatus::class,
-            names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"],
-        )
-        fun `downloads the document when a kaivuilmoitus gets a decision`(
-            status: ApplicationStatus
-        ) {
-            val hakemus =
-                hakemusFactory
-                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
-                    .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
-                    .save()
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    newStatus = status,
-                    applicationIdentifier = identifier,
-                )
-            mockAlluDownload(status)
-            every { alluClient.getApplicationInformation(alluId) } returns
-                AlluFactory.createAlluApplicationResponse()
-
-            historyService.handleApplicationEvent(alluId, event)
-
-            assertThat(fileClient.listBlobs(Container.PAATOKSET))
-                .single()
-                .prop(TestFile::path)
-                .startsWith("${hakemus.id}/")
-            verifyAlluDownload(status)
-            verify { alluClient.getApplicationInformation(alluId) }
-        }
-
-        @ParameterizedTest
-        @EnumSource(ApplicationType::class)
-        fun `merges changes from muutosilmoitus to the hakemus when a hakemus gets a decision`(
-            applicationType: ApplicationType
-        ) {
-            val muutosilmoitus =
-                muutosilmoitusFactory
-                    .builder(applicationType, alluId = alluId)
-                    .withEndTime(DateFactory.getEndDatetime().plusDays(1))
-                    .withSent()
-                    .save()
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    newStatus = ApplicationStatus.DECISION,
-                    applicationIdentifier = identifier,
-                )
-            if (applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
-                mockAlluDownload(ApplicationStatus.DECISION)
-                every { alluClient.getApplicationInformation(alluId) } returns
-                    AlluFactory.createAlluApplicationResponse()
-            }
-
-            historyService.handleApplicationEvent(alluId, event)
-
-            val hakemus =
-                hakemusRepository.findOneById(muutosilmoitus.hakemusId)!!.hakemusEntityData
-            assertThat(hakemus.endTime).isEqualTo(muutosilmoitus.hakemusData.endTime)
-            assertThat(muutosilmoitusRepository.findAll()).isEmpty()
-            if (applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
-                verifyAlluDownload(ApplicationStatus.DECISION)
-                verify { alluClient.getApplicationInformation(alluId) }
-            }
-        }
-
-        @ParameterizedTest
-        @EnumSource(ApplicationType::class)
-        fun `merges changes from muutosilmoitus to the hakemus when a hakemus gets a taydennyspyynto`(
-            applicationType: ApplicationType
-        ) {
-            val newName = "Updated for muutosilmoitus"
-            val muutosilmoitus =
-                muutosilmoitusFactory
-                    .builder(type = applicationType, alluId = alluId)
-                    .withName(newName)
-                    .withSent()
-                    .save()
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    newStatus = ApplicationStatus.WAITING_INFORMATION,
-                    applicationIdentifier = identifier,
-                )
-            every { alluClient.getInformationRequest(alluId) } returns
-                AlluFactory.createInformationRequest(applicationAlluId = alluId)
-
-            historyService.handleApplicationEvent(alluId, event)
-
-            val hakemus =
-                hakemusRepository.findOneById(muutosilmoitus.hakemusId)!!.hakemusEntityData
-            assertThat(hakemus.name).isEqualTo(newName)
-            assertThat(muutosilmoitusRepository.findAll()).isEmpty()
-            verifySequence { alluClient.getInformationRequest(alluId) }
-        }
+    @Nested
+    inner class DeleteOldProcessedEvents {
 
         @Test
-        fun `sends one email for every user with edit applications permission when the new status is WAITING_INFORMATION`() {
-            val hanke = hankeFactory.saveMinimal()
-            val hakija =
-                hankeKayttajaFactory.saveIdentifiedUser(
-                    hankeId = hanke.id,
-                    sahkoposti = "hakija@yritys.test",
-                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
-                )
-            val suorittaja =
-                hankeKayttajaFactory.saveIdentifiedUser(
-                    hankeId = hanke.id,
-                    sahkoposti = "suorittaja@yritys.test",
-                    kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
-                )
-            val rakennuttaja =
-                hankeKayttajaFactory.saveIdentifiedUser(
-                    hankeId = hanke.id,
-                    sahkoposti = "rakennuttaja@yritys.test",
-                    kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS,
-                )
-            val asianhoitaja =
-                hankeKayttajaFactory.saveIdentifiedUser(
-                    hankeId = hanke.id,
-                    sahkoposti = "asianhoitaja@yritys.test",
-                    kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
-                )
-            hakemusFactory
-                .builder(hanke)
-                .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
-                .hakija(hakija)
-                .tyonSuorittaja(suorittaja, hakija)
-                .rakennuttaja(rakennuttaja, suorittaja, asianhoitaja)
-                .asianhoitaja(asianhoitaja, rakennuttaja, suorittaja, hakija)
-                .save()
-            val event =
+        fun `deletes old processed events`() {
+            val eventTime = ZonedDateTime.now(TZ_UTC).minusDays(99)
+            val event1 =
                 ApplicationHistoryFactory.createEvent(
-                    newStatus = ApplicationStatus.WAITING_INFORMATION,
-                    applicationIdentifier = identifier,
+                    eventTime = eventTime.minusDays(1),
+                    newStatus = ApplicationStatus.PENDING,
                 )
-            every { alluClient.getInformationRequest(alluId) } returns
-                AlluFactory.createInformationRequest()
-
-            historyService.handleApplicationEvent(alluId, event)
-
-            val emails = greenMail.receivedMessages
-            val recipients = emails.map { it.allRecipients.toList() }.flatten()
-            assertThat(recipients)
-                .extracting { it.toString() }
-                .containsExactlyInAnyOrder(hakija.sahkoposti, suorittaja.sahkoposti)
-            assertThat(emails).each {
-                it.prop(MimeMessage::getSubject)
-                    .isEqualTo(
-                        "Haitaton: Hakemuksellesi on tullut täydennyspyyntö / Din ansökan har fått en begäran om komplettering / There is a request for supplementary information for your application"
-                    )
-            }
-            verifySequence { alluClient.getInformationRequest(alluId) }
-        }
-
-        @Test
-        fun `gets the information request from Allu and saves it when the new status is WAITING_INFORMATION`() {
-            val hanke = hankeFactory.saveMinimal()
-            val hakemus =
-                hakemusFactory
-                    .builder(hanke)
-                    .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
-                    .save()
-            val event =
+            val event2 =
                 ApplicationHistoryFactory.createEvent(
-                    newStatus = ApplicationStatus.WAITING_INFORMATION,
-                    applicationIdentifier = identifier,
-                )
-            every { alluClient.getInformationRequest(alluId) } returns
-                AlluFactory.createInformationRequest(applicationAlluId = alluId)
-
-            historyService.handleApplicationEvent(alluId, event)
-
-            assertThat(taydennyspyyntoRepository.findAll()).single().all {
-                prop(TaydennyspyyntoEntity::alluId).isEqualTo(alluId)
-                prop(TaydennyspyyntoEntity::applicationId).isEqualTo(hakemus.id)
-                prop(TaydennyspyyntoEntity::kentat)
-                    .containsOnly(
-                        InformationRequestFieldKey.OTHER to
-                            AlluFactory.DEFAULT_INFORMATION_REQUEST_DESCRIPTION
-                    )
-            }
-            verifySequence { alluClient.getInformationRequest(alluId) }
-        }
-
-        @Test
-        fun `doesn't send email or save the taydennyspyynto when the new status is WAITING_INFORMATION but Allu doesn't have the taydennyspyynto`() {
-            hakemusFactory
-                .builder()
-                .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
-                .save()
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    newStatus = ApplicationStatus.WAITING_INFORMATION,
-                    applicationIdentifier = identifier,
-                )
-            every { alluClient.getInformationRequest(alluId) } returns null
-
-            historyService.handleApplicationEvent(alluId, event)
-
-            val emails = greenMail.receivedMessages
-            assertThat(emails).isEmpty()
-            assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
-            verifySequence { alluClient.getInformationRequest(alluId) }
-        }
-
-        @Test
-        fun `removes any taydennyspyynto and taydennys when the new status is HANDLING`(
-            output: CapturedOutput
-        ) {
-            val hakemus =
-                hakemusFactory
-                    .builder()
-                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId)
-                    .save()
-            taydennysFactory.save(applicationId = hakemus.id)
-            val event =
-                ApplicationHistoryFactory.createEvent(
+                    eventTime = eventTime,
                     newStatus = ApplicationStatus.HANDLING,
-                    applicationIdentifier = identifier,
                 )
+            alluEventFactory.saveEventEntity(alluId, event1, AlluEventStatus.PROCESSED)
+            alluEventFactory.saveEventEntity(alluId, event2, AlluEventStatus.PENDING)
 
-            historyService.handleApplicationEvent(alluId, event)
+            historyService.deleteOldProcessedEvents(90)
 
-            assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
-            assertThat(taydennysRepository.findAll()).isEmpty()
-            val updatedHakemus = hakemusRepository.getOneByAlluid(alluId)
-            assertThat(updatedHakemus)
-                .isNotNull()
-                .prop(HakemusEntity::alluStatus)
-                .isEqualTo(ApplicationStatus.HANDLING)
-            assertThat(output).doesNotContain("ERROR")
+            val entities = alluEventRepository.findByOrderByAlluIdAscEventTimeAsc()
+            assertThat(entities).hasSize(1)
+            assertThat(entities[0].status).isEqualTo(AlluEventStatus.PENDING)
         }
-
-        @Test
-        fun `sends emails when removing the taydennyspyynto`() {
-            val hakemus =
-                hakemusFactory
-                    .builder()
-                    .withStatus(ApplicationStatus.WAITING_INFORMATION, alluId, identifier)
-                    .hakija(Kayttooikeustaso.KAIKKI_OIKEUDET)
-                    .tyonSuorittaja(Kayttooikeustaso.HAKEMUSASIOINTI)
-                    .rakennuttaja(Kayttooikeustaso.HANKEMUOKKAUS)
-                    .asianhoitaja(Kayttooikeustaso.KATSELUOIKEUS)
-                    .save()
-            taydennysFactory.save(applicationId = hakemus.id)
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    newStatus = ApplicationStatus.HANDLING,
-                    applicationIdentifier = identifier,
-                )
-
-            historyService.handleApplicationEvent(alluId, event)
-
-            val emails = greenMail.receivedMessages
-            val recipients = emails.map { it.allRecipients.toList() }.flatten()
-            assertThat(recipients)
-                .extracting { it.toString() }
-                .containsExactlyInAnyOrder(
-                    HankeKayttajaFactory.KAYTTAJA_INPUT_HAKIJA.email,
-                    HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA.email,
-                )
-            assertThat(emails).each {
-                it.prop(MimeMessage::getSubject)
-                    .isEqualTo(
-                        "Haitaton: Hakemustasi koskeva täydennyspyyntö on peruttu / Begäran om komplettering som gäller din ansökan har återtagits / The request for supplementary information concerning your application has been cancelled"
-                    )
-            }
-        }
-
-        @Test
-        fun `updates the status when the new status is HANDLING and there is no taydennyspyynto`(
-            output: CapturedOutput
-        ) {
-            hakemusFactory.builder().withStatus(ApplicationStatus.WAITING_INFORMATION, 42).save()
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    newStatus = ApplicationStatus.HANDLING,
-                    applicationIdentifier = identifier,
-                )
-
-            historyService.handleApplicationEvent(alluId, event)
-
-            val updatedHakemus = hakemusRepository.getOneByAlluid(alluId)
-            assertThat(updatedHakemus)
-                .isNotNull()
-                .prop(HakemusEntity::alluStatus)
-                .isEqualTo(ApplicationStatus.HANDLING)
-            assertThat(output).doesNotContain("ERROR")
-        }
-
-        @Test
-        fun `logs an error when the new status is HANDLING, the previous status is not WAITING_INFORMATION and the hakemus has a taydennyspyynto`(
-            output: CapturedOutput
-        ) {
-            val hakemus = hakemusFactory.builder().withStatus(ApplicationStatus.DECISION, 42).save()
-            taydennysFactory.save(applicationId = hakemus.id)
-            val event =
-                ApplicationHistoryFactory.createEvent(
-                    newStatus = ApplicationStatus.HANDLING,
-                    applicationIdentifier = identifier,
-                )
-
-            historyService.handleApplicationEvent(alluId, event)
-
-            assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
-            assertThat(taydennysRepository.findAll()).isEmpty()
-            val updatedHakemus = hakemusRepository.getOneByAlluid(alluId)
-            assertThat(updatedHakemus)
-                .isNotNull()
-                .prop(HakemusEntity::alluStatus)
-                .isEqualTo(ApplicationStatus.HANDLING)
-            assertThat(output).contains("ERROR")
-            assertThat(output)
-                .contains(
-                    "A hakemus moved to handling and it had a täydennyspyyntö, " +
-                        "but the previous state was not 'WAITING_INFORMATION'. status=DECISION"
-                )
-        }
-
-        private fun mockAlluDownload(status: ApplicationStatus) =
-            every { getPdfMethod(status)(alluId) } returns PDF_BYTES
-
-        private fun verifyAlluDownload(status: ApplicationStatus) = verify {
-            getPdfMethod(status)(alluId)
-        }
-
-        private fun getPdfMethod(applicationStatus: ApplicationStatus) =
-            when (applicationStatus) {
-                ApplicationStatus.DECISION -> alluClient::getDecisionPdf
-                ApplicationStatus.OPERATIONAL_CONDITION -> alluClient::getOperationalConditionPdf
-                ApplicationStatus.FINISHED -> alluClient::getWorkFinishedPdf
-                else -> throw IllegalArgumentException()
-            }
     }
 }
