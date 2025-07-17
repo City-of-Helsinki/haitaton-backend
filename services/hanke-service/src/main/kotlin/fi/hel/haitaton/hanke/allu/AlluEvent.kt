@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.allu
 
+import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -24,16 +25,18 @@ enum class AlluEventStatus {
 @Table(name = "allu_event")
 class AlluEventEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Long = 0,
-    val alluId: Int,
-    val eventTime: OffsetDateTime,
-    @Enumerated(EnumType.STRING) val newStatus: ApplicationStatus,
-    val applicationIdentifier: String,
-    @Enumerated(EnumType.STRING) val targetStatus: ApplicationStatus?,
+    @Column(name = "allu_id") val alluId: Int,
+    @Column(name = "event_time") val eventTime: OffsetDateTime,
+    @Column(name = "new_status") @Enumerated(EnumType.STRING) val newStatus: ApplicationStatus,
+    @Column(name = "application_identifier") val applicationIdentifier: String,
+    @Column(name = "target_status")
+    @Enumerated(EnumType.STRING)
+    val targetStatus: ApplicationStatus?,
     @Enumerated(EnumType.STRING) var status: AlluEventStatus = AlluEventStatus.PENDING,
     var stackTrace: String? = null,
-    val createdAt: Instant = Instant.now(),
-    var processedAt: Instant? = null,
-    var retryCount: Int = 0,
+    @Column(name = "created_at") val createdAt: Instant = Instant.now(),
+    @Column(name = "processed_at") var processedAt: Instant? = null,
+    @Column(name = "retry_count") var retryCount: Int = 0,
 ) {
     fun toApplicationStatusEvent() =
         ApplicationStatusEvent(
@@ -96,9 +99,9 @@ class AlluEventRepositoryImpl(private val jdbcTemplate: JdbcTemplate) : AlluEven
     companion object {
         private const val BATCH_INSERT_SQL =
             """
-            INSERT INTO allu_event (alluId, eventTime, newStatus, applicationIdentifier, targetStatus)
+            INSERT INTO allu_event (allu_id, event_time, new_status, application_identifier, target_status)
             VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT (alluId, eventTime, newStatus) DO NOTHING
+            ON CONFLICT (allu_id, event_time, new_status) DO NOTHING
         """
     }
 
@@ -119,7 +122,7 @@ class AlluEventRepositoryImpl(private val jdbcTemplate: JdbcTemplate) : AlluEven
 
     override fun deleteProcessedEventsOlderThan(time: OffsetDateTime) {
         jdbcTemplate.update(
-            "DELETE FROM allu_event WHERE status = 'PROCESSED' AND eventtime < ?",
+            "DELETE FROM allu_event WHERE status = 'PROCESSED' AND event_time < ?",
             time,
         )
     }

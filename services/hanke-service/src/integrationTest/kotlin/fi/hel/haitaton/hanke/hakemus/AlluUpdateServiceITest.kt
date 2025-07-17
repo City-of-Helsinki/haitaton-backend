@@ -107,6 +107,7 @@ class AlluUpdateServiceITest(
     /** The timestamp used in the initial DB migration. */
     private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")
     private val eventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
+    private val errorMessage = "Test exception"
 
     @BeforeEach
     fun clearMocks() {
@@ -901,7 +902,7 @@ class AlluUpdateServiceITest(
                     ),
                 ApplicationHistoryFactory.create(alluId + 2).withDefaultEvents("JS2300084"),
             )
-        val exception = RuntimeException("Test exception")
+        val exception = RuntimeException(errorMessage)
         every {
             alluClient.getApplicationStatusHistories(
                 listOf(alluId, alluId + 1, alluId + 2),
@@ -973,7 +974,7 @@ class AlluUpdateServiceITest(
                     ),
                 )
                 .asList()
-        val exception = RuntimeException("Test exception")
+        val exception = RuntimeException(errorMessage)
         every {
             alluClient.getApplicationStatusHistories(
                 listOf(alluId),
@@ -1069,7 +1070,7 @@ class AlluUpdateServiceITest(
                 .builder(USERNAME, hanke)
                 .withStatus(status = ApplicationStatus.HANDLING, alluId = alluId)
                 .save()
-        val exception = RuntimeException("Test exception")
+        val exception = RuntimeException(errorMessage)
         val event =
             ApplicationHistoryFactory.createEvent(
                 eventTime = eventTime,

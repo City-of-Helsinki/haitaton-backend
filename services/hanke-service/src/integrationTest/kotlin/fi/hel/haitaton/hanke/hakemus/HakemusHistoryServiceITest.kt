@@ -4,7 +4,6 @@ import assertk.all
 import assertk.assertThat
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
-import assertk.assertions.isGreaterThan
 import assertk.assertions.prop
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
@@ -35,6 +34,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
+import org.junit.jupiter.api.fail
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.system.OutputCaptureExtension
 
@@ -109,7 +109,10 @@ class HakemusHistoryServiceITest(
                     ApplicationStatus.DECISION,
                 ),
             )
-            var entities = alluEventRepository.findPendingAndFailedEventsGrouped()[alluId]!!
+            var entities =
+                alluEventRepository.findPendingAndFailedEventsGrouped().getOrElse(alluId) {
+                    fail { "No Allu events in database" }
+                }
             assertThat(entities).hasSize(5)
             assertThat(entities[0].newStatus).isEqualTo(ApplicationStatus.PENDING)
             assertThat(entities[1].newStatus).isEqualTo(ApplicationStatus.HANDLING)
