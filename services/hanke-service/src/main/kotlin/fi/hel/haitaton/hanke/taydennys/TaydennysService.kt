@@ -153,7 +153,7 @@ class TaydennysService(
     @Transactional
     fun removeTaydennyspyyntoIfItExists(application: HakemusEntity) {
         logger.info {
-            "A hakemus has has entered handling. Checking if there's a täydennyspyyntö for the hakemus. ${application.logString()}"
+            "A hakemus has entered handling. Checking if there's a täydennyspyyntö for the hakemus. ${application.logString()}"
         }
 
         taydennysRepository.findByApplicationId(application.id)?.also {
