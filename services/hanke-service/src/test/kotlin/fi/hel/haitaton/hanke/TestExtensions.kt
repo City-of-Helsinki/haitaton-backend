@@ -7,6 +7,9 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isTrue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.icegreen.greenmail.junit5.GreenMailExtension
+import fi.hel.haitaton.hanke.allu.AlluEventEntity
+import fi.hel.haitaton.hanke.allu.AlluEventRepository
+import fi.hel.haitaton.hanke.allu.AlluEventStatus
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import jakarta.mail.internet.MimeMessage
@@ -73,3 +76,6 @@ inline fun <reified T> Assert<Collection<T>>.hasSameElementsAs(elements: List<T>
  * to be used in the name of the test.
  */
 fun Any?.touch() = Unit
+
+fun AlluEventRepository.findByOrderByAlluIdAscEventTimeAsc(): List<AlluEventEntity> =
+    findByStatusInOrderByAlluIdAscEventTimeAsc(AlluEventStatus.entries)

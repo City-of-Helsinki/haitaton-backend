@@ -8,7 +8,10 @@ data class ApplicationHistory(
     val applicationId: Int,
     val events: List<ApplicationStatusEvent>,
     val supervisionEvents: List<SupervisionEvent>,
-)
+) {
+    fun toLogString(): String =
+        "applicationId=$applicationId, events: ${events.joinToString(";") { it. toLogString()}}"
+}
 
 data class ApplicationStatusEvent(
     val eventTime: ZonedDateTime,
@@ -19,7 +22,10 @@ data class ApplicationStatusEvent(
      * DECISIONMAKING.
      */
     val targetStatus: ApplicationStatus?,
-)
+) {
+    fun toLogString(): String =
+        "eventTime=$eventTime, applicationIdentifier=$applicationIdentifier, newStatus=$newStatus"
+}
 
 enum class ApplicationStatus {
     PRE_RESERVED, // ?
