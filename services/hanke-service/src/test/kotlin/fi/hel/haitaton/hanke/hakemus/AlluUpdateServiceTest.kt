@@ -55,26 +55,26 @@ class AlluUpdateServiceTest {
     }
 
     @Test
-    fun `only updates the timestamp when no histories`(output: CapturedOutput) {
+    fun `handles updates when no histories`() {
         every { historyService.getAllAlluIds() } returns listOf(23)
         every { historyService.getLastUpdateTime() } returns OffsetDateTime.now()
         every { alluClient.getApplicationStatusHistories(any(), any()) } returns emptyList()
         justRun { historyService.setLastUpdateTime(any()) }
+        justRun { historyService.processApplicationHistories(emptyList()) }
 
         alluUpdateService.handleUpdates()
 
-        assertThat(output)
-            .contains("There are no applications to update, skipping Allu history update.")
         verifySequence {
             historyService.getAllAlluIds()
             historyService.getLastUpdateTime()
             alluClient.getApplicationStatusHistories(any(), any())
             historyService.setLastUpdateTime(any())
+            historyService.processApplicationHistories(emptyList())
         }
     }
 
     @Test
-    fun `handles updates`() {
+    fun `handles updates when histories`() {
         val histories =
             ApplicationHistoryFactory.create(applicationId = 24, *emptyArray())
                 .withDefaultEvents()

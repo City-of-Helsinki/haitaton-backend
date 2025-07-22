@@ -109,16 +109,32 @@ class HakemusHistoryServiceITest(
                     ApplicationStatus.DECISION,
                 ),
             )
+            alluEventFactory.saveEventEntity(
+                alluId,
+                ApplicationHistoryFactory.createEvent(
+                    eventTime.plusDays(3),
+                    ApplicationStatus.DECISIONMAKING,
+                ),
+            )
+            alluEventFactory.saveEventEntity(
+                alluId,
+                ApplicationHistoryFactory.createEvent(
+                    eventTime.plusDays(4),
+                    ApplicationStatus.DECISION,
+                ),
+            )
             var entities =
                 alluEventRepository.findPendingAndFailedEventsGrouped().getOrElse(alluId) {
                     fail { "No Allu events in database" }
                 }
-            assertThat(entities).hasSize(5)
+            assertThat(entities).hasSize(7)
             assertThat(entities[0].newStatus).isEqualTo(ApplicationStatus.PENDING)
             assertThat(entities[1].newStatus).isEqualTo(ApplicationStatus.HANDLING)
             assertThat(entities[2].newStatus).isEqualTo(ApplicationStatus.WAITING_INFORMATION)
             assertThat(entities[3].newStatus).isEqualTo(ApplicationStatus.INFORMATION_RECEIVED)
             assertThat(entities[4].newStatus).isEqualTo(ApplicationStatus.DECISION)
+            assertThat(entities[5].newStatus).isEqualTo(ApplicationStatus.DECISIONMAKING)
+            assertThat(entities[6].newStatus).isEqualTo(ApplicationStatus.DECISION)
 
             historyService.processApplicationHistories(emptyList())
 
@@ -126,11 +142,13 @@ class HakemusHistoryServiceITest(
                 alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(
                     listOf(AlluEventStatus.PROCESSED)
                 )
-            assertThat(entities).hasSize(5)
+            assertThat(entities).hasSize(7)
             assertThat(entities[1].processedAt).isGreaterThan(entities[0].processedAt)
             assertThat(entities[2].processedAt).isGreaterThan(entities[1].processedAt)
             assertThat(entities[3].processedAt).isGreaterThan(entities[2].processedAt)
             assertThat(entities[4].processedAt).isGreaterThan(entities[3].processedAt)
+            assertThat(entities[5].processedAt).isGreaterThan(entities[4].processedAt)
+            assertThat(entities[6].processedAt).isGreaterThan(entities[5].processedAt)
         }
 
         @Test

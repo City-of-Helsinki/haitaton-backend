@@ -60,7 +60,7 @@ class HakemusHistoryServiceTest {
             val event =
                 ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.DECISION)
             val history = ApplicationHistoryFactory.create(alluId, event)
-            val entity = AlluEventFactory.createEntity(alluId, event)
+            val entity = AlluEventFactory.createEntity(alluId, event, AlluEventStatus.PENDING)
             justRun { alluEventRepository.batchInsertIgnoreDuplicates(listOf(entity)) }
             every { alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(any()) } returns
                 emptyList()
@@ -82,7 +82,6 @@ class HakemusHistoryServiceTest {
             val event =
                 ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.DECISION)
             val entity = AlluEventFactory.createEntity(alluId, event, AlluEventStatus.FAILED)
-            justRun { alluEventRepository.batchInsertIgnoreDuplicates(emptyList()) }
             every { alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(any()) } returns
                 listOf(entity)
             justRun { applicationEventService.handleApplicationEvent(alluId, event) }
@@ -90,7 +89,6 @@ class HakemusHistoryServiceTest {
             historyService.processApplicationHistories(emptyList())
 
             verifySequence {
-                alluEventRepository.batchInsertIgnoreDuplicates(emptyList())
                 alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(any())
                 applicationEventService.handleApplicationEvent(alluId, event)
             }
@@ -102,7 +100,6 @@ class HakemusHistoryServiceTest {
             val event =
                 ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.DECISION)
             val entity = AlluEventFactory.createEntity(alluId, event, AlluEventStatus.FAILED)
-            justRun { alluEventRepository.batchInsertIgnoreDuplicates(emptyList()) }
             every { alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(any()) } returns
                 listOf(entity)
             every { applicationEventService.handleApplicationEvent(alluId, event) } throws
@@ -111,7 +108,6 @@ class HakemusHistoryServiceTest {
             historyService.processApplicationHistories(emptyList())
 
             verifySequence {
-                alluEventRepository.batchInsertIgnoreDuplicates(emptyList())
                 alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(any())
                 applicationEventService.handleApplicationEvent(alluId, event)
             }
@@ -126,7 +122,6 @@ class HakemusHistoryServiceTest {
                 ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.DECISION)
             val entity1 = AlluEventFactory.createEntity(alluId, event1, AlluEventStatus.FAILED)
             val entity2 = AlluEventFactory.createEntity(alluId, event2, AlluEventStatus.PENDING)
-            justRun { alluEventRepository.batchInsertIgnoreDuplicates(emptyList()) }
             every { alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(any()) } returns
                 listOf(entity1, entity2)
             justRun { applicationEventService.handleApplicationEvent(alluId, event1) }
@@ -135,7 +130,6 @@ class HakemusHistoryServiceTest {
             historyService.processApplicationHistories(emptyList())
 
             verifySequence {
-                alluEventRepository.batchInsertIgnoreDuplicates(emptyList())
                 alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(any())
                 applicationEventService.handleApplicationEvent(alluId, event1)
                 applicationEventService.handleApplicationEvent(alluId, event2)
@@ -149,7 +143,6 @@ class HakemusHistoryServiceTest {
             val event =
                 ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.DECISION)
             val entity = AlluEventFactory.createEntity(alluId, event, AlluEventStatus.PENDING)
-            justRun { alluEventRepository.batchInsertIgnoreDuplicates(emptyList()) }
             every { alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(any()) } returns
                 listOf(entity)
             justRun { applicationEventService.handleApplicationEvent(alluId, event) }
@@ -157,7 +150,6 @@ class HakemusHistoryServiceTest {
             historyService.processApplicationHistories(emptyList())
 
             verifySequence {
-                alluEventRepository.batchInsertIgnoreDuplicates(emptyList())
                 alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(any())
                 applicationEventService.handleApplicationEvent(alluId, event)
             }
@@ -169,7 +161,6 @@ class HakemusHistoryServiceTest {
             val event =
                 ApplicationHistoryFactory.createEvent(newStatus = ApplicationStatus.DECISION)
             val entity = AlluEventFactory.createEntity(alluId, event, AlluEventStatus.PENDING)
-            justRun { alluEventRepository.batchInsertIgnoreDuplicates(emptyList()) }
             every { alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(any()) } returns
                 listOf(entity)
             every { applicationEventService.handleApplicationEvent(alluId, event) } throws
@@ -178,7 +169,6 @@ class HakemusHistoryServiceTest {
             historyService.processApplicationHistories(emptyList())
 
             verifySequence {
-                alluEventRepository.batchInsertIgnoreDuplicates(emptyList())
                 alluEventRepository.findByStatusInOrderByAlluIdAscEventTimeAsc(any())
                 applicationEventService.handleApplicationEvent(alluId, event)
             }
