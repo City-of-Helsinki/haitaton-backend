@@ -30,6 +30,7 @@ class TestDataService(
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val fileClient: FileClient,
     private val alluUpdateService: AlluUpdateScheduler,
+    private val randomHankeGenerator: RandomHankeGenerator,
 ) {
     @Transactional
     fun unlinkApplicationsFromAllu() {
@@ -61,6 +62,23 @@ class TestDataService(
         logger.info { "Manually triggered Allu updates..." }
         alluUpdateService.checkApplicationHistories()
         logger.info { "Manual Allu updates done." }
+    }
+
+    @Transactional
+    fun createRandomPublicHanke(count: Int): Int {
+        logger.warn { "Creating $count random public hanke..." }
+        var created = 0
+        repeat(count) { index ->
+            randomHankeGenerator.createRandomHankeWithRelations(index)
+
+            if (index % 25 == 0) {
+                logger.info { "Created ${index + 1} hanke..." }
+            }
+
+            created++
+        }
+        logger.warn { "Created $created random public hanke." }
+        return created
     }
 
     private fun deletePaatosWithAttachments(paatosEntity: PaatosEntity) {

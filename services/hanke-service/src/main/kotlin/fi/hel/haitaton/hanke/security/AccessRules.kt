@@ -29,10 +29,10 @@ object AccessRules {
                         "/testdata/trigger-allu",
                     )
                     .permitAll()
-                    .requestMatchers(HttpMethod.POST, "/testdata/unlink-applications")
+                    .requestMatchers(HttpMethod.POST, "/testdata/unlink-applications", "/testdata/create-public-hanke/*")
                     .permitAll()
             }
-            .csrf { it.ignoringRequestMatchers("/testdata/unlink-applications") }
+            .csrf { it.ignoringRequestMatchers("/testdata/unlink-applications", "/testdata/create-public-hanke/*") }
             .authorizeHttpRequests { it.anyRequest().authenticated() }
             .exceptionHandling {
                 it.authenticationEntryPoint { request, response, authenticationException ->

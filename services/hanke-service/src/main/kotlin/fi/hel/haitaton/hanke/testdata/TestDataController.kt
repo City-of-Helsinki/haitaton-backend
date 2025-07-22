@@ -8,6 +8,7 @@ import org.springframework.context.event.EventListener
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
@@ -47,5 +48,27 @@ class TestDataController(private val testDataService: TestDataService) {
     fun triggerAllu(): ResponseEntity<String> {
         testDataService.triggerAlluUpdates()
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body("Allu updates done.")
+    }
+
+    @Operation(
+        summary = "Create random public hanke",
+        description = "Creates a specified number of random public hanke with geometries for testing map performance"
+    )
+    @PostMapping("/create-public-hanke/{count}")
+    @ResponseBody
+    fun createPublicHanke(@PathVariable count: Int): ResponseEntity<String> {
+        if (count < 1 || count > 1000) {
+            return ResponseEntity.badRequest()
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("Count must be between 1 and 1000")
+        }
+        
+        val created = testDataService.createRandomPublicHanke(count)
+
+        logger.warn { "Created $created random public hanke" }
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.TEXT_PLAIN)
+            .body("Created $created random public hanke")
     }
 }
