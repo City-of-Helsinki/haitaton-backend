@@ -81,7 +81,11 @@ class ApplicationEventServiceTest {
 
     @Test
     fun `sends email to the contacts when a johtoselvityshakemus gets a decision`() {
-        every { hakemusRepository.getOneByAlluid(alluId) } returns applicationEntityWithCustomer()
+        val hakemus = applicationEntityWithCustomer()
+        every { hakemusRepository.getOneByAlluid(alluId) } returns hakemus
+        justRun { muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(hakemus) }
+        every { paatosService.isRevertedToDecision(hakemus, ApplicationStatus.DECISION) } returns
+            false
         justRun {
             publisher.publishEvent(JohtoselvitysCompleteEmail(receiver, applicationId, identifier))
         }
@@ -90,7 +94,8 @@ class ApplicationEventServiceTest {
 
         verifySequence {
             hakemusRepository.getOneByAlluid(alluId)
-            muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(any())
+            muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(hakemus)
+            paatosService.isRevertedToDecision(hakemus, ApplicationStatus.DECISION)
             publisher.publishEvent(JohtoselvitysCompleteEmail(receiver, applicationId, identifier))
         }
     }
@@ -100,8 +105,12 @@ class ApplicationEventServiceTest {
     fun `sends email to the contacts when a kaivuilmoitus gets a decision`(
         applicationStatus: ApplicationStatus
     ) {
-        every { hakemusRepository.getOneByAlluid(alluId) } returns
-            applicationEntityWithCustomer(type = ApplicationType.EXCAVATION_NOTIFICATION)
+        val hakemus = applicationEntityWithCustomer(type = ApplicationType.EXCAVATION_NOTIFICATION)
+        every { hakemusRepository.getOneByAlluid(alluId) } returns hakemus
+        if (applicationStatus == ApplicationStatus.DECISION) {
+            justRun { muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(hakemus) }
+        }
+        every { paatosService.isRevertedToDecision(hakemus, applicationStatus) } returns false
         justRun {
             publisher.publishEvent(KaivuilmoitusDecisionEmail(receiver, applicationId, identifier))
         }
@@ -122,10 +131,31 @@ class ApplicationEventServiceTest {
         verifySequence {
             hakemusRepository.getOneByAlluid(42)
             if (applicationStatus == ApplicationStatus.DECISION) {
-                muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(any())
+                muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(hakemus)
             }
+            paatosService.isRevertedToDecision(hakemus, applicationStatus)
             publisher.publishEvent(KaivuilmoitusDecisionEmail(receiver, applicationId, identifier))
             saveMethod(any(), any())
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"])
+    fun `does not send email when a kaivuilmoitus gets a reverted decision`(
+        applicationStatus: ApplicationStatus
+    ) {
+        val hakemus = applicationEntityWithCustomer(type = ApplicationType.EXCAVATION_NOTIFICATION)
+        every { hakemusRepository.getOneByAlluid(alluId) } returns hakemus
+        every { paatosService.isRevertedToDecision(hakemus, applicationStatus) } returns true
+
+        eventService.handleApplicationEvent(alluId, createEvent(applicationStatus))
+
+        verifySequence {
+            hakemusRepository.getOneByAlluid(42)
+            if (applicationStatus == ApplicationStatus.DECISION) {
+                muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(any())
+            }
+            paatosService.isRevertedToDecision(hakemus, applicationStatus)
         }
     }
 
@@ -146,8 +176,11 @@ class ApplicationEventServiceTest {
 
     @Test
     fun `logs error when there are no receivers`(output: CapturedOutput) {
-        every { hakemusRepository.getOneByAlluid(alluId) } returns
-            applicationEntityWithoutCustomer()
+        val hakemus = applicationEntityWithoutCustomer()
+        every { hakemusRepository.getOneByAlluid(alluId) } returns hakemus
+        justRun { muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(hakemus) }
+        every { paatosService.isRevertedToDecision(hakemus, ApplicationStatus.DECISION) } returns
+            false
 
         eventService.handleApplicationEvent(alluId, createEvent())
 
@@ -155,7 +188,8 @@ class ApplicationEventServiceTest {
             .contains("No receivers found for hakemus DECISION ready email, not sending any.")
         verifySequence {
             hakemusRepository.getOneByAlluid(42)
-            muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(any())
+            muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(hakemus)
+            paatosService.isRevertedToDecision(hakemus, ApplicationStatus.DECISION)
         }
     }
 
@@ -165,8 +199,9 @@ class ApplicationEventServiceTest {
         status: ApplicationStatus,
         output: CapturedOutput,
     ) {
-        every { hakemusRepository.getOneByAlluid(alluId) } returns
-            applicationEntityWithoutCustomer()
+        val hakemus = applicationEntityWithoutCustomer()
+        every { hakemusRepository.getOneByAlluid(alluId) } returns hakemus
+        every { paatosService.isRevertedToDecision(hakemus, status) } returns false
 
         eventService.handleApplicationEvent(alluId, createEvent(status))
 
@@ -176,7 +211,10 @@ class ApplicationEventServiceTest {
             contains("alluId=$alluId")
             contains("identifier=$identifier")
         }
-        verifySequence { hakemusRepository.getOneByAlluid(42) }
+        verifySequence {
+            hakemusRepository.getOneByAlluid(42)
+            paatosService.isRevertedToDecision(hakemus, status)
+        }
     }
 
     private fun applicationEntityWithoutCustomer(

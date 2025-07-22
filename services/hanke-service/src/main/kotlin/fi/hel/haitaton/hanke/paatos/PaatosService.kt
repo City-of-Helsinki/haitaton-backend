@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.paatos
 
 import fi.hel.haitaton.hanke.allu.AlluClient
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container
@@ -44,6 +45,16 @@ class PaatosService(
         val filename = "${paatos.hakemustunnus}-$filenameSuffix.pdf"
         return Pair(filename, bytes)
     }
+
+    @Transactional(readOnly = true)
+    fun isRevertedToDecision(
+        hakemus: HakemusIdentifier,
+        applicationStatus: ApplicationStatus,
+    ): Boolean =
+        paatosRepository.existsByHakemustunnusAndTyyppi(
+            hakemus.applicationIdentifier!!,
+            PaatosTyyppi.valueOfApplicationStatus(applicationStatus),
+        )
 
     @Transactional
     fun saveKaivuilmoituksenPaatos(hakemus: HakemusIdentifier, event: ApplicationStatusEvent) {

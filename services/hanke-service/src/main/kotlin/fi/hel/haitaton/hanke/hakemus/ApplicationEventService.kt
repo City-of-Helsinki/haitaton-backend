@@ -63,6 +63,15 @@ class ApplicationEventService(
             ApplicationStatus.DECISION -> {
                 muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(application)
                 updateStatus()
+                if (paatosService.isRevertedToDecision(application, ApplicationStatus.DECISION)) {
+                    logger.info {
+                        "Application has been reverted to decision. ${application.logString()}"
+                    }
+                    return
+                }
+                logger.info {
+                    "Application has been decided. Sending decision ready emails. ${application.logString()}"
+                }
                 sendDecisionReadyEmails(application, event.applicationIdentifier)
                 if (application.applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
                     paatosService.saveKaivuilmoituksenPaatos(application, event)
@@ -70,6 +79,17 @@ class ApplicationEventService(
             }
             ApplicationStatus.OPERATIONAL_CONDITION -> {
                 updateStatus()
+                if (
+                    paatosService.isRevertedToDecision(
+                        application,
+                        ApplicationStatus.OPERATIONAL_CONDITION,
+                    )
+                ) {
+                    logger.info {
+                        "Application has been reverted to operational condition. ${application.logString()}"
+                    }
+                    return
+                }
                 when (application.applicationType) {
                     ApplicationType.CABLE_REPORT ->
                         logger.error {
@@ -83,6 +103,12 @@ class ApplicationEventService(
             }
             ApplicationStatus.FINISHED -> {
                 updateStatus()
+                if (paatosService.isRevertedToDecision(application, ApplicationStatus.FINISHED)) {
+                    logger.info {
+                        "Application has been reverted to finished. ${application.logString()}"
+                    }
+                    return
+                }
                 when (application.applicationType) {
                     ApplicationType.CABLE_REPORT ->
                         logger.error {
