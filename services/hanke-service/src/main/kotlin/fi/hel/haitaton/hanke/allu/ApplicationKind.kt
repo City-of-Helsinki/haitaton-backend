@@ -46,4 +46,5 @@ enum class ApplicationKind {
     ABSORBING_SEWAGE_SYSTEM,
     GAS_PIPE,
     OTHER,
+    GEO_HEATING,
 }
