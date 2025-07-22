@@ -35,11 +35,13 @@ class HakemusHistoryService(
 
     @Transactional
     fun processApplicationHistories(applicationHistories: List<ApplicationHistory>) {
-        logger.info {
-            "Processing ${applicationHistories.size} new application histories from Allu: " +
-                applicationHistories.joinToString(" : ") { it.toLogString() }
+        if (applicationHistories.isNotEmpty()) {
+            logger.info {
+                "Processing ${applicationHistories.size} new application histories from Allu: " +
+                    applicationHistories.joinToString(" : ") { it.toLogString() }
+            }
+            saveEventsAsPending(applicationHistories)
         }
-        saveEventsAsPending(applicationHistories)
         processPendingAndFailedEvents()
     }
 

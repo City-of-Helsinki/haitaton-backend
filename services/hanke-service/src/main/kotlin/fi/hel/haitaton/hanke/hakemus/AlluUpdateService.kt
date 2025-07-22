@@ -23,17 +23,10 @@ class AlluUpdateService(
             logger.info("There are no applications to update, skipping Allu history update.")
             return
         }
-
         val lastUpdate = historyService.getLastUpdateTime()
         val currentTime = ZonedDateTime.now(TZ_UTC)
         val applicationHistories = fetchApplicationHistories(ids, lastUpdate)
         historyService.setLastUpdateTime(currentTime.toOffsetDateTime())
-
-        if (applicationHistories.isEmpty()) {
-            logger.info("There are no applications to update, skipping Allu history update.")
-            return
-        }
-
         historyService.processApplicationHistories(applicationHistories)
     }
 

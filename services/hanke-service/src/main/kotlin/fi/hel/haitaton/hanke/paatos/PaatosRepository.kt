@@ -12,6 +12,8 @@ interface PaatosRepository : JpaRepository<PaatosEntity, UUID> {
 
     fun findByHakemusIdIn(hakemusIds: Collection<Long>): List<PaatosEntity>
 
+    fun existsByHakemustunnusAndTyyppi(hakemustunnus: String, tyyppi: PaatosTyyppi): Boolean
+
     @Modifying
     @Query("UPDATE PaatosEntity SET tila = :tila WHERE hakemustunnus = :hakemustunnus")
     fun markReplacedByHakemustunnus(hakemustunnus: String, tila: PaatosTila = PaatosTila.KORVATTU)

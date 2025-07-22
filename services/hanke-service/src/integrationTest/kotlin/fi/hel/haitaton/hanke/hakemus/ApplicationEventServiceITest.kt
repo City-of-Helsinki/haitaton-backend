@@ -11,6 +11,7 @@ import assertk.assertions.extracting
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import assertk.assertions.single
@@ -35,14 +36,17 @@ import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.MuutosilmoitusFactory
+import fi.hel.haitaton.hanke.factory.PaatosFactory
 import fi.hel.haitaton.hanke.factory.TaydennysFactory
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
+import fi.hel.haitaton.hanke.paatos.PaatosTyyppi
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
 import fi.hel.haitaton.hanke.test.USERNAME
+import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -70,6 +74,7 @@ class ApplicationEventServiceITest(
     @Autowired private val taydennyspyyntoRepository: TaydennyspyyntoRepository,
     @Autowired private val taydennysRepository: TaydennysRepository,
     @Autowired private val hakemusFactory: HakemusFactory,
+    @Autowired private val paatosFactory: PaatosFactory,
     @Autowired private val taydennysFactory: TaydennysFactory,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
@@ -167,6 +172,28 @@ class ApplicationEventServiceITest(
             )
     }
 
+    @Test
+    fun `does not send email to the contacts when a johtoselvityshakemus gets a reverted decision`() {
+        val hakemus =
+            hakemusFactory
+                .builder()
+                .withMandatoryFields()
+                .withStatus(ApplicationStatus.DECISIONMAKING, alluId, identifier)
+                .save()
+        paatosFactory.save(hakemus, hakemus.applicationIdentifier!!)
+
+        val event =
+            ApplicationHistoryFactory.createEvent(
+                newStatus = ApplicationStatus.DECISION,
+                applicationIdentifier = identifier,
+            )
+
+        eventService.handleApplicationEvent(alluId, event)
+
+        val gotEmail = greenMail.waitForIncomingEmail(1000L, 1)
+        assertThat(gotEmail).isFalse()
+    }
+
     @ParameterizedTest
     @EnumSource(ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"])
     fun `sends email to the contacts when a kaivuilmoitus gets a decision`(
@@ -204,6 +231,34 @@ class ApplicationEventServiceITest(
 
     @ParameterizedTest
     @EnumSource(ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"])
+    fun `does not send email to the contacts when a kaivuilmoitus gets a reverted decision`(
+        applicationStatus: ApplicationStatus
+    ) {
+        val hakemus =
+            hakemusFactory
+                .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                .withMandatoryFields()
+                .withStatus(ApplicationStatus.DECISIONMAKING, alluId, identifier)
+                .save()
+        paatosFactory.save(
+            hakemus,
+            hakemus.applicationIdentifier!!,
+            PaatosTyyppi.valueOfApplicationStatus(applicationStatus),
+        )
+        val event =
+            ApplicationHistoryFactory.createEvent(
+                newStatus = applicationStatus,
+                applicationIdentifier = identifier,
+            )
+
+        eventService.handleApplicationEvent(alluId, event)
+
+        val gotEmail = greenMail.waitForIncomingEmail(1000L, 1)
+        assertThat(gotEmail).isFalse()
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"])
     fun `downloads the document when a kaivuilmoitus gets a decision`(status: ApplicationStatus) {
         val hakemus =
             hakemusFactory
@@ -227,6 +282,33 @@ class ApplicationEventServiceITest(
             .startsWith("${hakemus.id}/")
         verifyAlluDownload(status)
         verify { alluClient.getApplicationInformation(alluId) }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ApplicationStatus::class, names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"])
+    fun `does not download the document when a kaivuilmoitus gets a reverted decision`(
+        status: ApplicationStatus
+    ) {
+        val hakemus =
+            hakemusFactory
+                .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                .withMandatoryFields()
+                .withStatus(ApplicationStatus.DECISIONMAKING, alluId, identifier)
+                .save()
+        paatosFactory.save(
+            hakemus,
+            hakemus.applicationIdentifier!!,
+            PaatosTyyppi.valueOfApplicationStatus(status),
+        )
+        val event =
+            ApplicationHistoryFactory.createEvent(
+                newStatus = status,
+                applicationIdentifier = identifier,
+            )
+
+        eventService.handleApplicationEvent(alluId, event)
+
+        verify { alluClient wasNot Called }
     }
 
     @ParameterizedTest
