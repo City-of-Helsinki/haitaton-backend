@@ -10,7 +10,7 @@ data class ApplicationHistory(
     val supervisionEvents: List<SupervisionEvent>,
 ) {
     fun toLogString(): String =
-        "applicationId=$applicationId, events: ${events.joinToString(";") { it. toLogString()}}"
+        "applicationId=$applicationId, events: ${events.joinToString(";") { it.toLogString()}}"
 }
 
 data class ApplicationStatusEvent(
