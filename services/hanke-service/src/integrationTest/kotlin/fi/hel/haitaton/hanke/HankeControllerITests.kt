@@ -55,7 +55,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
+private const val HANKE_TUNNUS = HankeFactory.DEFAULT_HANKETUNNUS
 private const val BASE_URL = "/hankkeet"
 
 /**
@@ -379,19 +379,15 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             get(url)
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("\$.length()").value(2))
-                .andExpect(jsonPath("\$.[0].omistajat.length()").value(1))
-                .andExpect(jsonPath("\$.[0].omistajat[0].yhteyshenkilot.length()").value(1))
-                .andExpect(
-                    jsonPath("\$.[0].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu122")
-                )
-                .andExpect(jsonPath("\$.[0].omistajat[0].yhteyshenkilot[0].id").isString)
-                .andExpect(jsonPath("\$.[1].omistajat.length()").value(1))
-                .andExpect(jsonPath("\$.[1].omistajat[0].yhteyshenkilot.length()").value(1))
-                .andExpect(
-                    jsonPath("\$.[1].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu144")
-                )
-                .andExpect(jsonPath("\$.[1].omistajat[0].yhteyshenkilot[0].id").isString)
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$.[0].omistajat.length()").value(1))
+                .andExpect(jsonPath("$.[0].omistajat[0].yhteyshenkilot.length()").value(1))
+                .andExpect(jsonPath("$.[0].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu122"))
+                .andExpect(jsonPath("$.[0].omistajat[0].yhteyshenkilot[0].id").isString)
+                .andExpect(jsonPath("$.[1].omistajat.length()").value(1))
+                .andExpect(jsonPath("$.[1].omistajat[0].yhteyshenkilot.length()").value(1))
+                .andExpect(jsonPath("$.[1].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu144"))
+                .andExpect(jsonPath("$.[1].omistajat[0].yhteyshenkilot[0].id").isString)
 
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
@@ -517,7 +513,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             put(url, hankeToBeUpdated)
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.nimi").value(HankeFactory.defaultNimi))
+                .andExpect(jsonPath("$.nimi").value(HankeFactory.DEFAULT_HANKENIMI))
                 .andExpect(jsonPath("$.status").value(HankeStatus.PUBLIC.name))
 
             verifySequence {

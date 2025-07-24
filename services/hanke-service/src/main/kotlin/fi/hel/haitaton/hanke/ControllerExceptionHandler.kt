@@ -60,6 +60,15 @@ class ControllerExceptionHandler {
         return HankeError.HAI1001
     }
 
+    @ExceptionHandler(PublicHankeNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun publicHankeNotFound(ex: PublicHankeNotFoundException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI1001
+    }
+
     @ExceptionHandler(HankeYhteystietoNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @Hidden

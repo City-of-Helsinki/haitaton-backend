@@ -145,7 +145,7 @@ class HakemusServiceTest {
 
     @Nested
     inner class SendApplication {
-        private val hankeTunnus = HankeFactory.defaultHankeTunnus
+        private val hankeTunnus = HankeFactory.DEFAULT_HANKETUNNUS
         private val alluId = 42
 
         private fun callRealWrapper() {

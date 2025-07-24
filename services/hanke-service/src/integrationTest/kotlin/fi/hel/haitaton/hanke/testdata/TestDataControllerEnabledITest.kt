@@ -3,9 +3,12 @@ package fi.hel.haitaton.hanke.testdata
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.test.USERNAME
+import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
+import io.mockk.every
+import io.mockk.verify
 import io.mockk.verifyAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -82,6 +85,48 @@ class TestDataControllerEnabledITest(@Autowired override val mockMvc: MockMvc) :
             get(url, MediaType.TEXT_PLAIN).andExpect(MockMvcResultMatchers.status().isOk)
 
             verifyAll { testDataService.triggerAlluUpdates() }
+        }
+    }
+
+    @Nested
+    inner class CreatePublicHanke {
+        private val url = "$BASE_URL/create-public-hanke/%d"
+
+        @Test
+        @WithAnonymousUser
+        fun `Without user ID calls service normally`() {
+            every { testDataService.createRandomPublicHanke(10) } returns 10
+
+            post(String.format(url, 10), MediaType.TEXT_PLAIN)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+
+            verifyAll { testDataService.createRandomPublicHanke(10) }
+        }
+
+        @Test
+        fun `With valid user calls service`() {
+            every { testDataService.createRandomPublicHanke(10) } returns 10
+
+            post(String.format(url, 10), MediaType.TEXT_PLAIN)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+
+            verifyAll { testDataService.createRandomPublicHanke(10) }
+        }
+
+        @Test
+        fun `Returns 400 when count is less than 1`() {
+            post(String.format(url, 0), MediaType.TEXT_PLAIN)
+                .andExpect(MockMvcResultMatchers.status().isBadRequest)
+
+            verify { testDataService wasNot Called }
+        }
+
+        @Test
+        fun `Returns 400 when count is over 1000`() {
+            post(String.format(url, 1001), MediaType.TEXT_PLAIN)
+                .andExpect(MockMvcResultMatchers.status().isBadRequest)
+
+            verify { testDataService wasNot Called }
         }
     }
 }

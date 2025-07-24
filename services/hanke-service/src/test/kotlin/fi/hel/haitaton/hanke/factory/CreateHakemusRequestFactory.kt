@@ -16,7 +16,7 @@ object CreateHakemusRequestFactory {
         emergencyWork: Boolean = false,
         rockExcavation: Boolean = false,
         workDescription: String = ApplicationFactory.DEFAULT_WORK_DESCRIPTION,
-        hankeTunnus: String = HankeFactory.defaultHankeTunnus,
+        hankeTunnus: String = HankeFactory.DEFAULT_HANKETUNNUS,
     ): CreateJohtoselvityshakemusRequest =
         CreateJohtoselvityshakemusRequest(
             name = name,
@@ -41,7 +41,7 @@ object CreateHakemusRequestFactory {
         cableReports: List<String>? = emptyList(),
         placementContracts: List<String>? = emptyList(),
         requiredCompetence: Boolean = false,
-        hankeTunnus: String = HankeFactory.defaultHankeTunnus,
+        hankeTunnus: String = HankeFactory.DEFAULT_HANKETUNNUS,
     ): CreateKaivuilmoitusRequest =
         CreateKaivuilmoitusRequest(
             name = name,

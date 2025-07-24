@@ -10,17 +10,39 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaari
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
 
-data class PublicHankeYhteystieto(val organisaatioNimi: String?)
+data class PublicHankeMinimal(
+    val id: Int,
+    val hankeTunnus: String,
+    val nimi: String,
+    val alueet: List<PublicHankealueMinimal>,
+)
 
-fun HankeYhteystieto.toPublic(): PublicHankeYhteystieto =
-    when (tyyppi) {
-        YhteystietoTyyppi.YKSITYISHENKILO -> PublicHankeYhteystieto(null)
-        else -> PublicHankeYhteystieto(nimi)
-    }
+data class PublicHankealueMinimal(
+    val id: Int?,
+    val hankeId: Int?,
+    val nimi: String,
+    val haittaAlkuPvm: ZonedDateTime?,
+    val haittaLoppuPvm: ZonedDateTime?,
+    val geometriat: PublicGeometriat?,
+    val tormaystarkastelu: TormaystarkasteluTulos?, // Needed for map coloring
+)
 
 data class PublicGeometriat(val featureCollection: FeatureCollection?)
 
-fun Geometriat.toPublic() = PublicGeometriat(featureCollection)
+data class PublicHanke(
+    val id: Int,
+    val hankeTunnus: String,
+    val nimi: String,
+    val kuvaus: String,
+    val alkuPvm: ZonedDateTime,
+    val loppuPvm: ZonedDateTime,
+    val vaihe: Hankevaihe,
+    val tyomaaTyyppi: Set<TyomaaTyyppi>,
+    val omistajat: List<PublicHankeYhteystieto>,
+    val alueet: List<PublicHankealue>,
+)
+
+data class PublicHankeYhteystieto(val organisaatioNimi: String?)
 
 data class PublicHankealue(
     val id: Int?,
@@ -37,18 +59,44 @@ data class PublicHankealue(
     val tormaystarkastelu: TormaystarkasteluTulos?,
 )
 
-data class PublicHanke(
-    val id: Int,
-    val hankeTunnus: String,
-    val nimi: String,
-    val kuvaus: String,
-    val alkuPvm: ZonedDateTime,
-    val loppuPvm: ZonedDateTime,
-    val vaihe: Hankevaihe,
-    val tyomaaTyyppi: Set<TyomaaTyyppi>,
-    val omistajat: List<PublicHankeYhteystieto>,
-    val alueet: List<PublicHankealue>,
-)
+fun Hanke.toPublicMinimal() =
+    PublicHankeMinimal(
+        id = id,
+        hankeTunnus = hankeTunnus,
+        nimi = nimi,
+        alueet = alueet.map { it.toPublicMinimal() },
+    )
+
+fun SavedHankealue.toPublicMinimal() =
+    PublicHankealueMinimal(
+        id = id,
+        hankeId = hankeId,
+        nimi = nimi,
+        haittaAlkuPvm = haittaAlkuPvm,
+        haittaLoppuPvm = haittaLoppuPvm,
+        geometriat = geometriat?.toPublic(),
+        tormaystarkastelu = tormaystarkasteluTulos,
+    )
+
+fun Hanke.toPublic() =
+    PublicHanke(
+        id,
+        hankeTunnus,
+        nimi,
+        kuvaus!!,
+        alkuPvm!!,
+        loppuPvm!!,
+        vaihe!!,
+        tyomaaTyyppi,
+        omistajat.map { it.toPublic() },
+        alueet.map { it.toPublic() },
+    )
+
+fun HankeYhteystieto.toPublic(): PublicHankeYhteystieto =
+    when (tyyppi) {
+        YhteystietoTyyppi.YKSITYISHENKILO -> PublicHankeYhteystieto(null)
+        else -> PublicHankeYhteystieto(nimi)
+    }
 
 fun SavedHankealue.toPublic() =
     PublicHankealue(
@@ -66,16 +114,4 @@ fun SavedHankealue.toPublic() =
         tormaystarkasteluTulos,
     )
 
-fun Hanke.toPublic() =
-    PublicHanke(
-        id,
-        hankeTunnus,
-        nimi,
-        kuvaus!!,
-        alkuPvm!!,
-        loppuPvm!!,
-        vaihe!!,
-        tyomaaTyyppi,
-        omistajat.map { it.toPublic() },
-        alueet.map { it.toPublic() },
-    )
+fun Geometriat.toPublic() = PublicGeometriat(featureCollection)

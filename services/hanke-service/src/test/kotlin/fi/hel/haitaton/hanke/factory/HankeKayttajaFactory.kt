@@ -114,7 +114,8 @@ class HankeKayttajaFactory(
                 permission = permissionEntity,
                 kayttajakutsu = kayttajakutsuEntity,
                 kutsujaId = kutsujaId,
-            ))
+            )
+        )
 
     fun addToken(
         hankeKayttaja: HankekayttajaEntity,
@@ -137,7 +138,8 @@ class HankeKayttajaFactory(
                 createdAt = createdAt,
                 kayttooikeustaso = kayttooikeustaso,
                 hankekayttaja = this,
-            ))
+            )
+        )
 
     @Transactional
     fun getFounderFromHakemus(applicationId: Long): HankekayttajaEntity {
@@ -166,44 +168,19 @@ class HankeKayttajaFactory(
         val INVITATION_DATE: OffsetDateTime = OffsetDateTime.parse("2024-02-29T15:43:12Z")
 
         val KAYTTAJA_INPUT_HAKIJA =
-            HankekayttajaInput(
-                "Henri",
-                "Hakija",
-                "henri.hakija@mail.com",
-                "0401234567",
-            )
+            HankekayttajaInput("Henri", "Hakija", "henri.hakija@mail.com", "0401234567")
 
         val KAYTTAJA_INPUT_PERUSTAJA =
-            HankekayttajaInput(
-                "Piia",
-                "Perustaja",
-                "piia.perustaja@mail.com",
-                "0401234566",
-            )
+            HankekayttajaInput("Piia", "Perustaja", "piia.perustaja@mail.com", "0401234566")
 
         val KAYTTAJA_INPUT_OMISTAJA =
-            HankekayttajaInput(
-                "Olivia",
-                "Omistaja",
-                "olivia.omistaja@mail.com",
-                "0401234565",
-            )
+            HankekayttajaInput("Olivia", "Omistaja", "olivia.omistaja@mail.com", "0401234565")
 
         val KAYTTAJA_INPUT_RAKENNUTTAJA =
-            HankekayttajaInput(
-                "Rane",
-                "Rakennuttaja",
-                "rane.rakennuttaja@mail.com",
-                "0401234564",
-            )
+            HankekayttajaInput("Rane", "Rakennuttaja", "rane.rakennuttaja@mail.com", "0401234564")
 
         val KAYTTAJA_INPUT_ASIANHOITAJA =
-            HankekayttajaInput(
-                "Anssi",
-                "Asianhoitaja",
-                "anssi.asianhoitaja@mail.com",
-                "0401234563",
-            )
+            HankekayttajaInput("Anssi", "Asianhoitaja", "anssi.asianhoitaja@mail.com", "0401234563")
 
         val KAYTTAJA_INPUT_SUORITTAJA =
             HankekayttajaInput(
@@ -214,16 +191,11 @@ class HankeKayttajaFactory(
             )
 
         val KAYTTAJA_INPUT_MUU =
-            HankekayttajaInput(
-                "Meeri",
-                "Muukäyttäjä",
-                "meeri.muukayttaja@mail.com",
-                "0401234561",
-            )
+            HankekayttajaInput("Meeri", "Muukäyttäjä", "meeri.muukayttaja@mail.com", "0401234561")
 
         fun create(
             id: UUID = KAYTTAJA_ID,
-            hankeId: Int = HankeFactory.defaultId,
+            hankeId: Int = HankeFactory.DEFAULT_HANKE_ID,
             etunimi: String = KAKE,
             sukunimi: String = KATSELIJA,
             sahkoposti: String = KAKE_EMAIL,
@@ -249,7 +221,7 @@ class HankeKayttajaFactory(
 
         fun createEntity(
             id: UUID = KAYTTAJA_ID,
-            hankeId: Int = HankeFactory.defaultId,
+            hankeId: Int = HankeFactory.DEFAULT_HANKE_ID,
             etunimi: String = KAKE,
             sukunimi: String = KATSELIJA,
             sahkoposti: String = KAKE_EMAIL,
@@ -295,7 +267,7 @@ class HankeKayttajaFactory(
 
         fun createHankeKayttajat(
             amount: Int = 3,
-            roolit: List<ContactType> = emptyList()
+            roolit: List<ContactType> = emptyList(),
         ): List<HankeKayttajaDto> =
             (1..amount).map { createDto(it, roolit = roolit, tunnistautunut = (it % 2 == 0)) }
 
@@ -303,7 +275,7 @@ class HankeKayttajaFactory(
             i: Int,
             id: UUID = UUID.randomUUID(),
             roolit: List<ContactType> = emptyList(),
-            tunnistautunut: Boolean = false
+            tunnistautunut: Boolean = false,
         ) =
             createDto(
                 id = id,
