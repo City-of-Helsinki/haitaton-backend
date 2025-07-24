@@ -1,24 +1,16 @@
 package fi.hel.haitaton.hanke.hakemus
 
-import fi.hel.haitaton.hanke.allu.AlluEventError
-import fi.hel.haitaton.hanke.allu.AlluEventErrorEntity
-import fi.hel.haitaton.hanke.allu.AlluEventErrorRepository
+import fi.hel.haitaton.hanke.TZ_UTC
+import fi.hel.haitaton.hanke.allu.AlluEventEntity
+import fi.hel.haitaton.hanke.allu.AlluEventRepository
+import fi.hel.haitaton.hanke.allu.AlluEventStatus
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
-import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
-import fi.hel.haitaton.hanke.email.InformationRequestEmail
-import fi.hel.haitaton.hanke.email.JohtoselvitysCompleteEmail
-import fi.hel.haitaton.hanke.email.KaivuilmoitusDecisionEmail
-import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusService
-import fi.hel.haitaton.hanke.paatos.PaatosService
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.permissions.PermissionCode
-import fi.hel.haitaton.hanke.taydennys.TaydennysService
+import fi.hel.haitaton.hanke.allu.ApplicationHistory
+import fi.hel.haitaton.hanke.allu.findPendingAndFailedEventsGrouped
+import java.time.Instant
 import java.time.OffsetDateTime
 import mu.KotlinLogging
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
@@ -27,12 +19,8 @@ private val logger = KotlinLogging.logger {}
 class HakemusHistoryService(
     private val hakemusRepository: HakemusRepository,
     private val alluStatusRepository: AlluStatusRepository,
-    private val alluEventErrorRepository: AlluEventErrorRepository,
-    private val taydennysService: TaydennysService,
-    private val paatosService: PaatosService,
-    private val hankeKayttajaService: HankeKayttajaService,
-    private val muutosilmoitusService: MuutosilmoitusService,
-    private val applicationEventPublisher: ApplicationEventPublisher,
+    private val alluEventRepository: AlluEventRepository,
+    private val applicationEventService: ApplicationEventService,
 ) {
     @Transactional(readOnly = true) fun getAllAlluIds() = hakemusRepository.getAllAlluIds()
 
@@ -46,169 +34,119 @@ class HakemusHistoryService(
     }
 
     @Transactional
-    fun saveErrors(errors: List<AlluEventError>) {
-        alluEventErrorRepository.saveAll(
-            errors.map {
-                AlluEventErrorEntity(
-                    alluId = it.alluId,
-                    eventTime = it.eventTime,
-                    newStatus = it.newStatus,
-                    applicationIdentifier = it.applicationIdentifier,
-                    targetStatus = it.targetStatus,
-                    stackTrace = it.stackTrace,
-                )
-            }
-        )
-    }
-
-    @Transactional(readOnly = true)
-    fun getAllErrors(): List<AlluEventError> =
-        alluEventErrorRepository.findAll().map { it.toDomain() }
-
-    @Transactional
-    fun deleteError(error: AlluEventError) {
-        alluEventErrorRepository.deleteById(error.id)
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    fun handleApplicationEvent(alluId: Int, event: ApplicationStatusEvent) {
-        val application = hakemusRepository.getOneByAlluid(alluId)
-        if (application == null) {
-            logger.error {
-                "Allu had an event for a hakemus we don't have anymore. alluId=${alluId}"
-            }
-            return
-        }
-
-        logger.info {
-            "Handling application event: " +
-                "id=${application.id}, " +
-                "alluId=${application.alluid}, " +
-                "application identifier=${event.applicationIdentifier}, " +
-                "new status=${event.newStatus}, " +
-                "event time=${event.eventTime}"
-        }
-
-        fun updateStatus() {
-            application.alluStatus = event.newStatus
-            application.applicationIdentifier = event.applicationIdentifier
+    fun processApplicationHistories(applicationHistories: List<ApplicationHistory>) {
+        if (applicationHistories.isNotEmpty()) {
             logger.info {
-                "Updating hakemus with new status, " +
-                    "id=${application.id}, " +
-                    "alluId=${application.alluid}, " +
-                    "application identifier=${application.applicationIdentifier}, " +
-                    "new status=${application.alluStatus}, " +
-                    "event time=${event.eventTime}"
+                "Processing ${applicationHistories.size} new application histories from Allu: " +
+                    applicationHistories.joinToString(" : ") { it.toLogString() }
             }
+            saveEventsAsPending(applicationHistories)
         }
-
-        when (event.newStatus) {
-            ApplicationStatus.DECISION -> {
-                muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(application)
-                updateStatus()
-                sendDecisionReadyEmails(application, event.applicationIdentifier)
-                if (application.applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
-                    paatosService.saveKaivuilmoituksenPaatos(application, event)
-                }
-            }
-            ApplicationStatus.OPERATIONAL_CONDITION -> {
-                updateStatus()
-                when (application.applicationType) {
-                    ApplicationType.CABLE_REPORT ->
-                        logger.error {
-                            "Got ${event.newStatus} update for a cable report. ${application.logString()}"
-                        }
-                    ApplicationType.EXCAVATION_NOTIFICATION -> {
-                        sendDecisionReadyEmails(application, event.applicationIdentifier)
-                        paatosService.saveKaivuilmoituksenToiminnallinenKunto(application, event)
-                    }
-                }
-            }
-            ApplicationStatus.FINISHED -> {
-                updateStatus()
-                when (application.applicationType) {
-                    ApplicationType.CABLE_REPORT ->
-                        logger.error {
-                            "Got ${event.newStatus} update for a cable report. ${application.logString()}"
-                        }
-                    ApplicationType.EXCAVATION_NOTIFICATION -> {
-                        sendDecisionReadyEmails(application, event.applicationIdentifier)
-                        paatosService.saveKaivuilmoituksenTyoValmis(application, event)
-                    }
-                }
-            }
-            ApplicationStatus.REPLACED -> {
-                logger.info {
-                    "A decision has been replaced. Marking the old decisions as replaced. hakemustunnus = ${event.applicationIdentifier}, ${application.logString()}"
-                }
-                // Don't update application status or identifier. A new decision has been
-                // made at the same time, so take the status and identifier from that update.
-                paatosService.markReplaced(event.applicationIdentifier)
-            }
-            ApplicationStatus.WAITING_INFORMATION -> {
-                muutosilmoitusService.mergeMuutosilmoitusToHakemusIfItExists(application)
-                updateStatus()
-                taydennysService.saveTaydennyspyyntoFromAllu(application)?.also {
-                    sendInformationRequestEmails(application, event.applicationIdentifier)
-                }
-            }
-            ApplicationStatus.HANDLING -> {
-                logger.info {
-                    "A hakemus has entered handling. Checking if there's a täydennyspyyntö for the hakemus: ${application.logString()}"
-                }
-                taydennysService.removeTaydennyspyyntoIfItExists(application)
-                updateStatus()
-            }
-            else -> updateStatus()
-        }
+        processPendingAndFailedEvents()
     }
 
-    private fun sendDecisionReadyEmails(application: HakemusEntity, applicationIdentifier: String) {
-        val receivers = application.allContactUsers()
-
-        if (receivers.isEmpty()) {
-            logger.error {
-                "No receivers found for hakemus ${application.alluStatus} ready email, not sending any. ${application.logString()}"
-            }
-            return
-        }
-        logger.info {
-            "Sending hakemus ${application.alluStatus} ready emails to ${receivers.size} receivers"
-        }
-
-        receivers.forEach {
-            val event =
-                when (application.applicationType) {
-                    ApplicationType.CABLE_REPORT ->
-                        JohtoselvitysCompleteEmail(
-                            it.sahkoposti,
-                            application.id,
-                            applicationIdentifier,
-                        )
-                    ApplicationType.EXCAVATION_NOTIFICATION ->
-                        KaivuilmoitusDecisionEmail(
-                            it.sahkoposti,
-                            application.id,
-                            applicationIdentifier,
-                        )
-                }
-            applicationEventPublisher.publishEvent(event)
-        }
-    }
-
-    private fun sendInformationRequestEmails(hakemus: HakemusEntity, hakemusTunnus: String) {
-        hakemus
-            .allContactUsers()
-            .filter { hankeKayttajaService.hasPermission(it, PermissionCode.EDIT_APPLICATIONS) }
-            .forEach {
-                applicationEventPublisher.publishEvent(
-                    InformationRequestEmail(
-                        it.sahkoposti,
-                        hakemus.hakemusEntityData.name,
-                        hakemusTunnus,
-                        hakemus.id,
+    private fun saveEventsAsPending(applicationHistories: List<ApplicationHistory>) {
+        val events = mutableListOf<AlluEventEntity>()
+        applicationHistories.forEach { history ->
+            history.events.forEach { event ->
+                events.add(
+                    AlluEventEntity(
+                        id = 0,
+                        alluId = history.applicationId,
+                        eventTime = event.eventTime.toOffsetDateTime(),
+                        newStatus = event.newStatus,
+                        applicationIdentifier = event.applicationIdentifier,
+                        targetStatus = event.targetStatus,
                     )
                 )
             }
+        }
+        alluEventRepository.batchInsertIgnoreDuplicates(events)
+        logger.info { "Saved ${events.size} new Allu history events as PENDING." }
+    }
+
+    private fun processPendingAndFailedEvents() {
+        val applicationEvents = alluEventRepository.findPendingAndFailedEventsGrouped()
+
+        if (applicationEvents.isEmpty()) {
+            logger.info("No pending or failed Allu events to process.")
+            return
+        }
+
+        logger.info { "Processing ${applicationEvents.size} pending or failed Allu events." }
+
+        applicationEvents.forEach { alluId, events ->
+            logger.info {
+                "Processing events for Allu ID $alluId: ${events.joinToString(" : ") { it.toLogString() }}"
+            }
+            processApplicationEvents(alluId, events)
+        }
+    }
+
+    private fun processApplicationEvents(alluId: Int, events: List<AlluEventEntity>) {
+        // Find the earliest failed event
+        val earliestFailedEvent = events.firstOrNull { it.status == AlluEventStatus.FAILED }
+
+        if (earliestFailedEvent != null) {
+            // Only retry the earliest failed event
+            try {
+                logger.info {
+                    "Retrying earliest failed Allu event for Allu ID $alluId: ${earliestFailedEvent.toLogString()}"
+                }
+                earliestFailedEvent.retryCount++
+                applicationEventService.handleApplicationEvent(
+                    alluId,
+                    earliestFailedEvent.toApplicationStatusEvent(),
+                )
+                logger.info {
+                    "Successfully retried Allu event for Allu ID $alluId: ${earliestFailedEvent.toLogString()}"
+                }
+                earliestFailedEvent.status = AlluEventStatus.PROCESSED
+                earliestFailedEvent.stackTrace = null // Clear stack trace on success
+                earliestFailedEvent.processedAt = Instant.now()
+                // Recursively process remaining events
+                processApplicationEvents(alluId, events)
+            } catch (e: Exception) {
+                logger.error(e) {
+                    "Failed to retry Allu event for Allu ID $alluId: ${earliestFailedEvent.toLogString()}"
+                }
+                earliestFailedEvent.stackTrace = e.stackTraceToString()
+                // If retry fails, all pending events remain PENDING
+                return
+            }
+        }
+
+        val pendingEvents = events.filter { it.status == AlluEventStatus.PENDING }
+        for (event in pendingEvents) {
+            try {
+                logger.info {
+                    "Processing pending Allu event for Allu ID $alluId: ${event.toLogString()}"
+                }
+                applicationEventService.handleApplicationEvent(
+                    alluId,
+                    event.toApplicationStatusEvent(),
+                )
+                logger.info {
+                    "Successfully processed Allu event for Allu ID $alluId: ${event.toLogString()}"
+                }
+                event.status = AlluEventStatus.PROCESSED
+                event.processedAt = Instant.now()
+            } catch (e: Exception) {
+                logger.error(e) {
+                    "Failed to process Allu event for Allu ID $alluId: ${event.toLogString()}"
+                }
+                event.status = AlluEventStatus.FAILED
+                event.stackTrace = e.stackTraceToString()
+                break // Stop processing, remaining events stay PENDING
+            }
+        }
+    }
+
+    @Transactional
+    fun deleteOldProcessedEvents(days: Int) {
+        alluEventRepository.deleteProcessedEventsOlderThan(
+            OffsetDateTime.now(TZ_UTC).minusSeconds(days * 24 * 60 * 60L)
+        )
+        logger.info { "Deleted Allu events older than $days days that were marked as PROCESSED." }
     }
 }

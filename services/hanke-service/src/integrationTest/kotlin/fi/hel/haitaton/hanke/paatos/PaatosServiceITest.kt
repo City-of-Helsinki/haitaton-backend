@@ -47,6 +47,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 
@@ -228,6 +231,53 @@ class PaatosServiceITest(
             val result = paatosService.findByHakemusIds(listOf(hakemus2.id, hakemus1.id))
 
             assertThat(result).hasSameElementsAs(hakemus1Paatokset + hakemus2Paatokset)
+        }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class IsReturnedToDecision {
+
+        @ParameterizedTest
+        @EnumSource(
+            ApplicationStatus::class,
+            names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"],
+        )
+        fun `returns false if there is no paatos`(applicationStatus: ApplicationStatus) {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISIONMAKING)
+                    .save()
+
+            val result = paatosService.isRevertedToDecision(hakemus, applicationStatus)
+
+            assertThat(result).isEqualTo(false)
+        }
+
+        @ParameterizedTest
+        @EnumSource(
+            ApplicationStatus::class,
+            names = ["DECISION", "OPERATIONAL_CONDITION", "FINISHED"],
+        )
+        fun `returns true if there is paatos`(applicationStatus: ApplicationStatus) {
+            val hakemus =
+                hakemusFactory
+                    .builder(ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withMandatoryFields()
+                    .withStatus(ApplicationStatus.DECISIONMAKING)
+                    .save()
+            paatosFactory.save(
+                hakemus,
+                hakemus.applicationIdentifier!!,
+                PaatosTyyppi.valueOfApplicationStatus(applicationStatus),
+                NYKYINEN,
+            )
+
+            val result = paatosService.isRevertedToDecision(hakemus, applicationStatus)
+
+            assertThat(result).isEqualTo(true)
         }
     }
 
