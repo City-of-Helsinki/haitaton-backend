@@ -58,6 +58,12 @@ class TestDataService(
         muutosilmoitusRepository.deleteAll()
     }
 
+    private fun deletePaatosWithAttachments(paatosEntity: PaatosEntity) {
+        logger.warn { "Deleting paatos id=${paatosEntity.id} hakemusId=${paatosEntity.hakemusId}" }
+        fileClient.delete(Container.PAATOKSET, paatosEntity.blobLocation)
+        paatosRepository.delete(paatosEntity)
+    }
+
     fun triggerAlluUpdates() {
         logger.info { "Manually triggered Allu updates..." }
         alluUpdateService.checkApplicationHistories()
@@ -79,11 +85,5 @@ class TestDataService(
         }
         logger.warn { "Created $created random public hanke." }
         return created
-    }
-
-    private fun deletePaatosWithAttachments(paatosEntity: PaatosEntity) {
-        logger.warn { "Deleting paatos id=${paatosEntity.id} hakemusId=${paatosEntity.hakemusId}" }
-        fileClient.delete(Container.PAATOKSET, paatosEntity.blobLocation)
-        paatosRepository.delete(paatosEntity)
     }
 }

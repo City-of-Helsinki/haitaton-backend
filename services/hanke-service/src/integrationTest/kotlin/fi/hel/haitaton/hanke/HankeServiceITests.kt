@@ -188,6 +188,72 @@ class HankeServiceITests(
     }
 
     @Nested
+    inner class LoadPublicHanke {
+        @Test
+        fun `returns empty list when no hanke exist`() {
+            val result = hankeService.loadPublicHanke()
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns empty list when no public hanke exist`() {
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+
+            val result = hankeService.loadPublicHanke()
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns full hanke data`() {
+            val savedHanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withStatus(HankeStatus.PUBLIC)
+                    .withYhteystiedot()
+                    .withHankealue()
+                    .save()
+
+            val result = hankeService.loadPublicHanke()
+
+            val hanke = result.single()
+            assertThat(hanke).all {
+                prop(Hanke::id).isEqualTo(savedHanke.id)
+                prop(Hanke::hankeTunnus).isEqualTo(savedHanke.hankeTunnus)
+                prop(Hanke::nimi).isEqualTo(savedHanke.nimi)
+                prop(Hanke::status).isEqualTo(HankeStatus.PUBLIC)
+                prop(Hanke::generated).isEqualTo(savedHanke.generated)
+                prop(Hanke::kuvaus).isEqualTo(savedHanke.kuvaus)
+                prop(Hanke::vaihe).isEqualTo(savedHanke.vaihe)
+                prop(Hanke::version).isEqualTo(savedHanke.version)
+                prop(Hanke::createdBy).isEqualTo(savedHanke.createdBy)
+                prop(Hanke::createdAt).isEqualTo(savedHanke.createdAt)
+                prop(Hanke::modifiedBy).isEqualTo(savedHanke.modifiedBy)
+                prop(Hanke::modifiedAt).isEqualTo(savedHanke.modifiedAt)
+                prop(Hanke::omistajat).single().isEqualTo(savedHanke.omistajat.single())
+                prop(Hanke::toteuttajat).single().isEqualTo(savedHanke.toteuttajat.single())
+                prop(Hanke::rakennuttajat).single().isEqualTo(savedHanke.rakennuttajat.single())
+                prop(Hanke::muut).single().isEqualTo(savedHanke.muut.single())
+                prop(Hanke::tyomaaKatuosoite).isEqualTo(savedHanke.tyomaaKatuosoite)
+                prop(Hanke::tyomaaTyyppi).isEqualTo(savedHanke.tyomaaTyyppi)
+                prop(Hanke::alueet).isEqualTo(savedHanke.alueet)
+            }
+        }
+
+        @Test
+        fun `includes tormaystarkastelu data`() {
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity(HankeStatus.PUBLIC)
+
+            val result = hankeService.loadPublicHanke()
+
+            assertThat(result).hasSize(1)
+            val alue = result.first().alueet.first()
+            assertThat(alue.tormaystarkasteluTulos).isNotNull()
+        }
+    }
+
+    @Nested
     inner class LoadPublicHankeWithinBounds {
 
         @Test

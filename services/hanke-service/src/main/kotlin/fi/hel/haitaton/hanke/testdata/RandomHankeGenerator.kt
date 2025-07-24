@@ -68,10 +68,14 @@ class RandomHankeGenerator(
         savedHanke.alueet.add(hankealue)
 
         // Create random contacts
+        val owner = createRandomOmistaja(savedHanke)
+        savedHanke.yhteystiedot.add(owner)
         val contact = createRandomYhteystieto(savedHanke)
         savedHanke.yhteystiedot.add(contact)
 
-        // Create contact person
+        // Create contact persons
+        val ownerContactPerson = createYhteyshenkilo(owner, perustaja)
+        owner.yhteyshenkilot.add(ownerContactPerson)
         val contactPerson = createYhteyshenkilo(contact, perustaja)
         contact.yhteyshenkilot.add(contactPerson)
 
@@ -221,9 +225,29 @@ class RandomHankeGenerator(
         return Polygon().apply { exteriorRing = coordinates }
     }
 
+    private fun createRandomOmistaja(hanke: HankeEntity): HankeYhteystietoEntity {
+        val random = Random.Default
+
+        return HankeYhteystietoEntity(
+            hanke = hanke,
+            contactType = ContactType.OMISTAJA,
+            nimi = "Test Yritys ${random.nextInt(1000)}",
+            email = "test${random.nextInt(1000)}@example.com",
+            puhelinnumero = "050${random.nextInt(1000000, 9999999)}",
+            organisaatioNimi = "Test Organisaatio ${random.nextInt(100)}",
+            osasto = "Testiosasto",
+            rooli = "Projektipäällikkö",
+            tyyppi = YhteystietoTyyppi.YRITYS,
+            createdByUserId = userId,
+            createdAt = getCurrentTimeUTCAsLocalTime(),
+            modifiedByUserId = userId,
+            modifiedAt = getCurrentTimeUTCAsLocalTime(),
+        )
+    }
+
     private fun createRandomYhteystieto(hanke: HankeEntity): HankeYhteystietoEntity {
         val random = Random.Default
-        val contactTypes = ContactType.entries
+        val contactTypes = ContactType.entries - ContactType.OMISTAJA
 
         return HankeYhteystietoEntity(
             hanke = hanke,

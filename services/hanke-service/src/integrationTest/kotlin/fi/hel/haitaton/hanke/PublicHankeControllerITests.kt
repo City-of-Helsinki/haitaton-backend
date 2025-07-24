@@ -64,7 +64,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
     }
 
     @Nested
-    inner class GetPublicHankkeetMinimal {
+    inner class GetPublicHankkeet {
         @Test
         fun `returns 200 with unauthenticated user`() {
             every { hankeService.loadPublicHanke() }.returns(listOf())
@@ -114,6 +114,20 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
             assertThat(response)
                 .containsExactlyInAnyOrder(expectedHanke(1, "nimi"), expectedHanke(2, "null"))
             verify { hankeService.loadPublicHanke() }
+        }
+
+        @Test
+        fun `calls the right function for bounded area`() {
+            val hankkeet =
+                listOf(
+                    HankeFactory.create(id = 1, nimi = "nimi").withHankealue().withYhteystiedot()
+                )
+            every { hankeService.loadPublicHankeWithinBounds(0.0, 0.0, 1.0, 1.0) }.returns(hankkeet)
+
+            get("/public-hankkeet?minX=0.0&minY=0.0&maxX=1.0&maxY=1.0")
+                .andExpect(MockMvcResultMatchers.status().isOk)
+
+            verify { hankeService.loadPublicHankeWithinBounds(0.0, 0.0, 1.0, 1.0) }
         }
     }
 
