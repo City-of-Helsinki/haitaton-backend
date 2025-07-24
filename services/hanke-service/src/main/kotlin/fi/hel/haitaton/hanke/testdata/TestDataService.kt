@@ -69,7 +69,7 @@ class TestDataService(
         logger.warn { "Creating $count random public hanke..." }
         var created = 0
         repeat(count) { index ->
-            randomHankeGenerator.createRandomHankeWithRelations(index)
+            randomHankeGenerator.createRandomHanke(index)
 
             if (index % 25 == 0) {
                 logger.info { "Created ${index + 1} hanke..." }

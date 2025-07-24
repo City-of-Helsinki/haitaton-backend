@@ -57,7 +57,7 @@ class HankeLoggingServiceTest {
                     assertNull(entry.failureDescription)
                     assertEquals(userId, entry.userId)
                     assertEquals(UserRole.USER, entry.userRole)
-                    assertEquals(HankeFactory.defaultId.toString(), entry.objectId)
+                    assertEquals(HankeFactory.DEFAULT_HANKE_ID.toString(), entry.objectId)
                     assertEquals(ObjectType.HANKE, entry.objectType)
                     assertNull(entry.objectAfter)
                     assertNotNull(entry.objectBefore)
@@ -92,7 +92,7 @@ class HankeLoggingServiceTest {
                                 ObjectType.YHTEYSTIETO,
                                 ObjectType.YHTEYSTIETO,
                                 ObjectType.YHTEYSTIETO,
-                                ObjectType.HANKE
+                                ObjectType.HANKE,
                             )
                     }
                 }
@@ -114,7 +114,7 @@ class HankeLoggingServiceTest {
                     assertNull(entry.failureDescription)
                     assertEquals(userId, entry.userId)
                     assertEquals(UserRole.USER, entry.userRole)
-                    assertEquals(HankeFactory.defaultId.toString(), entry.objectId)
+                    assertEquals(HankeFactory.DEFAULT_HANKE_ID.toString(), entry.objectId)
                     assertEquals(ObjectType.HANKE, entry.objectType)
                     assertNotNull(entry.objectAfter)
                     assertNull(entry.objectBefore)
@@ -138,7 +138,7 @@ class HankeLoggingServiceTest {
                     assertNull(entry.failureDescription)
                     assertEquals(userId, entry.userId)
                     assertEquals(UserRole.USER, entry.userRole)
-                    assertEquals(HankeFactory.defaultId.toString(), entry.objectId)
+                    assertEquals(HankeFactory.DEFAULT_HANKE_ID.toString(), entry.objectId)
                     assertEquals(ObjectType.HANKE, entry.objectType)
                     assertNotNull(entry.objectBefore)
                     assertNotNull(entry.objectAfter)

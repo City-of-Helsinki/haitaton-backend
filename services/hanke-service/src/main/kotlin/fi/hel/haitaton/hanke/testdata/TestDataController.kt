@@ -52,7 +52,8 @@ class TestDataController(private val testDataService: TestDataService) {
 
     @Operation(
         summary = "Create random public hanke",
-        description = "Creates a specified number of random public hanke with geometries for testing map performance"
+        description =
+            "Creates a specified number of random public hanke with geometries for testing map performance",
     )
     @PostMapping("/create-public-hanke/{count}")
     @ResponseBody
@@ -62,7 +63,7 @@ class TestDataController(private val testDataService: TestDataService) {
                 .contentType(MediaType.TEXT_PLAIN)
                 .body("Count must be between 1 and 1000")
         }
-        
+
         val created = testDataService.createRandomPublicHanke(count)
 
         logger.warn { "Created $created random public hanke" }

@@ -146,6 +146,28 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
 
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
 
+    @Query(
+        value =
+            """
+        SELECT DISTINCT h.* FROM hanke h 
+        WHERE h.status = :status 
+        AND EXISTS (
+            SELECT 1 FROM hankealue ha 
+            JOIN hankegeometria g ON ha.geometriat = g.hankegeometriatid
+            WHERE ha.hankeid = h.id 
+            AND ST_Intersects(g.geometria, ST_MakeEnvelope(:minX, :minY, :maxX, :maxY, $SRID))
+        )
+        """,
+        nativeQuery = true,
+    )
+    fun findAllByStatusWithinBounds(
+        status: String,
+        minX: Double,
+        minY: Double,
+        maxX: Double,
+        maxY: Double,
+    ): List<HankeEntity>
+
     @Query("select h.status from HankeEntity h where h.id = :id")
     fun findStatusById(id: Int): HankeStatus?
 

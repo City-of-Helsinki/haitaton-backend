@@ -63,7 +63,7 @@ import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
+private const val HANKE_TUNNUS = HankeFactory.DEFAULT_HANKETUNNUS
 
 @WebMvcTest(HankeKayttajaController::class)
 @Import(IntegrationTestConfiguration::class)

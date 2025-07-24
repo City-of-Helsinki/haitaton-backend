@@ -15,6 +15,8 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.stereotype.Repository
 
 @Schema(description = "Collision review result")
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -131,4 +133,9 @@ class TormaystarkasteluTulosEntity(
             linjaautoliikenne,
             raitioliikenne,
         )
+}
+
+@Repository
+interface TormaystarkasteluTulosRepository : JpaRepository<TormaystarkasteluTulosEntity, Int> {
+    fun findByHankealue_Id(hankealueId: Int): TormaystarkasteluTulosEntity?
 }

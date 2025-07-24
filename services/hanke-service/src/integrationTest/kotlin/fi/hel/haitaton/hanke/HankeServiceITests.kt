@@ -35,6 +35,7 @@ import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
@@ -43,6 +44,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUSTAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
+import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
@@ -126,6 +128,32 @@ class HankeServiceITests(
     @Autowired private val alluClient: AlluClient,
 ) : IntegrationTest() {
 
+    companion object {
+        data class Bounds(val minX: Double, val minY: Double, val maxX: Double, val maxY: Double) {
+            val width: Double
+                get() = maxX - minX
+
+            fun westOfOutside(): Bounds = copy(minX = minX - width - 1.0, maxX = minX - 1.0)
+
+            fun halfWidthToEast(): Bounds =
+                copy(minX = minX + width / 2.0, maxY = maxX + width / 2.0)
+        }
+
+        /** Default bounds envelope default geometry in hankeGeometriat.json. */
+        val DEFAULT_BOUNDS =
+            Bounds(minX = 25496696.0, minY = 6673077.0, maxX = 25496812.0, maxY = 6673046.0)
+
+        /**
+         * Large bounds envelope that contains two geometries in polygon.json and thirdPolygon.json.
+         */
+        val LARGE_BOUNDS =
+            Bounds(minX = 25493597.0, minY = 6679731.0, maxX = 25494132.0, maxY = 6679914.0)
+
+        /** Medium bounds envelope that contains one geometry in polygon.json. */
+        val MEDIUM_BOUNDS =
+            Bounds(minX = 25493939.0, minY = 6679757.0, maxX = 25494131.0, maxY = 6679914.0)
+    }
+
     @BeforeEach
     fun clearMocks() {
         clearAllMocks()
@@ -156,6 +184,316 @@ class HankeServiceITests(
                 prop(HankeIdentifier::hankeTunnus).isEqualTo(hankeTunnus)
                 prop(HankeIdentifier::id).isNotNull().isEqualTo(hanke.id)
             }
+        }
+    }
+
+    @Nested
+    inner class LoadPublicHankeWithinBounds {
+
+        @Test
+        fun `returns empty list when no hanke exist`() {
+            val result =
+                hankeService.loadPublicHankeWithinBounds(
+                    minX = DEFAULT_BOUNDS.minX,
+                    minY = DEFAULT_BOUNDS.minY,
+                    maxX = DEFAULT_BOUNDS.maxX,
+                    maxY = DEFAULT_BOUNDS.maxY,
+                )
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns empty list when no public hanke exist`() {
+            // Create draft hanke with geometry inside bounds
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+
+            val result =
+                hankeService.loadPublicHankeWithinBounds(
+                    minX = DEFAULT_BOUNDS.minX,
+                    minY = DEFAULT_BOUNDS.minY,
+                    maxX = DEFAULT_BOUNDS.maxX,
+                    maxY = DEFAULT_BOUNDS.maxY,
+                )
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns empty list when hanke geometries are outside bounds`() {
+            // Create public hanke with default geometry
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity(HankeStatus.PUBLIC)
+
+            // Query bounds outside the geometry
+            val bounds = DEFAULT_BOUNDS.westOfOutside()
+            val result =
+                hankeService.loadPublicHankeWithinBounds(
+                    minX = bounds.minX,
+                    minY = bounds.minY,
+                    maxX = bounds.maxX,
+                    maxY = bounds.maxY,
+                )
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns hanke when geometry intersects with bounds`() {
+            // Create public hanke with default geometry
+            val savedHanke =
+                hankeFactory.builder(USERNAME).withHankealue().saveEntity(HankeStatus.PUBLIC)
+
+            // Query bounds that overlap with the geometry
+            val bounds = DEFAULT_BOUNDS.halfWidthToEast()
+            val result =
+                hankeService.loadPublicHankeWithinBounds(
+                    minX = bounds.minX,
+                    minY = bounds.minY,
+                    maxX = bounds.maxX,
+                    maxY = bounds.maxY,
+                )
+
+            assertThat(result).hasSize(1)
+            val returnedHanke = result.first()
+            assertThat(returnedHanke.id).isEqualTo(savedHanke.id)
+            assertThat(returnedHanke.hankeTunnus).isEqualTo(savedHanke.hankeTunnus)
+            assertThat(returnedHanke.generated).isEqualTo(savedHanke.generated)
+        }
+
+        @Test
+        fun `returns hanke when one geometry intersects with bounds and other does not`() {
+            // Create public hanke with two geometries, one inside bounds and one outside
+            val savedHanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue()
+                    .withHankealue(
+                        alue =
+                            HankealueFactory.create(
+                                geometriat = GeometriaFactory.create(1, GeometriaFactory.polygon())
+                            )
+                    )
+                    .saveEntity(HankeStatus.PUBLIC)
+
+            // Query bounds that overlap with the geometry
+            val result =
+                hankeService.loadPublicHankeWithinBounds(
+                    minX = DEFAULT_BOUNDS.minX,
+                    minY = DEFAULT_BOUNDS.minY,
+                    maxX = DEFAULT_BOUNDS.maxX,
+                    maxY = DEFAULT_BOUNDS.maxY,
+                )
+
+            assertThat(result).hasSize(1)
+            val returnedHanke = result.first()
+            assertThat(returnedHanke.id).isEqualTo(savedHanke.id)
+            assertThat(returnedHanke.hankeTunnus).isEqualTo(savedHanke.hankeTunnus)
+            assertThat(returnedHanke.generated).isEqualTo(savedHanke.generated)
+        }
+
+        @Test
+        fun `returns multiple hanke when multiple geometries intersect with bounds`() {
+            // Create first public hanke with geometry
+            val hanke1 =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue(
+                        alue =
+                            HankealueFactory.create(
+                                geometriat = GeometriaFactory.create(1, GeometriaFactory.polygon())
+                            )
+                    )
+                    .saveEntity(HankeStatus.PUBLIC)
+
+            // Create second public hanke with other geometry
+            val hanke2 =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue(
+                        alue =
+                            HankealueFactory.create(
+                                geometriat =
+                                    GeometriaFactory.create(2, GeometriaFactory.thirdPolygon())
+                            )
+                    )
+                    .saveEntity(HankeStatus.PUBLIC)
+
+            // Query bounds that cover both geometries
+            val result =
+                hankeService.loadPublicHankeWithinBounds(
+                    minX = LARGE_BOUNDS.minX,
+                    minY = LARGE_BOUNDS.minY,
+                    maxX = LARGE_BOUNDS.maxX,
+                    maxY = LARGE_BOUNDS.maxY,
+                )
+
+            assertThat(result).hasSize(2)
+            val hankeIds = result.map { it.id }
+            assertThat(hankeIds).containsExactlyInAnyOrder(hanke1.id, hanke2.id)
+        }
+
+        @Test
+        fun `returns only hanke with geometries intersecting bounds when some are outside`() {
+            // Create first public hanke with geometry
+            val insideHanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue(
+                        alue =
+                            HankealueFactory.create(
+                                geometriat = GeometriaFactory.create(1, GeometriaFactory.polygon())
+                            )
+                    )
+                    .saveEntity(HankeStatus.PUBLIC)
+
+            // Create second public hanke with other geometry
+            hankeFactory
+                .builder(USERNAME)
+                .withHankealue(
+                    alue =
+                        HankealueFactory.create(
+                            geometriat = GeometriaFactory.create(2, GeometriaFactory.thirdPolygon())
+                        )
+                )
+                .saveEntity(HankeStatus.PUBLIC)
+
+            // Query bounds that only cover the first geometry
+            val result =
+                hankeService.loadPublicHankeWithinBounds(
+                    minX = MEDIUM_BOUNDS.minX,
+                    minY = MEDIUM_BOUNDS.minY,
+                    maxX = MEDIUM_BOUNDS.maxX,
+                    maxY = MEDIUM_BOUNDS.maxY,
+                )
+
+            assertThat(result).hasSize(1)
+            assertThat(result.first().id).isEqualTo(insideHanke.id)
+        }
+
+        @Test
+        fun `returns minimal hanke data without full yhteystieto information`() {
+            val savedHanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue()
+                    .save() // Creates full hanke with yhteystieto
+
+            // Update to public status
+            val savedEntity = hankeRepository.getReferenceById(savedHanke.id)
+            savedEntity.status = HankeStatus.PUBLIC
+            hankeRepository.save(savedEntity)
+
+            val result =
+                hankeService.loadPublicHankeWithinBounds(
+                    minX = DEFAULT_BOUNDS.minX,
+                    minY = DEFAULT_BOUNDS.minY,
+                    maxX = DEFAULT_BOUNDS.maxX,
+                    maxY = DEFAULT_BOUNDS.maxY,
+                )
+
+            assertThat(result).hasSize(1)
+            val returnedHanke = result.first()
+
+            // Basic fields should be present
+            assertThat(returnedHanke.id).isEqualTo(savedHanke.id)
+            assertThat(returnedHanke.hankeTunnus).isEqualTo(savedHanke.hankeTunnus)
+            assertThat(returnedHanke.nimi).isEqualTo(savedHanke.nimi)
+            assertThat(returnedHanke.generated).isEqualTo(savedHanke.generated)
+
+            // Minimal fields should be null
+            assertThat(returnedHanke.kuvaus).isNull()
+            assertThat(returnedHanke.vaihe).isNull()
+            assertThat(returnedHanke.version).isNull()
+            assertThat(returnedHanke.createdBy).isNull()
+            assertThat(returnedHanke.createdAt).isNull()
+            assertThat(returnedHanke.modifiedBy).isNull()
+            assertThat(returnedHanke.modifiedAt).isNull()
+            assertThat(returnedHanke.status).isNull()
+
+            // Contact lists should be empty
+            assertThat(returnedHanke.omistajat).isEmpty()
+            assertThat(returnedHanke.rakennuttajat).isEmpty()
+            assertThat(returnedHanke.toteuttajat).isEmpty()
+            assertThat(returnedHanke.muut).isEmpty()
+
+            // Alueet should be present but minimal
+            assertThat(returnedHanke.alueet).hasSize(1)
+            val alue = returnedHanke.alueet.first()
+            assertThat(alue.id).isNotNull()
+            assertThat(alue.nimi).isEqualTo("Hankealue 1")
+            assertThat(alue.geometriat).isNotNull()
+            assertThat(alue.tormaystarkasteluTulos).isNotNull()
+        }
+
+        @Test
+        fun `includes tormaystarkastelu data`() {
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity(HankeStatus.PUBLIC)
+
+            val result =
+                hankeService.loadPublicHankeWithinBounds(
+                    minX = DEFAULT_BOUNDS.minX,
+                    minY = DEFAULT_BOUNDS.minY,
+                    maxX = DEFAULT_BOUNDS.maxX,
+                    maxY = DEFAULT_BOUNDS.maxY,
+                )
+
+            assertThat(result).hasSize(1)
+            val alue = result.first().alueet.first()
+            assertThat(alue.tormaystarkasteluTulos).isNotNull()
+        }
+    }
+
+    @Nested
+    inner class LoadPublicHankeByHankeTunnus {
+
+        @Test
+        fun `throws exception when hanke does not exist`() {
+            val exception =
+                assertThrows<PublicHankeNotFoundException> {
+                    hankeService.loadPublicHankeByHankeTunnus("HAI23-1")
+                }
+
+            assertThat(exception.hankeTunnus).isEqualTo("HAI23-1")
+        }
+
+        @Test
+        fun `throws exception when hanke exists but is not public`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+
+            val exception =
+                assertThrows<PublicHankeNotFoundException> {
+                    hankeService.loadPublicHankeByHankeTunnus(hanke.hankeTunnus)
+                }
+
+            assertThat(exception.hankeTunnus).isEqualTo(hanke.hankeTunnus)
+        }
+
+        @Test
+        fun `returns full hanke data when hanke is public`() {
+            val hanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue()
+                    .withYhteystiedot()
+                    .saveEntity(HankeStatus.PUBLIC)
+
+            val result = hankeService.loadPublicHankeByHankeTunnus(hanke.hankeTunnus)
+
+            assertThat(result).isNotNull().all {
+                prop(Hanke::id).isEqualTo(hanke.id)
+                prop(Hanke::hankeTunnus).isEqualTo(hanke.hankeTunnus)
+                prop(Hanke::nimi).isEqualTo(hanke.nimi)
+                prop(Hanke::status).isEqualTo(HankeStatus.PUBLIC)
+                prop(Hanke::alueet).hasSize(1)
+                prop(Hanke::omistajat).hasSize(1)
+                prop(Hanke::rakennuttajat).hasSize(1)
+                prop(Hanke::toteuttajat).hasSize(1)
+                prop(Hanke::muut).hasSize(1)
+            }
+            val alue = result.alueet.single()
+            assertThat(alue.geometriat).isNotNull()
+            assertThat(alue.tormaystarkasteluTulos).isNotNull()
+            assertThat(alue.haittojenhallintasuunnitelma).isNotNull()
         }
     }
 
@@ -264,7 +602,7 @@ class HankeServiceITests(
                 // Check the ID is reassigned by the DB:
                 prop(Hanke::id).isNotEqualTo(0)
                 prop(Hanke::onYKTHanke).isNull()
-                prop(Hanke::nimi).isEqualTo(HankeFactory.defaultNimi)
+                prop(Hanke::nimi).isEqualTo(HankeFactory.DEFAULT_HANKENIMI)
                 prop(Hanke::kuvaus).isNull()
                 prop(Hanke::vaihe).isNull()
                 prop(Hanke::version).isEqualTo(0)
@@ -300,7 +638,7 @@ class HankeServiceITests(
                 // Check the ID is reassigned by the DB:
                 prop(HankeEntity::id).isNotEqualTo(0)
                 prop(HankeEntity::status).isEqualTo(HankeStatus.DRAFT)
-                prop(HankeEntity::nimi).isEqualTo(HankeFactory.defaultNimi)
+                prop(HankeEntity::nimi).isEqualTo(HankeFactory.DEFAULT_HANKENIMI)
                 prop(HankeEntity::kuvaus).isNull()
                 prop(HankeEntity::vaihe).isNull()
                 prop(HankeEntity::onYKTHanke).isNull()
@@ -865,6 +1203,7 @@ class HankeServiceITests(
 }
 
 object ExpectedHankeLogObject {
+
     private val expectedHankeWithPolygon =
         Template.parse(
             "/fi/hel/haitaton/hanke/logging/expectedHankeWithPolygon.json.mustache"

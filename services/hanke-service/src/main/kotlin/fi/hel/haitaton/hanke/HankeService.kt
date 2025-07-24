@@ -67,6 +67,25 @@ class HankeService(
         }
 
     @Transactional(readOnly = true)
+    fun loadPublicHankeWithinBounds(
+        minX: Double,
+        minY: Double,
+        maxX: Double,
+        maxY: Double,
+    ): List<Hanke> =
+        hankeRepository.findAllByStatusWithinBounds("PUBLIC", minX, minY, maxX, maxY).map {
+            createMinimalHankeDomainObjectFromEntity(it)
+        }
+
+    @Transactional(readOnly = true)
+    fun loadPublicHankeByHankeTunnus(hankeTunnus: String): Hanke =
+        hankeRepository
+            .findByHankeTunnus(hankeTunnus)
+            ?.takeIf { it.status == HankeStatus.PUBLIC }
+            ?.let { createHankeDomainObjectFromEntity(it) }
+            ?: throw PublicHankeNotFoundException(hankeTunnus)
+
+    @Transactional(readOnly = true)
     fun loadHankeById(id: Int): Hanke? =
         hankeRepository.findByIdOrNull(id)?.let { createHankeDomainObjectFromEntity(it) }
 
@@ -322,6 +341,12 @@ class HankeService(
 
     private fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke =
         HankeMapper.domainFrom(hankeEntity, hankealueService.geometryMapFrom(hankeEntity.alueet))
+
+    private fun createMinimalHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke =
+        HankeMapper.minimalDomainFrom(
+            hankeEntity,
+            hankealueService.geometryMapFrom(hankeEntity.alueet),
+        )
 
     private fun updateEntityFieldsFromRequest(
         hanke: ModifyHankeRequest,

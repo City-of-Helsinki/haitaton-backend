@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.banners.BannerResponse
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.PublicHanke
+import fi.hel.haitaton.hanke.domain.PublicHankeMinimal
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.hakemus.HakemusDeletionResultDto
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
@@ -76,6 +77,7 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
             is HankeKayttajaController.TunnistautuminenResponse -> return
             is HankekayttajaDeleteService.DeleteInfo -> return
             is HankkeenHakemuksetResponse -> return
+            is PublicHanke -> return
             is TormaystarkasteluTulos -> return
             is WhoamiResponse -> return
 
@@ -108,7 +110,7 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
             is ApplicationAttachmentMetadataDto -> return
             is BannerResponse -> return
             is HankeAttachmentMetadataDto -> return
-            is PublicHanke -> return
+            is PublicHankeMinimal -> return
             is String -> return
             is WhoamiResponse -> return
 
