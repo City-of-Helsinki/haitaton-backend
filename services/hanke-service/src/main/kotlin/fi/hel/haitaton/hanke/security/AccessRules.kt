@@ -24,6 +24,7 @@ object AccessRules {
                         "/banners",
                         "/public-hankkeet",
                         "/public-hankkeet/*",
+                        "/public-hankkeet/grid/metadata",
                         "/swagger-ui.html",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
@@ -34,6 +35,7 @@ object AccessRules {
                         HttpMethod.POST,
                         "/testdata/unlink-applications",
                         "/testdata/create-public-hanke/*",
+                        "/public-hankkeet/grid",
                     )
                     .permitAll()
             }
@@ -41,6 +43,7 @@ object AccessRules {
                 it.ignoringRequestMatchers(
                     "/testdata/unlink-applications",
                     "/testdata/create-public-hanke/*",
+                    "/public-hankkeet/grid",
                 )
             }
             .authorizeHttpRequests { it.anyRequest().authenticated() }

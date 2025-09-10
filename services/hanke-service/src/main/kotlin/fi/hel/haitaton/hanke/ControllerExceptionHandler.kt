@@ -86,6 +86,14 @@ class ControllerExceptionHandler {
         return HankeError.HAI2003
     }
 
+    @ExceptionHandler(InvalidGridCellException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun invalidGridCellException(ex: InvalidGridCellException): HankeError {
+        logger.warn { ex.message }
+        return HankeError.HAI0003
+    }
+
     @ExceptionHandler(IllegalArgumentException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden

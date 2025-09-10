@@ -12,6 +12,7 @@ import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
+import fi.hel.haitaton.hanke.HankeMapperService
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
@@ -93,6 +94,7 @@ class HakemusServiceTest {
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService = mockk()
     private val haittojenhallintasuunnitelmaPdfEncoder: HaittojenhallintasuunnitelmaPdfEncoder =
         mockk()
+    private val hankeMapperService: HankeMapperService = mockk()
 
     private val hakemusService =
         HakemusService(
@@ -115,6 +117,7 @@ class HakemusServiceTest {
             publisher,
             tormaystarkasteluLaskentaService,
             haittojenhallintasuunnitelmaPdfEncoder,
+            hankeMapperService,
         )
 
     @BeforeEach

@@ -2,6 +2,8 @@ package fi.hel.haitaton.hanke
 
 import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.hasSize
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.PublicGeometriat
@@ -118,16 +120,25 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
 
         @Test
         fun `calls the right function for bounded area`() {
+            val startDate = DateFactory.getStartDatetime().toLocalDate()
+            val endDate = DateFactory.getEndDatetime().toLocalDate()
             val hankkeet =
                 listOf(
                     HankeFactory.create(id = 1, nimi = "nimi").withHankealue().withYhteystiedot()
                 )
-            every { hankeService.loadPublicHankeWithinBounds(0.0, 0.0, 1.0, 1.0) }.returns(hankkeet)
+            every {
+                    hankeService.loadPublicHankeWithinBounds(startDate, endDate, 0.0, 0.0, 1.0, 1.0)
+                }
+                .returns(hankkeet)
 
-            get("/public-hankkeet?minX=0.0&minY=0.0&maxX=1.0&maxY=1.0")
+            get(
+                    "/public-hankkeet?startDate=${startDate}&endDate=${endDate}&minX=0.0&minY=0.0&maxX=1.0&maxY=1.0"
+                )
                 .andExpect(MockMvcResultMatchers.status().isOk)
 
-            verify { hankeService.loadPublicHankeWithinBounds(0.0, 0.0, 1.0, 1.0) }
+            verify {
+                hankeService.loadPublicHankeWithinBounds(startDate, endDate, 0.0, 0.0, 1.0, 1.0)
+            }
         }
     }
 
@@ -246,6 +257,234 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
                 .andExpect(jsonPath("$.muut").doesNotExist())
 
             verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
+        }
+    }
+
+    @Nested
+    inner class GetAllByDateAndGridCells {
+
+        @Test
+        fun `returns 200 with unauthenticated user`() {
+            val request =
+                PublicHankeGridCellRequest(
+                    startDate = DateFactory.getStartDatetime().toLocalDate(),
+                    endDate = DateFactory.getEndDatetime().toLocalDate(),
+                    cells = listOf(GridCell(1, 1)),
+                )
+            every {
+                hankeService.loadPublicHankeInGridCells(
+                    request.startDate,
+                    request.endDate,
+                    request.cells,
+                )
+            } returns listOf()
+
+            post("/public-hankkeet/grid", request).andExpect(MockMvcResultMatchers.status().isOk)
+
+            verify {
+                hankeService.loadPublicHankeInGridCells(
+                    request.startDate,
+                    request.endDate,
+                    request.cells,
+                )
+            }
+        }
+
+        @Test
+        fun `returns public hankkeet for single grid cell`() {
+            val startDate = DateFactory.getStartDatetime().toLocalDate()
+            val endDate = DateFactory.getEndDatetime().toLocalDate()
+            val gridCell = GridCell(1, 2)
+            val hankkeet =
+                listOf(
+                    HankeFactory.create(id = 1, nimi = "Grid Cell Hanke")
+                        .withHankealue()
+                        .withYhteystiedot()
+                )
+            val request =
+                PublicHankeGridCellRequest(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = listOf(gridCell),
+                )
+            every {
+                hankeService.loadPublicHankeInGridCells(startDate, endDate, listOf(gridCell))
+            } returns hankkeet
+
+            val response: List<PublicHankeMinimal> =
+                post("/public-hankkeet/grid", request)
+                    .andExpect(MockMvcResultMatchers.status().isOk)
+                    .andExpect(jsonPath("[0]").exists())
+                    .andExpect(jsonPath("[0].id").value(1))
+                    .andExpect(jsonPath("[0].nimi").value("Grid Cell Hanke"))
+                    .andExpect(jsonPath("[0].alueet").exists())
+                    .andReturnBody()
+
+            fun expectedAlue(hankeId: Int) =
+                PublicHankealueMinimal(
+                    id = 1,
+                    hankeId = hankeId,
+                    nimi = "$HANKEALUE_DEFAULT_NAME 1",
+                    haittaAlkuPvm = DateFactory.getStartDatetime(),
+                    haittaLoppuPvm = DateFactory.getEndDatetime(),
+                    geometriat = PublicGeometriat(GeometriaFactory.create(1).featureCollection),
+                    tormaystarkastelu = HaittaFactory.tormaystarkasteluTulos(),
+                )
+            val expectedHanke =
+                PublicHankeMinimal(
+                    id = 1,
+                    hankeTunnus = DEFAULT_HANKETUNNUS,
+                    nimi = "Grid Cell Hanke",
+                    alueet = listOf(expectedAlue(1)),
+                )
+            assertThat(response).containsExactlyInAnyOrder(expectedHanke)
+            verify { hankeService.loadPublicHankeInGridCells(startDate, endDate, listOf(gridCell)) }
+        }
+
+        @Test
+        fun `returns public hankkeet for multiple grid cells`() {
+            val startDate = DateFactory.getStartDatetime().toLocalDate()
+            val endDate = DateFactory.getEndDatetime().toLocalDate()
+            val gridCells = listOf(GridCell(1, 1), GridCell(1, 2), GridCell(2, 1))
+            val hankkeet =
+                listOf(
+                    HankeFactory.create(id = 1, nimi = "Hanke 1")
+                        .withHankealue()
+                        .withYhteystiedot(),
+                    HankeFactory.create(id = 2, nimi = "Hanke 2").withHankealue().withYhteystiedot(),
+                )
+            val request =
+                PublicHankeGridCellRequest(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = gridCells,
+                )
+            every { hankeService.loadPublicHankeInGridCells(startDate, endDate, gridCells) } returns
+                hankkeet
+
+            val response: List<PublicHankeMinimal> =
+                post("/public-hankkeet/grid", request)
+                    .andExpect(MockMvcResultMatchers.status().isOk)
+                    .andExpect(jsonPath("[0]").exists())
+                    .andExpect(jsonPath("[1]").exists())
+                    .andExpect(jsonPath("$").isArray)
+                    .andReturnBody()
+
+            assertThat(response).hasSize(2)
+            verify { hankeService.loadPublicHankeInGridCells(startDate, endDate, gridCells) }
+        }
+
+        @Test
+        fun `returns empty list when no hankkeet found in grid cells`() {
+            val startDate = DateFactory.getStartDatetime().toLocalDate()
+            val endDate = DateFactory.getEndDatetime().toLocalDate()
+            val gridCell = GridCell(99, 99)
+            val request =
+                PublicHankeGridCellRequest(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = listOf(gridCell),
+                )
+            every {
+                hankeService.loadPublicHankeInGridCells(startDate, endDate, listOf(gridCell))
+            } returns emptyList()
+
+            val response: List<PublicHankeMinimal> =
+                post("/public-hankkeet/grid", request)
+                    .andExpect(MockMvcResultMatchers.status().isOk)
+                    .andExpect(jsonPath("$").isEmpty)
+                    .andReturnBody()
+
+            assertThat(response).isEmpty()
+            verify { hankeService.loadPublicHankeInGridCells(startDate, endDate, listOf(gridCell)) }
+        }
+
+        @Test
+        fun `handles request with empty cells list`() {
+            val startDate = DateFactory.getStartDatetime().toLocalDate()
+            val endDate = DateFactory.getEndDatetime().toLocalDate()
+            val emptyCells: List<GridCell> = emptyList()
+            val request =
+                PublicHankeGridCellRequest(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = emptyCells,
+                )
+            every {
+                hankeService.loadPublicHankeInGridCells(startDate, endDate, emptyCells)
+            } returns emptyList()
+
+            post("/public-hankkeet/grid", request).andExpect(MockMvcResultMatchers.status().isOk)
+
+            verify { hankeService.loadPublicHankeInGridCells(startDate, endDate, emptyCells) }
+        }
+
+        @Test
+        fun `validates date range parameters`() {
+            val startDate = DateFactory.getStartDatetime().toLocalDate().plusDays(10)
+            val endDate = DateFactory.getStartDatetime().toLocalDate() // end before start
+            val gridCell = GridCell(1, 1)
+            val request =
+                PublicHankeGridCellRequest(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = listOf(gridCell),
+                )
+            every {
+                hankeService.loadPublicHankeInGridCells(startDate, endDate, listOf(gridCell))
+            } returns emptyList()
+
+            post("/public-hankkeet/grid", request).andExpect(MockMvcResultMatchers.status().isOk)
+
+            // Service should handle invalid date ranges
+            verify { hankeService.loadPublicHankeInGridCells(startDate, endDate, listOf(gridCell)) }
+        }
+
+        @Test
+        fun `returns 400 for grid cells with invalid coordinates`() {
+            val startDate = DateFactory.getStartDatetime().toLocalDate()
+            val endDate = DateFactory.getEndDatetime().toLocalDate()
+            val gridCell = GridCell(-1, -2)
+            val request =
+                PublicHankeGridCellRequest(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = listOf(gridCell),
+                )
+            every {
+                hankeService.loadPublicHankeInGridCells(startDate, endDate, listOf(gridCell))
+            } throws
+                InvalidGridCellException(
+                    "Grid cell coordinates must be non-negative. Got: (-1, -2)"
+                )
+
+            post("/public-hankkeet/grid", request)
+                .andExpect(MockMvcResultMatchers.status().isBadRequest)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI0003"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage").value("Invalid data"))
+
+            verify { hankeService.loadPublicHankeInGridCells(startDate, endDate, listOf(gridCell)) }
+        }
+    }
+
+    @Nested
+    inner class GetGridMetadata {
+
+        @Test
+        fun `returns grid metadata for client-side caching`() {
+            val result =
+                get("/public-hankkeet/grid/metadata")
+                    .andExpect(MockMvcResultMatchers.status().isOk)
+                    .andReturn()
+
+            val gridMetadata =
+                OBJECT_MAPPER.readValue(result.response.contentAsString, GridMetadata::class.java)
+
+            assertThat(gridMetadata.cellSizeMeters).isEqualTo(1000)
+            assertThat(gridMetadata.originX).isEqualTo(25486422.0)
+            assertThat(gridMetadata.originY).isEqualTo(6643836.0)
+            assertThat(gridMetadata.maxX).isEqualTo(25515423.0)
+            assertThat(gridMetadata.maxY).isEqualTo(6687837.0)
         }
     }
 }

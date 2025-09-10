@@ -8,8 +8,17 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import kotlin.collections.get
+import org.springframework.stereotype.Service
 
-object HankeMapper {
+@Service
+class HankeMapperService(private val hankealueService: HankealueService) {
+
+    fun minimalDomainFrom(hankeEntity: HankeEntity): Hanke =
+        minimalDomainFrom(hankeEntity, hankealueService.geometryMapFrom(hankeEntity.alueet))
+
+    fun domainFrom(hankeEntity: HankeEntity): Hanke =
+        domainFrom(hankeEntity, hankealueService.geometryMapFrom(hankeEntity.alueet))
 
     /**
      * Maps a HankeEntity to a minimal Hanke domain object that contains only the basic information

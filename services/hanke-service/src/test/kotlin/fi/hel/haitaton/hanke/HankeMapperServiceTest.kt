@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import assertk.all
 import assertk.assertThat
+import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
@@ -21,22 +22,32 @@ import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
+import fi.hel.haitaton.hanke.geometria.Geometriat
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 private const val MOCK_ID = 1
 
-class HankeMapperTest {
+class HankeMapperServiceTest {
+
+    private val hankealueService = mockk<HankealueService>()
+    private val hankeMapperService = HankeMapperService(hankealueService)
 
     @Nested
-    inner class Minimal {
+    inner class MinimalDomainFromWithGeometries {
         @Test
         fun `when entity contains all fields should map domain object correspondingly`() {
             val entity = HankeFactory.createEntity()
 
             val result =
-                HankeMapper.minimalDomainFrom(entity, mapOf(MOCK_ID to GeometriaFactory.create()))
+                hankeMapperService.minimalDomainFrom(
+                    entity,
+                    mapOf(MOCK_ID to GeometriaFactory.create()),
+                )
 
             assertThat(result).all {
                 prop(Hanke::id).isEqualTo(entity.id)
@@ -85,12 +96,13 @@ class HankeMapperTest {
     }
 
     @Nested
-    inner class Full {
+    inner class DomainFromWithGeometries {
         @Test
         fun `when entity contains all fields should map domain object correspondingly`() {
             val entity = HankeFactory.createEntity()
 
-            val result = HankeMapper.domainFrom(entity, mapOf(MOCK_ID to GeometriaFactory.create()))
+            val result =
+                hankeMapperService.domainFrom(entity, mapOf(MOCK_ID to GeometriaFactory.create()))
 
             assertThat(result).all {
                 prop(Hanke::id).isEqualTo(entity.id)
@@ -158,5 +170,151 @@ class HankeMapperTest {
                         HaittaFactory.createHaittojenhallintasuunnitelma(),
                 )
             )
+    }
+
+    @Nested
+    inner class DomainFrom {
+        @Test
+        fun `should call hankealueService and domainFrom with correct parameters`() {
+            val hankeEntity = HankeFactory.createEntity()
+            val geometriaData = mapOf(MOCK_ID to GeometriaFactory.create())
+            every { hankealueService.geometryMapFrom(hankeEntity.alueet) } returns geometriaData
+
+            val result = hankeMapperService.domainFrom(hankeEntity)
+
+            verify { hankealueService.geometryMapFrom(hankeEntity.alueet) }
+            // Verify the result is a complete domain object (not minimal)
+            assertThat(result).all {
+                prop(Hanke::id).isEqualTo(hankeEntity.id)
+                prop(Hanke::hankeTunnus).isEqualTo(hankeEntity.hankeTunnus)
+                prop(Hanke::onYKTHanke).isEqualTo(hankeEntity.onYKTHanke)
+                prop(Hanke::nimi).isEqualTo(hankeEntity.nimi)
+                prop(Hanke::kuvaus).isEqualTo(hankeEntity.kuvaus)
+                prop(Hanke::vaihe).isEqualTo(hankeEntity.vaihe)
+                prop(Hanke::version).isEqualTo(hankeEntity.version)
+                prop(Hanke::status).isEqualTo(hankeEntity.status)
+            }
+        }
+
+        @Test
+        fun `should handle entity with empty alueet`() {
+            val hankeEntity = HankeFactory.createEntity().apply { alueet = mutableListOf() }
+            val geometriaData = emptyMap<Int, Geometriat?>()
+            every { hankealueService.geometryMapFrom(hankeEntity.alueet) } returns geometriaData
+
+            val result = hankeMapperService.domainFrom(hankeEntity)
+
+            assertThat(result.alueet).isEmpty()
+        }
+
+        @Test
+        fun `should handle null geometriat in geometry data`() {
+            val hankeEntity = HankeFactory.createEntity()
+            val geometriaDataWithNull = mapOf(MOCK_ID to null)
+            every { hankealueService.geometryMapFrom(hankeEntity.alueet) } returns
+                geometriaDataWithNull
+
+            val result = hankeMapperService.domainFrom(hankeEntity)
+
+            // Should still create areas even with null geometry
+            assertThat(result.alueet).hasSize(1)
+        }
+    }
+
+    @Nested
+    inner class MinimalDomainFrom {
+        @Test
+        fun `should call hankealueService and minimalDomainFrom with correct parameters`() {
+            val hankeEntity = HankeFactory.createEntity()
+            val geometriaData = mapOf(MOCK_ID to GeometriaFactory.create())
+            every { hankealueService.geometryMapFrom(hankeEntity.alueet) } returns geometriaData
+
+            val result = hankeMapperService.minimalDomainFrom(hankeEntity)
+
+            verify { hankealueService.geometryMapFrom(hankeEntity.alueet) }
+            // Verify the result is minimal (null fields)
+            assertThat(result).all {
+                prop(Hanke::id).isEqualTo(hankeEntity.id)
+                prop(Hanke::hankeTunnus).isEqualTo(hankeEntity.hankeTunnus)
+                prop(Hanke::nimi).isEqualTo(hankeEntity.nimi)
+                // These should be null in minimal version
+                prop(Hanke::onYKTHanke).isNull()
+                prop(Hanke::kuvaus).isNull()
+                prop(Hanke::vaihe).isNull()
+                prop(Hanke::version).isNull()
+                prop(Hanke::createdAt).isNull()
+                prop(Hanke::createdBy).isNull()
+                prop(Hanke::modifiedAt).isNull()
+                prop(Hanke::modifiedBy).isNull()
+                prop(Hanke::status).isNull()
+            }
+        }
+
+        @Test
+        fun `should preserve generated field in minimal mapping`() {
+            val hankeEntity = HankeFactory.createEntity().apply { generated = true }
+            val geometriaData = mapOf(MOCK_ID to GeometriaFactory.create())
+            every { hankealueService.geometryMapFrom(hankeEntity.alueet) } returns geometriaData
+
+            val result = hankeMapperService.minimalDomainFrom(hankeEntity)
+
+            assertThat(result.generated).isEqualTo(true)
+        }
+
+        @Test
+        fun `should handle multiple alueet correctly`() {
+            val hankeEntity = HankeFactory.createEntity()
+            val additionalAlue =
+                HankealueFactory.createHankeAlueEntity(mockId = 2, hankeEntity = hankeEntity)
+            hankeEntity.alueet.add(additionalAlue)
+
+            val geometriaData =
+                mapOf(MOCK_ID to GeometriaFactory.create(), 2 to GeometriaFactory.create())
+            every { hankealueService.geometryMapFrom(hankeEntity.alueet) } returns geometriaData
+
+            val result = hankeMapperService.minimalDomainFrom(hankeEntity)
+
+            assertThat(result.alueet).hasSize(2)
+        }
+    }
+
+    @Nested
+    inner class EdgeCases {
+        @Test
+        fun `should map hankeTunnus correctly`() {
+            val hankeEntity = HankeFactory.createEntity()
+            every { hankealueService.geometryMapFrom(any()) } returns emptyMap()
+
+            val result = hankeMapperService.minimalDomainFrom(hankeEntity)
+
+            assertThat(result.hankeTunnus).isEqualTo(hankeEntity.hankeTunnus)
+        }
+
+        @Test
+        fun `should handle entity with contact types in full mapping`() {
+            val hankeEntity = HankeFactory.createEntity()
+            val geometriaData = mapOf(MOCK_ID to GeometriaFactory.create())
+            every { hankealueService.geometryMapFrom(hankeEntity.alueet) } returns geometriaData
+
+            val result = hankeMapperService.domainFrom(hankeEntity)
+
+            // Verify contact types are mapped (not testing exact content, just that they exist)
+            assertThat(result).all {
+                prop(Hanke::omistajat).hasSize(1)
+                prop(Hanke::toteuttajat).hasSize(1)
+                prop(Hanke::rakennuttajat).hasSize(1)
+                prop(Hanke::muut).hasSize(1)
+            }
+        }
+
+        @Test
+        fun `should handle entity with zero id`() {
+            val hankeEntity = HankeFactory.createEntity().apply { id = 0 }
+            every { hankealueService.geometryMapFrom(any()) } returns emptyMap()
+
+            val result = hankeMapperService.minimalDomainFrom(hankeEntity)
+
+            assertThat(result.id).isEqualTo(0)
+        }
     }
 }

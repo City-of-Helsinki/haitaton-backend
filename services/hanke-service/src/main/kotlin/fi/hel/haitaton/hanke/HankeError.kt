@@ -106,3 +106,5 @@ class HankeAlreadyCompletedException(hankeId: Int) :
     )
 
 class DatabaseStateException(message: String) : RuntimeException(message)
+
+class InvalidGridCellException(message: String) : RuntimeException(message)

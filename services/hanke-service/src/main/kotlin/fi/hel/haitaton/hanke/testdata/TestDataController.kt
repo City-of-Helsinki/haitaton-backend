@@ -58,7 +58,7 @@ class TestDataController(private val testDataService: TestDataService) {
     @PostMapping("/create-public-hanke/{count}")
     @ResponseBody
     fun createPublicHanke(@PathVariable count: Int): ResponseEntity<String> {
-        if (count < 1 || count > 1000) {
+        if (count !in 1..1000) {
             return ResponseEntity.badRequest()
                 .contentType(MediaType.TEXT_PLAIN)
                 .body("Count must be between 1 and 1000")

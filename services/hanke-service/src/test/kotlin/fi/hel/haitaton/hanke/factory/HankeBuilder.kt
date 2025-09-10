@@ -163,8 +163,6 @@ data class HankeBuilder(
 
     fun withVaihe(vaihe: Hankevaihe): HankeBuilder = applyToHanke { this.vaihe = vaihe }
 
-    fun withStatus(status: HankeStatus): HankeBuilder = applyToHanke { this.status = status }
-
     private fun applyToHanke(f: Hanke.() -> Unit) = apply { hanke.apply { f() } }
 
     companion object {

@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.logging
 
+import fi.hel.haitaton.hanke.GridMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.TaydennysAttachmentMetadataDto
@@ -91,6 +92,7 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
             is Map<*, *> -> logResultList(result.values.filterNotNull())
 
             // Used for returning system info. Won't contain personal information.
+            is GridMetadata -> return
             is String -> return
 
             // Throw an exception if nothing matches. This will ensure we specify whether a new

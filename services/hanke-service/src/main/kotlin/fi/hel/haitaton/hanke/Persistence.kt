@@ -154,7 +154,33 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
         AND EXISTS (
             SELECT 1 FROM hankealue ha 
             JOIN hankegeometria g ON ha.geometriat = g.hankegeometriatid
-            WHERE ha.hankeid = h.id 
+            WHERE ha.hankeid = h.id
+            AND ha.haittaalkupvm <= :endDate
+            AND ha.haittaloppupvm >= :startDate
+            AND ST_Intersects(g.geometria, ST_MakeEnvelope(:minX, :minY, :maxX, :maxY, $SRID))
+        )
+        """,
+        nativeQuery = true,
+    )
+    fun findAllByDateRangeStatusWithinBounds(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        status: String,
+        minX: Double,
+        minY: Double,
+        maxX: Double,
+        maxY: Double,
+    ): List<HankeEntity>
+
+    @Query(
+        value =
+            """
+        SELECT DISTINCT h.* FROM hanke h 
+        WHERE h.status = :status 
+        AND EXISTS (
+            SELECT 1 FROM hankealue ha 
+            JOIN hankegeometria g ON ha.geometriat = g.hankegeometriatid
+            WHERE ha.hankeid = h.id
             AND ST_Intersects(g.geometria, ST_MakeEnvelope(:minX, :minY, :maxX, :maxY, $SRID))
         )
         """,

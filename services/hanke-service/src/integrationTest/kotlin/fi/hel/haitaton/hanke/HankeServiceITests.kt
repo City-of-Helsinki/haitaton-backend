@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import assertk.Assert
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
@@ -35,6 +36,7 @@ import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HaittaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
@@ -92,6 +94,7 @@ import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifySequence
 import java.time.LocalDate
+import java.time.Month
 import java.time.OffsetDateTime
 import net.pwall.mustache.Template
 import org.junit.jupiter.api.AfterEach
@@ -208,12 +211,7 @@ class HankeServiceITests(
         @Test
         fun `returns full hanke data`() {
             val savedHanke =
-                hankeFactory
-                    .builder(USERNAME)
-                    .withStatus(HankeStatus.PUBLIC)
-                    .withYhteystiedot()
-                    .withHankealue()
-                    .save()
+                hankeFactory.builder(USERNAME).withYhteystiedot().withHankealue().save()
 
             val result = hankeService.loadPublicHanke()
 
@@ -256,10 +254,15 @@ class HankeServiceITests(
     @Nested
     inner class LoadPublicHankeWithinBounds {
 
+        val startDate: LocalDate = DateFactory.getStartDatetime().toLocalDate()
+        val endDate: LocalDate = DateFactory.getEndDatetime().toLocalDate()
+
         @Test
         fun `returns empty list when no hanke exist`() {
             val result =
                 hankeService.loadPublicHankeWithinBounds(
+                    startDate = startDate,
+                    endDate = endDate,
                     minX = DEFAULT_BOUNDS.minX,
                     minY = DEFAULT_BOUNDS.minY,
                     maxX = DEFAULT_BOUNDS.maxX,
@@ -276,10 +279,32 @@ class HankeServiceITests(
 
             val result =
                 hankeService.loadPublicHankeWithinBounds(
+                    startDate = startDate,
+                    endDate = endDate,
                     minX = DEFAULT_BOUNDS.minX,
                     minY = DEFAULT_BOUNDS.minY,
                     maxX = DEFAULT_BOUNDS.maxX,
                     maxY = DEFAULT_BOUNDS.maxY,
+                )
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns empty list when hanke area dates are outside range`() {
+            // Create public hanke with default geometry
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity(HankeStatus.PUBLIC)
+
+            // Query bounds that overlap with the geometry
+            val bounds = DEFAULT_BOUNDS.halfWidthToEast()
+            val result =
+                hankeService.loadPublicHankeWithinBounds(
+                    startDate = startDate.minusDays(10),
+                    endDate = startDate.minusDays(5),
+                    minX = bounds.minX,
+                    minY = bounds.minY,
+                    maxX = bounds.maxX,
+                    maxY = bounds.maxY,
                 )
 
             assertThat(result).isEmpty()
@@ -294,6 +319,8 @@ class HankeServiceITests(
             val bounds = DEFAULT_BOUNDS.westOfOutside()
             val result =
                 hankeService.loadPublicHankeWithinBounds(
+                    startDate = startDate,
+                    endDate = endDate,
                     minX = bounds.minX,
                     minY = bounds.minY,
                     maxX = bounds.maxX,
@@ -304,15 +331,26 @@ class HankeServiceITests(
         }
 
         @Test
-        fun `returns hanke when geometry intersects with bounds`() {
+        fun `returns hanke when range is inside dates and geometry intersects with bounds`() {
             // Create public hanke with default geometry
             val savedHanke =
-                hankeFactory.builder(USERNAME).withHankealue().saveEntity(HankeStatus.PUBLIC)
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue(
+                        alue =
+                            HankealueFactory.create(
+                                haittaAlkuPvm = DateFactory.getStartDatetime().minusDays(5),
+                                haittaLoppuPvm = DateFactory.getEndDatetime().plusDays(5),
+                            )
+                    )
+                    .saveEntity(HankeStatus.PUBLIC)
 
             // Query bounds that overlap with the geometry
             val bounds = DEFAULT_BOUNDS.halfWidthToEast()
             val result =
                 hankeService.loadPublicHankeWithinBounds(
+                    startDate = startDate,
+                    endDate = endDate,
                     minX = bounds.minX,
                     minY = bounds.minY,
                     maxX = bounds.maxX,
@@ -344,6 +382,8 @@ class HankeServiceITests(
             // Query bounds that overlap with the geometry
             val result =
                 hankeService.loadPublicHankeWithinBounds(
+                    startDate = startDate,
+                    endDate = endDate,
                     minX = DEFAULT_BOUNDS.minX,
                     minY = DEFAULT_BOUNDS.minY,
                     maxX = DEFAULT_BOUNDS.maxX,
@@ -387,6 +427,8 @@ class HankeServiceITests(
             // Query bounds that cover both geometries
             val result =
                 hankeService.loadPublicHankeWithinBounds(
+                    startDate = startDate,
+                    endDate = endDate,
                     minX = LARGE_BOUNDS.minX,
                     minY = LARGE_BOUNDS.minY,
                     maxX = LARGE_BOUNDS.maxX,
@@ -426,6 +468,8 @@ class HankeServiceITests(
             // Query bounds that only cover the first geometry
             val result =
                 hankeService.loadPublicHankeWithinBounds(
+                    startDate = startDate,
+                    endDate = endDate,
                     minX = MEDIUM_BOUNDS.minX,
                     minY = MEDIUM_BOUNDS.minY,
                     maxX = MEDIUM_BOUNDS.maxX,
@@ -451,6 +495,8 @@ class HankeServiceITests(
 
             val result =
                 hankeService.loadPublicHankeWithinBounds(
+                    startDate = startDate,
+                    endDate = endDate,
                     minX = DEFAULT_BOUNDS.minX,
                     minY = DEFAULT_BOUNDS.minY,
                     maxX = DEFAULT_BOUNDS.maxX,
@@ -497,6 +543,8 @@ class HankeServiceITests(
 
             val result =
                 hankeService.loadPublicHankeWithinBounds(
+                    startDate = startDate,
+                    endDate = endDate,
                     minX = DEFAULT_BOUNDS.minX,
                     minY = DEFAULT_BOUNDS.minY,
                     maxX = DEFAULT_BOUNDS.maxX,
@@ -506,6 +554,300 @@ class HankeServiceITests(
             assertThat(result).hasSize(1)
             val alue = result.first().alueet.first()
             assertThat(alue.tormaystarkasteluTulos).isNotNull()
+        }
+    }
+
+    @Nested
+    inner class LoadPublicHankeInGridCells {
+
+        val startDate: LocalDate = DateFactory.getStartDatetime().toLocalDate()
+        val endDate: LocalDate = DateFactory.getEndDatetime().toLocalDate()
+
+        // Grid cells that contain test geometries:
+        // - GeometriaFactory.secondPolygon() and hankeGeometriat.json are at cell (10, 29)
+        // - GeometriaFactory.polygon() spans cells (7, 35) and (7, 36)
+        val defaultGridCell = GridCell(10, 29) // Contains default test geometry
+        val polygonGridCells =
+            listOf(GridCell(7, 35), GridCell(7, 36)) // Contains GeometriaFactory.polygon()
+        val insideGridCells = listOf(defaultGridCell)
+        val outsideGridCells = listOf(GridCell(0, 0)) // Far from any test geometry
+
+        @Test
+        fun `returns empty list when no hanke exist`() {
+            val result =
+                hankeService.loadPublicHankeInGridCells(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = insideGridCells,
+                )
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns empty list when no public hanke exist`() {
+            // Create draft hanke with geometry inside grid cell
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+
+            val result =
+                hankeService.loadPublicHankeInGridCells(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = insideGridCells,
+                )
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns empty list when hanke area dates are outside range`() {
+            // Create public hanke with default geometry
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity(HankeStatus.PUBLIC)
+
+            // Query grid cell that contains the geometry but with dates outside range
+            val result =
+                hankeService.loadPublicHankeInGridCells(
+                    startDate = startDate.minusDays(10),
+                    endDate = startDate.minusDays(5),
+                    cells = insideGridCells,
+                )
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns empty list when hanke geometries are outside grid cells`() {
+            // Create public hanke with default geometry
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity(HankeStatus.PUBLIC)
+
+            // Query grid cells outside the geometry
+            val result =
+                hankeService.loadPublicHankeInGridCells(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = outsideGridCells,
+                )
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns hanke when range is inside dates and geometry intersects with grid cells`() {
+            // Create public hanke with default geometry
+            val savedHanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue(
+                        alue =
+                            HankealueFactory.create(
+                                haittaAlkuPvm = DateFactory.getStartDatetime().minusDays(5),
+                                haittaLoppuPvm = DateFactory.getEndDatetime().plusDays(5),
+                            )
+                    )
+                    .saveEntity(HankeStatus.PUBLIC)
+
+            // Query grid cells that contain the geometry
+            val result =
+                hankeService.loadPublicHankeInGridCells(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = insideGridCells,
+                )
+
+            assertThat(result).hasSize(1)
+            val returnedHanke = result.first()
+            assertThat(returnedHanke.id).isEqualTo(savedHanke.id)
+            assertThat(returnedHanke.hankeTunnus).isEqualTo(savedHanke.hankeTunnus)
+            assertThat(returnedHanke.generated).isEqualTo(savedHanke.generated)
+        }
+
+        @Test
+        fun `returns hanke when one geometry intersects with grid cells and other does not`() {
+            // Create public hanke with two geometries, one in default cell (10,29) and one in
+            // polygon cells (7,35)+(7,36)
+            val savedHanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue() // Default geometry at cell (10, 29)
+                    .withHankealue(
+                        alue =
+                            HankealueFactory.create(
+                                geometriat =
+                                    GeometriaFactory.create(
+                                        1,
+                                        GeometriaFactory.polygon(),
+                                    ) // At cells (7, 35)+(7, 36)
+                            )
+                    )
+                    .saveEntity(HankeStatus.PUBLIC)
+
+            // Query only default grid cell - should find the hanke because it has geometry in that
+            // cell
+            val result =
+                hankeService.loadPublicHankeInGridCells(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = insideGridCells,
+                )
+
+            assertThat(result).hasSize(1)
+            val returnedHanke = result.first()
+            assertThat(returnedHanke.id).isEqualTo(savedHanke.id)
+            assertThat(returnedHanke.hankeTunnus).isEqualTo(savedHanke.hankeTunnus)
+            assertThat(returnedHanke.generated).isEqualTo(savedHanke.generated)
+        }
+
+        @Test
+        fun `returns multiple hanke when multiple geometries intersect with grid cells`() {
+            // Create first public hanke with polygon geometry (cells 7,35 + 7,36)
+            val hanke1 =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue(
+                        alue =
+                            HankealueFactory.create(
+                                geometriat = GeometriaFactory.create(1, GeometriaFactory.polygon())
+                            )
+                    )
+                    .saveEntity(HankeStatus.PUBLIC)
+
+            // Create second public hanke with third polygon geometry (cell 7,35)
+            val hanke2 =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue(
+                        alue =
+                            HankealueFactory.create(
+                                geometriat =
+                                    GeometriaFactory.create(2, GeometriaFactory.thirdPolygon())
+                            )
+                    )
+                    .saveEntity(HankeStatus.PUBLIC)
+
+            // Query grid cells that cover both geometries
+            val result =
+                hankeService.loadPublicHankeInGridCells(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = polygonGridCells, // Cells (7, 35) and (7, 36)
+                )
+
+            assertThat(result).hasSize(2)
+            val hankeIds = result.map { it.id }
+            assertThat(hankeIds).containsExactlyInAnyOrder(hanke1.id, hanke2.id)
+        }
+
+        @Test
+        fun `returns only hanke with geometries in specified grid cells when others are outside`() {
+            // Create first public hanke with polygon geometry (cells 7,35 + 7,36)
+            val insideHanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue(
+                        alue =
+                            HankealueFactory.create(
+                                geometriat = GeometriaFactory.create(1, GeometriaFactory.polygon())
+                            )
+                    )
+                    .saveEntity(HankeStatus.PUBLIC)
+
+            // Create second public hanke with default geometry (cell 10,29)
+            hankeFactory
+                .builder(USERNAME)
+                .withHankealue() // Default geometry at cell (10, 29)
+                .saveEntity(HankeStatus.PUBLIC)
+
+            // Query only polygon grid cells - should return only first hanke
+            val result =
+                hankeService.loadPublicHankeInGridCells(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = polygonGridCells, // Only cells (7, 35) and (7, 36)
+                )
+
+            assertThat(result).hasSize(1)
+            assertThat(result.first().id).isEqualTo(insideHanke.id)
+        }
+
+        @Test
+        fun `returns minimal hanke data without full yhteystieto information`() {
+            val savedHanke =
+                hankeFactory.builder(USERNAME).withHankealue().saveEntity(HankeStatus.PUBLIC)
+
+            val result =
+                hankeService.loadPublicHankeInGridCells(
+                    startDate = startDate,
+                    endDate = endDate,
+                    cells = insideGridCells,
+                )
+
+            assertThat(result).hasSize(1)
+            val returnedHanke = result.first()
+
+            // Basic fields should be present
+            assertThat(returnedHanke.id).isEqualTo(savedHanke.id)
+            assertThat(returnedHanke.hankeTunnus).isEqualTo(savedHanke.hankeTunnus)
+            assertThat(returnedHanke.nimi).isEqualTo(savedHanke.nimi)
+            assertThat(returnedHanke.generated).isEqualTo(savedHanke.generated)
+
+            // Minimal fields should be null
+            assertThat(returnedHanke.kuvaus).isNull()
+            assertThat(returnedHanke.vaihe).isNull()
+            assertThat(returnedHanke.version).isNull()
+            assertThat(returnedHanke.createdBy).isNull()
+            assertThat(returnedHanke.createdAt).isNull()
+            assertThat(returnedHanke.modifiedBy).isNull()
+            assertThat(returnedHanke.modifiedAt).isNull()
+            assertThat(returnedHanke.status).isNull()
+
+            // Contact lists should be empty
+            assertThat(returnedHanke.omistajat).isEmpty()
+            assertThat(returnedHanke.rakennuttajat).isEmpty()
+            assertThat(returnedHanke.toteuttajat).isEmpty()
+            assertThat(returnedHanke.muut).isEmpty()
+
+            // Alueet should be present but minimal
+            assertThat(returnedHanke.alueet).hasSize(1)
+            val alue = returnedHanke.alueet.first()
+            assertThat(alue.id).isNotNull()
+            assertThat(alue.nimi).isEqualTo("Hankealue 1")
+            assertThat(alue.geometriat).isNotNull()
+            assertThat(alue.tormaystarkasteluTulos).isNotNull()
+        }
+
+        @Test
+        fun `handles timezone correctly in date filtering`() {
+            // Create hanke with dates that have timezone information
+            val savedHanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withHankealue(
+                        alue =
+                            HankealueFactory.create(
+                                haittaAlkuPvm = DateFactory.getStartDatetime().minusDays(1),
+                                haittaLoppuPvm = DateFactory.getEndDatetime().plusDays(1),
+                            )
+                    )
+                    .saveEntity(HankeStatus.PUBLIC)
+
+            // Query with local dates that overlap with the hanke dates
+            val year = DateFactory.getStartDatetime().year
+            val queryStart = LocalDate.of(year, Month.FEBRUARY, 20)
+            val queryEnd = LocalDate.of(year, Month.FEBRUARY, 21)
+
+            val result =
+                hankeService.loadPublicHankeInGridCells(
+                    startDate = queryStart,
+                    endDate = queryEnd,
+                    cells = insideGridCells,
+                )
+
+            assertThat(result).hasSize(1)
+            assertThat(result.first().id).isEqualTo(savedHanke.id)
+
+            // Verify the hanke was found despite timezone differences
+            val returnedHanke = result.first()
+            assertThat(returnedHanke.alueet).hasSize(1)
         }
     }
 
@@ -626,7 +968,7 @@ class HankeServiceITests(
             }
         }
 
-        private fun assertk.Assert<HankeYhteystieto>.hasDefaultInfo() {
+        private fun Assert<HankeYhteystieto>.hasDefaultInfo() {
             prop(HankeYhteystieto::nimi).isEqualTo(TEPPO_TESTI)
             prop(HankeYhteystieto::email).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
             prop(HankeYhteystieto::tyyppi).isEqualTo(YhteystietoTyyppi.YRITYS)
@@ -641,7 +983,7 @@ class HankeServiceITests(
             prop(HankeYhteystieto::rooli).isEqualTo("Isännöitsijä")
         }
 
-        private fun assertk.Assert<HankeYhteystieto>.hasOneYhteyshenkilo(
+        private fun Assert<HankeYhteystieto>.hasOneYhteyshenkilo(
             hankekayttajaInput: HankekayttajaInput
         ) {
             prop(HankeYhteystieto::yhteyshenkilot).single().all {
@@ -1241,7 +1583,7 @@ class HankeServiceITests(
 
     /**
      * Creates the logged object with the same content as
-     * [fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createDifferentiated].
+     * [HankeYhteystietoFactory.createDifferentiated].
      */
     private fun expectedYhteystietoDeleteLogObject(id: Int?, i: Int) =
         """{

@@ -68,6 +68,16 @@ haitaton:
       deletionReminderCron: ${HAITATON_COMPLETIONS_DELETE_REMINDER_CRON:53 03 20 * * *}
       # By default, run every day at 17:53:27 (Helsinki time).
       draftCompletionCron: ${HAITATON_COMPLETIONS_DRAFT_CRON:27 53 17 * * *}
+  map-grid:
+    cell-size-meters: 1000
+    origin-x: 25486422.0
+    origin-y: 6643836.0
+    max-x: 25515423.0
+    max-y: 6687837.0
+    # Cache repopulation runs every 5 minutes (300000ms)
+    cache-repopulation-interval-ms: ${HAITATON_MAP_GRID_CACHE_INTERVAL:300000}
+    # Initial delay of 30 seconds to allow application startup
+    cache-initial-delay-ms: ${HAITATON_MAP_GRID_CACHE_INITIAL_DELAY:30000}
   map-service:
     capability-url: https://kartta.hel.fi/ws/geoserver/avoindata/wms?REQUEST=GetCapabilities&SERVICE=WMS
   profiili-api:
