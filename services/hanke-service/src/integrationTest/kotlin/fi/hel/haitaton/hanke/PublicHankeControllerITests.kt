@@ -65,13 +65,17 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
         confirmVerified(hankeService)
     }
 
+    companion object {
+        const val BASE_URL_PATH = "/public-hankkeet"
+    }
+
     @Nested
     inner class GetPublicHankkeet {
         @Test
         fun `returns 200 with unauthenticated user`() {
             every { hankeService.loadPublicHanke() }.returns(listOf())
 
-            get("/public-hankkeet").andExpect(MockMvcResultMatchers.status().isOk)
+            get(BASE_URL_PATH).andExpect(MockMvcResultMatchers.status().isOk)
 
             verify { hankeService.loadPublicHanke() }
         }
@@ -86,7 +90,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
             every { hankeService.loadPublicHanke() }.returns(hankkeet)
 
             val response: List<PublicHankeMinimal> =
-                get("/public-hankkeet")
+                get(BASE_URL_PATH)
                     .andExpect(MockMvcResultMatchers.status().isOk)
                     .andExpect(jsonPath("[0]").exists())
                     .andExpect(jsonPath("[1]").exists())
@@ -149,7 +153,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
             val hanke = HankeFactory.create().withHankealue().withYhteystiedot()
             every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
 
-            get("/public-hankkeet/$DEFAULT_HANKETUNNUS")
+            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
                 .andExpect(MockMvcResultMatchers.status().isOk)
 
             verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
@@ -160,7 +164,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
             val hanke = HankeFactory.create().withHankealue().withYhteystiedot()
             every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
 
-            get("/public-hankkeet/$DEFAULT_HANKETUNNUS")
+            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(jsonPath("$.id").value(DEFAULT_HANKE_ID))
                 .andExpect(jsonPath("$.nimi").value(DEFAULT_HANKENIMI))
@@ -176,7 +180,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
             every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) } throws
                 PublicHankeNotFoundException(DEFAULT_HANKETUNNUS)
 
-            get("/public-hankkeet/$DEFAULT_HANKETUNNUS")
+            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
                 .andExpect(MockMvcResultMatchers.status().isNotFound)
 
             verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
@@ -188,7 +192,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
             every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
 
             val response: PublicHanke =
-                get("/public-hankkeet/$DEFAULT_HANKETUNNUS")
+                get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
                     .andExpect(MockMvcResultMatchers.status().isOk)
                     .andReturnBody()
 
@@ -245,7 +249,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
                 )
             every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
 
-            get("/public-hankkeet/$DEFAULT_HANKETUNNUS")
+            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(jsonPath("$.omistajat[0].organisaatioNimi").value("Yritys Oy"))
                 .andExpect(jsonPath("$.omistajat[0].email").doesNotExist())
@@ -279,7 +283,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
                 )
             } returns listOf()
 
-            post("/public-hankkeet/grid", request).andExpect(MockMvcResultMatchers.status().isOk)
+            post("${BASE_URL_PATH}/grid", request).andExpect(MockMvcResultMatchers.status().isOk)
 
             verify {
                 hankeService.loadPublicHankeInGridCells(
@@ -292,14 +296,13 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
 
         @Test
         fun `returns public hankkeet for single grid cell`() {
+            val hankeName = "Grid Cell Hanke"
             val startDate = DateFactory.getStartDatetime().toLocalDate()
             val endDate = DateFactory.getEndDatetime().toLocalDate()
             val gridCell = GridCell(1, 2)
             val hankkeet =
                 listOf(
-                    HankeFactory.create(id = 1, nimi = "Grid Cell Hanke")
-                        .withHankealue()
-                        .withYhteystiedot()
+                    HankeFactory.create(id = 1, nimi = hankeName).withHankealue().withYhteystiedot()
                 )
             val request =
                 PublicHankeGridCellRequest(
@@ -312,11 +315,11 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
             } returns hankkeet
 
             val response: List<PublicHankeMinimal> =
-                post("/public-hankkeet/grid", request)
+                post("${BASE_URL_PATH}/grid", request)
                     .andExpect(MockMvcResultMatchers.status().isOk)
                     .andExpect(jsonPath("[0]").exists())
                     .andExpect(jsonPath("[0].id").value(1))
-                    .andExpect(jsonPath("[0].nimi").value("Grid Cell Hanke"))
+                    .andExpect(jsonPath("[0].nimi").value(hankeName))
                     .andExpect(jsonPath("[0].alueet").exists())
                     .andReturnBody()
 
@@ -334,7 +337,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
                 PublicHankeMinimal(
                     id = 1,
                     hankeTunnus = DEFAULT_HANKETUNNUS,
-                    nimi = "Grid Cell Hanke",
+                    nimi = hankeName,
                     alueet = listOf(expectedAlue(1)),
                 )
             assertThat(response).containsExactlyInAnyOrder(expectedHanke)
@@ -363,7 +366,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
                 hankkeet
 
             val response: List<PublicHankeMinimal> =
-                post("/public-hankkeet/grid", request)
+                post("${BASE_URL_PATH}/grid", request)
                     .andExpect(MockMvcResultMatchers.status().isOk)
                     .andExpect(jsonPath("[0]").exists())
                     .andExpect(jsonPath("[1]").exists())
@@ -390,7 +393,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
             } returns emptyList()
 
             val response: List<PublicHankeMinimal> =
-                post("/public-hankkeet/grid", request)
+                post("${BASE_URL_PATH}/grid", request)
                     .andExpect(MockMvcResultMatchers.status().isOk)
                     .andExpect(jsonPath("$").isEmpty)
                     .andReturnBody()
@@ -414,7 +417,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
                 hankeService.loadPublicHankeInGridCells(startDate, endDate, emptyCells)
             } returns emptyList()
 
-            post("/public-hankkeet/grid", request).andExpect(MockMvcResultMatchers.status().isOk)
+            post("${BASE_URL_PATH}/grid", request).andExpect(MockMvcResultMatchers.status().isOk)
 
             verify { hankeService.loadPublicHankeInGridCells(startDate, endDate, emptyCells) }
         }
@@ -434,7 +437,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
                 hankeService.loadPublicHankeInGridCells(startDate, endDate, listOf(gridCell))
             } returns emptyList()
 
-            post("/public-hankkeet/grid", request).andExpect(MockMvcResultMatchers.status().isOk)
+            post("${BASE_URL_PATH}/grid", request).andExpect(MockMvcResultMatchers.status().isOk)
 
             // Service should handle invalid date ranges
             verify { hankeService.loadPublicHankeInGridCells(startDate, endDate, listOf(gridCell)) }
@@ -458,10 +461,10 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
                     "Grid cell coordinates must be non-negative. Got: (-1, -2)"
                 )
 
-            post("/public-hankkeet/grid", request)
+            post("${BASE_URL_PATH}/grid", request)
                 .andExpect(MockMvcResultMatchers.status().isBadRequest)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI0003"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage").value("Invalid data"))
+                .andExpect(jsonPath("$.errorCode").value("HAI0003"))
+                .andExpect(jsonPath("$.errorMessage").value("Invalid data"))
 
             verify { hankeService.loadPublicHankeInGridCells(startDate, endDate, listOf(gridCell)) }
         }
@@ -473,7 +476,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
         @Test
         fun `returns grid metadata for client-side caching`() {
             val result =
-                get("/public-hankkeet/grid/metadata")
+                get("${BASE_URL_PATH}/grid/metadata")
                     .andExpect(MockMvcResultMatchers.status().isOk)
                     .andReturn()
 

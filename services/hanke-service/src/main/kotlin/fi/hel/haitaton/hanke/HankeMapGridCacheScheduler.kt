@@ -25,13 +25,18 @@ class HankeMapGridCacheScheduler(
     fun repopulateCache() {
         logger.info { "Trying to obtain lock $LOCK_NAME to start cache repopulation." }
 
+        var wasExecuted = false
         lockService.doIfUnlocked(LOCK_NAME) {
             try {
                 hankeMapGridService.repopulateCache()
                 logger.info { "Cache repopulation completed successfully." }
+                wasExecuted = true
             } catch (e: Exception) {
                 logger.error(e) { "Cache repopulation failed: ${e.message}" }
             }
+        }
+        if (!wasExecuted) {
+            logger.info { "Lock $LOCK_NAME is already held, skipping cache repopulation." }
         }
     }
 
