@@ -30,6 +30,11 @@ class HankeServiceTest {
             geometriatDao = mockk(),
         )
 
+    companion object {
+        private const val HANKETUNNUS_1 = "HAI24-1"
+        private const val HANKETUNNUS_2 = "HAI24-2"
+    }
+
     @Nested
     inner class LoadPublicHankeInGridCells {
 
@@ -150,7 +155,7 @@ class HankeServiceTest {
                         startDate.atStartOfDay().atZone(java.time.ZoneOffset.UTC)
                     every { loppuPvm } returns
                         endDate.atStartOfDay().atZone(java.time.ZoneOffset.UTC)
-                    every { hankeTunnus } returns "HAI24-1"
+                    every { hankeTunnus } returns HANKETUNNUS_1
                 }
 
             every { hankeMapGridService.loadPublicHankeInGridCell(10, 29) } returns listOf(hanke)
@@ -189,7 +194,7 @@ class HankeServiceTest {
                         endDate.atStartOfDay().atZone(java.time.ZoneOffset.UTC)
                     every { loppuPvm } returns
                         endDate.plusDays(10).atStartOfDay().atZone(java.time.ZoneOffset.UTC)
-                    every { hankeTunnus } returns "HAI24-2"
+                    every { hankeTunnus } returns HANKETUNNUS_2
                 }
 
             every { hankeMapGridService.loadPublicHankeInGridCell(10, 29) } returns
@@ -267,7 +272,7 @@ class HankeServiceTest {
                         startDate.atStartOfDay().atZone(java.time.ZoneOffset.UTC)
                     every { loppuPvm } returns
                         endDate.atStartOfDay().atZone(java.time.ZoneOffset.UTC)
-                    every { hankeTunnus } returns "HAI24-1"
+                    every { hankeTunnus } returns HANKETUNNUS_1
                 }
             val hanke2 =
                 mockk<Hanke> {
@@ -275,7 +280,7 @@ class HankeServiceTest {
                         startDate.atStartOfDay().atZone(java.time.ZoneOffset.UTC)
                     every { loppuPvm } returns
                         endDate.atStartOfDay().atZone(java.time.ZoneOffset.UTC)
-                    every { hankeTunnus } returns "HAI24-2"
+                    every { hankeTunnus } returns HANKETUNNUS_2
                 }
 
             every { hankeMapGridService.loadPublicHankeInGridCell(10, 29) } returns listOf(hanke1)
@@ -294,7 +299,7 @@ class HankeServiceTest {
                         startDate.atStartOfDay().atZone(java.time.ZoneOffset.UTC)
                     every { loppuPvm } returns
                         endDate.atStartOfDay().atZone(java.time.ZoneOffset.UTC)
-                    every { hankeTunnus } returns "HAI24-1"
+                    every { hankeTunnus } returns HANKETUNNUS_1
                 }
 
             every { hankeMapGridService.loadPublicHankeInGridCell(10, 29) } returns listOf(hanke)
@@ -360,7 +365,7 @@ class HankeServiceTest {
                         startDate.atStartOfDay().atZone(java.time.ZoneOffset.UTC)
                     every { loppuPvm } returns
                         endDate.atStartOfDay().atZone(java.time.ZoneOffset.UTC)
-                    every { hankeTunnus } returns "HAI24-1"
+                    every { hankeTunnus } returns HANKETUNNUS_1
                 }
             val invalidHanke =
                 mockk<Hanke> {
@@ -368,7 +373,7 @@ class HankeServiceTest {
                         LocalDate.of(2025, 1, 1).atStartOfDay().atZone(java.time.ZoneOffset.UTC)
                     every { loppuPvm } returns
                         LocalDate.of(2025, 12, 31).atStartOfDay().atZone(java.time.ZoneOffset.UTC)
-                    every { hankeTunnus } returns "HAI24-2"
+                    every { hankeTunnus } returns HANKETUNNUS_2
                 }
 
             every { hankeMapGridService.loadPublicHankeInGridCell(10, 29) } returns
@@ -378,7 +383,7 @@ class HankeServiceTest {
             val result = service.loadPublicHankeInGridCells(startDate, endDate, cells)
 
             assertThat(result).hasSize(1)
-            assertThat(result.first().hankeTunnus).isEqualTo("HAI24-1")
+            assertThat(result.first().hankeTunnus).isEqualTo(HANKETUNNUS_1)
         }
     }
 }

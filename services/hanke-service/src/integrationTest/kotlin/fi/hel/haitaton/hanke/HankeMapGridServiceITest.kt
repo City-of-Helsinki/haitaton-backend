@@ -121,8 +121,7 @@ class HankeMapGridServiceITest(
         @Transactional
         fun `updates existing cache entries`() {
             // Initially populate with one hanke
-            val hanke1 =
-                hankeFactory.builder(USERNAME).withHankealue().saveEntity(HankeStatus.PUBLIC)
+            hankeFactory.builder(USERNAME).withHankealue().saveEntity(HankeStatus.PUBLIC)
 
             hankeMapGridService.repopulateCache()
 
