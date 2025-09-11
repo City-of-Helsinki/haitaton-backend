@@ -68,27 +68,6 @@ class HankeService(
         }
 
     @Transactional(readOnly = true)
-    fun loadPublicHankeWithinBounds(
-        startDate: LocalDate,
-        endDate: LocalDate,
-        minX: Double,
-        minY: Double,
-        maxX: Double,
-        maxY: Double,
-    ): List<Hanke> =
-        hankeRepository
-            .findAllByDateRangeStatusWithinBounds(
-                startDate,
-                endDate,
-                "PUBLIC",
-                minX,
-                minY,
-                maxX,
-                maxY,
-            )
-            .map { hankeMapperService.minimalDomainFrom(it) }
-
-    @Transactional(readOnly = true)
     fun loadPublicHankeInGridCells(
         startDate: LocalDate,
         endDate: LocalDate,

@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 data class GridMetadata(
@@ -33,63 +32,6 @@ class PublicHankeController(
     private val hankeService: HankeService,
     private val hankeMapGridProperties: HankeMapGridProperties,
 ) {
-
-    @GetMapping
-    @Operation(
-        summary = "Get list of public hanke",
-        description =
-            """
-              Returns minimal public hanke data optimized for map rendering.
-              Contains only essential fields: id, hankeTunnus, nimi, and alueet 
-              with geometry and tormaystarkastelu for map coloring.
-              
-              Supports optional bounding box filtering to load only hanke visible in the viewport:
-              - minX, minY: bottom-left corner coordinates (ETRS-TM35FIN)
-              - maxX, maxY: top-right corner coordinates (ETRS-TM35FIN)
-           """,
-    )
-    @ApiResponses(
-        value =
-            [
-                ApiResponse(
-                    description = "Success",
-                    responseCode = "200",
-                    content =
-                        [
-                            Content(
-                                array =
-                                    ArraySchema(
-                                        schema = Schema(implementation = PublicHankeMinimal::class)
-                                    )
-                            )
-                        ],
-                )
-            ]
-    )
-    fun getAllByDateAndCoordinates(
-        @RequestParam(required = false) startDate: LocalDate?,
-        @RequestParam(required = false) endDate: LocalDate?,
-        @RequestParam(required = false) minX: Double?,
-        @RequestParam(required = false) minY: Double?,
-        @RequestParam(required = false) maxX: Double?,
-        @RequestParam(required = false) maxY: Double?,
-    ): List<PublicHankeMinimal> {
-        return if (
-            startDate != null &&
-                endDate != null &&
-                minX != null &&
-                minY != null &&
-                maxX != null &&
-                maxY != null
-        ) {
-            hankeService
-                .loadPublicHankeWithinBounds(startDate, endDate, minX, minY, maxX, maxY)
-                .map { it.toPublicMinimal() }
-        } else {
-            hankeService.loadPublicHanke().map { it.toPublicMinimal() }
-        }
-    }
-
     @GetMapping("/grid/metadata")
     @Operation(
         summary = "Get grid metadata for client-side caching",

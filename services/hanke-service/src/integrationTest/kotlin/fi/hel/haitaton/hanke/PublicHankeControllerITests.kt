@@ -70,197 +70,23 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
     }
 
     @Nested
-    inner class GetPublicHankkeet {
-        @Test
-        fun `returns 200 with unauthenticated user`() {
-            every { hankeService.loadPublicHanke() }.returns(listOf())
-
-            get(BASE_URL_PATH).andExpect(MockMvcResultMatchers.status().isOk)
-
-            verify { hankeService.loadPublicHanke() }
-        }
+    inner class GetGridMetadata {
 
         @Test
-        fun `returns public hankkeet with minimal data`() {
-            val hankkeet =
-                listOf(
-                    HankeFactory.create(id = 1, nimi = "nimi").withHankealue().withYhteystiedot(),
-                    HankeFactory.create(id = 2, nimi = "null").withHankealue().withYhteystiedot(),
-                )
-            every { hankeService.loadPublicHanke() }.returns(hankkeet)
-
-            val response: List<PublicHankeMinimal> =
-                get(BASE_URL_PATH)
+        fun `returns grid metadata for client-side caching`() {
+            val result =
+                get("${BASE_URL_PATH}/grid/metadata")
                     .andExpect(MockMvcResultMatchers.status().isOk)
-                    .andExpect(jsonPath("[0]").exists())
-                    .andExpect(jsonPath("[1]").exists())
-                    .andExpect(jsonPath("[0].id").value(1))
-                    .andExpect(jsonPath("[0].nimi").value("nimi"))
-                    .andExpect(jsonPath("[1].id").value(2))
-                    .andExpect(jsonPath("[1].nimi").value("null"))
-                    .andReturnBody()
+                    .andReturn()
 
-            fun expectedAlue(hankeId: Int) =
-                PublicHankealueMinimal(
-                    id = 1,
-                    hankeId = hankeId,
-                    nimi = "$HANKEALUE_DEFAULT_NAME 1",
-                    haittaAlkuPvm = DateFactory.getStartDatetime(),
-                    haittaLoppuPvm = DateFactory.getEndDatetime(),
-                    geometriat = PublicGeometriat(GeometriaFactory.create(1).featureCollection),
-                    tormaystarkastelu = HaittaFactory.tormaystarkasteluTulos(),
-                )
-            fun expectedHanke(id: Int, nimi: String) =
-                PublicHankeMinimal(
-                    id = id,
-                    hankeTunnus = DEFAULT_HANKETUNNUS,
-                    nimi = nimi,
-                    alueet = listOf(expectedAlue(id)),
-                )
-            assertThat(response)
-                .containsExactlyInAnyOrder(expectedHanke(1, "nimi"), expectedHanke(2, "null"))
-            verify { hankeService.loadPublicHanke() }
-        }
+            val gridMetadata =
+                OBJECT_MAPPER.readValue(result.response.contentAsString, GridMetadata::class.java)
 
-        @Test
-        fun `calls the right function for bounded area`() {
-            val startDate = DateFactory.getStartDatetime().toLocalDate()
-            val endDate = DateFactory.getEndDatetime().toLocalDate()
-            val hankkeet =
-                listOf(
-                    HankeFactory.create(id = 1, nimi = "nimi").withHankealue().withYhteystiedot()
-                )
-            every {
-                    hankeService.loadPublicHankeWithinBounds(startDate, endDate, 0.0, 0.0, 1.0, 1.0)
-                }
-                .returns(hankkeet)
-
-            get(
-                    "/public-hankkeet?startDate=${startDate}&endDate=${endDate}&minX=0.0&minY=0.0&maxX=1.0&maxY=1.0"
-                )
-                .andExpect(MockMvcResultMatchers.status().isOk)
-
-            verify {
-                hankeService.loadPublicHankeWithinBounds(startDate, endDate, 0.0, 0.0, 1.0, 1.0)
-            }
-        }
-    }
-
-    @Nested
-    inner class GetPublicHanke {
-        @Test
-        fun `returns 200 with unauthenticated user`() {
-            val hanke = HankeFactory.create().withHankealue().withYhteystiedot()
-            every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
-
-            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
-                .andExpect(MockMvcResultMatchers.status().isOk)
-
-            verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
-        }
-
-        @Test
-        fun `returns data when hanke exists and is public`() {
-            val hanke = HankeFactory.create().withHankealue().withYhteystiedot()
-            every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
-
-            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(jsonPath("$.id").value(DEFAULT_HANKE_ID))
-                .andExpect(jsonPath("$.nimi").value(DEFAULT_HANKENIMI))
-                .andExpect(jsonPath("$.hankeTunnus").exists())
-                .andExpect(jsonPath("$.alueet[0]").exists())
-                .andExpect(jsonPath("$.omistajat[0]").exists())
-
-            verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
-        }
-
-        @Test
-        fun `returns 404 when hanke does not exist or is not public`() {
-            every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) } throws
-                PublicHankeNotFoundException(DEFAULT_HANKETUNNUS)
-
-            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
-                .andExpect(MockMvcResultMatchers.status().isNotFound)
-
-            verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
-        }
-
-        @Test
-        fun `includes complete hanke data`() {
-            val hanke = HankeFactory.create().withHankealue().withYhteystiedot()
-            every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
-
-            val response: PublicHanke =
-                get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
-                    .andExpect(MockMvcResultMatchers.status().isOk)
-                    .andReturnBody()
-
-            fun expectedAlue(hankeId: Int) =
-                PublicHankealue(
-                    id = 1,
-                    hankeId = hankeId,
-                    haittaAlkuPvm = DateFactory.getStartDatetime(),
-                    haittaLoppuPvm = DateFactory.getEndDatetime(),
-                    geometriat = PublicGeometriat(GeometriaFactory.create(1).featureCollection),
-                    kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
-                    kaistaPituusHaitta =
-                        AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA,
-                    meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
-                    polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
-                    tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
-                    nimi = "$HANKEALUE_DEFAULT_NAME 1",
-                    tormaystarkastelu = HaittaFactory.tormaystarkasteluTulos(),
-                )
-            fun expectedHanke(id: Int, nimi: String) =
-                PublicHanke(
-                    id = id,
-                    hankeTunnus = DEFAULT_HANKETUNNUS,
-                    nimi = nimi,
-                    kuvaus = DEFAULT_HANKEKUVAUS,
-                    alkuPvm = DateFactory.getStartDatetime(),
-                    loppuPvm = DateFactory.getEndDatetime(),
-                    vaihe = Hankevaihe.OHJELMOINTI,
-                    tyomaaTyyppi = setOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU),
-                    omistajat = listOf(PublicHankeYhteystieto("etu1 suku1")),
-                    alueet = listOf(expectedAlue(id)),
-                )
-            assertThat(response).isEqualTo(expectedHanke(DEFAULT_HANKE_ID, DEFAULT_HANKENIMI))
-            verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
-        }
-
-        @Test
-        fun `doesn't return personal information from yhteystiedot`() {
-            val hanke = HankeFactory.create().withHankealue().withYhteystiedot()
-            hanke.omistajat =
-                mutableListOf(
-                    HankeYhteystietoFactory.create(
-                        nimi = "Yritys Oy",
-                        tyyppi = YhteystietoTyyppi.YRITYS,
-                    ),
-                    HankeYhteystietoFactory.create(
-                        nimi = "Ykä Yksityishenkilö",
-                        tyyppi = YhteystietoTyyppi.YKSITYISHENKILO,
-                    ),
-                    HankeYhteystietoFactory.create(
-                        nimi = "Yhdistys Ry",
-                        tyyppi = YhteystietoTyyppi.YHTEISO,
-                    ),
-                )
-            every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
-
-            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(jsonPath("$.omistajat[0].organisaatioNimi").value("Yritys Oy"))
-                .andExpect(jsonPath("$.omistajat[0].email").doesNotExist())
-                .andExpect(jsonPath("$.omistajat[0].puhelinnumero").doesNotExist())
-                .andExpect(jsonPath("$.omistajat[1].organisaatioNimi").value(null))
-                .andExpect(jsonPath("$.omistajat[2].organisaatioNimi").value("Yhdistys Ry"))
-                .andExpect(jsonPath("$.toteuttajat").doesNotExist())
-                .andExpect(jsonPath("$.rakennuttajat").doesNotExist())
-                .andExpect(jsonPath("$.muut").doesNotExist())
-
-            verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
+            assertThat(gridMetadata.cellSizeMeters).isEqualTo(1000)
+            assertThat(gridMetadata.originX).isEqualTo(25486422.0)
+            assertThat(gridMetadata.originY).isEqualTo(6643836.0)
+            assertThat(gridMetadata.maxX).isEqualTo(25515423.0)
+            assertThat(gridMetadata.maxY).isEqualTo(6687837.0)
         }
     }
 
@@ -471,23 +297,120 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
     }
 
     @Nested
-    inner class GetGridMetadata {
+    inner class GetPublicHanke {
+        @Test
+        fun `returns 200 with unauthenticated user`() {
+            val hanke = HankeFactory.create().withHankealue().withYhteystiedot()
+            every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
+
+            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
+                .andExpect(MockMvcResultMatchers.status().isOk)
+
+            verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
+        }
 
         @Test
-        fun `returns grid metadata for client-side caching`() {
-            val result =
-                get("${BASE_URL_PATH}/grid/metadata")
+        fun `returns data when hanke exists and is public`() {
+            val hanke = HankeFactory.create().withHankealue().withYhteystiedot()
+            every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
+
+            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(jsonPath("$.id").value(DEFAULT_HANKE_ID))
+                .andExpect(jsonPath("$.nimi").value(DEFAULT_HANKENIMI))
+                .andExpect(jsonPath("$.hankeTunnus").exists())
+                .andExpect(jsonPath("$.alueet[0]").exists())
+                .andExpect(jsonPath("$.omistajat[0]").exists())
+
+            verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
+        }
+
+        @Test
+        fun `returns 404 when hanke does not exist or is not public`() {
+            every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) } throws
+                PublicHankeNotFoundException(DEFAULT_HANKETUNNUS)
+
+            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
+                .andExpect(MockMvcResultMatchers.status().isNotFound)
+
+            verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
+        }
+
+        @Test
+        fun `includes complete hanke data`() {
+            val hanke = HankeFactory.create().withHankealue().withYhteystiedot()
+            every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
+
+            val response: PublicHanke =
+                get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
                     .andExpect(MockMvcResultMatchers.status().isOk)
-                    .andReturn()
+                    .andReturnBody()
 
-            val gridMetadata =
-                OBJECT_MAPPER.readValue(result.response.contentAsString, GridMetadata::class.java)
+            fun expectedAlue(hankeId: Int) =
+                PublicHankealue(
+                    id = 1,
+                    hankeId = hankeId,
+                    haittaAlkuPvm = DateFactory.getStartDatetime(),
+                    haittaLoppuPvm = DateFactory.getEndDatetime(),
+                    geometriat = PublicGeometriat(GeometriaFactory.create(1).featureCollection),
+                    kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.YKSI_KAISTA_VAHENEE,
+                    kaistaPituusHaitta =
+                        AutoliikenteenKaistavaikutustenPituus.PITUUS_ALLE_10_METRIA,
+                    meluHaitta = Meluhaitta.SATUNNAINEN_MELUHAITTA,
+                    polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
+                    tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
+                    nimi = "$HANKEALUE_DEFAULT_NAME 1",
+                    tormaystarkastelu = HaittaFactory.tormaystarkasteluTulos(),
+                )
+            fun expectedHanke(id: Int, nimi: String) =
+                PublicHanke(
+                    id = id,
+                    hankeTunnus = DEFAULT_HANKETUNNUS,
+                    nimi = nimi,
+                    kuvaus = DEFAULT_HANKEKUVAUS,
+                    alkuPvm = DateFactory.getStartDatetime(),
+                    loppuPvm = DateFactory.getEndDatetime(),
+                    vaihe = Hankevaihe.OHJELMOINTI,
+                    tyomaaTyyppi = setOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU),
+                    omistajat = listOf(PublicHankeYhteystieto("etu1 suku1")),
+                    alueet = listOf(expectedAlue(id)),
+                )
+            assertThat(response).isEqualTo(expectedHanke(DEFAULT_HANKE_ID, DEFAULT_HANKENIMI))
+            verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
+        }
 
-            assertThat(gridMetadata.cellSizeMeters).isEqualTo(1000)
-            assertThat(gridMetadata.originX).isEqualTo(25486422.0)
-            assertThat(gridMetadata.originY).isEqualTo(6643836.0)
-            assertThat(gridMetadata.maxX).isEqualTo(25515423.0)
-            assertThat(gridMetadata.maxY).isEqualTo(6687837.0)
+        @Test
+        fun `doesn't return personal information from yhteystiedot`() {
+            val hanke = HankeFactory.create().withHankealue().withYhteystiedot()
+            hanke.omistajat =
+                mutableListOf(
+                    HankeYhteystietoFactory.create(
+                        nimi = "Yritys Oy",
+                        tyyppi = YhteystietoTyyppi.YRITYS,
+                    ),
+                    HankeYhteystietoFactory.create(
+                        nimi = "Ykä Yksityishenkilö",
+                        tyyppi = YhteystietoTyyppi.YKSITYISHENKILO,
+                    ),
+                    HankeYhteystietoFactory.create(
+                        nimi = "Yhdistys Ry",
+                        tyyppi = YhteystietoTyyppi.YHTEISO,
+                    ),
+                )
+            every { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }.returns(hanke)
+
+            get("$BASE_URL_PATH/$DEFAULT_HANKETUNNUS")
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(jsonPath("$.omistajat[0].organisaatioNimi").value("Yritys Oy"))
+                .andExpect(jsonPath("$.omistajat[0].email").doesNotExist())
+                .andExpect(jsonPath("$.omistajat[0].puhelinnumero").doesNotExist())
+                .andExpect(jsonPath("$.omistajat[1].organisaatioNimi").value(null))
+                .andExpect(jsonPath("$.omistajat[2].organisaatioNimi").value("Yhdistys Ry"))
+                .andExpect(jsonPath("$.toteuttajat").doesNotExist())
+                .andExpect(jsonPath("$.rakennuttajat").doesNotExist())
+                .andExpect(jsonPath("$.muut").doesNotExist())
+
+            verify { hankeService.loadPublicHankeByHankeTunnus(DEFAULT_HANKETUNNUS) }
         }
     }
 }
