@@ -172,41 +172,6 @@ And the code can be reformatted with:
 
 Installing the ktfmt plugin to IDEA is recommended.
 
-### Sentry
-
-Sentry error tracking is integrated via the Spring Boot starter. It can be enabled or disabled with
-environment variables without changing the code.
-
-Key variables:
-
-* `HAITATON_SENTRY_DSN` – Overrides the default DSN defined in `application.yml`.
-* `HAITATON_SENTRY_ENVIRONMENT` – Controls activation. If set to `none` (default), Sentry SDK is
-  disabled (no events or breadcrumbs are sent). Any other value both enables Sentry and is used as
-  the Sentry environment tag (e.g. `dev`, `test`, `prod`).
-* `HAITATON_SENTRY_LOGGING_ENABLED` – When true, Logback events at or above the configured level are
-  sent as Sentry breadcrumbs/events (see `sentry.logging.minimum-event-level`).
-
-Examples:
-
-Disable completely (local default):
-```shell
-export HAITATON_SENTRY_ENVIRONMENT=none
-```
-
-Enable in a dev shell:
-```shell
-export HAITATON_SENTRY_ENVIRONMENT=dev
-export HAITATON_SENTRY_DSN=https://<public_key>@oXXXX.ingest.sentry.io/<project_id>
-```
-
-Enable logging integration:
-```shell
-export HAITATON_SENTRY_LOGGING_ENABLED=true
-```
-
-The conditional logic lives in `SentryConditionalConfig`, which disables the SDK early when the
-environment is `none`.
-
 ## Database
 
 This project uses PostreSQL relational database which is extended by PostGIS. In short, PostGIS adds support for

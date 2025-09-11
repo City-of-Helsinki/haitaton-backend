@@ -100,7 +100,7 @@ management:
 
 sentry:
   # DSN is a public detail.
-  dsn: ${HAITATON_SENTRY_DSN:https://47ff7aa8e32fa0f48fe211771c537299@o4508126783602688.ingest.de.sentry.io/4509236728627280}
+  dsn: ${HAITATON_SENTRY_DSN:https://47ff7aa8e32fa0f48fe211771c537299.ingest.de.sentry.io/4509236728627280}
   environment: ${HAITATON_SENTRY_ENVIRONMENT:dev}
   # Only exceptions that have not been handled by exception resolvers with higher order are sent to Sentry.
   exception-resolver-order: 2147483647
