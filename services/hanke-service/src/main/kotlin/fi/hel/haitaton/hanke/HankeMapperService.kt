@@ -8,8 +8,71 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import kotlin.collections.get
+import org.springframework.stereotype.Service
 
-object HankeMapper {
+@Service
+class HankeMapperService(private val hankealueService: HankealueService) {
+
+    fun minimalDomainFrom(hankeEntity: HankeEntity): Hanke =
+        minimalDomainFrom(hankeEntity, hankealueService.geometryMapFrom(hankeEntity.alueet))
+
+    fun domainFrom(hankeEntity: HankeEntity): Hanke =
+        domainFrom(hankeEntity, hankealueService.geometryMapFrom(hankeEntity.alueet))
+
+    /**
+     * Maps a HankeEntity to a minimal Hanke domain object that contains only the basic information
+     * and areas.
+     *
+     * Needs to be called inside a transaction for lazy fields to be accessible.
+     *
+     * @param entity Source hanke entity.
+     * @param geometriaData Since hanke only has an id reference on the actual geometries.
+     */
+    fun minimalDomainFrom(entity: HankeEntity, geometriaData: Map<Int, Geometriat?>): Hanke =
+        with(entity) {
+                Hanke(
+                    id = id,
+                    hankeTunnus = hankeTunnus,
+                    onYKTHanke = null,
+                    nimi = nimi,
+                    kuvaus = null,
+                    vaihe = null,
+                    version = null,
+                    createdBy = null,
+                    createdAt = null,
+                    modifiedBy = null,
+                    modifiedAt = null,
+                    deletionDate = null,
+                    status = null,
+                    generated = generated,
+                )
+            }
+            .apply { alueet = minimalAlueList(entity.hankeTunnus, entity.alueet, geometriaData) }
+
+    private fun minimalAlueList(
+        hankeTunnus: String?,
+        alueet: List<HankealueEntity>,
+        geometriaData: Map<Int, Geometriat?>,
+    ): MutableList<SavedHankealue> =
+        alueet.map { minimalAlue(hankeTunnus, it, geometriaData[it.geometriat]) }.toMutableList()
+
+    private fun minimalAlue(
+        hankeTunnus: String?,
+        entity: HankealueEntity,
+        geometriat: Geometriat?,
+    ) =
+        with(entity) {
+            SavedHankealue(
+                id = id,
+                hankeId = hanke?.id,
+                haittaAlkuPvm = haittaAlkuPvm?.atStartOfDay(TZ_UTC),
+                haittaLoppuPvm = haittaLoppuPvm?.atStartOfDay(TZ_UTC),
+                geometriat = geometriat?.apply { resetFeatureProperties(hankeTunnus) },
+                nimi = nimi,
+                tormaystarkasteluTulos = entity.tormaystarkasteluTulos?.toDomain(),
+            )
+        }
 
     /**
      * Needs to be called inside a transaction for lazy fields to be accessible.

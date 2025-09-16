@@ -23,6 +23,7 @@ import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.validation.HankePublicValidator
+import java.time.LocalDate
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
@@ -38,6 +39,8 @@ class HankeService(
     private val hanketunnusService: HanketunnusService,
     private val hankealueService: HankealueService,
     private val hankeLoggingService: HankeLoggingService,
+    private val hankeMapGridService: HankeMapGridService,
+    private val hankeMapperService: HankeMapperService,
     private val hakemusService: HakemusService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val hankeAttachmentService: HankeAttachmentService,
@@ -56,23 +59,47 @@ class HankeService(
 
     @Transactional(readOnly = true)
     fun loadHanke(hankeTunnus: String): Hanke? =
-        hankeRepository.findByHankeTunnus(hankeTunnus)?.let {
-            createHankeDomainObjectFromEntity(it)
-        }
+        hankeRepository.findByHankeTunnus(hankeTunnus)?.let { hankeMapperService.domainFrom(it) }
 
     @Transactional(readOnly = true)
     fun loadPublicHanke(): List<Hanke> =
         hankeRepository.findAllByStatus(HankeStatus.PUBLIC).map {
-            createHankeDomainObjectFromEntity(it)
+            hankeMapperService.domainFrom(it)
         }
 
     @Transactional(readOnly = true)
+    fun loadPublicHankeInGridCells(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        cells: List<GridCell>,
+    ): List<Hanke> =
+        cells
+            .map { hankeMapGridService.loadPublicHankeInGridCell(it.x, it.y) }
+            .flatten()
+            .filter {
+                (it.alkuPvm?.toLocalDate()?.let { alkuLocalDate -> alkuLocalDate <= endDate }
+                    ?: false) &&
+                    (it.loppuPvm?.toLocalDate()?.let { loppuLocalDate ->
+                        loppuLocalDate >= startDate
+                    } ?: false)
+            }
+            .distinctBy { it.hankeTunnus }
+
+    @Transactional(readOnly = true)
+    fun loadPublicHankeByHankeTunnus(hankeTunnus: String): Hanke =
+        hankeRepository
+            .findByHankeTunnus(hankeTunnus)
+            ?.takeIf { it.status == HankeStatus.PUBLIC }
+            ?.let { hankeMapperService.domainFrom(it) }
+            ?: throw PublicHankeNotFoundException(hankeTunnus)
+
+    @Transactional(readOnly = true)
     fun loadHankeById(id: Int): Hanke? =
-        hankeRepository.findByIdOrNull(id)?.let { createHankeDomainObjectFromEntity(it) }
+        hankeRepository.findByIdOrNull(id)?.let { hankeMapperService.domainFrom(it) }
 
     @Transactional(readOnly = true)
     fun loadHankkeetByIds(ids: List<Int>) =
-        hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
+        hankeRepository.findAllById(ids).map { hankeMapperService.domainFrom(it) }
 
     @Transactional
     fun createHanke(request: CreateHankeRequest, securityContext: SecurityContext): Hanke {
@@ -108,7 +135,7 @@ class HankeService(
                 ?: throw HankeNotFoundException(hankeTunnus)
 
         val originalEndDate = entity.endDate()
-        val hankeBeforeUpdate = createHankeDomainObjectFromEntity(entity)
+        val hankeBeforeUpdate = hankeMapperService.domainFrom(entity)
 
         val existingYTs = prepareMapOfExistingYhteystietos(entity)
 
@@ -133,15 +160,13 @@ class HankeService(
             entity.sentReminders = arrayOf()
         }
 
-        logger.debug { "Saving Hanke ${entity.logString()}." }
         val savedHankeEntity = hankeRepository.saveAndFlush(entity)
-        logger.debug { "Saved Hanke ${entity.logString()}." }
 
         assertHakemusCompatibility(entity)
 
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
-        return createHankeDomainObjectFromEntity(entity).also {
+        return hankeMapperService.domainFrom(entity).also {
             hankeLoggingService.logUpdate(hankeBeforeUpdate, it, userId)
         }
     }
@@ -285,7 +310,7 @@ class HankeService(
     private fun decideNewHankeStatus(entity: HankeEntity): HankeStatus {
         val validationResult =
             HankePublicValidator.validateHankeHasMandatoryFields(
-                createHankeDomainObjectFromEntity(entity)
+                hankeMapperService.domainFrom(entity)
             )
 
         return when (val status = entity.status) {
@@ -293,11 +318,6 @@ class HankeService(
                 if (validationResult.isOk()) {
                     HankeStatus.PUBLIC
                 } else {
-                    logger.debug {
-                        "A hanke draft wasn't ready to go public. hankeTunnus=${entity.hankeTunnus} failedFields=${
-                            validationResult.errorPaths().joinToString()
-                        }"
-                    }
                     HankeStatus.DRAFT
                 }
             HankeStatus.PUBLIC ->
@@ -319,9 +339,6 @@ class HankeService(
                 )
         }
     }
-
-    private fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke =
-        HankeMapper.domainFrom(hankeEntity, hankealueService.geometryMapFrom(hankeEntity.alueet))
 
     private fun updateEntityFieldsFromRequest(
         hanke: ModifyHankeRequest,
@@ -574,7 +591,7 @@ class HankeService(
         val savedHankeEntity = hankeRepository.save(entity)
         hankeKayttajaService.addHankeFounder(savedHankeEntity.id, perustaja, securityContext)
 
-        return createHankeDomainObjectFromEntity(savedHankeEntity).also {
+        return hankeMapperService.domainFrom(savedHankeEntity).also {
             hankeLoggingService.logCreate(it, securityContext.userId())
         }
     }
