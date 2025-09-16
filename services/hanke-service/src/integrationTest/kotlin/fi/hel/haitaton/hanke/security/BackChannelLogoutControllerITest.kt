@@ -26,7 +26,9 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private const val TOKEN = "logout-token"
+private const val PATH = "/backchannel-logout"
+private const val TOKEN_NAME = "logout_token"
+private const val TOKEN_VALUE = "logout-token"
 
 @WebMvcTest(controllers = [BackChannelLogoutController::class])
 @Import(IntegrationTestConfiguration::class)
@@ -49,17 +51,17 @@ class BackChannelLogoutControllerITest(@Autowired override val mockMvc: MockMvc)
 
     @Test
     fun `returns 200 when logout succeeds`() {
-        every { logoutService.logout(TOKEN) } just Runs
+        every { logoutService.logout(TOKEN_VALUE) } just Runs
 
-        postForm("/backchannel-logout", "logout_token=$TOKEN").andExpect(status().isOk)
+        postForm(PATH, "$TOKEN_NAME=$TOKEN_VALUE").andExpect(status().isOk)
 
-        verifySequence { logoutService.logout(TOKEN) }
+        verifySequence { logoutService.logout(TOKEN_VALUE) }
     }
 
     @Test
     fun `returns 400 if token is missing`() {
         val (error, _) =
-            postForm("/backchannel-logout", null)
+            postForm(PATH, null)
                 .andExpect(status().isBadRequest)
                 .andReturnBody<BackChannelLogoutError>()
 
@@ -73,7 +75,7 @@ class BackChannelLogoutControllerITest(@Autowired override val mockMvc: MockMvc)
         every { logoutService.logout("invalid-token") } throws JwtException("Invalid token")
 
         val (error, _) =
-            postForm("/backchannel-logout", "logout_token=invalid-token")
+            postForm(PATH, "$TOKEN_NAME=invalid-token")
                 .andExpect(status().isBadRequest)
                 .andReturnBody<BackChannelLogoutError>()
 
@@ -84,15 +86,15 @@ class BackChannelLogoutControllerITest(@Autowired override val mockMvc: MockMvc)
 
     @Test
     fun `returns 500 if handling fails`() {
-        every { logoutService.logout(TOKEN) } throws RuntimeException()
+        every { logoutService.logout(TOKEN_VALUE) } throws RuntimeException()
 
         val (error, _) =
-            postForm("/backchannel-logout", "logout_token=$TOKEN")
+            postForm(PATH, "$TOKEN_NAME=$TOKEN_VALUE")
                 .andExpect(status().isInternalServerError)
                 .andReturnBody<BackChannelLogoutError>()
 
         assertThat(error).isEqualTo("InternalServerError")
 
-        verifySequence { logoutService.logout(TOKEN) }
+        verifySequence { logoutService.logout(TOKEN_VALUE) }
     }
 }

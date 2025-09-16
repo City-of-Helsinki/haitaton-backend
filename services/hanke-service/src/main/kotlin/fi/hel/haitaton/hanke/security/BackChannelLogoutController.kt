@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import org.springframework.http.CacheControl
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -82,7 +84,7 @@ class BackChannelLogoutController(private val logoutService: LogoutService) {
         e: IllegalArgumentException
     ): ResponseEntity<BackChannelLogoutError> =
         ResponseEntity.badRequest()
-            .header("Cache-Control", "no-store")
+            .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().headerValue)
             .body(BackChannelLogoutError(BackChannelLogoutError.ERROR_INVALID_REQUEST, e.message))
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -90,7 +92,7 @@ class BackChannelLogoutController(private val logoutService: LogoutService) {
     @Hidden
     fun handleJwtException(e: JwtException): ResponseEntity<BackChannelLogoutError> =
         ResponseEntity.badRequest()
-            .header("Cache-Control", "no-store")
+            .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().headerValue)
             .body(BackChannelLogoutError(BackChannelLogoutError.ERROR_INVALID_TOKEN, e.message))
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -98,7 +100,7 @@ class BackChannelLogoutController(private val logoutService: LogoutService) {
     @Hidden
     fun handleException(e: Exception): ResponseEntity<BackChannelLogoutError> =
         ResponseEntity.internalServerError()
-            .header("Cache-Control", "no-store")
+            .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().headerValue)
             .body(
                 BackChannelLogoutError(
                     BackChannelLogoutError.ERROR_INTERNAL_SERVER_ERROR,

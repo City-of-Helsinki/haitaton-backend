@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository
  * either new or already exists in the database. This is used to avoid the need for a separate check
  * before saving.
  */
-interface CustomUserSessionRepository {
+fun interface CustomUserSessionRepository {
     fun saveIfNotExists(session: UserSessionEntity)
 }
 

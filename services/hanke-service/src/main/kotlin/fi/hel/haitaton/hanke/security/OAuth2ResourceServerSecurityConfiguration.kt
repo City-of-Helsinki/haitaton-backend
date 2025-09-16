@@ -40,7 +40,7 @@ class OAuth2ResourceServerSecurityConfiguration(
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         AccessRules.configureHttpAccessRules(http)
-        http.oauth2ResourceServer { jwt -> defaultJwtDecoder() }
+        http.oauth2ResourceServer { _ -> defaultJwtDecoder() }
 
         http.securityMatcher("/backchannel-logout").oauth2ResourceServer {
             it.jwt { jwt -> jwt.decoder(logoutJwtDecoder()) }

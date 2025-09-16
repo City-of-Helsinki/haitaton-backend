@@ -29,6 +29,8 @@ import org.springframework.security.oauth2.jwt.JwtValidationException
 import org.springframework.security.oauth2.jwt.JwtValidators
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 
+private const val ISSUER = "https://haitaton.hel.fi"
+
 @SpringBootTest(properties = ["spring.main.allow-bean-definition-overriding=true"])
 class LogoutServiceITest(
     @Autowired private val logoutService: LogoutService,
@@ -107,7 +109,7 @@ class LogoutServiceITest(
     }
 
     fun createLogoutToken(
-        issuer: String? = "https://haitaton.hel.fi",
+        issuer: String? = ISSUER,
         sid: String? = UUID.randomUUID().toString(),
     ): String {
         val claims = stubJwtClaimsSet(issuer, sid = sid)
@@ -120,7 +122,7 @@ class LogoutServiceITest(
     }
 
     private fun stubJwtClaimsSet(
-        iss: String? = "https://haitaton.hel.fi",
+        iss: String? = ISSUER,
         sub: String? = "subject",
         aud: List<String>? = listOf("haitaton-api-dev"),
         iat: Instant? = Instant.now(),
@@ -151,7 +153,7 @@ class LogoutServiceITest(
         @Primary
         fun logoutJwtDecoderForTest(tokenValidator: LogoutTokenValidator): JwtDecoder {
             val decoder = NimbusJwtDecoder.withPublicKey(KEY_PAIR.second).build()
-            val issuerValidator = JwtValidators.createDefaultWithIssuer("https://haitaton.hel.fi")
+            val issuerValidator = JwtValidators.createDefaultWithIssuer(ISSUER)
             val validator = DelegatingOAuth2TokenValidator(issuerValidator, tokenValidator)
             decoder.setJwtValidator(validator)
             return decoder
