@@ -12,6 +12,7 @@ CREATE TABLE user_sessions
 
 CREATE INDEX idx_user_sessions_subject ON user_sessions (subject);
 CREATE INDEX idx_user_sessions_session_id ON user_sessions (session_id);
+CREATE INDEX idx_user_sessions_created_at ON user_sessions (created_at);
 
 -- Add unique constraint for subject + session_id (used for conflict resolution)
 ALTER TABLE user_sessions
