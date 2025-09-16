@@ -84,4 +84,24 @@ class TestDataControllerDisabledITest(@Autowired override val mockMvc: MockMvc) 
             verify { testDataService wasNot Called }
         }
     }
+
+    @Nested
+    inner class CreatePublicHanke {
+        private val url = "$BASE_URL/create-public-hanke/10"
+
+        @Test
+        @WithAnonymousUser
+        fun `Without user ID returns 404`() {
+            post(url).andExpect(MockMvcResultMatchers.status().isNotFound)
+
+            verify { testDataService wasNot Called }
+        }
+
+        @Test
+        fun `With valid user returns 404`() {
+            post(url).andExpect(MockMvcResultMatchers.status().isNotFound)
+
+            verify { testDataService wasNot Called }
+        }
+    }
 }

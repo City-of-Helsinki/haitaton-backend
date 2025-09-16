@@ -60,6 +60,15 @@ class ControllerExceptionHandler {
         return HankeError.HAI1001
     }
 
+    @ExceptionHandler(PublicHankeNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun publicHankeNotFound(ex: PublicHankeNotFoundException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI1001
+    }
+
     @ExceptionHandler(HankeYhteystietoNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @Hidden
@@ -75,6 +84,14 @@ class ControllerExceptionHandler {
     fun hankeAlluConflictException(ex: HankeAlluConflictException): HankeError {
         logger.warn { ex.message }
         return HankeError.HAI2003
+    }
+
+    @ExceptionHandler(InvalidGridCellException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun invalidGridCellException(ex: InvalidGridCellException): HankeError {
+        logger.warn { ex.message }
+        return HankeError.HAI0003
     }
 
     @ExceptionHandler(IllegalArgumentException::class)

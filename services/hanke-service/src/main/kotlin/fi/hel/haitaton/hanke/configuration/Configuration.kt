@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.configuration
 
+import fi.hel.haitaton.hanke.HankeMapGridProperties
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluProperties
 import fi.hel.haitaton.hanke.attachment.azure.Containers
@@ -30,6 +31,7 @@ import reactor.netty.http.client.HttpClient
     EmailProperties::class,
     AdFilterProperties::class,
     Containers::class,
+    HankeMapGridProperties::class,
 )
 class Configuration {
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false

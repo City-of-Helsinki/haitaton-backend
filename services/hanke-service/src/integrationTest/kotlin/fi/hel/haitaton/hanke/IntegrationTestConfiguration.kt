@@ -43,6 +43,7 @@ import io.sentry.protocol.SentryId
 import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.cache.CacheManager
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.context.event.ContextRefreshedEvent
@@ -53,7 +54,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.web.SecurityFilterChain
 
 @TestConfiguration
-@EnableConfigurationProperties(GdprProperties::class, FeatureFlags::class)
+@EnableConfigurationProperties(
+    GdprProperties::class,
+    FeatureFlags::class,
+    HankeMapGridProperties::class,
+)
 @EnableMethodSecurity(prePostEnabled = true)
 @Import(value = [AopAutoConfiguration::class, DisclosureLoggingAspect::class])
 class IntegrationTestConfiguration {
@@ -64,6 +69,8 @@ class IntegrationTestConfiguration {
     @Bean fun auditLogRepository(): AuditLogRepository = mockk()
 
     @Bean fun bannerService(): BannerService = mockk()
+
+    @Bean fun cacheManager(): CacheManager = mockk(relaxed = true)
 
     @Bean fun disclosureLogService(): DisclosureLogService = mockk(relaxUnitFun = true)
 

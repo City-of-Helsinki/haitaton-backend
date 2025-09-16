@@ -32,6 +32,7 @@ import org.testcontainers.utility.MountableFile
 @ExtendWith(MockFileClientExtension::class)
 @ExtendWith(JacksonTestExtension::class)
 abstract class IntegrationTest {
+
     companion object {
         @ServiceConnection
         private val postgresContainer: PostgreSQLContainer<*> =
@@ -45,7 +46,7 @@ abstract class IntegrationTest {
                     MountableFile.forClasspathResource(
                         "/fi/hel/haitaton/hanke/tormaystarkastelu/HEL-GIS-data-test.sql"
                     ),
-                    "/docker-entrypoint-initdb.d/HEL-GIS-data-test.sql"
+                    "/docker-entrypoint-initdb.d/HEL-GIS-data-test.sql",
                 )
 
         init {
