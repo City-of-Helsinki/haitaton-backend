@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
-import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
 private val log = mu.KotlinLogging.logger {}
@@ -14,7 +13,6 @@ private val log = mu.KotlinLogging.logger {}
  * Filter that checks if the user session is already known. If not, it saves the session to the
  * database.
  */
-@Component
 class UserSessionFilter(
     private val userSessionService: UserSessionService,
     private val cache: UserSessionCache,

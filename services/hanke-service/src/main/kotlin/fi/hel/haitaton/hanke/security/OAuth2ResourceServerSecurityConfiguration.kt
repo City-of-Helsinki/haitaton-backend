@@ -38,14 +38,36 @@ class OAuth2ResourceServerSecurityConfiguration(
 ) {
 
     @Bean
-    fun filterChain(http: HttpSecurity): SecurityFilterChain {
+    fun userSessionFilter(
+        userSessionService: UserSessionService,
+        cache: UserSessionCache,
+    ): UserSessionFilter {
+        return UserSessionFilter(userSessionService, cache)
+    }
+
+    @Bean
+    fun filterChain(http: HttpSecurity, userSessionFilter: UserSessionFilter): SecurityFilterChain {
         AccessRules.configureHttpAccessRules(http)
-        http.oauth2ResourceServer { _ -> defaultJwtDecoder() }
+        http.oauth2ResourceServer { it.jwt { jwt -> jwt.decoder(defaultJwtDecoder()) } }
 
-        http.securityMatcher("/backchannel-logout").oauth2ResourceServer {
-            it.jwt { jwt -> jwt.decoder(logoutJwtDecoder()) }
-        }
+        // Add UserSessionFilter after JWT authentication
+        http.addFilterAfter(
+            userSessionFilter,
+            org.springframework.security.web.authentication.www.BasicAuthenticationFilter::class
+                .java,
+        )
 
+        return http.build()
+    }
+
+    @Bean
+    @Order(0)
+    fun backchannelLogoutFilterChain(http: HttpSecurity): SecurityFilterChain {
+        http
+            .securityMatcher("/backchannel-logout")
+            .authorizeHttpRequests { it.anyRequest().permitAll() }
+            .csrf { it.disable() }
+            .oauth2ResourceServer { it.jwt { jwt -> jwt.decoder(logoutJwtDecoder()) } }
         return http.build()
     }
 

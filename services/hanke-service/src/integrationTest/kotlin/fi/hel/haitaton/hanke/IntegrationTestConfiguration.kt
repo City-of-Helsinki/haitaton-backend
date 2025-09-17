@@ -142,12 +142,7 @@ class IntegrationTestConfiguration {
 
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
 
-    @Bean
-    fun userSessionCache(): UserSessionCache {
-        val mock = mockk<UserSessionCache>(relaxUnitFun = true)
-        every { mock.isSessionKnown(any()) } returns true
-        return mock
-    }
+    @Bean fun userSessionCache(): UserSessionCache = mockk(relaxed = true)
 
     @Bean fun userSessionRepository(): UserSessionRepository = mockk()
 
