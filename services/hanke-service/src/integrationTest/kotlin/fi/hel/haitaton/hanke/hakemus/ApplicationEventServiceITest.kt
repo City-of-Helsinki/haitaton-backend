@@ -588,7 +588,7 @@ class ApplicationEventServiceITest(
         assertThat(output).contains("ERROR")
         assertThat(output)
             .contains(
-                "A hakemus moved to handling and it had a täydennyspyyntö, " +
+                "A hakemus moved to handling, and it had a täydennyspyyntö, " +
                     "but the previous state was not 'WAITING_INFORMATION'. status=DECISION"
             )
     }

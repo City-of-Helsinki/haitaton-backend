@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.email.EmailProperties
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
 import fi.hel.haitaton.hanke.profiili.ProfiiliProperties
 import fi.hel.haitaton.hanke.security.AdFilterProperties
+import fi.hel.haitaton.hanke.security.UserSessionCleanupProperties
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import kotlinx.coroutines.CoroutineDispatcher
@@ -32,6 +33,7 @@ import reactor.netty.http.client.HttpClient
     AdFilterProperties::class,
     Containers::class,
     HankeMapGridProperties::class,
+    UserSessionCleanupProperties::class,
 )
 class Configuration {
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false
