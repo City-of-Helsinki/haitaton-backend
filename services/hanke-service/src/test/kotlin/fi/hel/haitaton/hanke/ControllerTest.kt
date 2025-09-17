@@ -16,10 +16,7 @@ interface ControllerTest {
     val mockMvc: MockMvc
 
     /** Send a GET request to the given URL. */
-    fun get(
-        url: String,
-        resultType: MediaType? = MediaType.APPLICATION_JSON,
-    ): ResultActions {
+    fun get(url: String, resultType: MediaType? = MediaType.APPLICATION_JSON): ResultActions {
         val actions =
             mockMvc.perform(MockMvcRequestBuilders.get(url).accept(MediaType.APPLICATION_JSON))
         return if (resultType != null) {
@@ -44,6 +41,15 @@ interface ControllerTest {
     /** Send a POST request with the content object in the request body as JSON. */
     fun post(url: String, content: Any): ResultActions =
         mockMvc.perform(postRequest(url).body(content))
+
+    /** Send a POST request with form content object. */
+    fun postForm(url: String, content: Any?): ResultActions =
+        mockMvc.perform(
+            postRequest(url)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .characterEncoding("UTF-8")
+                .content(content.toString())
+        )
 
     /**
      * Send a PUT request with the given string as the request body as-is.

@@ -14,7 +14,7 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verifySequence
-import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -57,7 +57,7 @@ class AlluUpdateServiceTest {
     @Test
     fun `handles updates when no histories`() {
         every { historyService.getAllAlluIds() } returns listOf(23)
-        every { historyService.getLastUpdateTime() } returns OffsetDateTime.now()
+        every { historyService.getLastUpdateTime() } returns ZonedDateTime.now()
         every { alluClient.getApplicationStatusHistories(any(), any()) } returns emptyList()
         justRun { historyService.setLastUpdateTime(any()) }
         justRun { historyService.processApplicationHistories(emptyList()) }
@@ -80,7 +80,7 @@ class AlluUpdateServiceTest {
                 .withDefaultEvents()
                 .asList()
         every { historyService.getAllAlluIds() } returns listOf(23)
-        every { historyService.getLastUpdateTime() } returns OffsetDateTime.now()
+        every { historyService.getLastUpdateTime() } returns ZonedDateTime.now()
         every { alluClient.getApplicationStatusHistories(any(), any()) } returns histories
         justRun { historyService.setLastUpdateTime(any()) }
         justRun { historyService.processApplicationHistories(histories) }

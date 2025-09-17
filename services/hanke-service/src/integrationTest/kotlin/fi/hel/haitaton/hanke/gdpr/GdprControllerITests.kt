@@ -5,7 +5,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
-import io.mockk.clearAllMocks
+import io.mockk.clearMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.verify
@@ -46,7 +46,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
 
     @BeforeEach
     fun cleanup() {
-        clearAllMocks()
+        clearMocks(gdprService, disclosureLogService)
     }
 
     @AfterEach
@@ -307,7 +307,8 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         return mockMvc.perform(
             MockMvcRequestBuilders.get("/gdpr-api/$USERNAME")
                 .accept(MediaType.APPLICATION_JSON)
-                .with(jwt().jwt(jwtBuilder.build())))
+                .with(jwt().jwt(jwtBuilder.build()))
+        )
     }
 
     private fun delete(
@@ -320,7 +321,8 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         return mockMvc.perform(
             MockMvcRequestBuilders.delete(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .with(jwt().jwt(jwtBuilder.build())))
+                .with(jwt().jwt(jwtBuilder.build()))
+        )
     }
 
     private fun Jwt.Builder.scopes(vararg scopes: String): Jwt.Builder =

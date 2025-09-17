@@ -36,6 +36,7 @@ object AccessRules {
                         "/testdata/unlink-applications",
                         "/testdata/create-public-hanke/*",
                         "/public-hankkeet/grid",
+                        "/backchannel-logout",
                     )
                     .permitAll()
             }
@@ -44,6 +45,7 @@ object AccessRules {
                     "/testdata/unlink-applications",
                     "/testdata/create-public-hanke/*",
                     "/public-hankkeet/grid",
+                    "/backchannel-logout",
                 )
             }
             .authorizeHttpRequests { it.anyRequest().authenticated() }
