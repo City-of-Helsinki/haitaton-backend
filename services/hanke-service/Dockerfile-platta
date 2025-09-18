@@ -1,5 +1,5 @@
 # Stage 1: Build application
-FROM registry.access.redhat.com/ubi9/openjdk-17:latest AS build
+FROM registry.access.redhat.com/ubi9/openjdk-21:latest AS build
 
 USER root
 
@@ -14,7 +14,7 @@ COPY services/hanke-service/src ./services/hanke-service/src
 RUN ./gradlew clean :services:hanke-service:assemble --stacktrace
 
 # Stage 2: Create runtime image
-FROM registry.access.redhat.com/ubi9/openjdk-17-runtime:latest
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
 VOLUME /tmp
 WORKDIR /app
 COPY --from=build /app/services/hanke-service/build/libs/hanke-service*SNAPSHOT.jar hanke-service.jar
