@@ -245,7 +245,7 @@ class HankeAttachmentServiceITest(
 
             hankeAttachmentService.deleteAllAttachments(hanke)
 
-            assertThat(attachmentRepository.findByIdOrNull(otherAttachment.id)).isNotNull()
+            assertThat(attachmentRepository.findByIdOrNull(otherAttachment.id!!)).isNotNull()
             assertThat(fileClient.listBlobs(Container.HANKE_LIITTEET).map { it.path })
                 .containsExactly(otherAttachment.blobLocation)
         }
