@@ -1,10 +1,10 @@
 package fi.hel.haitaton.hanke.pdf
 
-import com.lowagie.text.Document
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentMetadataWithType
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
+import org.openpdf.text.Document
 
 object KaivuilmoitusPdfEncoder {
 
