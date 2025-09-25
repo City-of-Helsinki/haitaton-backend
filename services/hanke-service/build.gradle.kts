@@ -139,7 +139,7 @@ dependencies {
 
 tasks.withType<KotlinCompile> { compilerOptions { freeCompilerArgs = listOf("-Xjsr305=strict") } }
 
-kotlin { jvmToolchain { languageVersion.set(JavaLanguageVersion.of(17)) } }
+kotlin { jvmToolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
 
 tasks {
     test {

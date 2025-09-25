@@ -5,7 +5,7 @@ effects of projects taking place within the urban area.
 
 ## Requirements
 
-* OpenJDK (version 17+)
+* OpenJDK (version 21+)
 * Docker
 * [Docker-compose](https://docs.docker.com/compose/install/)
 * IntelliJ IDEA is recommended for development purposes

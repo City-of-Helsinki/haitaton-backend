@@ -1,9 +1,9 @@
 package fi.hel.haitaton.hanke.pdf
 
-import com.lowagie.text.Document
 import fi.hel.haitaton.hanke.attachment.common.AttachmentMetadata
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
+import org.openpdf.text.Document
 
 /**
  * Transform an application to a PDF. The PDF is added as an attachment when sending the application
