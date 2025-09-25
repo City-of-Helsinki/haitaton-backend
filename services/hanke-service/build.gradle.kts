@@ -103,7 +103,7 @@ dependencies {
     testImplementation("com.icegreen:greenmail-junit5:2.1.3")
 
     // Pdf generation
-    implementation("com.github.librepdf:openpdf:2.0.3")
+    implementation("com.github.librepdf:openpdf:3.0.0")
     implementation("org.apache.xmlgraphics:fop:2.11")
 
     // Geotools
@@ -139,7 +139,7 @@ dependencies {
 
 tasks.withType<KotlinCompile> { compilerOptions { freeCompilerArgs = listOf("-Xjsr305=strict") } }
 
-kotlin { jvmToolchain { languageVersion.set(JavaLanguageVersion.of(17)) } }
+kotlin { jvmToolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
 
 tasks {
     test {

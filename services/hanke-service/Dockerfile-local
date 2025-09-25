@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/openjdk-17:latest AS build
+FROM registry.access.redhat.com/ubi9/openjdk-21:latest AS build
 WORKDIR /workspace/app
 
 USER root
@@ -12,7 +12,7 @@ RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon :services:hank
 RUN mkdir -p services/hanke-service/build/dependency && \
     (cd services/hanke-service/build/dependency; jar -xf ../libs/*SNAPSHOT.jar)
 
-FROM registry.access.redhat.com/ubi9/openjdk-17-runtime:latest
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
 VOLUME /tmp
 
 WORKDIR /
