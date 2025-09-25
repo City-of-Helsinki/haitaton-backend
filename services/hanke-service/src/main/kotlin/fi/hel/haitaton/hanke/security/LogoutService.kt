@@ -23,9 +23,9 @@ class LogoutService(
 
         val deleted =
             if (sid != null) {
-                userSessionRepository.deleteBySessionId(sid) > 0
+                userSessionRepository.deleteBySessionId(sid) != null
             } else if (sub != null) {
-                userSessionRepository.deleteBySubject(sub) > 0
+                userSessionRepository.deleteBySubject(sub) != null
             } else {
                 throw JwtException("Logout token must contain 'sid' or 'sub' claim")
             }

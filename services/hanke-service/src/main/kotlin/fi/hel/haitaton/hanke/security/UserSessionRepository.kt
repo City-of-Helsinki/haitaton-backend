@@ -9,9 +9,9 @@ import org.springframework.data.repository.query.Param
 
 interface UserSessionRepository :
     JpaRepository<UserSessionEntity, UUID>, CustomUserSessionRepository {
-    fun deleteBySessionId(sessionId: String): Int
+    fun deleteBySessionId(sessionId: String): UserSessionEntity?
 
-    fun deleteBySubject(subject: String): Int
+    fun deleteBySubject(subject: String): UserSessionEntity?
 
     @Modifying
     @Query("DELETE FROM UserSessionEntity us WHERE us.createdAt < :expirationDateTime")
