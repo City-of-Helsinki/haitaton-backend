@@ -99,7 +99,7 @@ dependencies {
     testImplementation("io.mockk:mockk:1.14.5")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver:5.1.0")
     testImplementation("com.icegreen:greenmail-junit5:2.1.5")
 
     // Pdf generation
