@@ -1,9 +1,9 @@
 package fi.hel.haitaton.hanke.pdf
 
-import com.lowagie.text.Font
 import java.awt.Color
 import org.geotools.api.style.Style
 import org.geotools.brewer.styling.builder.PolygonSymbolizerBuilder
+import org.openpdf.text.Font
 
 enum class NuisanceColor(val color: Color, val font: Font) {
     BLUE(Color(0, 98, 185), blackNuisanceFont),

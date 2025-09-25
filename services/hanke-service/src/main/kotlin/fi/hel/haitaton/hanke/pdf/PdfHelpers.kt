@@ -1,19 +1,5 @@
 package fi.hel.haitaton.hanke.pdf
 
-import com.lowagie.text.Chunk
-import com.lowagie.text.Document
-import com.lowagie.text.Element
-import com.lowagie.text.Image
-import com.lowagie.text.ImgTemplate
-import com.lowagie.text.PageSize
-import com.lowagie.text.Paragraph
-import com.lowagie.text.Phrase
-import com.lowagie.text.Rectangle
-import com.lowagie.text.pdf.PdfContentByte
-import com.lowagie.text.pdf.PdfPTable
-import com.lowagie.text.pdf.PdfTemplate
-import com.lowagie.text.pdf.PdfWriter
-import com.lowagie.text.pdf.draw.VerticalPositionMark
 import fi.hel.haitaton.hanke.getResource
 import java.awt.Graphics2D
 import java.awt.print.PageFormat
@@ -21,6 +7,20 @@ import java.awt.print.Paper
 import java.io.ByteArrayOutputStream
 import org.apache.batik.transcoder.TranscoderInput
 import org.apache.batik.transcoder.print.PrintTranscoder
+import org.openpdf.text.Chunk
+import org.openpdf.text.Document
+import org.openpdf.text.Element
+import org.openpdf.text.Image
+import org.openpdf.text.ImgTemplate
+import org.openpdf.text.PageSize
+import org.openpdf.text.Paragraph
+import org.openpdf.text.Phrase
+import org.openpdf.text.Rectangle
+import org.openpdf.text.pdf.PdfContentByte
+import org.openpdf.text.pdf.PdfPTable
+import org.openpdf.text.pdf.PdfTemplate
+import org.openpdf.text.pdf.PdfWriter
+import org.openpdf.text.pdf.draw.VerticalPositionMark
 
 /**
  * A4 paper size in figma is 1190 x 1684 px.

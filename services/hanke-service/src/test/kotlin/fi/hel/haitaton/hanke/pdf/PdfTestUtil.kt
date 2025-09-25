@@ -2,11 +2,11 @@ package fi.hel.haitaton.hanke.pdf
 
 import assertk.Assert
 import assertk.assertions.containsMatch
-import com.lowagie.text.pdf.PdfReader
-import com.lowagie.text.pdf.parser.PdfTextExtractor
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import io.mockk.MockKVerificationScope
+import org.openpdf.text.pdf.PdfReader
+import org.openpdf.text.pdf.parser.PdfTextExtractor
 
 fun MockKVerificationScope.withName(filename: String) =
     match<Attachment> { it.metadata.name == filename }
