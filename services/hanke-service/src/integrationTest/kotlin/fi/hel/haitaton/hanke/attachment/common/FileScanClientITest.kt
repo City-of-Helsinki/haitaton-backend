@@ -9,8 +9,8 @@ import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -36,7 +36,7 @@ class FileScanClientITest : IntegrationTest() {
 
     @AfterEach
     fun tearDown() {
-        mockWebServer.shutdown()
+        mockWebServer.close()
     }
 
     @Test
@@ -60,7 +60,7 @@ class FileScanClientITest : IntegrationTest() {
     @ValueSource(ints = [400, 500])
     @ParameterizedTest
     fun `scanFiles when http error should throw`(status: Int) {
-        mockWebServer.enqueue(MockResponse().setResponseCode(status))
+        mockWebServer.enqueue(MockResponse.Builder().code(status).build())
 
         assertThrows<WebClientResponseException> { scanClient.scan(testFiles) }
     }
