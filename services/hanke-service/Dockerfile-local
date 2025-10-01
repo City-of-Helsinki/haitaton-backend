@@ -28,5 +28,4 @@ USER root
 RUN microdnf -y install fontconfig && microdnf clean all
 USER default
 
-#ENTRYPOINT ["./wait-for-it.sh", "db:5432", "--timeout=50", "--strict", "--", "java", "-cp", "app:app/lib/*", "fi.hel.haitaton.hanke.ApplicationKt"]
 ENTRYPOINT ["java", "-cp", "app:app/lib/*", "fi.hel.haitaton.hanke.ApplicationKt"]
