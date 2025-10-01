@@ -11,10 +11,15 @@ services:
       - DB_APP_PASSWORD=haitaton
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
       - "5432:5432"
     volumes:
-      - ${DB_VOLUME}:/var/lib/postgresql/data
+      - ${DB_VOLUME}:/var/lib/postgresql/18/data
     networks:
       backbone:
         aliases:
@@ -116,9 +121,12 @@ services:
       HAITATON_API_DISABLED: ${HAITATON_API_DISABLED:-false}
       HAITATON_SENTRY_DSN: ${HAITATON_SENTRY_DSN:-}
     depends_on:
-      - db
-      - clamav-api
-      - azurite-setup
+      db:
+        condition: service_healthy
+      clamav-api:
+        condition: service_started
+      azurite-setup:
+        condition: service_started
     networks:
       backbone:
         aliases:
