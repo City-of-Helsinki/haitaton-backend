@@ -15,7 +15,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - ${DB_VOLUME}:/var/lib/postgresql/data
+      - ${DB_VOLUME}:/var/lib/postgresql/18/data
     networks:
       backbone:
         aliases:
