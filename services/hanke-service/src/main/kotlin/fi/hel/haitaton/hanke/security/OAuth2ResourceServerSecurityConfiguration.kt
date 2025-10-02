@@ -105,15 +105,8 @@ class OAuth2ResourceServerSecurityConfiguration(
      */
     @Bean("logoutJwtDecoder")
     fun logoutJwtDecoder(): JwtDecoder {
-        // First, get a standard decoder to obtain the JWK set URL
-        val standardDecoder: NimbusJwtDecoder =
-            JwtDecoders.fromIssuerLocation(issuerUri) as NimbusJwtDecoder
-
-        // Create a builder from the issuer location which will configure the JWK set
-        val builder = NimbusJwtDecoder.withIssuerLocation(issuerUri)
-
-        // Build the decoder
-        val jwtDecoder = builder.build()
+        // Create a decoder from the issuer location which will configure the JWK set
+        val jwtDecoder = NimbusJwtDecoder.withIssuerLocation(issuerUri).build()
 
         // Access the internal processor to configure type verification
         val processorField = jwtDecoder.javaClass.getDeclaredField("jwtProcessor")
