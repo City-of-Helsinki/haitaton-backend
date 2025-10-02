@@ -17,7 +17,7 @@ class LogoutService(
 ) {
     @Transactional
     fun logout(token: String) {
-        logger.debug { "Decoding logout token..." }
+        logger.info { "Decoding logout token..." }
         val jwt =
             try {
                 jwtDecoder.decode(token)
@@ -26,19 +26,21 @@ class LogoutService(
                 throw e
             }
 
-        logger.debug { "Successfully decoded logout token. Claims: iss=${jwt.issuer}, sub=${jwt.subject}, aud=${jwt.audience}" }
+        logger.info {
+            "Successfully decoded logout token. Claims: iss=${jwt.issuer}, sub=${jwt.subject}, aud=${jwt.audience}"
+        }
 
         val (sid, sub) = parseSidAndSub(jwt)
-        logger.debug { "Parsed logout token claims: sid=$sid, sub=$sub" }
+        logger.info { "Parsed logout token claims: sid=$sid, sub=$sub" }
 
         val terminated =
             if (sid != null) {
                 val count = userSessionRepository.terminateBySessionId(sid)
-                logger.debug { "Terminated $count session(s) by sessionId=$sid" }
+                logger.info { "Terminated $count session(s) by sessionId=$sid" }
                 count > 0
             } else if (sub != null) {
                 val count = userSessionRepository.terminateBySubject(sub)
-                logger.debug { "Terminated $count session(s) by subject=$sub" }
+                logger.info { "Terminated $count session(s) by subject=$sub" }
                 count > 0
             } else {
                 throw JwtException("Logout token must contain 'sid' or 'sub' claim")

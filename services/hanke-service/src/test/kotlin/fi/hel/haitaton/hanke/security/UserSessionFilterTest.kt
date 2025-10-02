@@ -55,20 +55,7 @@ class UserSessionFilterTest {
     }
 
     @Test
-    fun `saves new user session on first request`() {
-        every { userSessionService.validateAndSaveSession(SUB, SID, ISSUED_AT, EXPIRES_AT) } returns
-            true
-
-        filter.doFilterInternal(request, response, chain)
-
-        verifySequence {
-            userSessionService.validateAndSaveSession(SUB, SID, ISSUED_AT, EXPIRES_AT)
-            chain.doFilter(request, response)
-        }
-    }
-
-    @Test
-    fun `proceeds normally when session already exists in database`() {
+    fun `proceeds normally when session validation succeeds`() {
         every { userSessionService.validateAndSaveSession(SUB, SID, ISSUED_AT, EXPIRES_AT) } returns
             true
 
