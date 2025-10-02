@@ -49,9 +49,11 @@ class LogoutTokenValidator(
         }
         // "The corresponding member value MUST be a JSON object and SHOULD be the empty JSON object
         // {}"
-        if (events[BACKCHANNEL_LOGOUT_EVENT] != "{}") {
+        // Keycloak sends this as an actual empty map {}, not a string "{}"
+        val eventValue = events[BACKCHANNEL_LOGOUT_EVENT]
+        if (eventValue !is Map<*, *>) {
             return failure(
-                "Invalid backchannel logout event in events claim: ${events[BACKCHANNEL_LOGOUT_EVENT]}"
+                "Invalid backchannel logout event in events claim: $eventValue (expected a JSON object)"
             )
         }
         // sid - OPTIONAL

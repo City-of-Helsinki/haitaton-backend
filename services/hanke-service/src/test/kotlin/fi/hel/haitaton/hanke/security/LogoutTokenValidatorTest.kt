@@ -113,8 +113,17 @@ class LogoutTokenValidatorTest {
         assertThat(result)
             .hasErrorWithCodeAndDescription(
                 "invalid_token",
-                "Invalid backchannel logout event in events claim: invalid-value",
+                "Invalid backchannel logout event in events claim: invalid-value (expected a JSON object)",
             )
+    }
+
+    @Test
+    fun `accepts empty map as events value`() {
+        val jwt = stubJwt(events = mapOf(BACKCHANNEL_LOGOUT_EVENT to emptyMap<String, Any>()))
+
+        val result = validator.validate(jwt)
+
+        assertThat(result).isEqualTo(OAuth2TokenValidatorResult.success())
     }
 
     @Test
@@ -150,7 +159,7 @@ class LogoutTokenValidatorTest {
         iat: Instant? = Instant.now(),
         exp: Instant? = Instant.now().plusSeconds(60),
         jti: String? = "id",
-        events: Map<String, Any>? = mapOf(BACKCHANNEL_LOGOUT_EVENT to "{}"),
+        events: Map<String, Any>? = mapOf(BACKCHANNEL_LOGOUT_EVENT to emptyMap<String, Any>()),
         sid: String? = "session-id",
         nonce: String? = null,
     ): Jwt =

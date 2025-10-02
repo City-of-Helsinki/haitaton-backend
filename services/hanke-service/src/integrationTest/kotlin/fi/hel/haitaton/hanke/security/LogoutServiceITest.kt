@@ -129,7 +129,7 @@ class LogoutServiceITest(
         iat: Instant? = Instant.now(),
         exp: Instant? = Instant.now().plusSeconds(60),
         jti: String? = "id",
-        events: Map<String, Any>? = mapOf(BACKCHANNEL_LOGOUT_EVENT to "{}"),
+        events: Map<String, Any>? = mapOf(BACKCHANNEL_LOGOUT_EVENT to emptyMap<String, Any>()),
         sid: String? = "session-id",
         nonce: String? = null,
     ): JWTClaimsSet =
