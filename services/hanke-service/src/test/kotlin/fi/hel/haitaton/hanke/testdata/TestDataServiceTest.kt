@@ -6,6 +6,8 @@ import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
+private const val SESSION_ID = "session-123"
+
 class TestDataServiceTest {
 
     private val randomHankeGenerator = mockk<RandomHankeGenerator>()
@@ -71,7 +73,7 @@ class TestDataServiceTest {
     @Test
     fun `terminateUserSession returns true when session terminated`() {
         val userSessionRepository = mockk<fi.hel.haitaton.hanke.security.UserSessionRepository>()
-        every { userSessionRepository.terminateBySessionId("session-123") } returns 1
+        every { userSessionRepository.terminateBySessionId(SESSION_ID) } returns 1
 
         val service =
             TestDataService(
@@ -88,16 +90,16 @@ class TestDataServiceTest {
                 userSessionRepository = userSessionRepository,
             )
 
-        val result = service.terminateUserSession("session-123")
+        val result = service.terminateUserSession(SESSION_ID)
 
         assertEquals(true, result)
-        verify { userSessionRepository.terminateBySessionId("session-123") }
+        verify { userSessionRepository.terminateBySessionId(SESSION_ID) }
     }
 
     @Test
     fun `terminateUserSession returns false when session not found`() {
         val userSessionRepository = mockk<fi.hel.haitaton.hanke.security.UserSessionRepository>()
-        every { userSessionRepository.terminateBySessionId("session-456") } returns 0
+        every { userSessionRepository.terminateBySessionId(SESSION_ID) } returns 0
 
         val service =
             TestDataService(
@@ -114,9 +116,9 @@ class TestDataServiceTest {
                 userSessionRepository = userSessionRepository,
             )
 
-        val result = service.terminateUserSession("session-456")
+        val result = service.terminateUserSession(SESSION_ID)
 
         assertEquals(false, result)
-        verify { userSessionRepository.terminateBySessionId("session-456") }
+        verify { userSessionRepository.terminateBySessionId(SESSION_ID) }
     }
 }
