@@ -19,18 +19,18 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 class UserSessionFilterTest {
 
-    private val userSessionService = mockk<UserSessionService>(relaxed = true)
-    private val sessionCache = mockk<UserSessionCache>(relaxed = true)
-    private val filter = UserSessionFilter(userSessionService, sessionCache)
+    private val userSessionService = mockk<UserSessionService>()
+    private val filter = UserSessionFilter(userSessionService)
 
     private val chain = mockk<FilterChain>(relaxed = true)
     private val request: HttpServletRequest = mockk()
-    private val response: HttpServletResponse = mockk()
+    private val response: HttpServletResponse = mockk(relaxed = true)
 
     companion object {
         private const val SUB = "user-abc"
         private const val SID = "session-123"
         private val ISSUED_AT = Instant.now()
+        private val EXPIRES_AT = Instant.now().plusSeconds(3600)
     }
 
     @BeforeEach
@@ -42,6 +42,7 @@ class UserSessionFilterTest {
                 every { subject } returns SUB
                 every { getClaim<String>("sid") } returns SID
                 every { issuedAt } returns ISSUED_AT
+                every { expiresAt } returns EXPIRES_AT
             }
         val auth = JwtAuthenticationToken(jwt)
         SecurityContextHolder.getContext().authentication = auth
@@ -49,35 +50,46 @@ class UserSessionFilterTest {
 
     @AfterEach
     fun tearDown() {
-        confirmVerified(userSessionService, sessionCache, chain)
+        confirmVerified(userSessionService, chain)
         SecurityContextHolder.clearContext()
     }
 
     @Test
-    fun `saves new user session`() {
-        every { sessionCache.isSessionKnown("$SUB|$SID") } returns false
+    fun `saves new user session on first request`() {
+        every { userSessionService.validateAndSaveSession(SUB, SID, ISSUED_AT, EXPIRES_AT) } returns
+            true
 
         filter.doFilterInternal(request, response, chain)
 
         verifySequence {
-            sessionCache.isSessionKnown("$SUB|$SID")
-            sessionCache.markSessionAsSeen("$SUB|$SID")
-            userSessionService.saveSessionIfNotExists(SUB, SID, ISSUED_AT)
+            userSessionService.validateAndSaveSession(SUB, SID, ISSUED_AT, EXPIRES_AT)
             chain.doFilter(request, response)
         }
     }
 
     @Test
-    fun `does not save cached user session`() {
-        every { sessionCache.isSessionKnown("$SUB|$SID") } returns true
+    fun `proceeds normally when session already exists in database`() {
+        every { userSessionService.validateAndSaveSession(SUB, SID, ISSUED_AT, EXPIRES_AT) } returns
+            true
 
         filter.doFilterInternal(request, response, chain)
 
         verifySequence {
-            sessionCache.isSessionKnown("$SUB|$SID")
+            userSessionService.validateAndSaveSession(SUB, SID, ISSUED_AT, EXPIRES_AT)
             chain.doFilter(request, response)
         }
-        verify(exactly = 0) { sessionCache.markSessionAsSeen(any()) }
-        verify(exactly = 0) { userSessionService.saveSessionIfNotExists(any(), any(), any()) }
+    }
+
+    @Test
+    fun `rejects request when session validation fails`() {
+        every { userSessionService.validateAndSaveSession(SUB, SID, ISSUED_AT, EXPIRES_AT) } returns
+            false
+
+        filter.doFilterInternal(request, response, chain)
+
+        verifySequence {
+            userSessionService.validateAndSaveSession(SUB, SID, ISSUED_AT, EXPIRES_AT)
+        }
+        verify(exactly = 0) { chain.doFilter(any(), any()) }
     }
 }

@@ -7,12 +7,14 @@ import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.body
+import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 
 private val logger = KotlinLogging.logger {}
@@ -73,6 +75,13 @@ class ProfiiliClient(
                     .with("permission", TOKEN_API_PERMISSION)
             )
             .retrieve()
+            // handle 401 errors specifically to give a more informative error message
+            .onStatus({ responseStatus -> responseStatus == HttpStatus.UNAUTHORIZED }) { response ->
+                response.bodyToMono<String>().flatMap { body ->
+                    logger.error { "Error from Profiili API call. Response status=401, body=$body" }
+                    Mono.error(UnauthorizedException(body))
+                }
+            }
             .bodyToMono(JsonNode::class.java)
             .doOnError(WebClientResponseException::class.java) { ex ->
                 logger.error {
@@ -83,7 +92,7 @@ class ProfiiliClient(
     }
 
     private fun getTokenApiUrl(): String {
-        logger.info { "Loading Profiili token URI from OpenID configuration.." }
+        logger.info { "Loading Profiili token URI from OpenID configuration..." }
         val configurationUri = "$issuer/.well-known/openid-configuration"
 
         val conf =
@@ -129,6 +138,9 @@ class ProfiiliClient(
 
 class VerifiedNameNotFound(reason: String) :
     RuntimeException("Verified name of user could not be obtained. $reason")
+
+class UnauthorizedException(reason: String) :
+    RuntimeException("Profiili API token request was unauthorized. $reason")
 
 class ProfiiliConfigurationError(reason: String, cause: Exception? = null) :
     RuntimeException("Error in Profiili API connection: $reason", cause)

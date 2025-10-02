@@ -97,7 +97,27 @@ class ProfiiliServiceTest {
         }
 
         @Test
-        fun `propagates the exception when ProfiiliClient throws an exception`() {
+        fun `propagates the exception when ProfiiliClient throws an unauthorized exception`() {
+            val authentication = AuthenticationMocks.suomiFiAuthentication()
+            every { securityContext.authentication } returns authentication
+            val token = AuthenticationMocks.TOKEN_VALUE
+            val message = "Unauthorized."
+            every { profiiliClient.getVerifiedName(token) } throws UnauthorizedException(message)
+
+            val failure = assertFailure { profiiliService.getVerifiedName(securityContext) }
+
+            failure.all {
+                hasClass(UnauthorizedException::class)
+                messageContains(message)
+            }
+            verifySequence {
+                securityContext.authentication
+                profiiliClient.getVerifiedName(token)
+            }
+        }
+
+        @Test
+        fun `propagates the exception when ProfiiliClient throws a not found exception`() {
             val authentication = AuthenticationMocks.suomiFiAuthentication()
             every { securityContext.authentication } returns authentication
             val token = AuthenticationMocks.TOKEN_VALUE

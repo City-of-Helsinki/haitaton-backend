@@ -9,11 +9,27 @@ import org.springframework.data.repository.query.Param
 
 interface UserSessionRepository :
     JpaRepository<UserSessionEntity, UUID>, CustomUserSessionRepository {
-    fun deleteBySessionId(sessionId: String): UserSessionEntity?
-
-    fun deleteBySubject(subject: String): UserSessionEntity?
+    @Query(
+        "SELECT CASE WHEN COUNT(us) > 0 THEN true ELSE false END " +
+            "FROM UserSessionEntity us WHERE us.sessionId = :sessionId AND us.terminated = false"
+    )
+    fun existsBySessionIdAndNotTerminated(@Param("sessionId") sessionId: String): Boolean
 
     @Modifying
-    @Query("DELETE FROM UserSessionEntity us WHERE us.createdAt < :expirationDateTime")
-    fun deleteAllByExpiration(@Param("expirationDateTime") expirationDateTime: Instant): Int
+    @Query(
+        "UPDATE UserSessionEntity us SET us.terminated = true " +
+            "WHERE us.sessionId = :sessionId AND us.terminated = false"
+    )
+    fun terminateBySessionId(@Param("sessionId") sessionId: String): Int
+
+    @Modifying
+    @Query(
+        "UPDATE UserSessionEntity us SET us.terminated = true " +
+            "WHERE us.subject = :subject AND us.terminated = false"
+    )
+    fun terminateBySubject(@Param("subject") subject: String): Int
+
+    @Modifying
+    @Query("DELETE FROM UserSessionEntity us WHERE us.expiresAt < :now")
+    fun deleteAllByExpiration(@Param("now") now: Instant): Int
 }

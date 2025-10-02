@@ -21,6 +21,7 @@ class TestDataServiceTest {
             fileClient = mockk(),
             alluUpdateService = mockk(),
             randomHankeGenerator = randomHankeGenerator,
+            userSessionRepository = mockk(),
         )
 
     @Test

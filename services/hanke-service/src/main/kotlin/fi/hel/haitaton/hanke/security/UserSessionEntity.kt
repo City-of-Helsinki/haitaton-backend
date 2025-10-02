@@ -14,4 +14,6 @@ class UserSessionEntity(
     var subject: String,
     @Column(name = "session_id") var sessionId: String? = null,
     @Column(name = "created_at") var createdAt: Instant = Instant.now(),
+    @Column(name = "expires_at") var expiresAt: Instant? = null,
+    var terminated: Boolean = false,
 )

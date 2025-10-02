@@ -38,11 +38,8 @@ class OAuth2ResourceServerSecurityConfiguration(
 ) {
 
     @Bean
-    fun userSessionFilter(
-        userSessionService: UserSessionService,
-        cache: UserSessionCache,
-    ): UserSessionFilter {
-        return UserSessionFilter(userSessionService, cache)
+    fun userSessionFilter(userSessionService: UserSessionService): UserSessionFilter {
+        return UserSessionFilter(userSessionService)
     }
 
     @Bean
