@@ -129,4 +129,17 @@ class TestDataControllerEnabledITest(@Autowired override val mockMvc: MockMvc) :
             verify { testDataService wasNot Called }
         }
     }
+
+    @Nested
+    inner class TerminateCurrentSession {
+        private val url = "$BASE_URL/terminate-session"
+
+        @Test
+        @WithAnonymousUser
+        fun `returns 401 when not authenticated`() {
+            delete(url).andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+            verify { testDataService wasNot Called }
+        }
+    }
 }

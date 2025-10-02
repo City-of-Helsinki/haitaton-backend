@@ -67,4 +67,56 @@ class TestDataServiceTest {
         verify { randomHankeGenerator.createRandomHanke(3) }
         verify { randomHankeGenerator.createRandomHanke(4) }
     }
+
+    @Test
+    fun `terminateUserSession returns true when session terminated`() {
+        val userSessionRepository = mockk<fi.hel.haitaton.hanke.security.UserSessionRepository>()
+        every { userSessionRepository.terminateBySessionId("session-123") } returns 1
+
+        val service =
+            TestDataService(
+                hakemusRepository = mockk(),
+                taydennyspyyntoRepository = mockk(),
+                taydennysAttachmentRepository = mockk(),
+                paatosRepository = mockk(),
+                muutosilmoitusRepository = mockk(),
+                muutosilmoitusAttachmentRepository = mockk(),
+                attachmentContentService = mockk(),
+                fileClient = mockk(),
+                alluUpdateService = mockk(),
+                randomHankeGenerator = mockk(),
+                userSessionRepository = userSessionRepository,
+            )
+
+        val result = service.terminateUserSession("session-123")
+
+        assertEquals(true, result)
+        verify { userSessionRepository.terminateBySessionId("session-123") }
+    }
+
+    @Test
+    fun `terminateUserSession returns false when session not found`() {
+        val userSessionRepository = mockk<fi.hel.haitaton.hanke.security.UserSessionRepository>()
+        every { userSessionRepository.terminateBySessionId("session-456") } returns 0
+
+        val service =
+            TestDataService(
+                hakemusRepository = mockk(),
+                taydennyspyyntoRepository = mockk(),
+                taydennysAttachmentRepository = mockk(),
+                paatosRepository = mockk(),
+                muutosilmoitusRepository = mockk(),
+                muutosilmoitusAttachmentRepository = mockk(),
+                attachmentContentService = mockk(),
+                fileClient = mockk(),
+                alluUpdateService = mockk(),
+                randomHankeGenerator = mockk(),
+                userSessionRepository = userSessionRepository,
+            )
+
+        val result = service.terminateUserSession("session-456")
+
+        assertEquals(false, result)
+        verify { userSessionRepository.terminateBySessionId("session-456") }
+    }
 }
