@@ -1,8 +1,9 @@
 package fi.hel.haitaton.hanke.attachment.common
 
-import com.azure.core.implementation.http.rest.UrlEscapers
 import com.azure.core.util.BinaryData
 import fi.hel.haitaton.hanke.attachment.azure.Container
+import java.nio.charset.StandardCharsets
+import org.springframework.http.ContentDisposition
 import org.springframework.http.MediaType
 
 interface FileClient {
@@ -22,8 +23,19 @@ interface FileClient {
 
     fun deleteAllByPrefix(container: Container, prefix: String)
 
+    /**
+     * Encodes a filename for use in the Content-Disposition header according to RFC 5987.
+     *
+     * Uses Spring's ContentDisposition builder which properly handles RFC 5987 encoding for special
+     * characters like commas, semicolons, quotes, asterisks, etc. that have special meaning in HTTP
+     * headers.
+     */
     fun encodeFilename(filename: String): String {
-        return UrlEscapers.PATH_ESCAPER.escape(filename)
+        return ContentDisposition.attachment()
+            .filename(filename, StandardCharsets.UTF_8)
+            .build()
+            .toString()
+            .substringAfter("filename*=UTF-8''")
     }
 }
 

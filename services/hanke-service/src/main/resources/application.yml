@@ -18,6 +18,8 @@ haitaton:
     eventDeleteExpirationDays: ${HAITATON_ALLU_EVENT_DELETE_EXPIRATION_DAYS:90}
   api:
     disabled: ${HAITATON_API_DISABLED:false}
+  attachment-name-fix:
+    enabled: ${HAITATON_ATTACHMENT_NAME_FIX_ENABLED:false}
   azure:
     blob:
       connection-string: ${HAITATON_BLOB_CONNECTION_STRING:#{null}}
