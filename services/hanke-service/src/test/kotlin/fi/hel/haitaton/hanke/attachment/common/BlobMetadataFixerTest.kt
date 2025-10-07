@@ -85,10 +85,71 @@ class BlobMetadataFixerTest {
         }
 
         @Test
+        fun `returns null for disposition with only attachment type`() {
+            assertThat(BlobMetadataFixer.extractOriginalFilename("inline")).isNull()
+        }
+
+        @Test
         fun `handles disposition with semicolon after filename`() {
             val disposition = "attachment; filename*=UTF-8''test.pdf; size=1234"
 
             assertThat(BlobMetadataFixer.extractOriginalFilename(disposition)).isEqualTo("test.pdf")
+        }
+
+        @Test
+        fun `handles disposition with multiple parameters after filename`() {
+            val disposition =
+                "attachment; filename*=UTF-8''document.pdf; size=1234; creation-date=\"Mon, 01 Jan 2024\""
+
+            assertThat(BlobMetadataFixer.extractOriginalFilename(disposition))
+                .isEqualTo("document.pdf")
+        }
+
+        @Test
+        fun `handles disposition with spaces around filename`() {
+            val disposition = "attachment; filename*=UTF-8''  test.pdf  "
+
+            assertThat(BlobMetadataFixer.extractOriginalFilename(disposition)).isEqualTo("test.pdf")
+        }
+
+        @Test
+        fun `handles filename with percent encoding for special characters`() {
+            val testCases =
+                mapOf(
+                    "attachment; filename*=UTF-8''file%2A.pdf" to "file*.pdf", // asterisk
+                    "attachment; filename*=UTF-8''file%3B.pdf" to "file;.pdf", // semicolon
+                    "attachment; filename*=UTF-8''file%27.pdf" to "file'.pdf", // single quote
+                    "attachment; filename*=UTF-8''file%22.pdf" to "file\".pdf", // double quote
+                )
+
+            testCases.forEach { (disposition, expectedFilename) ->
+                assertThat(BlobMetadataFixer.extractOriginalFilename(disposition))
+                    .isEqualTo(expectedFilename)
+            }
+        }
+
+        @Test
+        fun `handles filename with unquoted simple format`() {
+            val disposition = "attachment; filename=simple-file.pdf"
+
+            assertThat(BlobMetadataFixer.extractOriginalFilename(disposition))
+                .isEqualTo("simple-file.pdf")
+        }
+
+        @Test
+        fun `handles filename with quoted simple format containing spaces`() {
+            val disposition = "attachment; filename=\"file with spaces.pdf\""
+
+            assertThat(BlobMetadataFixer.extractOriginalFilename(disposition))
+                .isEqualTo("file with spaces.pdf")
+        }
+
+        @Test
+        fun `returns null for malformed RFC 5987 with invalid percent encoding`() {
+            // Invalid percent encoding should return null due to decode exception
+            val disposition = "attachment; filename*=UTF-8''file%ZZ.pdf"
+
+            assertThat(BlobMetadataFixer.extractOriginalFilename(disposition)).isNull()
         }
     }
 }

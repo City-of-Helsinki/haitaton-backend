@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component
 
 private val logger = KotlinLogging.logger {}
 
+private const val CONTENT_DISPOSITION_PREFIX = "filename*=UTF-8''"
+
 /**
  * One-time utility to fix Content-Disposition headers for blobs that were uploaded before the
  * filename encoding fix. This component is disabled by default and should only be enabled
@@ -46,9 +48,10 @@ class BlobMetadataFixer(private val blobServiceClient: BlobServiceClient) {
          */
         fun needsFixing(contentDisposition: String): Boolean {
             // If it already uses RFC 5987 encoding (filename*=UTF-8''), check for issues
-            if (contentDisposition.contains("filename*=UTF-8''")) {
+            if (contentDisposition.contains(CONTENT_DISPOSITION_PREFIX)) {
                 // Extract the encoded part
-                val encodedPart = contentDisposition.substringAfter("filename*=UTF-8''").trim()
+                val encodedPart =
+                    contentDisposition.substringAfter(CONTENT_DISPOSITION_PREFIX).trim()
                 // If we find unencoded special characters, it needs fixing
                 return encodedPart.contains(',') ||
                     encodedPart.contains(';') ||
@@ -68,8 +71,8 @@ class BlobMetadataFixer(private val blobServiceClient: BlobServiceClient) {
          */
         fun extractOriginalFilename(contentDisposition: String): String? {
             // Try RFC 5987 format first - look for filename*=UTF-8''
-            if (contentDisposition.contains("filename*=UTF-8''")) {
-                val afterMarker = contentDisposition.substringAfter("filename*=UTF-8''")
+            if (contentDisposition.contains(CONTENT_DISPOSITION_PREFIX)) {
+                val afterMarker = contentDisposition.substringAfter(CONTENT_DISPOSITION_PREFIX)
                 // Extract until semicolon or end of string
                 val encodedFilename = afterMarker.substringBefore(';').trim()
                 return try {
