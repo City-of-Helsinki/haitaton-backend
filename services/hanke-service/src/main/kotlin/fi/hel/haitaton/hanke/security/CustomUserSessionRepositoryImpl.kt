@@ -21,8 +21,8 @@ class CustomUserSessionRepositoryImpl(
     override fun saveIfNotExists(session: UserSessionEntity) {
         val sql =
             """
-            INSERT INTO user_sessions (id, subject, session_id, created_at)
-            VALUES (:id, :subject, :session_id, :created_at)
+            INSERT INTO user_sessions (id, subject, session_id, created_at, expires_at, terminated)
+            VALUES (:id, :subject, :session_id, :created_at, :expires_at, :terminated)
             ON CONFLICT ON CONSTRAINT uq_user_sessions_subject_sid DO NOTHING
         """
                 .trimIndent()
@@ -32,6 +32,8 @@ class CustomUserSessionRepositoryImpl(
         query.setParameter("subject", session.subject)
         query.setParameter("session_id", session.sessionId)
         query.setParameter("created_at", session.createdAt)
+        query.setParameter("expires_at", session.expiresAt)
+        query.setParameter("terminated", session.terminated)
         query.executeUpdate()
     }
 }

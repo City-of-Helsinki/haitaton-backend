@@ -24,12 +24,13 @@ class UserSessionServiceITest(
                 UserSessionEntity(
                     subject = "subject",
                     sessionId = UUID.randomUUID().toString(),
-                    createdAt = Instant.now().minusSeconds(10),
+                    createdAt = Instant.now(),
+                    expiresAt = Instant.now().minusSeconds(10),
                 )
             )
             assertThat(repository.findAll().single().subject).isEqualTo("subject")
 
-            service.cleanupExpiredSessions(5)
+            service.cleanupExpiredSessions()
 
             assertThat(repository.findAll()).isEmpty()
         }
@@ -40,50 +41,77 @@ class UserSessionServiceITest(
                 UserSessionEntity(
                     subject = "subject",
                     sessionId = UUID.randomUUID().toString(),
-                    createdAt = Instant.now().plusSeconds(60),
+                    createdAt = Instant.now(),
+                    expiresAt = Instant.now().plusSeconds(60),
                 )
             )
             assertThat(repository.findAll().single().subject).isEqualTo("subject")
 
-            service.cleanupExpiredSessions(5)
+            service.cleanupExpiredSessions()
 
             assertThat(repository.findAll().single().subject).isEqualTo("subject")
         }
     }
 
     @Nested
-    inner class SaveSessionIfNotExists {
+    inner class ValidateAndSaveSession {
 
         @Test
-        fun `saves non-existing session`() {
-            service.saveSessionIfNotExists(
-                subject = "subject",
-                sessionId = UUID.randomUUID().toString(),
-                createdAt = Instant.now(),
-            )
-
-            assertThat(repository.findAll().single().subject).isEqualTo("subject")
-        }
-
-        @Test
-        fun `does not save existing session`() {
+        fun `returns true when session exists and is not terminated`() {
             val sessionId = UUID.randomUUID().toString()
+            val expiresAt = Instant.now().plusSeconds(3600)
             repository.save(
                 UserSessionEntity(
                     subject = "subject",
                     sessionId = sessionId,
                     createdAt = Instant.now(),
+                    expiresAt = expiresAt,
+                    terminated = false,
                 )
             )
-            assertThat(repository.findAll().single().subject).isEqualTo("subject")
 
-            service.saveSessionIfNotExists(
-                subject = "subject",
-                sessionId = sessionId,
-                createdAt = Instant.now(),
+            val isValid =
+                service.validateAndSaveSession("subject", sessionId, Instant.now(), expiresAt)
+
+            assertThat(isValid).isEqualTo(true)
+        }
+
+        @Test
+        fun `returns true and saves new session`() {
+            val sessionId = UUID.randomUUID().toString()
+            // Truncate to microseconds to match PostgreSQL TIMESTAMP precision
+            val expiresAt =
+                Instant.now().plusSeconds(3600).truncatedTo(java.time.temporal.ChronoUnit.MICROS)
+            assertThat(repository.findAll()).isEmpty()
+
+            val isValid =
+                service.validateAndSaveSession("subject", sessionId, Instant.now(), expiresAt)
+
+            assertThat(isValid).isEqualTo(true)
+            val saved = repository.findAll().single()
+            assertThat(saved.sessionId).isEqualTo(sessionId)
+            assertThat(saved.expiresAt).isEqualTo(expiresAt)
+            assertThat(saved.terminated).isEqualTo(false)
+        }
+
+        @Test
+        fun `returns false when session is terminated`() {
+            val sessionId = UUID.randomUUID().toString()
+            val expiresAt = Instant.now().plusSeconds(3600)
+            repository.save(
+                UserSessionEntity(
+                    subject = "subject",
+                    sessionId = sessionId,
+                    createdAt = Instant.now(),
+                    expiresAt = expiresAt,
+                    terminated = true,
+                )
             )
 
-            assertThat(repository.findAll().single().subject).isEqualTo("subject")
+            val isValid =
+                service.validateAndSaveSession("subject", sessionId, Instant.now(), expiresAt)
+
+            assertThat(isValid).isEqualTo(false)
         }
     }
 }

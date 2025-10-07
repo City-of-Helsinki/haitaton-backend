@@ -1,12 +1,16 @@
 package fi.hel.haitaton.hanke.testdata
 
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -71,5 +75,29 @@ class TestDataController(private val testDataService: TestDataService) {
         return ResponseEntity.ok()
             .contentType(MediaType.TEXT_PLAIN)
             .body("Created $created random public hanke")
+    }
+
+    @Operation(
+        summary = "Terminate current user session",
+        description =
+            "Deletes the current user's session from the database to simulate backchannel logout. " +
+                "The next authenticated request will receive HAI0006 error. " +
+                "This endpoint requires authentication and is only available when testdata is enabled.",
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/terminate-session")
+    @ResponseBody
+    fun terminateCurrentSession(@AuthenticationPrincipal jwt: Jwt): ResponseEntity<String> {
+        val sessionId =
+            jwt.getClaim<String>("sid")
+                ?: return ResponseEntity.badRequest()
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body("No session ID found in JWT token")
+
+        val deleted = testDataService.terminateUserSession(sessionId)
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.TEXT_PLAIN)
+            .body("Session terminated (deleted=$deleted). Next request will receive HAI0006 error.")
     }
 }

@@ -31,7 +31,6 @@ import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.profiili.ProfiiliService
 import fi.hel.haitaton.hanke.security.AccessRules
 import fi.hel.haitaton.hanke.security.LogoutService
-import fi.hel.haitaton.hanke.security.UserSessionCache
 import fi.hel.haitaton.hanke.security.UserSessionRepository
 import fi.hel.haitaton.hanke.security.UserSessionService
 import fi.hel.haitaton.hanke.taydennys.TaydennysAuthorizer
@@ -141,8 +140,6 @@ class IntegrationTestConfiguration {
     @Bean fun tormaysService(): TormaystarkasteluTormaysService = mockk()
 
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
-
-    @Bean fun userSessionCache(): UserSessionCache = mockk(relaxed = true)
 
     @Bean fun userSessionRepository(): UserSessionRepository = mockk()
 

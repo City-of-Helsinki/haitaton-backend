@@ -17,23 +17,39 @@ class LogoutService(
 ) {
     @Transactional
     fun logout(token: String) {
-        val jwt = jwtDecoder.decode(token)
+        logger.info { "Decoding logout token..." }
+        val jwt =
+            try {
+                jwtDecoder.decode(token)
+            } catch (e: Exception) {
+                logger.error(e) { "Failed to decode logout token: ${e.message}" }
+                throw e
+            }
+
+        logger.info {
+            "Successfully decoded logout token. Claims: iss=${jwt.issuer}, sub=${jwt.subject}, aud=${jwt.audience}"
+        }
 
         val (sid, sub) = parseSidAndSub(jwt)
+        logger.info { "Parsed logout token claims: sid=$sid, sub=$sub" }
 
-        val deleted =
+        val terminated =
             if (sid != null) {
-                userSessionRepository.deleteBySessionId(sid) != null
+                val count = userSessionRepository.terminateBySessionId(sid)
+                logger.info { "Terminated $count session(s) by sessionId=$sid" }
+                count > 0
             } else if (sub != null) {
-                userSessionRepository.deleteBySubject(sub) != null
+                val count = userSessionRepository.terminateBySubject(sub)
+                logger.info { "Terminated $count session(s) by subject=$sub" }
+                count > 0
             } else {
                 throw JwtException("Logout token must contain 'sid' or 'sub' claim")
             }
 
-        if (deleted) {
-            logger.info { "Deleted user session" }
+        if (terminated) {
+            logger.info { "Terminated user session: sid=$sid, sub=$sub" }
         } else {
-            logger.info { "No user session found for logout token" }
+            logger.info { "No user session found for logout token: sid=$sid, sub=$sub" }
         }
     }
 

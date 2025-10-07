@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.security
 
 import assertk.assertThat
-import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
@@ -52,7 +51,7 @@ class LogoutServiceITest(
     }
 
     @Test
-    fun `deletes matching user session`() {
+    fun `terminates matching user session`() {
         userSessionRepository.save(
             UserSessionEntity(subject = SUB, sessionId = SID, createdAt = Instant.now())
         )
@@ -61,7 +60,9 @@ class LogoutServiceITest(
 
         logoutService.logout(logoutToken)
 
-        assertThat(userSessionRepository.findAll()).isEmpty()
+        val session = userSessionRepository.findAll().single()
+        assertThat(session.sessionId).isEqualTo(SID)
+        assertThat(session.terminated).isEqualTo(true)
     }
 
     @Test
@@ -128,7 +129,7 @@ class LogoutServiceITest(
         iat: Instant? = Instant.now(),
         exp: Instant? = Instant.now().plusSeconds(60),
         jti: String? = "id",
-        events: Map<String, Any>? = mapOf(BACKCHANNEL_LOGOUT_EVENT to "{}"),
+        events: Map<String, Any>? = mapOf(BACKCHANNEL_LOGOUT_EVENT to emptyMap<String, Any>()),
         sid: String? = "session-id",
         nonce: String? = null,
     ): JWTClaimsSet =
