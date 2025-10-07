@@ -125,6 +125,29 @@ class ProfiiliClientITest {
         }
 
         @Test
+        fun `throws exception when unauthorized`() {
+            mockApiTokensApi.enqueue(
+                MockResponse.Builder()
+                    .code(401)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .body(
+                        "{\"error\":\"invalid_grant\",\"error_description\":\"Invalid bearer token\"}"
+                    )
+                    .build()
+            )
+
+            val failure = assertFailure { profiiliClient.getVerifiedName(ACCESS_TOKEN) }
+
+            failure.all {
+                hasClass(UnauthorizedException::class)
+                messageContains("Profiili API token request was unauthorized.")
+                messageContains("invalid_grant")
+                messageContains("Invalid bearer token")
+            }
+            assertThat(mockApiTokensApi.requestCount).isEqualTo(1)
+        }
+
+        @Test
         fun `throws exception when API tokens not found`() {
             mockApiTokensApi.enqueue(MockResponse.Builder().code(404).build())
 

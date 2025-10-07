@@ -1,5 +1,9 @@
 package fi.hel.haitaton.hanke.security
 
+import com.nimbusds.jose.JOSEObjectType
+import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier
+import com.nimbusds.jose.proc.SecurityContext
+import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
 import mu.KotlinLogging
 import mu.withLoggingContext
@@ -38,11 +42,8 @@ class OAuth2ResourceServerSecurityConfiguration(
 ) {
 
     @Bean
-    fun userSessionFilter(
-        userSessionService: UserSessionService,
-        cache: UserSessionCache,
-    ): UserSessionFilter {
-        return UserSessionFilter(userSessionService, cache)
+    fun userSessionFilter(userSessionService: UserSessionService): UserSessionFilter {
+        return UserSessionFilter(userSessionService)
     }
 
     @Bean
@@ -98,20 +99,36 @@ class OAuth2ResourceServerSecurityConfiguration(
     /**
      * Custom decoder for logout tokens that verifies the claims required for backchannel logout.
      *
-     * This is used for the backchannel logout endpoint.
+     * This is used for the backchannel logout endpoint. Logout tokens use typ: logout+jwt in the
+     * JOSE header according to the OpenID Connect Back-Channel Logout spec. We need to configure
+     * the decoder to accept this type, which is not accepted by default.
      */
     @Bean("logoutJwtDecoder")
     fun logoutJwtDecoder(): JwtDecoder {
-        val jwtDecoder: NimbusJwtDecoder =
-            JwtDecoders.fromIssuerLocation(issuerUri) as NimbusJwtDecoder
+        // Create a decoder from the issuer location which will configure the JWK set
+        val jwtDecoder = NimbusJwtDecoder.withIssuerLocation(issuerUri).build()
 
-        val issuerValidator: OAuth2TokenValidator<Jwt> =
-            JwtValidators.createDefaultWithIssuer(issuerUri)
+        // Access the internal processor to configure type verification
+        val processorField = jwtDecoder.javaClass.getDeclaredField("jwtProcessor")
+        processorField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val processor = processorField.get(jwtDecoder) as DefaultJWTProcessor<SecurityContext>
 
-        val validator: OAuth2TokenValidator<Jwt> =
-            DelegatingOAuth2TokenValidator(issuerValidator, tokenValidator)
+        // Configure to accept logout+jwt type in addition to JWT
+        processor.jwsTypeVerifier =
+            DefaultJOSEObjectTypeVerifier(
+                JOSEObjectType("logout+jwt"),
+                JOSEObjectType.JWT,
+                null, // Also accept tokens with no typ header
+            )
 
-        jwtDecoder.setJwtValidator(validator)
+        // Set the validator
+        jwtDecoder.setJwtValidator(
+            DelegatingOAuth2TokenValidator(
+                JwtValidators.createDefaultWithIssuer(issuerUri),
+                tokenValidator,
+            )
+        )
 
         return jwtDecoder
     }

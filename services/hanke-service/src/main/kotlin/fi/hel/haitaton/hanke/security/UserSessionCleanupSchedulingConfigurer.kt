@@ -14,7 +14,7 @@ class UserSessionCleanupSchedulingConfigurer(
 
     override fun configureTasks(taskRegistrar: ScheduledTaskRegistrar) {
         taskRegistrar.addFixedDelayTask(
-            { userSessionService.cleanupExpiredSessions(properties.interval.seconds) },
+            { userSessionService.cleanupExpiredSessions() },
             properties.interval,
         )
     }

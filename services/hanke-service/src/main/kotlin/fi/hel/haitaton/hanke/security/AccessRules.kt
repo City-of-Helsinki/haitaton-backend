@@ -44,6 +44,7 @@ object AccessRules {
                 it.ignoringRequestMatchers(
                     "/testdata/unlink-applications",
                     "/testdata/create-public-hanke/*",
+                    "/testdata/terminate-session",
                     "/public-hankkeet/grid",
                     "/backchannel-logout",
                 )

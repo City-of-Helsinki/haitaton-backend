@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.paatos.PaatosEntity
 import fi.hel.haitaton.hanke.paatos.PaatosRepository
+import fi.hel.haitaton.hanke.security.UserSessionRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
 import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -31,6 +32,7 @@ class TestDataService(
     private val fileClient: FileClient,
     private val alluUpdateService: AlluUpdateScheduler,
     private val randomHankeGenerator: RandomHankeGenerator,
+    private val userSessionRepository: UserSessionRepository,
 ) {
     @Transactional
     fun unlinkApplicationsFromAllu() {
@@ -85,5 +87,11 @@ class TestDataService(
         }
         logger.warn { "Created $created random public hanke." }
         return created
+    }
+
+    @Transactional
+    fun terminateUserSession(sessionId: String): Boolean {
+        logger.warn { "Terminating session for testing: sessionId=$sessionId" }
+        return userSessionRepository.terminateBySessionId(sessionId) > 0
     }
 }
