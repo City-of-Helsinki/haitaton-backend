@@ -4,6 +4,7 @@ import com.azure.storage.blob.BlobContainerClient
 import com.azure.storage.blob.BlobServiceClient
 import com.azure.storage.blob.models.BlobHttpHeaders
 import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.azure.Containers
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import mu.KotlinLogging
@@ -38,7 +39,10 @@ private const val CONTENT_DISPOSITION_PREFIX = "filename*=UTF-8''"
     havingValue = "true",
     matchIfMissing = false,
 )
-class BlobMetadataFixer(private val blobServiceClient: BlobServiceClient) {
+class BlobMetadataFixer(
+    private val blobServiceClient: BlobServiceClient,
+    private val containers: Containers,
+) {
 
     companion object {
         /**
@@ -199,9 +203,13 @@ class BlobMetadataFixer(private val blobServiceClient: BlobServiceClient) {
     }
 
     private fun getContainerClient(container: Container): BlobContainerClient {
-        return blobServiceClient.getBlobContainerClient(
-            container.name.lowercase().replace('_', '-')
-        )
+        val containerName =
+            when (container) {
+                Container.HAKEMUS_LIITTEET -> containers.hakemusAttachments
+                Container.HANKE_LIITTEET -> containers.hankeAttachments
+                Container.PAATOKSET -> containers.decisions
+            }
+        return blobServiceClient.getBlobContainerClient(containerName)
     }
 }
 
