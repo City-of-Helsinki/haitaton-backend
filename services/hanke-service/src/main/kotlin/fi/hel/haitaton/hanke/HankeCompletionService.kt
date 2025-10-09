@@ -242,7 +242,7 @@ class HankeCompletionService(
 
     @Transactional
     fun sendUnmodifiedDraftReminderIfNecessary(id: Int, reminder: HankeReminder) {
-        logger.info { "Checking if a unmodified draft reminder needs to be sent to hanke $id" }
+        logger.info { "Checking if an unmodified draft reminder needs to be sent to hanke $id" }
         val hanke = hankeRepository.getReferenceById(id)
 
         if (hanke.sentReminders.contains(reminder)) {
@@ -408,7 +408,7 @@ class HankeCompletionService(
                         .plusDays(5)
             }
 
-        private fun unmodifiedDraftReminderDays(
+        internal fun unmodifiedDraftReminderDays(
             reminder: HankeReminder
         ): UnmodifiedDraftReminderDays {
             val reminderDay =
