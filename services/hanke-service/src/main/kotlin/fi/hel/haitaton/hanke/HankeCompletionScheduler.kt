@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service
 
 private val logger = KotlinLogging.logger {}
 
+private const val COMPLETION_DISABLED_LOG_MESSAGE =
+    "Hanke completion is disabled, not running daily completion job."
+
 @Service
 @Profile("!test")
 class HankeCompletionScheduler(
@@ -22,7 +25,7 @@ class HankeCompletionScheduler(
     @Scheduled(cron = "\${haitaton.hanke.completions.cron}", zone = "Europe/Helsinki")
     fun completeHankkeet() {
         if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
-            logger.info { "Hanke completion is disabled, not running daily completion job." }
+            logger.info { COMPLETION_DISABLED_LOG_MESSAGE }
             return
         }
 
@@ -99,7 +102,7 @@ class HankeCompletionScheduler(
     )
     fun sendUnmodifiedDraftReminders() {
         if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
-            logger.info { "Hanke completion is disabled, not running daily completion job." }
+            logger.info { COMPLETION_DISABLED_LOG_MESSAGE }
             return
         }
 
@@ -144,7 +147,7 @@ class HankeCompletionScheduler(
     )
     fun completeDrafts() {
         if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
-            logger.info { "Hanke completion is disabled, not running daily completion job." }
+            logger.info { COMPLETION_DISABLED_LOG_MESSAGE }
             return
         }
 

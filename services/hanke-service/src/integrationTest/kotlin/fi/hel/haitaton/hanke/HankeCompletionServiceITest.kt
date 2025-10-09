@@ -57,6 +57,11 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 
+private const val EMAIL_PERUSTAJA = "pertti@perustaja.test"
+private const val EMAIL_OMISTAJA = "olivia.omistaja@mail.com"
+private const val EMAIL_RAKENNUTTAJA = "rane.rakennuttaja@mail.com"
+private const val EMAIL_ASIANHOITAJA = "anssi.asianhoitaja@mail.com"
+
 class HankeCompletionServiceITest(
     @Autowired private val hankeCompletionService: HankeCompletionService,
     @Autowired private val hakemusFactory: HakemusFactory,
@@ -672,10 +677,10 @@ class HankeCompletionServiceITest(
             assertThat(recipients).hasSize(4)
             assertThat(recipients)
                 .containsExactlyInAnyOrder(
-                    "pertti@perustaja.test",
-                    "olivia.omistaja@mail.com",
-                    "rane.rakennuttaja@mail.com",
-                    "anssi.asianhoitaja@mail.com",
+                    EMAIL_PERUSTAJA,
+                    EMAIL_OMISTAJA,
+                    EMAIL_RAKENNUTTAJA,
+                    EMAIL_ASIANHOITAJA,
                 )
             val email = emails.first()
             assertThat(email.subject)
@@ -801,11 +806,7 @@ class HankeCompletionServiceITest(
             val recipients = greenMail.receivedMessages.map { it.allRecipients.single().toString() }
             assertThat(recipients).hasSize(3)
             assertThat(recipients)
-                .containsExactlyInAnyOrder(
-                    "pertti@perustaja.test",
-                    "omistaja@test",
-                    "toteuttaja@test",
-                )
+                .containsExactlyInAnyOrder(EMAIL_PERUSTAJA, "omistaja@test", "toteuttaja@test")
         }
 
         @Test
@@ -911,7 +912,7 @@ class HankeCompletionServiceITest(
                 assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_5)
                 val email = greenMail.firstReceivedMessage()
                 assertThat(email.allRecipients).hasSize(1)
-                assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+                assertThat(email.allRecipients[0].toString()).isEqualTo(EMAIL_PERUSTAJA)
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
@@ -942,7 +943,7 @@ class HankeCompletionServiceITest(
                 assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_5)
                 val email = greenMail.firstReceivedMessage()
                 assertThat(email.allRecipients).hasSize(1)
-                assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+                assertThat(email.allRecipients[0].toString()).isEqualTo(EMAIL_PERUSTAJA)
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
@@ -1079,7 +1080,7 @@ class HankeCompletionServiceITest(
                 assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_14)
                 val email = greenMail.firstReceivedMessage()
                 assertThat(email.allRecipients).hasSize(1)
-                assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+                assertThat(email.allRecipients[0].toString()).isEqualTo(EMAIL_PERUSTAJA)
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
@@ -1113,7 +1114,7 @@ class HankeCompletionServiceITest(
                 assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_14)
                 val email = greenMail.firstReceivedMessage()
                 assertThat(email.allRecipients).hasSize(1)
-                assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+                assertThat(email.allRecipients[0].toString()).isEqualTo(EMAIL_PERUSTAJA)
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
@@ -1362,7 +1363,7 @@ class HankeCompletionServiceITest(
             assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.DELETION_5)
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
-            assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+            assertThat(email.allRecipients[0].toString()).isEqualTo(EMAIL_PERUSTAJA)
             assertThat(email.subject)
                 .isEqualTo(
                     "Haitaton: Hankkeesi ${hanke.hankeTunnus} poistetaan järjestelmästä " +
@@ -1426,11 +1427,7 @@ class HankeCompletionServiceITest(
             val recipients = greenMail.receivedMessages.map { it.allRecipients.single().toString() }
             assertThat(recipients).hasSize(3)
             assertThat(recipients)
-                .containsExactlyInAnyOrder(
-                    "pertti@perustaja.test",
-                    "omistaja@test",
-                    "toteuttaja@test",
-                )
+                .containsExactlyInAnyOrder(EMAIL_PERUSTAJA, "omistaja@test", "toteuttaja@test")
         }
     }
 
@@ -1547,10 +1544,10 @@ class HankeCompletionServiceITest(
             assertThat(recipients).hasSize(4)
             assertThat(recipients)
                 .containsExactlyInAnyOrder(
-                    "pertti@perustaja.test",
-                    "olivia.omistaja@mail.com",
-                    "rane.rakennuttaja@mail.com",
-                    "anssi.asianhoitaja@mail.com",
+                    EMAIL_PERUSTAJA,
+                    EMAIL_OMISTAJA,
+                    EMAIL_RAKENNUTTAJA,
+                    EMAIL_ASIANHOITAJA,
                 )
             val email = emails.first()
             assertThat(email.subject)
@@ -1608,11 +1605,7 @@ class HankeCompletionServiceITest(
             assertThat(emails).hasSize(3)
             val recipients = emails.map { it.allRecipients.single().toString() }
             assertThat(recipients)
-                .containsExactlyInAnyOrder(
-                    "pertti@perustaja.test",
-                    "olivia.omistaja@mail.com",
-                    "rane.rakennuttaja@mail.com",
-                )
+                .containsExactlyInAnyOrder(EMAIL_PERUSTAJA, EMAIL_OMISTAJA, EMAIL_RAKENNUTTAJA)
 
             val email = emails.first()
             assertThat(email.subject)
@@ -1649,11 +1642,7 @@ class HankeCompletionServiceITest(
             assertThat(emails).hasSize(3)
             val recipients = emails.map { it.allRecipients.single().toString() }
             assertThat(recipients)
-                .containsExactlyInAnyOrder(
-                    "pertti@perustaja.test",
-                    "olivia.omistaja@mail.com",
-                    "rane.rakennuttaja@mail.com",
-                )
+                .containsExactlyInAnyOrder(EMAIL_PERUSTAJA, EMAIL_OMISTAJA, EMAIL_RAKENNUTTAJA)
 
             val email = emails.first()
             assertThat(email.subject)
@@ -1691,10 +1680,10 @@ class HankeCompletionServiceITest(
             assertThat(recipients).hasSize(4)
             assertThat(recipients)
                 .containsExactlyInAnyOrder(
-                    "olivia.omistaja@mail.com",
-                    "rane.rakennuttaja@mail.com",
-                    "anssi.asianhoitaja@mail.com",
-                    "pertti@perustaja.test",
+                    EMAIL_OMISTAJA,
+                    EMAIL_RAKENNUTTAJA,
+                    EMAIL_ASIANHOITAJA,
+                    EMAIL_PERUSTAJA,
                 )
         }
     }
