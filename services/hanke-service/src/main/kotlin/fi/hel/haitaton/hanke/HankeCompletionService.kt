@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.email.EmailEvent
 import fi.hel.haitaton.hanke.email.HankeCompletedNotification
 import fi.hel.haitaton.hanke.email.HankeDeletionReminder
+import fi.hel.haitaton.hanke.email.HankeDraftUnmodifiedNotification
 import fi.hel.haitaton.hanke.email.HankeEndingReminder
 import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
@@ -38,6 +39,23 @@ class HankeCompletionService(
 
     @Transactional(readOnly = true)
     fun idsToComplete(): List<Int> = hankeRepository.findHankeToComplete(completionsPerDay)
+
+    @Transactional(readOnly = true)
+    fun idsForUnmodifiedDraftReminders(reminder: HankeReminder): List<Int> {
+        val days =
+            when (reminder) {
+                HankeReminder.DRAFT_COMPLETION_15 -> DAYS_BEFORE_COMPLETING_DRAFT - 15L
+                HankeReminder.DRAFT_COMPLETION_5 -> DAYS_BEFORE_COMPLETING_DRAFT - 5L
+                else ->
+                    throw IllegalArgumentException(
+                        "Unsupported reminder type for unmodified drafts: $reminder"
+                    )
+            }
+        return hankeRepository.findDraftsToComplete(
+            completionsPerDay,
+            getCurrentTimeUTCAsLocalTime().minusDays(days),
+        )
+    }
 
     @Transactional(readOnly = true)
     fun idsForReminders(reminder: HankeReminder, clock: Clock = Clock.system(TZ_UTC)): List<Int> =
@@ -223,6 +241,24 @@ class HankeCompletionService(
     }
 
     @Transactional
+    fun sendUnmodifiedDraftReminderIfNecessary(id: Int, reminder: HankeReminder) {
+        logger.info { "Checking if a unmodified draft reminder needs to be sent to hanke $id" }
+        val hanke = hankeRepository.getReferenceById(id)
+
+        if (hanke.sentReminders.contains(reminder)) {
+            logger.info {
+                "Hanke has been sent this reminder already, so not sending it again. " +
+                    "reminder=$reminder, ${hanke.logString()}"
+            }
+            return
+        }
+
+        hanke.sentReminders += reminder
+        val days = unmodifiedDraftReminderDays(reminder)
+        sendUnmodifiedDraftReminders(hanke, days.daysUnmodified, days.daysUntilMarkedReady)
+    }
+
+    @Transactional
     fun completeDraftHankeIfPossible(id: Int) {
         logger.info { "Checking if hanke $id has been idle for 180 days and could be removed." }
         val hanke = hankeRepository.getReferenceById(id)
@@ -277,6 +313,22 @@ class HankeCompletionService(
     private fun sendReminders(hanke: HankeEntity, endingDate: LocalDate) {
         sendEmailToEditors(hanke) {
             HankeEndingReminder(it.sahkoposti, hanke.nimi, hanke.hankeTunnus, endingDate)
+        }
+    }
+
+    private fun sendUnmodifiedDraftReminders(
+        hanke: HankeEntity,
+        daysUnmodified: Int,
+        daysUntilMarkedReady: Int,
+    ) {
+        sendEmailToEditors(hanke) {
+            HankeDraftUnmodifiedNotification(
+                it.sahkoposti,
+                hanke.nimi,
+                hanke.hankeTunnus,
+                daysUnmodified,
+                daysUntilMarkedReady,
+            )
         }
     }
 
@@ -344,6 +396,8 @@ class HankeCompletionService(
 
         fun reminderDate(reminder: HankeReminder, clock: Clock): LocalDate =
             when (reminder) {
+                HankeReminder.DRAFT_COMPLETION_15 -> LocalDate.now(clock).plusDays(15)
+                HankeReminder.DRAFT_COMPLETION_5 -> LocalDate.now(clock).plusDays(5)
                 HankeReminder.COMPLETION_14 -> LocalDate.now(clock).plusDays(14)
                 HankeReminder.COMPLETION_5 -> LocalDate.now(clock).plusDays(5)
                 // The deletion date is compared to `completedAt`, while the others are compared to
@@ -353,8 +407,26 @@ class HankeCompletionService(
                         .minusMonthsPreserveEndOfMonth(MONTHS_BEFORE_DELETION)
                         .plusDays(5)
             }
+
+        private fun unmodifiedDraftReminderDays(
+            reminder: HankeReminder
+        ): UnmodifiedDraftReminderDays {
+            val reminderDay =
+                when (reminder) {
+                    HankeReminder.DRAFT_COMPLETION_15 -> DAYS_BEFORE_COMPLETING_DRAFT - 15L
+                    HankeReminder.DRAFT_COMPLETION_5 -> DAYS_BEFORE_COMPLETING_DRAFT - 5L
+                    else ->
+                        throw IllegalArgumentException(
+                            "Unsupported reminder type for unmodified drafts: $reminder"
+                        )
+                }
+            val completionDay = DAYS_BEFORE_COMPLETING_DRAFT
+            return UnmodifiedDraftReminderDays(reminderDay.toInt(), completionDay.toInt())
+        }
     }
 }
+
+data class UnmodifiedDraftReminderDays(val daysUnmodified: Int, val daysUntilMarkedReady: Int)
 
 class HankeHasNoCompletionDateException(hanke: HankeEntity) :
     HankeValidityException("Hanke has no completion date", hanke)

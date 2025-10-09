@@ -68,6 +68,8 @@ haitaton:
       reminderCron: ${HAITATON_COMPLETIONS_REMINDER_CRON:21 17 19 * * *}
       # By default, run every day at 20:03:53 (Helsinki time).
       deletionReminderCron: ${HAITATON_COMPLETIONS_DELETE_REMINDER_CRON:53 03 20 * * *}
+      # By default, run every day at 21:41:03 (Helsinki time).
+      unmodifiedDraftReminderCron: ${HAITATON_COMPLETIONS_UNMODIFIED_DRAFT_REMINDER_CRON:03 41 21 * * *}
       # By default, run every day at 17:53:27 (Helsinki time).
       draftCompletionCron: ${HAITATON_COMPLETIONS_DRAFT_CRON:27 53 17 * * *}
   map-grid:

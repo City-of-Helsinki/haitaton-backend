@@ -412,6 +412,76 @@ class HankeCompletionServiceITest(
     }
 
     @Nested
+    inner class IdsForUnmodifiedDraftReminders {
+        private fun saveHanke(
+            status: HankeStatus = HankeStatus.DRAFT,
+            modifiedDaysAgo: Long = DAYS_BEFORE_COMPLETING_DRAFT - 5,
+            modifier: HankeBuilder.() -> HankeBuilder = { this },
+        ) =
+            hankeFactory.builder().modifier().saveEntity(status) {
+                it.modifiedAt = getCurrentTimeUTCAsLocalTime().minusDays(modifiedDaysAgo)
+            }
+
+        @EnumSource(HankeReminder::class, names = ["DRAFT_COMPLETION_15", "DRAFT_COMPLETION_5"])
+        @ParameterizedTest
+        fun `returns empty list when there are no hanke`(reminder: HankeReminder) {
+            val result = hankeCompletionService.idsForUnmodifiedDraftReminders(reminder)
+
+            assertThat(result).isEmpty()
+        }
+
+        @EnumSource(HankeReminder::class, names = ["DRAFT_COMPLETION_15", "DRAFT_COMPLETION_5"])
+        @ParameterizedTest
+        fun `returns only draft hanke`(reminder: HankeReminder) {
+            saveHanke(status = HankeStatus.COMPLETED)
+            val draft = saveHanke()
+            saveHanke(status = HankeStatus.PUBLIC)
+
+            val result = hankeCompletionService.idsForUnmodifiedDraftReminders(reminder)
+
+            assertThat(result).containsExactly(draft.id)
+        }
+
+        @EnumSource(HankeReminder::class, names = ["DRAFT_COMPLETION_15", "DRAFT_COMPLETION_5"])
+        @ParameterizedTest
+        fun `returns only hanke with missing area end dates`(reminder: HankeReminder) {
+            val noAreas = saveHanke { withNoAreas() }
+            saveHanke {
+                withHankealue()
+                withHankealue(haittaLoppuPvm = ZonedDateTime.now().minusMonths(7))
+            }
+            val missingEndDate = saveHanke {
+                withHankealue()
+                withHankealue(haittaLoppuPvm = null)
+            }
+
+            val result = hankeCompletionService.idsForUnmodifiedDraftReminders(reminder)
+
+            assertThat(result).containsExactlyInAnyOrder(noAreas.id, missingEndDate.id)
+        }
+
+        @EnumSource(HankeReminder::class, names = ["DRAFT_COMPLETION_15", "DRAFT_COMPLETION_5"])
+        @ParameterizedTest
+        fun `returns only hanke that haven't been modified in a long time`(
+            reminder: HankeReminder
+        ) {
+            val modifiedDaysAgo =
+                when (reminder) {
+                    HankeReminder.DRAFT_COMPLETION_15 -> DAYS_BEFORE_COMPLETING_DRAFT - 15
+                    HankeReminder.DRAFT_COMPLETION_5 -> DAYS_BEFORE_COMPLETING_DRAFT - 5
+                    else -> throw IllegalArgumentException("Unexpected reminder $reminder")
+                }
+            val onTheDay = saveHanke(modifiedDaysAgo = modifiedDaysAgo)
+            saveHanke(modifiedDaysAgo = modifiedDaysAgo - 1)
+            val beforeTheDay = saveHanke(modifiedDaysAgo = modifiedDaysAgo + 1)
+
+            val result = hankeCompletionService.idsForUnmodifiedDraftReminders(reminder)
+
+            assertThat(result).containsExactly(beforeTheDay.id, onTheDay.id)
+        }
+    }
+
+    @Nested
     inner class IdsForDraftsToComplete {
         private fun saveHanke(
             status: HankeStatus = HankeStatus.DRAFT,
