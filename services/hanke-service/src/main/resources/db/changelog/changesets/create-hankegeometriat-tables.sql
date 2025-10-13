@@ -1,14 +1,9 @@
 --liquibase formatted sql
 --changeset teemu:create-hankegeometry-tables comment:Create Hanke Geometry tables
--- Try to create PostGIS extension if it doesn't exist
--- This requires superuser privileges or the extension must be available
-DO
-$do$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN
-        CREATE EXTENSION IF NOT EXISTS postgis;
-    END IF;
-END $do$;
+
+-- PostGIS extension must be installed by database administrator
+-- This changeset assumes PostGIS is already available in the database
+-- CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE HankeGeometriat
 (
