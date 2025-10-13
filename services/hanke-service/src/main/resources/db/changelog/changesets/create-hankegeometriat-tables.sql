@@ -8,8 +8,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN
         CREATE EXTENSION IF NOT EXISTS postgis;
     END IF;
-END;
-$do$;
+END $do$;
 
 CREATE TABLE HankeGeometriat
 (
