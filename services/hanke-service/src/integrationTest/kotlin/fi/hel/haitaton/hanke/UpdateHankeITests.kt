@@ -110,8 +110,8 @@ class UpdateHankeITests(
             prop(Hanke::version).isEqualTo(0)
             prop(Hanke::createdAt).isRecentZDT()
             prop(Hanke::createdBy).isEqualTo(USERNAME)
-            prop(Hanke::modifiedAt).isNull()
-            prop(Hanke::modifiedBy).isNull()
+            prop(Hanke::modifiedAt).isEqualTo(hanke.createdAt)
+            prop(Hanke::modifiedBy).isEqualTo(hanke.createdBy)
         }
         val request = hanke.toModifyRequest().copy(kuvaus = "New description")
 
@@ -135,8 +135,8 @@ class UpdateHankeITests(
             prop(Hanke::version).isEqualTo(0)
             prop(Hanke::createdAt).isRecentZDT()
             prop(Hanke::createdBy).isEqualTo(USERNAME)
-            prop(Hanke::modifiedAt).isNull()
-            prop(Hanke::modifiedBy).isNull()
+            prop(Hanke::modifiedAt).isEqualTo(hanke.createdAt)
+            prop(Hanke::modifiedBy).isEqualTo(hanke.createdBy)
         }
         val request = hanke.toModifyRequest()
 
