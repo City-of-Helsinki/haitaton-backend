@@ -2,9 +2,9 @@
 # an update to the specified branches or you push specified tags.
 trigger:
   batch: true
-  tags:
+  branches:
     include:
-      - haitaton-backend-v*
+    - main
 
 # Pull request (PR) triggers cause a pipeline to run whenever a pull request is
 # opened with one of the specified target branches, or when updates are made to
