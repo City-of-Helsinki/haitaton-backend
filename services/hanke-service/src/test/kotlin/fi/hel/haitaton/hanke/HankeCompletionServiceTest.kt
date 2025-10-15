@@ -4,6 +4,7 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.hasClass
+import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
@@ -13,7 +14,9 @@ import assertk.assertions.messageContains
 import fi.hel.haitaton.hanke.HankeCompletionService.Companion.areasForDraft
 import fi.hel.haitaton.hanke.HankeCompletionService.Companion.areasForPublic
 import fi.hel.haitaton.hanke.HankeCompletionService.Companion.hasFutureAreas
+import fi.hel.haitaton.hanke.HankeCompletionService.Companion.unmodifiedDraftReminderDays
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.domain.HankeReminder
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
@@ -271,6 +274,55 @@ class HankeCompletionServiceTest {
             val result = Service.hankeHasActiveApplications(hanke)
 
             assertThat(result).isTrue()
+        }
+    }
+
+    @Nested
+    inner class UnmodifiedDraftReminderDays {
+        @Test
+        fun `returns correct days for DRAFT_COMPLETION_15 reminder`() {
+            val result = unmodifiedDraftReminderDays(HankeReminder.DRAFT_COMPLETION_15)
+
+            assertThat(result.daysUnmodified).isEqualTo(165)
+            assertThat(result.daysUntilMarkedReady).isEqualTo(180)
+        }
+
+        @Test
+        fun `returns correct days for DRAFT_COMPLETION_5 reminder`() {
+            val result = unmodifiedDraftReminderDays(HankeReminder.DRAFT_COMPLETION_5)
+
+            assertThat(result.daysUnmodified).isEqualTo(175)
+            assertThat(result.daysUntilMarkedReady).isEqualTo(180)
+        }
+
+        @Test
+        fun `throws exception for unsupported reminder type COMPLETION_5`() {
+            val failure = assertFailure { unmodifiedDraftReminderDays(HankeReminder.COMPLETION_5) }
+
+            failure.all {
+                hasClass(IllegalArgumentException::class.java)
+                messageContains("Unsupported reminder type for unmodified drafts: COMPLETION_5")
+            }
+        }
+
+        @Test
+        fun `throws exception for unsupported reminder type COMPLETION_14`() {
+            val failure = assertFailure { unmodifiedDraftReminderDays(HankeReminder.COMPLETION_14) }
+
+            failure.all {
+                hasClass(IllegalArgumentException::class.java)
+                messageContains("Unsupported reminder type for unmodified drafts: COMPLETION_14")
+            }
+        }
+
+        @Test
+        fun `throws exception for unsupported reminder type DELETION_5`() {
+            val failure = assertFailure { unmodifiedDraftReminderDays(HankeReminder.DELETION_5) }
+
+            failure.all {
+                hasClass(IllegalArgumentException::class.java)
+                messageContains("Unsupported reminder type for unmodified drafts: DELETION_5")
+            }
         }
     }
 }

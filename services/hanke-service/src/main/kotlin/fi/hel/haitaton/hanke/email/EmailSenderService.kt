@@ -41,6 +41,7 @@ enum class EmailTemplate(val value: String) {
     EXCAVATION_NOTIFICATION_DECISION("kaivuilmoitus-paatos"),
     HANKE_COMPLETED("hanke-valmistunut"),
     HANKE_DELETION_REMINDER("hanke-poistetaan"),
+    HANKE_DRAFT_UNMODIFIED("hanke-luonnos-muokkaamatta"),
     HANKE_ENDING("hanke-paattyy"),
     INFORMATION_REQUEST("taydennyspyynto"),
     INFORMATION_REQUEST_CANCELED("taydennyspyynto-peruttu"),
@@ -214,6 +215,20 @@ class EmailSenderService(
             )
 
         sendHybridEmail(data.to, EmailTemplate.HANKE_DELETION_REMINDER, templateData)
+    }
+
+    @TransactionalEventListener
+    fun sendHankeDraftUnmodifiedNotification(data: HankeDraftUnmodifiedNotification) {
+        logger.info { "Sending notification email for unmodified hanke draft" }
+        val templateData =
+            mapOf(
+                "hanketunnus" to data.hanketunnus,
+                "hankeNimi" to data.hankeNimi,
+                "daysUnmodified" to data.daysUnmodified,
+                "daysUntilMarkedReady" to data.daysUntilMarkedReady,
+                "signatures" to signatures(),
+            )
+        sendHybridEmail(data.to, EmailTemplate.HANKE_DRAFT_UNMODIFIED, templateData)
     }
 
     @TransactionalEventListener

@@ -78,12 +78,14 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
+    implementation("ch.qos.logback:logback-core:1.5.19")
     implementation("ch.qos.logback.access:logback-access-tomcat:2.0.6")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.liquibase:liquibase-core")
+    implementation("org.liquibase:liquibase-core:5.0.0")
+    implementation("org.apache.commons:commons-lang3:3.19.0")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
     implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.11.0")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
@@ -117,6 +119,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
+
+    // Override commons-compress to fix CVE
+    testImplementation("org.apache.commons:commons-compress:1.26.0")
+    testImplementation("commons-codec:commons-codec:1.17.2")
 
     // Spring Boot Management
     implementation("org.springframework.boot:spring-boot-starter-actuator")

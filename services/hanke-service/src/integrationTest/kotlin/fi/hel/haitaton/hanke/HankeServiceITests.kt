@@ -131,32 +131,6 @@ class HankeServiceITests(
     @Autowired private val alluClient: AlluClient,
 ) : IntegrationTest() {
 
-    companion object {
-        data class Bounds(val minX: Double, val minY: Double, val maxX: Double, val maxY: Double) {
-            val width: Double
-                get() = maxX - minX
-
-            fun westOfOutside(): Bounds = copy(minX = minX - width - 1.0, maxX = minX - 1.0)
-
-            fun halfWidthToEast(): Bounds =
-                copy(minX = minX + width / 2.0, maxY = maxX + width / 2.0)
-        }
-
-        /** Default bounds envelope default geometry in hankeGeometriat.json. */
-        val DEFAULT_BOUNDS =
-            Bounds(minX = 25496696.0, minY = 6673077.0, maxX = 25496812.0, maxY = 6673046.0)
-
-        /**
-         * Large bounds envelope that contains two geometries in polygon.json and thirdPolygon.json.
-         */
-        val LARGE_BOUNDS =
-            Bounds(minX = 25493597.0, minY = 6679731.0, maxX = 25494132.0, maxY = 6679914.0)
-
-        /** Medium bounds envelope that contains one geometry in polygon.json. */
-        val MEDIUM_BOUNDS =
-            Bounds(minX = 25493939.0, minY = 6679757.0, maxX = 25494131.0, maxY = 6679914.0)
-    }
-
     @BeforeEach
     fun clearMocks() {
         clearAllMocks()

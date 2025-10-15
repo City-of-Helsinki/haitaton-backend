@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service
 
 private val logger = KotlinLogging.logger {}
 
+private const val COMPLETION_DISABLED_LOG_MESSAGE =
+    "Hanke completion is disabled, not running daily completion job."
+
 @Service
 @Profile("!test")
 class HankeCompletionScheduler(
@@ -22,7 +25,7 @@ class HankeCompletionScheduler(
     @Scheduled(cron = "\${haitaton.hanke.completions.cron}", zone = "Europe/Helsinki")
     fun completeHankkeet() {
         if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
-            logger.info { "Hanke completion is disabled, not running daily completion job." }
+            logger.info { COMPLETION_DISABLED_LOG_MESSAGE }
             return
         }
 
@@ -94,12 +97,57 @@ class HankeCompletionScheduler(
     }
 
     @Scheduled(
+        cron = "\${haitaton.hanke.completions.unmodifiedDraftReminderCron}",
+        zone = "Europe/Helsinki",
+    )
+    fun sendUnmodifiedDraftReminders() {
+        if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
+            logger.info { COMPLETION_DISABLED_LOG_MESSAGE }
+            return
+        }
+
+        logger.info(
+            "Trying to obtain lock $LOCK_NAME to start checking for draft hanke that have completion date coming soon."
+        )
+        val sent5DayReminders: MutableSet<Int> = mutableSetOf()
+        lockService.withLock(LOCK_NAME, 10, TimeUnit.MINUTES) {
+            var ids =
+                completionService.idsForUnmodifiedDraftReminders(HankeReminder.DRAFT_COMPLETION_5)
+            logger.info {
+                "Got ${ids.size} unmodified draft hanke to remind of coming completion in 5 days."
+            }
+
+            doForEachId(ids) { id ->
+                completionService.sendUnmodifiedDraftReminderIfNecessary(
+                    id,
+                    HankeReminder.DRAFT_COMPLETION_5,
+                )
+                sent5DayReminders.add(id)
+            }
+            ids =
+                completionService
+                    .idsForUnmodifiedDraftReminders(HankeReminder.DRAFT_COMPLETION_15)
+                    .minus(sent5DayReminders)
+            logger.info {
+                "Got ${ids.size} unmodified draft hanke to remind of coming completion in 15 days."
+            }
+
+            doForEachId(ids) { id ->
+                completionService.sendUnmodifiedDraftReminderIfNecessary(
+                    id,
+                    HankeReminder.DRAFT_COMPLETION_15,
+                )
+            }
+        }
+    }
+
+    @Scheduled(
         cron = "\${haitaton.hanke.completions.draftCompletionCron}",
         zone = "Europe/Helsinki",
     )
     fun completeDrafts() {
         if (featureFlags.isDisabled(Feature.HANKE_COMPLETION)) {
-            logger.info { "Hanke completion is disabled, not running daily completion job." }
+            logger.info { COMPLETION_DISABLED_LOG_MESSAGE }
             return
         }
 

@@ -83,6 +83,14 @@ data class HankeDeletionReminder(
     val deletionDate: LocalDate,
 ) : EmailEvent
 
+data class HankeDraftUnmodifiedNotification(
+    override val to: String,
+    val hankeNimi: String,
+    val hanketunnus: String,
+    val daysUnmodified: Int,
+    val daysUntilMarkedReady: Int,
+) : EmailEvent
+
 data class HankeCompletedNotification(
     override val to: String,
     val hankeNimi: String,
