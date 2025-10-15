@@ -255,3 +255,5 @@ databaseChangeLog:
       file: db/changelog/changesets/112-add-terminated-to-user-sessions.sql
   - include:
       file: db/changelog/changesets/113-add-expires-at-to-user-sessions.sql
+  - include:
+      file: db/changelog/changesets/114-populate-null-hanke-modified-fields.sql

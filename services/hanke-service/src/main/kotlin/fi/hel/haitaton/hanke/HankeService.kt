@@ -602,15 +602,20 @@ class HankeService(
         currentUserId: String,
     ): HankeEntity =
         HankeEntity(
-            hankeTunnus = hanketunnusService.newHanketunnus(),
-            nimi = nimi,
-            onYKTHanke = null,
-            generated = generated,
-            status = HankeStatus.DRAFT,
-            version = 0,
-            createdByUserId = currentUserId,
-            createdAt = getCurrentTimeUTCAsLocalTime(),
-        )
+                hankeTunnus = hanketunnusService.newHanketunnus(),
+                nimi = nimi,
+                onYKTHanke = null,
+                generated = generated,
+                status = HankeStatus.DRAFT,
+                version = 0,
+            )
+            .apply {
+                val createDate = getCurrentTimeUTCAsLocalTime()
+                this.createdAt = createDate
+                this.createdByUserId = currentUserId
+                this.modifiedAt = createDate
+                this.modifiedByUserId = currentUserId
+            }
 
     private fun limitHankeName(name: String): String =
         if (name.length > MAXIMUM_HANKE_NIMI_LENGTH) {
