@@ -9,7 +9,6 @@ import assertk.assertions.each
 import assertk.assertions.extracting
 import assertk.assertions.first
 import assertk.assertions.hasClass
-import assertk.assertions.hasMessage
 import assertk.assertions.hasSize
 import assertk.assertions.isBetween
 import assertk.assertions.isEmpty
@@ -79,7 +78,6 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
@@ -181,17 +179,19 @@ class UpdateHankeITests(
     }
 
     @Test
-    fun `doesn't revert to a draft`() {
+    fun `throws exception with error paths when PUBLIC hanke has validation errors`() {
         val hanke = hankeFactory.builder(USERNAME).withYhteystiedot().withHankealue().save()
         assertThat(hanke.status).isEqualTo(HankeStatus.PUBLIC)
-        val request = hanke.toModifyRequest().copy(tyomaaKatuosoite = "")
+        val request = hanke.toModifyRequest().copy(tyomaaKatuosoite = "", nimi = "")
 
-        val exception =
-            assertThrows<HankeArgumentException> {
-                hankeService.updateHanke(hanke.hankeTunnus, request)
-            }
+        val failure = assertFailure { hankeService.updateHanke(hanke.hankeTunnus, request) }
 
-        assertThat(exception).hasMessage("A public hanke didn't have all mandatory fields filled.")
+        failure.all {
+            hasClass(InvalidHankeDataException::class)
+            messageContains("Hanke contains invalid data")
+            messageContains("tyomaaKatuosoite")
+            messageContains("nimi")
+        }
     }
 
     @Test

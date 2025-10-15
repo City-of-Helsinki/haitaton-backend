@@ -93,6 +93,9 @@ class HankeNotFoundException(val hankeTunnus: String?) :
 class PublicHankeNotFoundException(val hankeTunnus: String) :
     RuntimeException("Public hanke not found with hankeTunnus $hankeTunnus")
 
+class InvalidHankeDataException(val errorPaths: List<String>) :
+    RuntimeException("Hanke contains invalid data. Errors at paths: ${errorPaths.joinToString()}")
+
 class HankeArgumentException(message: String) : RuntimeException(message)
 
 class HankeYhteystietoNotFoundException(val hanke: HankeIdentifier, ytId: Int) :

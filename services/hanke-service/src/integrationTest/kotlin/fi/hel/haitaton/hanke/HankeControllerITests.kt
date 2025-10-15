@@ -631,6 +631,51 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 disclosureLogService.saveForHanke(expectedHanke, USERNAME)
             }
         }
+
+        @Test
+        fun `returns 400 with error paths when PUBLIC hanke has validation errors`() {
+            val hanke =
+                HankeFactory.create(hankeTunnus = HANKE_TUNNUS, hankeStatus = HankeStatus.PUBLIC)
+                    .withHankealue(haittojenhallintasuunnitelma = null)
+            val request = hanke.toModifyRequest()
+            every {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
+            } returns true
+            every { hankeService.updateHanke(HANKE_TUNNUS, any()) } throws
+                InvalidHankeDataException(
+                    listOf(
+                        "alueet[0].haittojenhallintasuunnitelma.AUTOLIIKENNE",
+                        "alueet[0].haittojenhallintasuunnitelma.PYORALIIKENNE",
+                        "alueet[0].haittojenhallintasuunnitelma.MUUT",
+                        "alueet[0].haittojenhallintasuunnitelma.YLEINEN",
+                    )
+                )
+
+            put(url, request)
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.errorCode").value("HAI1031"))
+                .andExpect(jsonPath("$.errorMessage").value("Invalid state: Missing needed data"))
+                .andExpect(
+                    jsonPath("$.errorPaths[0]")
+                        .value("alueet[0].haittojenhallintasuunnitelma.AUTOLIIKENNE")
+                )
+                .andExpect(
+                    jsonPath("$.errorPaths[1]")
+                        .value("alueet[0].haittojenhallintasuunnitelma.PYORALIIKENNE")
+                )
+                .andExpect(
+                    jsonPath("$.errorPaths[2]").value("alueet[0].haittojenhallintasuunnitelma.MUUT")
+                )
+                .andExpect(
+                    jsonPath("$.errorPaths[3]")
+                        .value("alueet[0].haittojenhallintasuunnitelma.YLEINEN")
+                )
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
+                hankeService.updateHanke(HANKE_TUNNUS, any())
+            }
+        }
     }
 
     @Nested
