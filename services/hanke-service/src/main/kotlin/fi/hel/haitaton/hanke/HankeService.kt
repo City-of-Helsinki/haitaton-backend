@@ -329,9 +329,7 @@ class HankeService(
                             validationResult.errorPaths().joinToString()
                         }"
                     }
-                    throw HankeArgumentException(
-                        "A public hanke didn't have all mandatory fields filled."
-                    )
+                    throw InvalidHankeDataException(validationResult.errorPaths())
                 }
             else ->
                 throw HankeArgumentException(
