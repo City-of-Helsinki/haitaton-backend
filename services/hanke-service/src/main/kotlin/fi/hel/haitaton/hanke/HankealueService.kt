@@ -162,8 +162,9 @@ class HankealueService(
             startTime: ZonedDateTime?,
             endTime: ZonedDateTime?,
         ): List<NewHankealue> =
-            areas?.let {
-                it.map { Feature().apply { geometry = it.geometry } }
+            areas?.let { area ->
+                area
+                    .map { Feature().apply { geometry = it.geometry } }
                     .map { feature -> FeatureCollection().add(feature) }
                     .map { featureCollection -> NewGeometriat(featureCollection) }
                     .mapIndexed { i, geometria ->

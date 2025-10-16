@@ -93,6 +93,27 @@ sealed class ValidationResult {
 
     fun errorPaths(): List<String> = errorPaths.toList()
 
+    /**
+     * Returns true if and only if ALL error paths are about haittojenhallintasuunnitelma. If there
+     * are any non-haittojenhallintasuunnitelma errors mixed in, returns false.
+     *
+     * This is used to determine if a PUBLIC hanke can remain PUBLIC despite having validation
+     * errors (it can only remain PUBLIC if the only errors are missing haittojenhallintasuunnitelma
+     * fields).
+     */
+    fun hasOnlyHaittojenhallintasuunnitelmaErrors(): Boolean {
+        if (errorPaths.isEmpty()) {
+            return false
+        }
+
+        val haittaPattern = ".haittojenhallintasuunnitelma."
+        val haittaErrors = errorPaths.filter { it.contains(haittaPattern) }
+
+        // Return true only if ALL errors are of this type
+        // If there are any other types of errors, return false
+        return haittaErrors.size == errorPaths.size
+    }
+
     fun isOk() = errorPaths.isEmpty()
 
     private fun addAll(errorPaths: List<String>): ValidationResult =
@@ -128,13 +149,13 @@ sealed class ValidationResult {
     fun <T> andWithNotNull(
         value: T?,
         path: String,
-        f: (T).(String) -> ValidationResult
+        f: (T).(String) -> ValidationResult,
     ): ValidationResult = if (value != null) this.and { value.f(path) } else and { failure(path) }
 
     fun <T> andNotNull(
         value: T?,
         path: String,
-        f: (T, String) -> ValidationResult
+        f: (T, String) -> ValidationResult,
     ): ValidationResult = if (value != null) this.and { f(value, path) } else and { failure(path) }
 
     /** Check run the validation lambda only if the pre-condition is true. */
@@ -147,9 +168,8 @@ sealed class ValidationResult {
         f: (T, String) -> ValidationResult,
     ): ValidationResult {
         return this.addAll(
-            values.flatMapIndexed { index: Int, value: T ->
-                f(value, "$path[$index]").errorPaths()
-            })
+            values.flatMapIndexed { index: Int, value: T -> f(value, "$path[$index]").errorPaths() }
+        )
     }
 
     companion object {

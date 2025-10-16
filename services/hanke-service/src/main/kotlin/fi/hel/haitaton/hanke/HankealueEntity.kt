@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
+import fi.hel.haitaton.hanke.domain.HankealueStatus
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
@@ -47,6 +48,7 @@ class HankealueEntity(
     @Enumerated(EnumType.STRING) var polyHaitta: Polyhaitta? = null,
     @Enumerated(EnumType.STRING) var tarinaHaitta: Tarinahaitta? = null,
     var nimi: String,
+    @Enumerated(EnumType.STRING) var status: HankealueStatus = HankealueStatus.PUBLIC,
     // Made bidirectional relation mainly to allow cascaded delete.
     @OneToOne(
         fetch = FetchType.LAZY,
@@ -83,6 +85,7 @@ class HankealueEntity(
         if (polyHaitta != other.polyHaitta) return false
         if (tarinaHaitta != other.tarinaHaitta) return false
         if (nimi != other.nimi) return false
+        if (status != other.status) return false
 
         return true
     }
@@ -98,6 +101,7 @@ class HankealueEntity(
         result = 31 * result + (polyHaitta?.hashCode() ?: 0)
         result = 31 * result + (tarinaHaitta?.hashCode() ?: 0)
         result = 31 * result + nimi.hashCode()
+        result = 31 * result + status.hashCode()
         return result
     }
 }

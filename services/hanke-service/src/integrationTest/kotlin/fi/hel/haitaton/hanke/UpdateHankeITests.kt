@@ -28,6 +28,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.HankealueStatus
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
@@ -161,6 +162,58 @@ class UpdateHankeITests(
         val returnedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
 
         assertThat(returnedHanke.status).isEqualTo(HankeStatus.PUBLIC)
+    }
+
+    @Test
+    fun `sets all hankealue statuses to PUBLIC when hanke transitions from DRAFT to PUBLIC`() {
+        val hanke = hankeFactory.builder(USERNAME).withHankealue().withHankealue().save()
+        assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
+        hanke.withYhteystiedot { id = null }
+        val request = hanke.toModifyRequest()
+
+        val returnedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
+
+        assertThat(returnedHanke.status).isEqualTo(HankeStatus.PUBLIC)
+        assertThat(returnedHanke.alueet).hasSize(2)
+        assertThat(returnedHanke.alueet).each {
+            it.prop(SavedHankealue::status).isEqualTo(HankealueStatus.PUBLIC)
+        }
+    }
+
+    @Test
+    fun `keeps PUBLIC hanke PUBLIC with only haittojenhallintasuunnitelma errors and marks erroneous hankealue as DRAFT`() {
+        val hanke =
+            hankeFactory.builder(USERNAME).withYhteystiedot().withHankealue().withHankealue().save()
+        assertThat(hanke.status).isEqualTo(HankeStatus.PUBLIC)
+        hanke.alueet[0].haittojenhallintasuunnitelma =
+            hanke.alueet[0].haittojenhallintasuunnitelma?.minus(Haittojenhallintatyyppi.YLEINEN)
+        val request = hanke.toModifyRequest()
+
+        val returnedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
+
+        assertThat(returnedHanke.status).isEqualTo(HankeStatus.PUBLIC)
+        assertThat(returnedHanke.alueet).hasSize(2)
+        assertThat(returnedHanke.alueet[0].status).isEqualTo(HankealueStatus.DRAFT)
+        assertThat(returnedHanke.alueet[1].status).isEqualTo(HankealueStatus.PUBLIC)
+    }
+
+    @Test
+    fun `marks erroneous hankealue as DRAFT when DRAFT hanke has haittojenhallintasuunnitelma errors`() {
+        val hanke =
+            hankeFactory
+                .builder(USERNAME)
+                .withHankealue(haittojenhallintasuunnitelma = null)
+                .withHankealue()
+                .save()
+        assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
+        val request = hanke.toModifyRequest()
+
+        val returnedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
+
+        assertThat(returnedHanke.status).isEqualTo(HankeStatus.DRAFT)
+        assertThat(returnedHanke.alueet).hasSize(2)
+        assertThat(returnedHanke.alueet[0].status).isEqualTo(HankealueStatus.DRAFT)
+        assertThat(returnedHanke.alueet[1].status).isEqualTo(HankealueStatus.PUBLIC)
     }
 
     @Test
@@ -601,6 +654,7 @@ class UpdateHankeITests(
         assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.TOISTUVA_POLYHAITTA)
         assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_TARINAHAITTA)
         assertThat(alue.geometriat).isNotNull()
+        assertThat(alue.status).isEqualTo(HankealueStatus.PUBLIC)
     }
 
     @Test

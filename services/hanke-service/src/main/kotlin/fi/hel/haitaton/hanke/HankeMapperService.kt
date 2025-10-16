@@ -70,6 +70,7 @@ class HankeMapperService(private val hankealueService: HankealueService) {
                 haittaLoppuPvm = haittaLoppuPvm?.atStartOfDay(TZ_UTC),
                 geometriat = geometriat?.apply { resetFeatureProperties(hankeTunnus) },
                 nimi = nimi,
+                status = status,
                 tormaystarkasteluTulos = entity.tormaystarkasteluTulos?.toDomain(),
             )
         }
@@ -134,6 +135,7 @@ class HankeMapperService(private val hankealueService: HankealueService) {
                 polyHaitta = polyHaitta,
                 tarinaHaitta = tarinaHaitta,
                 nimi = nimi,
+                status = status,
                 tormaystarkasteluTulos = entity.tormaystarkasteluTulos?.toDomain(),
                 haittojenhallintasuunnitelma = haittojenhallintasuunnitelma.toMap(),
             )

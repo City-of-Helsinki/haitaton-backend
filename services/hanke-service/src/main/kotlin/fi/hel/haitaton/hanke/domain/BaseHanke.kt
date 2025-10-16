@@ -77,6 +77,7 @@ interface Hankealue {
     val polyHaitta: Polyhaitta?
     val tarinaHaitta: Tarinahaitta?
     val nimi: String
+    val status: HankealueStatus?
     val haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma?
 }
 

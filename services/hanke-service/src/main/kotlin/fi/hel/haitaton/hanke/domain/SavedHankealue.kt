@@ -16,14 +16,8 @@ import java.time.ZonedDateTime
 @JsonView(ChangeLogView::class)
 @Schema(description = "Area data of a Hanke")
 data class SavedHankealue(
-    @field:Schema(
-        description = "Area identity, set by the service",
-    )
-    override var id: Int? = null,
-    @field:Schema(
-        description = "Hanke identity of this area",
-    )
-    var hankeId: Int? = null,
+    @field:Schema(description = "Area identity, set by the service") override var id: Int? = null,
+    @field:Schema(description = "Hanke identity of this area") var hankeId: Int? = null,
     @field:Schema(
         description = "Nuisance start date, must not be null",
         maximum = "2099-12-31T23:59:59.99Z",
@@ -34,41 +28,21 @@ data class SavedHankealue(
         maximum = "2099-12-31T23:59:59.99Z",
     )
     override var haittaLoppuPvm: ZonedDateTime? = null,
-    @field:Schema(
-        description = "Geometry data",
-    )
-    override var geometriat: Geometriat? = null,
-    @field:Schema(
-        description = "Street lane hindrance value and explanation",
-    )
+    @field:Schema(description = "Geometry data") override var geometriat: Geometriat? = null,
+    @field:Schema(description = "Street lane hindrance value and explanation")
     override var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
-    @field:Schema(
-        description = "Street lane hindrance length",
-    )
+    @field:Schema(description = "Street lane hindrance length")
     override var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
-    @field:Schema(
-        description = "Noise nuisance",
-    )
-    override var meluHaitta: Meluhaitta? = null,
-    @field:Schema(
-        description = "Dust nuisance",
-    )
-    override var polyHaitta: Polyhaitta? = null,
-    @field:Schema(
-        description = "Vibration nuisance",
-    )
+    @field:Schema(description = "Noise nuisance") override var meluHaitta: Meluhaitta? = null,
+    @field:Schema(description = "Dust nuisance") override var polyHaitta: Polyhaitta? = null,
+    @field:Schema(description = "Vibration nuisance")
     override var tarinaHaitta: Tarinahaitta? = null,
-    @field:Schema(
-        description = "Area name, must not be null or empty",
-    )
-    override var nimi: String,
-    @field:Schema(
-        description = "Collision review result for this area",
-    )
+    @field:Schema(description = "Area name, must not be null or empty") override var nimi: String,
+    @field:Schema(description = "Area status, set by the service based on validation")
+    override var status: HankealueStatus?,
+    @field:Schema(description = "Collision review result for this area")
     val tormaystarkasteluTulos: TormaystarkasteluTulos?,
-    @field:Schema(
-        description = "Nuisance control plan for this area",
-    )
+    @field:Schema(description = "Nuisance control plan for this area")
     override var haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma? = null,
 ) : HasId<Int?>, Hankealue
 

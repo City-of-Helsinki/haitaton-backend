@@ -30,6 +30,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.HankealueStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
@@ -1308,6 +1309,7 @@ object ExpectedHankeLogObject {
                 alue?.nimi,
                 alkuPvm,
                 loppuPvm,
+                alue?.status,
                 alue?.haittojenhallintasuunnitelma != null,
             )
         return expectedHankeWithPolygon.processToString(templateData)
@@ -1325,6 +1327,7 @@ object ExpectedHankeLogObject {
         val alueNimi: String? = null,
         val alkuPvm: String? = null,
         val loppuPvm: String? = null,
+        val alueStatus: HankealueStatus? = null,
         val haittojenhallintasuunnitelma: Boolean = false,
     )
 }

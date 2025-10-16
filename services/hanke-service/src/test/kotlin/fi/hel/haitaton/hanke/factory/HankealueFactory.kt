@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankealueEntity
 import fi.hel.haitaton.hanke.domain.Haittojenhallintasuunnitelma
+import fi.hel.haitaton.hanke.domain.HankealueStatus
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
@@ -37,6 +38,7 @@ object HankealueFactory {
         tormaystarkasteluTulos: TormaystarkasteluTulos? = HaittaFactory.tormaystarkasteluTulos(),
         haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma? =
             HaittaFactory.createHaittojenhallintasuunnitelma(),
+        status: HankealueStatus? = HankealueStatus.PUBLIC,
     ): SavedHankealue {
         return SavedHankealue(
             id,
@@ -50,6 +52,7 @@ object HankealueFactory {
             polyHaitta,
             tarinaHaitta,
             nimi,
+            status,
             tormaystarkasteluTulos,
             haittojenhallintasuunnitelma,
         )
@@ -67,6 +70,7 @@ object HankealueFactory {
         polyHaitta: Polyhaitta? = null,
         tarinaHaitta: Tarinahaitta? = null,
         nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
+        status: HankealueStatus? = HankealueStatus.PUBLIC,
     ): SavedHankealue {
         return SavedHankealue(
             id,
@@ -80,6 +84,8 @@ object HankealueFactory {
             polyHaitta,
             tarinaHaitta,
             nimi,
+            status,
+            null,
             null,
         )
     }

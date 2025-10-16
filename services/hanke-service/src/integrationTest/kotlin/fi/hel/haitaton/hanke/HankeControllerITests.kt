@@ -5,6 +5,7 @@ import assertk.assertions.contains
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.HankeStatus
+import fi.hel.haitaton.hanke.domain.HankealueStatus
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.DateFactory
@@ -200,6 +201,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     jsonPath("alueet[0].tormaystarkasteluTulos.liikennehaittaindeksi.tyyppi")
                         .value(IndeksiType.RAITIOLIIKENNEINDEKSI.name)
                 )
+                .andExpect(jsonPath("alueet[0].status").value(HankealueStatus.PUBLIC.name))
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
@@ -291,12 +293,13 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             val hankeIds = listOf(123, 444)
             val hankkeet =
                 listOf(
-                    HankeFactory.create(id = hankeIds[0]),
+                    HankeFactory.create(id = hankeIds[0]).withHankealue(),
                     HankeFactory.create(
-                        id = hankeIds[1],
-                        hankeTunnus = "hanketunnus2",
-                        nimi = "Esplanadin viemäröinti",
-                    ),
+                            id = hankeIds[1],
+                            hankeTunnus = "hanketunnus2",
+                            nimi = "Esplanadin viemäröinti",
+                        )
+                        .withHankealue(),
                 )
             every { hankeService.loadHankkeetByIds(hankeIds) }.returns(hankkeet)
             every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
@@ -312,6 +315,8 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(jsonPath("$[1].id").value(hankeIds[1]))
                 .andExpect(jsonPath("$[0].alueet[0].geometriat").doesNotExist())
                 .andExpect(jsonPath("$[1].alueet[0].geometriat").doesNotExist())
+                .andExpect(jsonPath("$[0].alueet[0].status").value(HankealueStatus.PUBLIC.name))
+                .andExpect(jsonPath("$[1].alueet[0].status").value(HankealueStatus.PUBLIC.name))
 
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
@@ -329,6 +334,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     hankeId = hankeIds[0],
                     geometriat = Geometriat(1, FeatureCollection(), version = 1),
                     nimi = "$HANKEALUE_DEFAULT_NAME 1",
+                    status = HankealueStatus.PUBLIC,
                     tormaystarkasteluTulos = null,
                 )
             val alue2 =
@@ -336,6 +342,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     hankeId = hankeIds[1],
                     geometriat = Geometriat(2, FeatureCollection(), version = 1),
                     nimi = "$HANKEALUE_DEFAULT_NAME 2",
+                    status = HankealueStatus.PUBLIC,
                     tormaystarkasteluTulos = null,
                 )
             val hanke1 = HankeFactory.create(id = hankeIds[0], hankeTunnus = HANKE_TUNNUS)
@@ -357,6 +364,8 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(jsonPath("$[1].id").value(hankeIds[1]))
                 .andExpect(jsonPath("$[0].alueet[0].geometriat.id").value(1))
                 .andExpect(jsonPath("$[1].alueet[0].geometriat.id").value(2))
+                .andExpect(jsonPath("$[0].alueet[0].status").value(HankealueStatus.PUBLIC.name))
+                .andExpect(jsonPath("$[1].alueet[0].status").value(HankealueStatus.PUBLIC.name))
 
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
@@ -392,6 +401,51 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
                 hankeService.loadHankkeetByIds(hankeIds)
+                disclosureLogService.saveForHankkeet(hankkeet, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns PUBLIC hanke with mixed hankealue statuses`() {
+            val hankeId = 123
+            val alue1 =
+                SavedHankealue(
+                    hankeId = hankeId,
+                    geometriat = Geometriat(1, FeatureCollection(), version = 1),
+                    nimi = "$HANKEALUE_DEFAULT_NAME 1",
+                    status = HankealueStatus.PUBLIC,
+                    tormaystarkasteluTulos = null,
+                )
+            val alue2 =
+                SavedHankealue(
+                    hankeId = hankeId,
+                    geometriat = Geometriat(2, FeatureCollection(), version = 1),
+                    nimi = "$HANKEALUE_DEFAULT_NAME 2",
+                    status = HankealueStatus.DRAFT,
+                    tormaystarkasteluTulos = null,
+                )
+            val hanke =
+                HankeFactory.create(
+                    id = hankeId,
+                    hankeTunnus = HANKE_TUNNUS,
+                    hankeStatus = HankeStatus.PUBLIC,
+                )
+            hanke.alueet = mutableListOf(alue1, alue2)
+            val hankkeet = listOf(hanke)
+            every { hankeService.loadHankkeetByIds(listOf(hankeId)) }.returns(hankkeet)
+            every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
+                .returns(listOf(hankeId))
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$[0].hankeTunnus").value(HANKE_TUNNUS))
+                .andExpect(jsonPath("$[0].status").value(HankeStatus.PUBLIC.name))
+                .andExpect(jsonPath("$[0].alueet[0].status").value(HankealueStatus.PUBLIC.name))
+                .andExpect(jsonPath("$[0].alueet[1].status").value(HankealueStatus.DRAFT.name))
+
+            verifySequence {
+                permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
+                hankeService.loadHankkeetByIds(listOf(hankeId))
                 disclosureLogService.saveForHankkeet(hankkeet, USERNAME)
             }
         }
@@ -583,6 +637,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     polyHaitta = Polyhaitta.TOISTUVA_POLYHAITTA,
                     tarinaHaitta = Tarinahaitta.JATKUVA_TARINAHAITTA,
                     tormaystarkasteluTulos = null,
+                    status = HankealueStatus.PUBLIC,
                     haittojenhallintasuunnitelma =
                         HaittaFactory.createHaittojenhallintasuunnitelma(),
                 )

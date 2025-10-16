@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeStatus
+import fi.hel.haitaton.hanke.domain.HankealueStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
@@ -313,21 +314,33 @@ class HankeService(
                 hankeMapperService.domainFrom(entity)
             )
 
+        // Optimistically set all hankealue statuses to PUBLIC first
+        entity.alueet.forEach { it.status = HankealueStatus.PUBLIC }
+
+        // If validation passes, hanke becomes/stays PUBLIC with all hankealue PUBLIC
+        if (validationResult.isOk()) {
+            return HankeStatus.PUBLIC
+        }
+
+        // Based on validation errors, set invalid hankealue statuses to DRAFT
+        updateHankealueStatusesFromErrors(entity.alueet, validationResult.errorPaths())
+
+        // Validation failed - check if errors are only about haittojenhallintasuunnitelma
+        val onlyHaittojenhallintasuunnitelmaErrors =
+            validationResult.hasOnlyHaittojenhallintasuunnitelmaErrors()
+
         return when (val status = entity.status) {
-            HankeStatus.DRAFT ->
-                if (validationResult.isOk()) {
-                    HankeStatus.PUBLIC
-                } else {
-                    HankeStatus.DRAFT
-                }
+            HankeStatus.DRAFT -> {
+                HankeStatus.DRAFT
+            }
             HankeStatus.PUBLIC ->
-                if (validationResult.isOk()) {
+                if (onlyHaittojenhallintasuunnitelmaErrors) {
                     HankeStatus.PUBLIC
                 } else {
                     logger.warn {
-                        "A public hanke wasn't updated with missing or invalid fields. hankeTunnus=${entity.hankeTunnus} failedFields=${
-                            validationResult.errorPaths().joinToString()
-                        }"
+                        "A public hanke cannot be updated with missing or invalid fields. hankeTunnus=${entity.hankeTunnus} failedFields=${
+                                validationResult.errorPaths().joinToString()
+                            }"
                     }
                     throw InvalidHankeDataException(validationResult.errorPaths())
                 }
@@ -335,6 +348,29 @@ class HankeService(
                 throw HankeArgumentException(
                     "A hanke cannot be updated when in status $status. hankeTunnus=${entity.hankeTunnus}"
                 )
+        }
+    }
+
+    /**
+     * Updates hankealue statuses to DRAFT based on validation error paths. Error paths we are
+     * interested in follow the format: alueet[<index>].haittojenhallintasuunnitelma.<type>
+     */
+    private fun updateHankealueStatusesFromErrors(
+        alueet: List<HankealueEntity>,
+        errorPaths: List<String>,
+    ) {
+        // Extract unique hankealue indices from error paths
+        val errorPattern = """alueet\[(\d+)]\.haittojenhallintasuunnitelma\.""".toRegex()
+        val errorIndices =
+            errorPaths
+                .mapNotNull { path -> errorPattern.find(path)?.groupValues?.get(1)?.toIntOrNull() }
+                .toSet()
+
+        // Mark hankealue at error indices as DRAFT
+        errorIndices.forEach { index ->
+            if (index < alueet.size) {
+                alueet[index].status = fi.hel.haitaton.hanke.domain.HankealueStatus.DRAFT
+            }
         }
     }
 

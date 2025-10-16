@@ -10,26 +10,20 @@ import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
 
 data class CreateHankeRequest(
-    @field:Schema(
-        description = "Name of the project, must not be blank.",
-        maxLength = 100,
-    )
+    @field:Schema(description = "Name of the project, must not be blank.", maxLength = 100)
     val nimi: String,
-    @field:Schema(
-        description = "Required project founder details",
-    )
-    val perustaja: HankePerustaja
+    @field:Schema(description = "Required project founder details") val perustaja: HankePerustaja,
 )
 
 data class HankePerustaja(
     @field:Schema(
         description =
-            "Email of the founding user. Users with sufficient access to the project can add the email address to project contacts and application forms. Haitaton uses it is used for sending notification emails.",
+            "Email of the founding user. Users with sufficient access to the project can add the email address to project contacts and application forms. Haitaton uses it is used for sending notification emails."
     )
     val sahkoposti: String,
     @field:Schema(
         description =
-            "Phone number of the founding user. Users with sufficient access to the project can add the phone number to project contacts and application forms.",
+            "Phone number of the founding user. Users with sufficient access to the project can add the phone number to project contacts and application forms."
     )
     val puhelinnumero: String,
 )
@@ -45,41 +39,23 @@ data class NewHankealue(
         maximum = "2099-12-31T23:59:59.99Z",
     )
     override val haittaLoppuPvm: ZonedDateTime? = null,
-    @field:Schema(
-        description = "Geometry data",
-    )
-    override val geometriat: NewGeometriat? = null,
-    @field:Schema(
-        description = "Street lane hindrance value and explanation",
-    )
+    @field:Schema(description = "Geometry data") override val geometriat: NewGeometriat? = null,
+    @field:Schema(description = "Street lane hindrance value and explanation")
     override val kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
-    @field:Schema(
-        description = "Street lane hindrance length",
-    )
+    @field:Schema(description = "Street lane hindrance length")
     override val kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
-    @field:Schema(
-        description = "Noise nuisance",
-    )
-    override val meluHaitta: Meluhaitta? = null,
-    @field:Schema(
-        description = "Dust nuisance",
-    )
-    override val polyHaitta: Polyhaitta? = null,
-    @field:Schema(
-        description = "Vibration nuisance",
-    )
+    @field:Schema(description = "Noise nuisance") override val meluHaitta: Meluhaitta? = null,
+    @field:Schema(description = "Dust nuisance") override val polyHaitta: Polyhaitta? = null,
+    @field:Schema(description = "Vibration nuisance")
     override val tarinaHaitta: Tarinahaitta? = null,
-    @field:Schema(
-        description = "Area name, must not be null or empty",
-    )
-    override val nimi: String,
-    @field:Schema(
-        description = "Nuisance control plans for this area",
-    )
+    @field:Schema(description = "Area name, must not be null or empty") override val nimi: String,
+    @field:Schema(description = "Nuisance control plans for this area")
     override val haittojenhallintasuunnitelma: Haittojenhallintasuunnitelma? = null,
+    // Status is output-only and computed during validation, not accepted as input
+    override val status: HankealueStatus? = null,
 ) : Hankealue
 
 data class NewGeometriat(
     @field:Schema(description = "The geometry data")
-    override val featureCollection: FeatureCollection? = null,
+    override val featureCollection: FeatureCollection? = null
 ) : HasFeatures
