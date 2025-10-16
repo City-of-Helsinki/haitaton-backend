@@ -33,7 +33,6 @@ resources:
     # Azure DevOps repository
     - repository: haitaton-hanke-service-pipelines
       type: git
-      ref: refs/heads/ansible_automation_update
       # Azure DevOps project/repository
       name: haitaton/haitaton-hanke-service-pipelines
 
