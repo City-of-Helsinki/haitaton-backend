@@ -121,7 +121,7 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
 
     // Override commons-compress to fix CVE
-    testImplementation("org.apache.commons:commons-compress:1.26.0")
+    testImplementation("org.apache.commons:commons-compress:1.28.0")
     testImplementation("commons-codec:commons-codec:1.17.2")
 
     // Spring Boot Management
