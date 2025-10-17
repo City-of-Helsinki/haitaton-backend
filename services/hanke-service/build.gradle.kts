@@ -115,7 +115,7 @@ dependencies {
     implementation("org.locationtech.jts.io:jts-io-common:1.20.0")
 
     // Testcontainers
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:2.0.1"))
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
