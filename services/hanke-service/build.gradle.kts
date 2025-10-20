@@ -78,7 +78,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
-    implementation("ch.qos.logback:logback-core:1.5.19")
+    implementation("ch.qos.logback:logback-core:1.5.20")
     implementation("ch.qos.logback.access:logback-access-tomcat:2.0.6")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
