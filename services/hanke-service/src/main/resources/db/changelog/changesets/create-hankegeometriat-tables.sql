@@ -1,5 +1,6 @@
 --liquibase formatted sql
 --changeset teemu:create-hankegeometry-tables comment:Create Hanke Geometry tables
+--validCheckSum: 9:add7b61c13ffb31ff8c81324957e3101
 
 CREATE TABLE HankeGeometriat
 (
