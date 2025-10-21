@@ -69,6 +69,7 @@ class HankeMapGridService(
 
         var populatedCells = 0
         var emptyCells = 0
+        var failedCells = 0
 
         // Cache ALL cells in the grid area
         for (cellX in minCellX..maxCellX) {
@@ -100,7 +101,8 @@ class HankeMapGridService(
                         populatedCells++
                     }
                 } catch (e: Exception) {
-                    logger.warn(e) { "Failed to populate cache for cell ($cellX, $cellY)" }
+                    failedCells++
+                    // Individual cell failures are tracked in the summary count
                 }
             }
         }
@@ -108,7 +110,7 @@ class HankeMapGridService(
         logger.info {
             "Cache repopulation completed. Total cells: $totalCells " +
                 "(populated: $populatedCells, empty: $emptyCells, " +
-                "total hanke objects: ${publicHanke.size})"
+                "failed: $failedCells, total hanke objects: ${publicHanke.size})"
         }
     }
 
