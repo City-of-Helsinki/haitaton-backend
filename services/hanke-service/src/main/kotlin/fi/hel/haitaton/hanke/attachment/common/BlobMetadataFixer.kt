@@ -7,6 +7,9 @@ import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.azure.Containers
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -98,20 +101,25 @@ class BlobMetadataFixer(
 
     @EventListener(ApplicationReadyEvent::class)
     fun runFixOnStartup() {
-        logger.warn { "Blob metadata fixer is enabled and will run on startup" }
-        try {
-            val result = fixAllBlobs()
-            logger.warn {
-                "Blob metadata fix completed successfully. " +
-                    "Scanned: ${result.scannedCount}, Fixed: ${result.fixedCount}, Errors: ${result.errorCount}"
-            }
-            if (result.errorCount > 0) {
-                logger.error {
-                    "Blob metadata fix completed with ${result.errorCount} errors. Check logs for details."
+        logger.warn { "Blob metadata fixer is enabled and will run asynchronously after startup" }
+
+        // Run asynchronously using coroutines to avoid blocking application startup
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                logger.info { "Starting blob metadata fixer for all containers" }
+                val result = fixAllBlobs()
+                logger.warn {
+                    "Blob metadata fix completed successfully. " +
+                        "Scanned: ${result.scannedCount}, Fixed: ${result.fixedCount}, Errors: ${result.errorCount}"
                 }
+                if (result.errorCount > 0) {
+                    logger.error {
+                        "Blob metadata fix completed with ${result.errorCount} errors. Check logs for details."
+                    }
+                }
+            } catch (e: Exception) {
+                logger.error(e) { "Blob metadata fix failed with exception: ${e.message}" }
             }
-        } catch (e: Exception) {
-            logger.error(e) { "Blob metadata fix failed with exception: ${e.message}" }
         }
     }
 
@@ -144,12 +152,23 @@ class BlobMetadataFixer(
         logger.info { "Scanning container: $container" }
 
         val containerClient = getContainerClient(container)
+
+        // First, count total blobs for progress reporting
+        val allBlobs = containerClient.listBlobs().toList()
+        val totalBlobs = allBlobs.size
+        logger.info { "Container $container has $totalBlobs blobs" }
+
         var scannedCount = 0
         var fixedCount = 0
         var errorCount = 0
 
-        containerClient.listBlobs().forEach { blobItem ->
+        allBlobs.forEach { blobItem ->
             scannedCount++
+
+            // Log progress every 10 blobs or for small containers
+            if (scannedCount % 10 == 0 || totalBlobs <= 50) {
+                logger.info { "Scanning blob $scannedCount/$totalBlobs in container $container..." }
+            }
 
             try {
                 val blobClient = containerClient.getBlobClient(blobItem.name)
