@@ -122,7 +122,7 @@ dependencies {
 
     // Override commons-compress to fix CVE
     testImplementation("org.apache.commons:commons-compress:1.26.0")
-    testImplementation("commons-codec:commons-codec:1.17.2")
+    testImplementation("commons-codec:commons-codec:1.19.0")
 
     // Spring Boot Management
     implementation("org.springframework.boot:spring-boot-starter-actuator")
