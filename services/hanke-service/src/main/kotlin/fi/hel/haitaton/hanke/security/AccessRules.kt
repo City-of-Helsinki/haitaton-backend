@@ -23,16 +23,27 @@ object AccessRules {
                         "/status",
                         "/banners",
                         "/public-hankkeet",
+                        "/public-hankkeet/*",
+                        "/public-hankkeet/grid/metadata",
                         "/swagger-ui.html",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/testdata/trigger-allu",
                     )
                     .permitAll()
-                    .requestMatchers(HttpMethod.POST, "/testdata/unlink-applications")
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/testdata/unlink-applications",
+                        "/public-hankkeet/grid",
+                    )
                     .permitAll()
             }
-            .csrf { it.ignoringRequestMatchers("/testdata/unlink-applications") }
+            .csrf {
+                it.ignoringRequestMatchers(
+                    "/testdata/unlink-applications",
+                    "/public-hankkeet/grid",
+                )
+            }
             .authorizeHttpRequests { it.anyRequest().authenticated() }
             .exceptionHandling {
                 it.authenticationEntryPoint { request, response, authenticationException ->
