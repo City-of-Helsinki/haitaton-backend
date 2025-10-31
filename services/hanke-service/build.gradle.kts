@@ -84,7 +84,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.liquibase:liquibase-core:5.0.0")
+    implementation("org.liquibase:liquibase-core:5.0.1")
     implementation("org.apache.commons:commons-lang3:3.19.0")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
     implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.11.0")
