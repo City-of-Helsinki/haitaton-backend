@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# Wait for Azurite to be ready
-/tmp/wait-for.sh azurite:10000 -t 30 -- echo "Azurite is up"
-
 connection_string="\
 DefaultEndpointsProtocol=http;\
 AccountName=devstoreaccount1;\
