@@ -1,6 +1,8 @@
 import io.freefair.gradle.plugins.mjml.ValidationMode
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension
+import org.owasp.dependencycheck.reporting.ReportGenerator
 import org.springframework.boot.gradle.tasks.run.BootRun
 
 group = "fi.hel.haitaton"
@@ -55,7 +57,7 @@ spotless {
 
 plugins {
     val kotlinVersion = "2.1.21"
-    id("org.springframework.boot") version "3.4.5"
+    id("org.springframework.boot") version "3.5.11"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.diffplug.spotless") version "7.0.3"
     kotlin("jvm") version kotlinVersion
@@ -66,6 +68,7 @@ plugins {
     idea
     id("jacoco")
     id("io.freefair.mjml.java") version "8.13.1"
+    id("org.owasp.dependencycheck") version "12.1.0"
 }
 
 dependencies {
@@ -218,3 +221,16 @@ mjml {
 }
 
 node { download.set(true) }
+
+configure<DependencyCheckExtension> {
+    format = ReportGenerator.Format.ALL.toString()
+    suppressionFile = "$projectDir/dependency-check-suppressions.xml"
+    nvd {
+        apiKey = System.getenv("NVD_API_KEY")
+    }
+    analyzers {
+        ossIndex {
+            enabled = false
+        }
+    }
+}
