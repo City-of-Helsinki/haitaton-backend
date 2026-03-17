@@ -75,6 +75,19 @@
     </suppress>
 
     <!--
+        CVE-2026-23907: Path traversal in Apache PDFBox's ExtractEmbeddedFiles example code (CVSS 5.3).
+        The CVE is incorrectly matched against pdfbox-io, which is an IO utility module containing only
+        stream handling utilities. The vulnerable ExtractEmbeddedFiles example and PDComplexFileSpecification
+        class live in the main pdfbox artifact, not in pdfbox-io. We pull in pdfbox-io only transitively
+        via fop -> fontbox and do not use any PDFBox example code in production.
+    -->
+    <suppress>
+        <notes>False positive: CVE-2026-23907 affects the ExtractEmbeddedFiles example in the main pdfbox artifact, not pdfbox-io.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.pdfbox/pdfbox-io@.*$</packageUrl>
+        <cve>CVE-2026-23907</cve>
+    </suppress>
+
+    <!--
         CVE-2025-15599 and CVE-2026-0540: XSS vulnerabilities in DOMPurify bundled inside swagger-ui.
         These require DOMPurify >= 3.2.7 and >= 3.3.2 respectively. As of swagger-ui 5.32.0
         (latest), DOMPurify is still pinned to 3.2.6 — no upstream fix is available yet.

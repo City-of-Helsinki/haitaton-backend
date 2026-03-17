@@ -70,7 +70,7 @@ services:
       - azurite-data:/data
       - .:/workspace
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 10000"]
+      test: ["CMD-SHELL", "node -e \"require('net').connect(10000, () => process.exit(0)).on('error', () => process.exit(1))\""]
       interval: 5s
       timeout: 5s
       retries: 10

@@ -41,5 +41,6 @@ out/
 /.kotlin
 
 /CLAUDE.md
+/AGENTS.md
 /*.txt
 /*.log
