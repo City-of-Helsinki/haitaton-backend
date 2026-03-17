@@ -47,7 +47,7 @@ tasks.getByName<BootRun>("bootRun") {
 }
 
 spotless {
-    ratchetFrom("origin/dev") // only format files which have changed since origin/dev
+    ratchetFrom("origin/main") // only format files which have changed since origin/main
 
     kotlin {
         ktfmt("0.53").kotlinlangStyle()
