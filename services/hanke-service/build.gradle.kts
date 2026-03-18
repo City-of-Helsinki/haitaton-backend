@@ -9,8 +9,8 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "7.19.0"
-val geoToolsVersion = "33.1"
+val sentryVersion = "8.21.1"
+val geoToolsVersion = "33.2"
 
 repositories {
     mavenCentral().content { excludeModule("javax.media", "jai_core") }
@@ -56,10 +56,10 @@ spotless {
 }
 
 plugins {
-    val kotlinVersion = "2.1.21"
+    val kotlinVersion = "2.2.20"
     id("org.springframework.boot") version "3.5.11"
     id("io.spring.dependency-management") version "1.1.7"
-    id("com.diffplug.spotless") version "7.0.3"
+    id("com.diffplug.spotless") version "7.2.1"
     kotlin("jvm") version kotlinVersion
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
     kotlin("plugin.spring") version kotlinVersion
@@ -67,7 +67,7 @@ plugins {
     kotlin("plugin.jpa") version kotlinVersion
     idea
     id("jacoco")
-    id("io.freefair.mjml.java") version "8.13.1"
+    id("io.freefair.mjml.java") version "8.14.2"
     id("org.owasp.dependencycheck") version "12.1.0"
 }
 
@@ -88,25 +88,25 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.9.10")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.11.0")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("com.auth0:java-jwt:4.5.0")
 
     implementation("org.postgresql:postgresql")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testImplementation("io.mockk:mockk:1.14.2")
+    testImplementation("io.mockk:mockk:1.14.5")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
-    testImplementation("com.icegreen:greenmail-junit5:2.1.3")
+    testImplementation("com.squareup.okhttp3:mockwebserver3:5.1.0")
+    testImplementation("com.icegreen:greenmail-junit5:2.1.5")
 
     // Pdf generation
-    implementation("com.github.librepdf:openpdf:2.0.3")
+    implementation("com.github.librepdf:openpdf:3.0.0")
     implementation("org.apache.xmlgraphics:fop:2.11")
 
     // Geotools
@@ -116,10 +116,14 @@ dependencies {
     implementation("org.locationtech.jts.io:jts-io-common:1.20.0")
 
     // Testcontainers
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.0"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
+
+    // Override commons-compress to fix CVE
+    testImplementation("org.apache.commons:commons-compress:1.26.0")
+    testImplementation("commons-codec:commons-codec:1.17.2")
 
     // Spring Boot Management
     implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -132,7 +136,7 @@ dependencies {
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
-    implementation(platform("com.azure:azure-sdk-bom:1.2.34"))
+    implementation(platform("com.azure:azure-sdk-bom:1.2.38"))
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity")
@@ -140,9 +144,13 @@ dependencies {
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }
 
-tasks.withType<KotlinCompile> { compilerOptions { freeCompilerArgs = listOf("-Xjsr305=strict") } }
+tasks.withType<KotlinCompile> {
+    compilerOptions {
+        freeCompilerArgs = listOf("-Xjsr305=strict", "-Xannotation-default-target=param-property")
+    }
+}
 
-kotlin { jvmToolchain { languageVersion.set(JavaLanguageVersion.of(17)) } }
+kotlin { jvmToolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
 
 tasks {
     test {

@@ -1,14 +1,5 @@
 package fi.hel.haitaton.hanke.pdf
 
-import com.lowagie.text.Chunk
-import com.lowagie.text.Document
-import com.lowagie.text.Image
-import com.lowagie.text.ImgTemplate
-import com.lowagie.text.Paragraph
-import com.lowagie.text.Phrase
-import com.lowagie.text.Rectangle
-import com.lowagie.text.pdf.PdfPCell
-import com.lowagie.text.pdf.PdfPTable
 import fi.hel.haitaton.hanke.domain.Haittojenhallintatyyppi
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.SavedHankealue
@@ -18,6 +9,15 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.Autoliikenneluokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.awt.Color
 import java.time.ZonedDateTime
+import org.openpdf.text.Chunk
+import org.openpdf.text.Document
+import org.openpdf.text.Image
+import org.openpdf.text.ImgTemplate
+import org.openpdf.text.Paragraph
+import org.openpdf.text.Phrase
+import org.openpdf.text.Rectangle
+import org.openpdf.text.pdf.PdfPCell
+import org.openpdf.text.pdf.PdfPTable
 import org.springframework.stereotype.Component
 
 @Component

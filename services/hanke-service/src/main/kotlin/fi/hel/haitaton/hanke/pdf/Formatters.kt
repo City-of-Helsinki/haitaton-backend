@@ -11,7 +11,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val LOCALE = Locale("fi", "FI")
+private val LOCALE = Locale.of("fi", "FI")
 private val FINNISH_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.uuuu")
 
 fun PostalAddress.format(): String =
