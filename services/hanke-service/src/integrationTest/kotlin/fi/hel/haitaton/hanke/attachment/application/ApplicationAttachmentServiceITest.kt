@@ -53,7 +53,7 @@ import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.verify
 import java.util.UUID
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -85,7 +85,7 @@ class ApplicationAttachmentServiceITest(
 
     @AfterEach
     fun tearDown() {
-        mockClamAv.shutdown()
+        mockClamAv.close()
         checkUnnecessaryStub()
         confirmVerified(alluClient)
     }

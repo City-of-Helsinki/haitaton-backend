@@ -35,7 +35,7 @@ import fi.hel.haitaton.hanke.factory.HankeIdentifierFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.USERNAME
 import java.util.UUID
-import okhttp3.mockwebserver.MockWebServer
+import mockwebserver3.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -62,7 +62,7 @@ class HankeAttachmentServiceITest(
 
     @AfterEach
     fun tearDown() {
-        mockClamAv.shutdown()
+        mockClamAv.close()
     }
 
     @Nested

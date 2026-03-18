@@ -33,11 +33,13 @@ import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZonedDateTime
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import mockwebserver3.RecordedRequest
 import okhttp3.MultipartReader
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
 import okio.Buffer
+import okio.BufferedSource
+import okio.ByteString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -71,6 +73,7 @@ class AlluClientITests {
     @BeforeEach
     fun setup() {
         mockWebServer = MockWebServer()
+        mockWebServer.start()
 
         val baseUrl = mockWebServer.url("/").toUrl().toString()
         val properties = AlluProperties(baseUrl, "fake_username", "any_password", 2)
@@ -161,14 +164,14 @@ class AlluClientITests {
             AlluFactory.createAttachmentMetadata(mimeType = contentType, name = "file.$extension")
         val file = "test file content".toByteArray()
         val attachment = Attachment(metadata, file)
-        val mockResponse = MockResponse().setResponseCode(200)
+        val mockResponse = MockResponse.Builder().code(200).build()
         mockWebServer.enqueue(mockResponse)
 
         service.addAttachment(alluId, attachment)
 
         val request = mockWebServer.takeRequest()
         assertThat(request.method).isEqualTo("POST")
-        assertThat(request.path).isEqualTo("/v2/applications/$alluId/attachments")
+        assertThat(request.url.encodedPath).isEqualTo("/v2/applications/$alluId/attachments")
         assertThat(request.multiPartContentTypes())
             .containsExactly(APPLICATION_JSON_VALUE, contentType)
     }
@@ -178,7 +181,7 @@ class AlluClientITests {
         val alluId = 123
         val attachment = ApplicationAttachmentFactory.create(applicationId = 123456)
         val attachments = listOf(attachment, attachment, attachment)
-        val mockResponse = MockResponse().setResponseCode(200)
+        val mockResponse = MockResponse.Builder().code(200).build()
         repeat(attachments.size) { mockWebServer.enqueue(mockResponse) }
 
         service.addAttachments(alluId, attachments) { _ -> PDF_BYTES }
@@ -186,7 +189,7 @@ class AlluClientITests {
         repeat(attachments.size) {
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
-            assertThat(request.path).isEqualTo("/v2/applications/$alluId/attachments")
+            assertThat(request.url.encodedPath).isEqualTo("/v2/applications/$alluId/attachments")
         }
     }
 
@@ -211,7 +214,7 @@ class AlluClientITests {
                     fileName = "Muu liite.txt",
                 ),
             )
-        val mockResponse = MockResponse().setResponseCode(200)
+        val mockResponse = MockResponse.Builder().code(200).build()
         repeat(attachments.size) { mockWebServer.enqueue(mockResponse) }
 
         service.addAttachments(alluId, attachments) { _ -> PDF_BYTES }
@@ -236,10 +239,11 @@ class AlluClientITests {
         fun `calls Allu with correct path when the application is a cable report application`() {
             val stubbedApplicationId = 1337
             val applicationIdResponse =
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody(stubbedApplicationId.toString())
+                    .body(stubbedApplicationId.toString())
+                    .build()
             mockWebServer.enqueue(applicationIdResponse)
             val application = AlluFactory.createCableReportApplicationData()
 
@@ -248,18 +252,19 @@ class AlluClientITests {
             assertThat(actualApplicationId).isEqualTo(stubbedApplicationId)
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
-            assertThat(request.path).isEqualTo("/v2/cablereports")
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(request.url.encodedPath).isEqualTo("/v2/cablereports")
+            assertThat(request.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
 
         @Test
         fun `calls Allu with correct path when the application is an excavation notification`() {
             val stubbedApplicationId = 1337
             val applicationIdResponse =
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody(stubbedApplicationId.toString())
+                    .body(stubbedApplicationId.toString())
+                    .build()
             mockWebServer.enqueue(applicationIdResponse)
             val application = AlluFactory.createExcavationNotificationData()
 
@@ -268,19 +273,20 @@ class AlluClientITests {
             assertThat(actualApplicationId).isEqualTo(stubbedApplicationId)
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
-            assertThat(request.path).isEqualTo("/v2/excavationannouncements")
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(request.url.encodedPath).isEqualTo("/v2/excavationannouncements")
+            assertThat(request.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
 
         @Test
         fun `throws an exception when there's an error in the application data`() {
             val applicationIdResponse =
-                MockResponse()
-                    .setResponseCode(400)
+                MockResponse.Builder()
+                    .code(400)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody(
+                    .body(
                         """[{"errorMessage":"Cable report should have one orderer contact","additionalInfo":"customerWithContacts"}]"""
                     )
+                    .build()
             mockWebServer.enqueue(applicationIdResponse)
 
             assertThrows<WebClientResponseException.BadRequest> {
@@ -289,8 +295,8 @@ class AlluClientITests {
 
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("POST")
-            assertThat(createRequest.path).isEqualTo("/v2/cablereports")
-            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(createRequest.url.encodedPath).isEqualTo("/v2/cablereports")
+            assertThat(createRequest.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
     }
 
@@ -318,14 +324,14 @@ class AlluClientITests {
             ilmoitusType: ValmistumisilmoitusType,
             url: String,
         ) {
-            mockWebServer.enqueue(MockResponse().setResponseCode(200))
+            mockWebServer.enqueue(MockResponse.Builder().code(200).build())
 
             service.reportCompletionDate(ilmoitusType, applicationId, date)
 
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("PUT")
-            assertThat(createRequest.path).isEqualTo(url)
-            assertThat(createRequest.body.readUtf8()).isEqualTo("\"2024-08-12T00:00:00Z\"")
+            assertThat(createRequest.url.encodedPath).isEqualTo(url)
+            assertThat(createRequest.body?.utf8()).isEqualTo("\"2024-08-12T00:00:00Z\"")
         }
 
         @ParameterizedTest
@@ -334,7 +340,7 @@ class AlluClientITests {
             ilmoitusType: ValmistumisilmoitusType,
             url: String,
         ) {
-            mockWebServer.enqueue(MockResponse().setResponseCode(409))
+            mockWebServer.enqueue(MockResponse.Builder().code(409).build())
 
             val failure = assertFailure {
                 service.reportCompletionDate(ilmoitusType, applicationId, date)
@@ -357,25 +363,27 @@ class AlluClientITests {
 
             val body = AlluFactory.createInformationRequest(applicationAlluId = alluid)
             val mockResponse =
-                MockResponse()
+                MockResponse.Builder()
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setResponseCode(200)
-                    .setBody(body.toJsonString())
+                    .code(200)
+                    .body(body.toJsonString())
+                    .build()
             mockWebServer.enqueue(mockResponse)
 
             val response = service.getInformationRequest(alluid)
 
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("GET")
-            assertThat(request.path).isEqualTo("/v2/applications/$alluid/informationrequests")
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(request.url.encodedPath)
+                .isEqualTo("/v2/applications/$alluid/informationrequests")
+            assertThat(request.headers["Authorization"]).isEqualTo("Bearer $authToken")
 
             assertThat(response).isEqualTo(body)
         }
 
         @Test
         fun `returns null when Allu doesn't have a taydennyspyynto`() {
-            val mockResponse = MockResponse().setResponseCode(200).setBody("")
+            val mockResponse = MockResponse.Builder().code(200).body("").build()
             mockWebServer.enqueue(mockResponse)
 
             val response = service.getInformationRequest(alluid)
@@ -385,7 +393,7 @@ class AlluClientITests {
 
         @Test
         fun `throws an exception when Allu returns an error`() {
-            val mockResponse = MockResponse().setResponseCode(500)
+            val mockResponse = MockResponse.Builder().code(500).build()
             mockWebServer.enqueue(mockResponse)
 
             val failure = assertFailure { service.getInformationRequest(alluid) }
@@ -403,18 +411,18 @@ class AlluClientITests {
         fun `calls the right address when the hakemus is a johtoselvityshakemus`() {
             val applicationData = AlluFactory.createCableReportApplicationData()
             val fields = setOf(InformationRequestFieldKey.AREA, InformationRequestFieldKey.OTHER)
-            mockWebServer.enqueue(MockResponse().setResponseCode(200))
+            mockWebServer.enqueue(MockResponse.Builder().code(200).build())
 
             service.respondToInformationRequest(alluid, requestId, applicationData, fields)
 
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
-            assertThat(request.path)
+            assertThat(request.url.encodedPath)
                 .isEqualTo("/v2/cablereports/$alluid/informationrequests/$requestId/response")
             val expectedBody = InformationRequestResponse(applicationData, fields).toJsonString()
-            val actualBody = request.body.readUtf8()
+            val actualBody = request.body?.utf8()
             JSONAssert.assertEquals(expectedBody, actualBody, JSONCompareMode.NON_EXTENSIBLE)
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(request.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
 
         @Test
@@ -422,20 +430,20 @@ class AlluClientITests {
             val applicationData = AlluFactory.createExcavationNotificationData()
             val fields =
                 setOf(InformationRequestFieldKey.START_TIME, InformationRequestFieldKey.END_TIME)
-            mockWebServer.enqueue(MockResponse().setResponseCode(200))
+            mockWebServer.enqueue(MockResponse.Builder().code(200).build())
 
             service.respondToInformationRequest(alluid, requestId, applicationData, fields)
 
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
-            assertThat(request.path)
+            assertThat(request.url.encodedPath)
                 .isEqualTo(
                     "/v2/excavationannouncements/$alluid/informationrequests/$requestId/response"
                 )
             val expectedBody = InformationRequestResponse(applicationData, fields).toJsonString()
-            val actualBody = request.body.readUtf8()
+            val actualBody = request.body?.utf8()
             JSONAssert.assertEquals(expectedBody, actualBody, JSONCompareMode.NON_EXTENSIBLE)
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(request.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
     }
 
@@ -448,17 +456,17 @@ class AlluClientITests {
             val applicationData = AlluFactory.createCableReportApplicationData()
             val fields =
                 setOf(InformationRequestFieldKey.GEOMETRY, InformationRequestFieldKey.CONTRACTOR)
-            mockWebServer.enqueue(MockResponse().setResponseCode(200))
+            mockWebServer.enqueue(MockResponse.Builder().code(200).build())
 
             service.reportChange(alluid, applicationData, fields)
 
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
-            assertThat(request.path).isEqualTo("/v2/cablereports/$alluid/reportchange")
+            assertThat(request.url.encodedPath).isEqualTo("/v2/cablereports/$alluid/reportchange")
             val expectedBody = InformationRequestResponse(applicationData, fields).toJsonString()
-            val actualBody = request.body.readUtf8()
+            val actualBody = request.body?.utf8()
             JSONAssert.assertEquals(expectedBody, actualBody, JSONCompareMode.NON_EXTENSIBLE)
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(request.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
 
         @Test
@@ -469,17 +477,18 @@ class AlluClientITests {
                     InformationRequestFieldKey.WORK_DESCRIPTION,
                     InformationRequestFieldKey.ATTACHMENT,
                 )
-            mockWebServer.enqueue(MockResponse().setResponseCode(200))
+            mockWebServer.enqueue(MockResponse.Builder().code(200).build())
 
             service.reportChange(alluid, applicationData, fields)
 
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
-            assertThat(request.path).isEqualTo("/v2/excavationannouncements/$alluid/reportchange")
+            assertThat(request.url.encodedPath)
+                .isEqualTo("/v2/excavationannouncements/$alluid/reportchange")
             val expectedBody = InformationRequestResponse(applicationData, fields).toJsonString()
-            val actualBody = request.body.readUtf8()
+            val actualBody = request.body?.utf8()
             JSONAssert.assertEquals(expectedBody, actualBody, JSONCompareMode.NON_EXTENSIBLE)
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(request.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
     }
 
@@ -488,10 +497,11 @@ class AlluClientITests {
         @Test
         fun `returns PDF file as bytes`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(pdfContent())
+                    .body(pdfContent())
+                    .build()
             )
 
             val response = service.getDecisionPdf(12)
@@ -499,8 +509,8 @@ class AlluClientITests {
             assertThat(response).isEqualTo(PDF_BYTES)
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("GET")
-            assertThat(createRequest.path).isEqualTo("/v2/cablereports/12/decision")
-            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(createRequest.url.encodedPath).isEqualTo("/v2/cablereports/12/decision")
+            assertThat(createRequest.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
 
         @Test
@@ -508,10 +518,11 @@ class AlluClientITests {
             val content = Buffer()
             repeat(1000000 / PDF_BYTES.size + 1) { content.write(PDF_BYTES) }
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(content)
+                    .body(content)
+                    .build()
             )
 
             val response = service.getDecisionPdf(12)
@@ -522,10 +533,11 @@ class AlluClientITests {
         @Test
         fun `throws ApplicationDecisionNotFoundException on 404`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(404)
+                MockResponse.Builder()
+                    .code(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Not found")
+                    .body("Not found")
+                    .build()
             )
 
             val exception =
@@ -537,10 +549,11 @@ class AlluClientITests {
         @Test
         fun `throws WebClientResponseException on other error codes`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(500)
+                MockResponse.Builder()
+                    .code(500)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Other error")
+                    .body("Other error")
+                    .build()
             )
 
             assertThrows<WebClientResponseException> { service.getDecisionPdf(12) }
@@ -549,10 +562,11 @@ class AlluClientITests {
         @Test
         fun `throws AlluApiException if the response does not have PDF Content-Type`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, IMAGE_PNG)
-                    .setBody(pdfContent())
+                    .body(pdfContent())
+                    .build()
             )
 
             assertThrows<AlluApiException> { service.getDecisionPdf(12) }
@@ -561,10 +575,11 @@ class AlluClientITests {
         @Test
         fun `throws AlluApiException if the response body is empty`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF)
-                    .setBody("")
+                    .body("")
+                    .build()
             )
 
             assertThrows<AlluApiException> { service.getDecisionPdf(12) }
@@ -576,10 +591,11 @@ class AlluClientITests {
         @Test
         fun `returns PDF file as bytes`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(pdfContent())
+                    .body(pdfContent())
+                    .build()
             )
 
             val response = service.getOperationalConditionPdf(12)
@@ -587,9 +603,9 @@ class AlluClientITests {
             assertThat(response).isEqualTo(PDF_BYTES)
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("GET")
-            assertThat(createRequest.path)
+            assertThat(createRequest.url.encodedPath)
                 .isEqualTo("/v2/excavationannouncements/12/approval/operationalcondition")
-            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(createRequest.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
 
         @Test
@@ -597,10 +613,11 @@ class AlluClientITests {
             val content = Buffer()
             repeat(1000000 / PDF_BYTES.size + 1) { content.write(PDF_BYTES) }
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(content)
+                    .body(content)
+                    .build()
             )
 
             val response = service.getOperationalConditionPdf(12)
@@ -611,10 +628,11 @@ class AlluClientITests {
         @Test
         fun `throws ApplicationDecisionNotFoundException on 404`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(404)
+                MockResponse.Builder()
+                    .code(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Not found")
+                    .body("Not found")
+                    .build()
             )
 
             val exception =
@@ -628,10 +646,11 @@ class AlluClientITests {
         @Test
         fun `throws WebClientResponseException on other error codes`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(500)
+                MockResponse.Builder()
+                    .code(500)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Other error")
+                    .body("Other error")
+                    .build()
             )
 
             assertThrows<WebClientResponseException> { service.getOperationalConditionPdf(12) }
@@ -640,10 +659,11 @@ class AlluClientITests {
         @Test
         fun `throws AlluApiException if the response does not have PDF Content-Type`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, IMAGE_PNG)
-                    .setBody(pdfContent())
+                    .body(pdfContent())
+                    .build()
             )
 
             assertThrows<AlluApiException> { service.getOperationalConditionPdf(12) }
@@ -652,10 +672,11 @@ class AlluClientITests {
         @Test
         fun `throws AlluApiException if the response body is empty`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF)
-                    .setBody("")
+                    .body("")
+                    .build()
             )
 
             assertThrows<AlluApiException> { service.getOperationalConditionPdf(12) }
@@ -668,10 +689,11 @@ class AlluClientITests {
         @Test
         fun `returns PDF file as bytes`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(pdfContent())
+                    .body(pdfContent())
+                    .build()
             )
 
             val response = service.getWorkFinishedPdf(12)
@@ -679,9 +701,9 @@ class AlluClientITests {
             assertThat(response).isEqualTo(PDF_BYTES)
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("GET")
-            assertThat(createRequest.path)
+            assertThat(createRequest.url.encodedPath)
                 .isEqualTo("/v2/excavationannouncements/12/approval/workfinished")
-            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(createRequest.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
 
         @Test
@@ -689,10 +711,11 @@ class AlluClientITests {
             val content = Buffer()
             repeat(1000000 / PDF_BYTES.size + 1) { content.write(PDF_BYTES) }
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
-                    .setBody(content)
+                    .body(content)
+                    .build()
             )
 
             val response = service.getOperationalConditionPdf(12)
@@ -703,10 +726,11 @@ class AlluClientITests {
         @Test
         fun `throws ApplicationDecisionNotFoundException on 404`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(404)
+                MockResponse.Builder()
+                    .code(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Not found")
+                    .body("Not found")
+                    .build()
             )
 
             val exception =
@@ -718,10 +742,11 @@ class AlluClientITests {
         @Test
         fun `throws WebClientResponseException on other error codes`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(500)
+                MockResponse.Builder()
+                    .code(500)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Other error")
+                    .body("Other error")
+                    .build()
             )
 
             assertThrows<WebClientResponseException> { service.getWorkFinishedPdf(12) }
@@ -730,10 +755,11 @@ class AlluClientITests {
         @Test
         fun `throws AlluApiException if the response does not have PDF Content-Type`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, IMAGE_PNG)
-                    .setBody(pdfContent())
+                    .body(pdfContent())
+                    .build()
             )
 
             assertThrows<AlluApiException> { service.getWorkFinishedPdf(12) }
@@ -742,10 +768,11 @@ class AlluClientITests {
         @Test
         fun `throws AlluApiException if the response body is empty`() {
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_PDF)
-                    .setBody("")
+                    .body("")
+                    .build()
             )
 
             assertThrows<AlluApiException> { service.getWorkFinishedPdf(12) }
@@ -761,10 +788,11 @@ class AlluClientITests {
             val histories =
                 ApplicationHistoryFactory.create(applicationId = 12).withDefaultEvents().asList()
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody(histories.toJsonString())
+                    .body(histories.toJsonString())
+                    .build()
             )
 
             val response = service.getApplicationStatusHistories(alluids, eventsAfter)
@@ -772,8 +800,8 @@ class AlluClientITests {
             assertThat(response).isEqualTo(histories)
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("POST")
-            assertThat(createRequest.path).isEqualTo("/v2/applicationhistory")
-            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(createRequest.url.encodedPath).isEqualTo("/v2/applicationhistory")
+            assertThat(createRequest.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
 
         @Test
@@ -781,10 +809,11 @@ class AlluClientITests {
             val alluids = listOf(12, 13)
             val eventsAfter = ZonedDateTime.parse("2022-10-10T15:25:34.981654Z")
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
+                MockResponse.Builder()
+                    .code(200)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("[]")
+                    .body("[]")
+                    .build()
             )
 
             val response = service.getApplicationStatusHistories(alluids, eventsAfter)
@@ -797,10 +826,11 @@ class AlluClientITests {
             val alluids = listOf(12, 13)
             val eventsAfter = ZonedDateTime.parse("2022-10-10T15:25:34.981654Z")
             mockWebServer.enqueue(
-                MockResponse()
-                    .setResponseCode(404)
+                MockResponse.Builder()
+                    .code(404)
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setBody("Error message")
+                    .body("Error message")
+                    .build()
             )
 
             assertFailure { service.getApplicationStatusHistories(alluids, eventsAfter) }
@@ -815,18 +845,19 @@ class AlluClientITests {
             val alluid = 12
             val body = AlluFactory.createAlluApplicationResponse(id = alluid)
             val mockResponse =
-                MockResponse()
+                MockResponse.Builder()
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setResponseCode(200)
-                    .setBody(body.toJsonString())
+                    .code(200)
+                    .body(body.toJsonString())
+                    .build()
             mockWebServer.enqueue(mockResponse)
 
             service.getApplicationInformation(alluid)
 
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("GET")
-            assertThat(request.path).isEqualTo("/v2/applications/$alluid")
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $authToken")
+            assertThat(request.url.encodedPath).isEqualTo("/v2/applications/$alluid")
+            assertThat(request.headers["Authorization"]).isEqualTo("Bearer $authToken")
         }
 
         @Test
@@ -834,10 +865,11 @@ class AlluClientITests {
             val alluid = 12
             val body = AlluFactory.createAlluApplicationResponse(id = alluid)
             val mockResponse =
-                MockResponse()
+                MockResponse.Builder()
                     .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                    .setResponseCode(200)
-                    .setBody(body.toJsonString())
+                    .code(200)
+                    .body(body.toJsonString())
+                    .build()
             mockWebServer.enqueue(mockResponse)
 
             val response = service.getApplicationInformation(alluid)
@@ -848,7 +880,7 @@ class AlluClientITests {
         @Test
         fun `throws exception when Allu returns an error`() {
             val alluid = 12
-            val mockResponse = MockResponse().setResponseCode(500)
+            val mockResponse = MockResponse.Builder().code(500).build()
             mockWebServer.enqueue(mockResponse)
 
             val failure = assertFailure { service.getApplicationInformation(alluid) }
@@ -859,22 +891,25 @@ class AlluClientITests {
 
     fun Assert<RecordedRequest>.isValidLoginRequest() = given { loginRequest ->
         prop(RecordedRequest::method).isEqualTo("POST")
-        prop(RecordedRequest::path).isEqualTo("/v2/login")
-        prop("Authorization header") { loginRequest.getHeader("Authorization") }.isNull()
+        prop(RecordedRequest::url).transform { it.encodedPath }.isEqualTo("/v2/login")
+        prop("Authorization header") { loginRequest.headers["Authorization"] }.isNull()
     }
 
     private fun RecordedRequest.multiPartContentTypes(): List<String> {
-        val reader = MultipartReader(body, boundary())
+        val reader = MultipartReader(body.toBufferedSource(), boundary())
         return generateSequence { reader.nextPart()?.headers?.get(CONTENT_TYPE) }.toList()
     }
 
     private fun RecordedRequest.getMetadataPart(): AttachmentMetadata? {
-        val reader = MultipartReader(body, boundary())
+        val reader = MultipartReader(body.toBufferedSource(), boundary())
         val metadataPart =
             generateSequence { reader.nextPart() }
                 .find { it.headers[CONTENT_DISPOSITION]?.contains("name=\"metadata\"") ?: false }
         return metadataPart?.body?.readUtf8()?.parseJson()
     }
+
+    private fun ByteString?.toBufferedSource(): BufferedSource =
+        this?.let { Buffer().write(it) }?.buffer() ?: Buffer().buffer()
 
     private fun RecordedRequest.boundary(): String =
         headers[CONTENT_TYPE]?.split(";boundary=")?.last()!!
@@ -883,10 +918,11 @@ class AlluClientITests {
         val stubbedBearer = createMockToken()
 
         val loginResponse =
-            MockResponse()
-                .setResponseCode(200)
+            MockResponse.Builder()
+                .code(200)
                 .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
-                .setBody(stubbedBearer)
+                .body(stubbedBearer)
+                .build()
         mockWebServer.enqueue(loginResponse)
         return stubbedBearer
     }

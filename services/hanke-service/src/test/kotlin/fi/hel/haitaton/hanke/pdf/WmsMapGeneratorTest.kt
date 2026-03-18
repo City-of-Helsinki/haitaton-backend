@@ -13,12 +13,12 @@ import fi.hel.haitaton.hanke.getResourceAsText
 import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue
 import java.io.ByteArrayInputStream
 import javax.imageio.ImageIO
+import mockwebserver3.Dispatcher
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import mockwebserver3.RecordedRequest
 import net.pwall.mustache.Template
 import okhttp3.HttpUrl
-import okhttp3.mockwebserver.Dispatcher
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
 import okio.Buffer
 import org.geotools.ows.wms.WebMapServer
 import org.junit.jupiter.api.AfterEach
@@ -56,7 +56,7 @@ class WmsMapGeneratorTest {
 
         @AfterEach
         fun tearDown() {
-            mockWmsServer.shutdown()
+            mockWmsServer.close()
         }
 
         @Test
@@ -66,8 +66,9 @@ class WmsMapGeneratorTest {
             assertThat(mockWmsServer.requestCount).isEqualTo(2)
             val capabilityRequest = mockWmsServer.takeRequest()
             assertThat(capabilityRequest).all {
-                prop(RecordedRequest::path)
+                prop(RecordedRequest::url)
                     .isNotNull()
+                    .transform { it.toString() }
                     .contains(
                         "/capabilities",
                         "REQUEST=GetCapabilities",
@@ -77,8 +78,9 @@ class WmsMapGeneratorTest {
             }
             val mapRequest = mockWmsServer.takeRequest()
             assertThat(mapRequest).all {
-                prop(RecordedRequest::path)
+                prop(RecordedRequest::url)
                     .isNotNull()
+                    .transform { it.toString() }
                     .contains(
                         "/image", // The URL is read from the capabilities XML.
                         "REQUEST=GetMap",
@@ -264,13 +266,12 @@ class WmsMapGeneratorTest {
 
     class GeoserverDispatcher(private val baseUrl: HttpUrl) : Dispatcher() {
         override fun dispatch(request: RecordedRequest): MockResponse {
-            return request.path?.let { path ->
-                if (path.startsWith("/capabilities")) {
-                    capabilityResponse()
-                } else if (path.startsWith("/image")) {
-                    imageResponse()
-                } else null
-            } ?: MockResponse().setResponseCode(404)
+            val path = request.url.encodedPath
+            return when {
+                path.startsWith("/capabilities") -> capabilityResponse()
+                path.startsWith("/image") -> imageResponse()
+                else -> MockResponse.Builder().code(404).build()
+            }
         }
 
         private fun capabilityResponse(): MockResponse {
@@ -280,19 +281,21 @@ class WmsMapGeneratorTest {
                 )
             val params = mapOf("baseUrl" to baseUrl)
 
-            return MockResponse()
-                .setResponseCode(200)
+            return MockResponse.Builder()
+                .code(200)
                 .setHeader("Content-Type", "application/vnd.ogc.wms_xml")
-                .setBody(responseTemplate.processToString(params))
+                .body(responseTemplate.processToString(params))
+                .build()
         }
 
         private fun imageResponse(): MockResponse {
             val bytes = "/fi/hel/haitaton/hanke/pdf-test-data/blank.png".getResourceAsBytes()
 
-            return MockResponse()
-                .setResponseCode(200)
+            return MockResponse.Builder()
+                .code(200)
                 .setHeader("Content-Type", "image/png")
-                .setBody(Buffer().write(bytes))
+                .body(Buffer().write(bytes))
+                .build()
         }
     }
 }

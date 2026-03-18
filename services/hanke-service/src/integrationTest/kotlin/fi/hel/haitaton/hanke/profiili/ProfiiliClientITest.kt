@@ -19,10 +19,10 @@ import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import java.net.URLEncoder
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import mockwebserver3.QueueDispatcher
 import okhttp3.HttpUrl
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.QueueDispatcher
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -44,8 +44,11 @@ class ProfiiliClientITest {
         clearAllMocks()
 
         mockApiTokensApi = MockWebServer()
+        mockApiTokensApi.start()
         mockGraphQl = MockWebServer()
+        mockGraphQl.start()
         mockConfigurationApi = MockWebServer()
+        mockConfigurationApi.start()
 
         val issuer = mockConfigurationApi.url("/auth/realms/helsinki-tunnistus").toString()
 
@@ -59,9 +62,9 @@ class ProfiiliClientITest {
 
     @AfterEach
     fun tearDown() {
-        mockApiTokensApi.shutdown()
-        mockGraphQl.shutdown()
-        mockConfigurationApi.shutdown()
+        mockApiTokensApi.close()
+        mockGraphQl.close()
+        mockConfigurationApi.close()
         checkUnnecessaryStub()
     }
 
@@ -71,7 +74,7 @@ class ProfiiliClientITest {
         fun `throws exception when OpenID configuration can't be found`() {
             mockConfigurationApi.dispatcher = QueueDispatcher()
             mockConfigurationApi.enqueue(
-                MockResponse().setResponseCode(404).setBody("This is the message body from error")
+                MockResponse.Builder().code(404).body("This is the message body from error").build()
             )
 
             val failure = assertFailure { profiiliClient.getVerifiedName(ACCESS_TOKEN) }
@@ -111,19 +114,19 @@ class ProfiiliClientITest {
             profiiliClient.getVerifiedName(ACCESS_TOKEN)
 
             val request = mockConfigurationApi.takeRequest()
-            assertThat(request.requestUrl)
+            assertThat(request.url)
                 .isNotNull()
                 .prop(HttpUrl::toString)
                 .isEqualTo(
                     "http://localhost:${mockConfigurationApi.port}/auth/realms/helsinki-tunnistus/.well-known/openid-configuration"
                 )
-            assertThat(request.getHeader("Authorization")).isNull()
-            assertThat(request.getHeader("Accept")).isEqualTo(MediaType.APPLICATION_JSON_VALUE)
+            assertThat(request.headers["Authorization"]).isNull()
+            assertThat(request.headers["Accept"]).isEqualTo(MediaType.APPLICATION_JSON_VALUE)
         }
 
         @Test
         fun `throws exception when API tokens not found`() {
-            mockApiTokensApi.enqueue(MockResponse().setResponseCode(404))
+            mockApiTokensApi.enqueue(MockResponse.Builder().code(404).build())
 
             val failure = assertFailure { profiiliClient.getVerifiedName(ACCESS_TOKEN) }
 
@@ -170,13 +173,13 @@ class ProfiiliClientITest {
             profiiliClient.getVerifiedName(ACCESS_TOKEN)
 
             val request = mockApiTokensApi.takeRequest()
-            assertThat(request.requestUrl)
+            assertThat(request.url)
                 .isNotNull()
                 .prop(HttpUrl::toString)
                 .isEqualTo("http://localhost:${mockApiTokensApi.port}/api-tokens/")
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $ACCESS_TOKEN")
-            assertThat(request.getHeader("Accept")).isEqualTo(MediaType.APPLICATION_JSON_VALUE)
-            assertThat(request.getHeader("Content-Type"))
+            assertThat(request.headers["Authorization"]).isEqualTo("Bearer $ACCESS_TOKEN")
+            assertThat(request.headers["Accept"]).isEqualTo(MediaType.APPLICATION_JSON_VALUE)
+            assertThat(request.headers["Content-Type"])
                 .isEqualTo(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         }
 
@@ -195,13 +198,13 @@ class ProfiiliClientITest {
             val encodedPermission = URLEncoder.encode(ProfiiliClient.TOKEN_API_PERMISSION, "UTF-8")
             val expectedBody =
                 "audience=$encodedAudience&grant_type=$encodedGrantType&permission=$encodedPermission"
-            assertThat(request.body.readUtf8()).isEqualTo(expectedBody)
+            assertThat(request.body?.utf8()).isEqualTo(expectedBody)
         }
 
         @Test
         fun `throws exception when GraphQL request fails`() {
             mockApiToken()
-            mockGraphQl.enqueue(MockResponse().setResponseCode(404))
+            mockGraphQl.enqueue(MockResponse.Builder().code(404).build())
 
             val failure = assertFailure { profiiliClient.getVerifiedName(ACCESS_TOKEN) }
 
@@ -266,14 +269,13 @@ class ProfiiliClientITest {
             profiiliClient.getVerifiedName(ACCESS_TOKEN)
 
             val request = mockGraphQl.takeRequest()
-            assertThat(request.requestUrl)
+            assertThat(request.url)
                 .isNotNull()
                 .prop(HttpUrl::toString)
                 .isEqualTo("http://localhost:${mockGraphQl.port}/graphql/")
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $API_TOKEN")
-            assertThat(request.getHeader("Accept")).isEqualTo(MediaType.APPLICATION_JSON_VALUE)
-            assertThat(request.getHeader("Content-Type"))
-                .isEqualTo(MediaType.APPLICATION_JSON_VALUE)
+            assertThat(request.headers["Authorization"]).isEqualTo("Bearer $API_TOKEN")
+            assertThat(request.headers["Accept"]).isEqualTo(MediaType.APPLICATION_JSON_VALUE)
+            assertThat(request.headers["Content-Type"]).isEqualTo(MediaType.APPLICATION_JSON_VALUE)
         }
 
         @Test
@@ -284,7 +286,7 @@ class ProfiiliClientITest {
             profiiliClient.getVerifiedName(ACCESS_TOKEN)
 
             val request = mockGraphQl.takeRequest()
-            val body = request.body.readUtf8()
+            val body = request.body?.utf8()!!
             val query: ProfiiliClient.GraphQlQuery = OBJECT_MAPPER.readValue(body)
             assertThat(query).all {
                 prop(ProfiiliClient.GraphQlQuery::variables).isNull()
@@ -309,10 +311,11 @@ class ProfiiliClientITest {
 
     private fun MockWebServer.enqueueSuccess(body: String) {
         enqueue(
-            MockResponse()
-                .setResponseCode(200)
+            MockResponse.Builder()
+                .code(200)
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .setBody(body)
+                .body(body)
+                .build()
         )
     }
 
@@ -322,10 +325,11 @@ class ProfiiliClientITest {
 
     private fun mockApiToken() {
         mockApiTokensApi.enqueue(
-            MockResponse()
-                .setResponseCode(200)
+            MockResponse.Builder()
+                .code(200)
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .setBody(mapOf("access_token" to API_TOKEN).toJsonString())
+                .body(mapOf("access_token" to API_TOKEN).toJsonString())
+                .build()
         )
     }
 
