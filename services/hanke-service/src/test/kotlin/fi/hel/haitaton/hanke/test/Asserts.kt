@@ -51,18 +51,18 @@ object Asserts {
 
     fun Assert<OffsetDateTime?>.isRecent(offset: TemporalAmount = Duration.ofMinutes(1)) {
         val now = OffsetDateTime.now()
-        isNotNull().isBetween(now.minus(offset), now)
+        isNotNull().isBetween(now.minus(offset), now.plus(Duration.ofSeconds(5)))
     }
 
     @JvmName("isRecentZoned")
     fun Assert<ZonedDateTime?>.isRecent(offset: TemporalAmount = Duration.ofMinutes(1)) {
         val now = ZonedDateTime.now()
-        isNotNull().isBetween(now.minus(offset), now)
+        isNotNull().isBetween(now.minus(offset), now.plus(Duration.ofSeconds(5)))
     }
 
     fun Assert<Instant?>.isRecentInstant(offset: TemporalAmount = Duration.ofMinutes(1)) {
         val now = Instant.now()
-        isNotNull().isBetween(now.minus(offset), now)
+        isNotNull().isBetween(now.minus(offset), now.plus(Duration.ofSeconds(5)))
     }
 
     fun Assert<Instant?>.isGreaterThan(other: Instant?) {
@@ -75,7 +75,7 @@ object Asserts {
 
     fun Assert<ZonedDateTime?>.isRecentZDT(offset: TemporalAmount = Duration.ofMinutes(1)) {
         val now = ZonedDateTime.now()
-        isNotNull().isBetween(now.minus(offset), now)
+        isNotNull().isBetween(now.minus(offset), now.plus(Duration.ofSeconds(5)))
     }
 
     fun Assert<LocalDateTime?>.isRecentUTC(offset: TemporalAmount = Duration.ofMinutes(1)) =
