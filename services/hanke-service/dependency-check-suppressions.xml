@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+    <!--
+        CVE-2023-36415: Fixed in azure-identity 1.10.2 (Java). We use 1.17.0.
+        Known OWASP false positive: scanner incorrectly matches the Java version range
+        against the Python version range in NVD CPE data.
+        https://github.com/jeremylong/DependencyCheck/issues/7245
+    -->
+    <suppress>
+        <notes>False positive: CVE-2023-36415 is fixed in azure-identity >= 1.10.2 for Java. We use 1.17.0.</notes>
+        <packageUrl regex="true">^pkg:maven/com\.azure/azure-identity@.*$</packageUrl>
+        <cve>CVE-2023-36415</cve>
+    </suppress>
+
+    <!--
+        CVE-2024-35255: Fixed in azure-identity 1.12.2 and msal4j 1.15.1 (Java).
+        We use azure-identity 1.17.0 and msal4j 1.22.0, both of which are patched.
+    -->
+    <suppress>
+        <notes>False positive: CVE-2024-35255 is fixed in azure-identity >= 1.12.2. We use 1.17.0.</notes>
+        <packageUrl regex="true">^pkg:maven/com\.azure/azure-identity@.*$</packageUrl>
+        <cve>CVE-2024-35255</cve>
+    </suppress>
+    <suppress>
+        <notes>False positive: CVE-2024-35255 is fixed in msal4j >= 1.15.1. We use 1.22.0.</notes>
+        <packageUrl regex="true">^pkg:maven/com\.microsoft\.azure/msal4j@.*$</packageUrl>
+        <cve>CVE-2024-35255</cve>
+    </suppress>
+
+    <!--
+        CVE-2025-7962: SMTP injection vulnerability in org.eclipse.angus:smtp (angus-mail).
+        This CVE is incorrectly reported against angus-activation, which is a separate artifact
+        with no SMTP or mail handling code.
+        https://github.com/dependency-check/DependencyCheck/issues/8144
+    -->
+    <suppress>
+        <notes>False positive: CVE-2025-7962 affects angus-mail/smtp, not angus-activation.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.eclipse\.angus/angus-activation@.*$</packageUrl>
+        <cve>CVE-2025-7962</cve>
+    </suppress>
+
+    <!--
+        CVE-2025-68161: TLS hostname verification flaw in log4j-core's Socket Appender.
+        This CVE only affects log4j-core. We only have log4j-api on the classpath,
+        which contains no socket, SSL, or appender logic.
+    -->
+    <suppress>
+        <notes>False positive: CVE-2025-68161 only affects log4j-core Socket Appender. We only use log4j-api.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.logging\.log4j/log4j-api@.*$</packageUrl>
+        <cve>CVE-2025-68161</cve>
+    </suppress>
+
+    <!--
+        CVE-2023-4218: Vulnerability in Eclipse IDE (the desktop application).
+        This CVE is incorrectly matched against the Eclipse EMF library (org.eclipse.emf)
+        due to imprecise CPE matching. The EMF library is a model framework with no relation
+        to the IDE-level file handling vulnerability described in the CVE.
+    -->
+    <suppress>
+        <notes>False positive: CVE-2023-4218 affects Eclipse IDE, not the Eclipse EMF library.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.eclipse\.emf/.*$</packageUrl>
+        <cve>CVE-2023-4218</cve>
+    </suppress>
+
+    <!--
+        CVE-2025-15104: SSRF vulnerability in Nu Html Checker (validator.nu).
+        This CVE is incorrectly matched against hibernate-validator due to a CPE mismatch
+        on the word "validator". The two projects are completely unrelated.
+    -->
+    <suppress>
+        <notes>False positive: CVE-2025-15104 affects Nu Html Checker (validator.nu), not hibernate-validator.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.hibernate\.validator/hibernate-validator@.*$</packageUrl>
+        <cve>CVE-2025-15104</cve>
+    </suppress>
+
+    <!--
+        CVE-2026-23907: Path traversal in Apache PDFBox's ExtractEmbeddedFiles example code (CVSS 5.3).
+        The CVE is incorrectly matched against pdfbox-io, which is an IO utility module containing only
+        stream handling utilities. The vulnerable ExtractEmbeddedFiles example and PDComplexFileSpecification
+        class live in the main pdfbox artifact, not in pdfbox-io. We pull in pdfbox-io only transitively
+        via fop -> fontbox and do not use any PDFBox example code in production.
+    -->
+    <suppress>
+        <notes>False positive: CVE-2026-23907 affects the ExtractEmbeddedFiles example in the main pdfbox artifact, not pdfbox-io.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.pdfbox/pdfbox-io@.*$</packageUrl>
+        <cve>CVE-2026-23907</cve>
+    </suppress>
+
+    <!--
+        CVE-2025-15599 and CVE-2026-0540: XSS vulnerabilities in DOMPurify bundled inside swagger-ui.
+        These require DOMPurify >= 3.2.7 and >= 3.3.2 respectively. As of swagger-ui 5.32.0
+        (latest), DOMPurify is still pinned to 3.2.6 — no upstream fix is available yet.
+        Risk is low: Swagger UI is only exposed in non-production environments and exploitation
+        requires a user to be tricked into using it.
+    -->
+    <suppress>
+        <notes>No fix available: swagger-ui 5.32.0 still bundles DOMPurify 3.2.6. Swagger UI is dev/test only.</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2025-15599</cve>
+    </suppress>
+    <suppress>
+        <notes>No fix available: swagger-ui 5.32.0 still bundles DOMPurify 3.2.6. Swagger UI is dev/test only.</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-0540</cve>
+    </suppress>
+
+</suppressions>
