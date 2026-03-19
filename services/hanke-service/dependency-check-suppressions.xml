@@ -105,4 +105,17 @@
         <cve>CVE-2026-0540</cve>
     </suppress>
 
+    <!--
+        CVE-2025-67721: Information leakage via buffer reuse in aircompressor's Snappy/LZ4 decompressors.
+        aircompressor is pulled in transitively by GeoTools (gt-wms -> gt-coverage -> imageio-ext-tiff)
+        for WMS/image rendering only. We do not decompress Snappy or LZ4 streams from external input,
+        so the vulnerable code path is not reachable. No compatible fixed version exists for the 0.x
+        series used by GeoTools 33.2.
+    -->
+    <suppress>
+        <notes>Not exploitable: aircompressor is used only via GeoTools WMS rendering, not for Snappy/LZ4 decompression of external input.</notes>
+        <packageUrl regex="true">^pkg:maven/io\.airlift/aircompressor@.*$</packageUrl>
+        <cve>CVE-2025-67721</cve>
+    </suppress>
+
 </suppressions>
