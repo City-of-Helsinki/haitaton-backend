@@ -182,19 +182,8 @@ geographic objects in the database. Database management, schema changes and data
 
 In order to run Törmäystarkastelus locally one needs to import GIS data. This can be done after docker-compose is up and
 running (at least `db`).
-Maintenance VPN (`huolto.hel.fi`) is needed to access the files.
 
-```shell
-cd haitaton-backend
-sh scripts/HEL-GIS-data-import.sh
-```
-
-or in Windows:
-
-```shell
-cd haitaton-backend
-.\scripts\HEL-GIS-data-import.cmd
-```
+Clone repo https://github.com/City-of-Helsinki/haitaton-gis-update/ and follow instructions in its README.md.
 
 ## Emails
 
