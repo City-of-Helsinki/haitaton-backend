@@ -21,7 +21,6 @@ ARG DEPENDENCY=/workspace/app/services/hanke-service/build/dependency
 COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
 COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
 COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
-COPY scripts/wait-for-it.sh ./
 
 # Fix RuntimeException: Fontconfig head is null
 USER root

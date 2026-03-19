@@ -11,6 +11,11 @@ services:
       - DB_APP_PASSWORD=haitaton
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
       - "5432:5432"
     volumes:
@@ -25,15 +30,21 @@ services:
     image: clamav/clamav:stable
     container_name: clamav
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "clamdcheck.sh"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     networks:
       - backbone
   clamav-api:
     image: benzino77/clamav-rest-api
     container_name: clamav-rest
     restart: unless-stopped
-    command: [ '/usr/bin/wait-for-it', '-h', 'clamd', '-p', '3310', '-s', '-t', '120', '--', 'npm', 'start' ]
     depends_on:
-      - clamd
+      clamd:
+        condition: service_healthy
     environment:
       - NODE_ENV=production
       - CLAMD_IP=clamd
@@ -120,10 +131,14 @@ services:
       HAITATON_FEATURE_HANKE_EDITING: ${HAITATON_FEATURE_HANKE_EDITING:-true}
       HAITATON_FEATURE_HANKE_COMPLETION: ${HAITATON_FEATURE_HANKE_COMPLETION:-true}
       HAITATON_API_DISABLED: ${HAITATON_API_DISABLED:-false}
+      HAITATON_SENTRY_DSN: ${HAITATON_SENTRY_DSN:-}
     depends_on:
-      - db
-      - clamav-api
-      - azurite-setup
+      db:
+        condition: service_healthy
+      clamav-api:
+        condition: service_started
+      azurite-setup:
+        condition: service_started
     networks:
       backbone:
         aliases:
