@@ -19,7 +19,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ${DB_VOLUME}:/var/lib/postgresql/18/data
+      - ${DB_VOLUME}:/var/lib/postgresql/18/docker
     networks:
       backbone:
         aliases:
@@ -30,15 +30,21 @@ services:
     image: clamav/clamav:stable
     container_name: clamav
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "clamdcheck.sh"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     networks:
       - backbone
   clamav-api:
     image: benzino77/clamav-rest-api
     container_name: clamav-rest
     restart: unless-stopped
-    command: [ '/usr/bin/wait-for-it', '-h', 'clamd', '-p', '3310', '-s', '-t', '120', '--', 'npm', 'start' ]
     depends_on:
-      - clamd
+      clamd:
+        condition: service_healthy
     environment:
       - NODE_ENV=production
       - CLAMD_IP=clamd
@@ -68,12 +74,17 @@ services:
     image: mcr.microsoft.com/azure-storage/azurite
     container_name: azurite
     restart: always
-    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data --debug /workspace/azurite-debug.log
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data --debug /workspace/azurite-debug.log --skipApiVersionCheck
     ports:
       - '10000:10000'
     volumes:
       - azurite-data:/data
       - .:/workspace
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('net').connect(10000, () => process.exit(0)).on('error', () => process.exit(1))\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
       backbone:
         aliases:
@@ -82,7 +93,8 @@ services:
     image: mcr.microsoft.com/azure-cli
     container_name: azurite-setup
     depends_on:
-      - azurite
+      azurite:
+        condition: service_healthy
     command: /tmp/setup.sh
     volumes:
       - ${BUILD_ROOT}/haitaton-backend/scripts/docker-azurite:/tmp/.
@@ -133,8 +145,6 @@ services:
       backbone:
         aliases:
           - haitaton-hanke
-    links:
-      - smtp4dev
 
   haitaton-ui:
     build:
@@ -173,9 +183,6 @@ services:
       - haitaton-ui
     networks:
       - backbone
-    links:
-      - haitaton-hanke
-      - haitaton-ui
 
 volumes:
   azurite-data:

@@ -37,11 +37,10 @@ out/
 ### Local environment variables ###
 .env
 
-### Azurite debug log ###
-azurite-debug.log
-
 # Kotlin 2 cache directory
 /.kotlin
 
 /CLAUDE.md
+/AGENTS.md
 /*.txt
+/*.log

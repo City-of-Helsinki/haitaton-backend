@@ -1,6 +1,8 @@
 import io.freefair.gradle.plugins.mjml.ValidationMode
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension
+import org.owasp.dependencycheck.reporting.ReportGenerator
 import org.springframework.boot.gradle.tasks.run.BootRun
 
 group = "fi.hel.haitaton"
@@ -55,7 +57,7 @@ spotless {
 
 plugins {
     val kotlinVersion = "2.2.20"
-    id("org.springframework.boot") version "3.5.6"
+    id("org.springframework.boot") version "3.5.11"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.diffplug.spotless") version "7.2.1"
     kotlin("jvm") version kotlinVersion
@@ -66,6 +68,7 @@ plugins {
     idea
     id("jacoco")
     id("io.freefair.mjml.java") version "8.14.2"
+    id("org.owasp.dependencycheck") version "12.1.0"
 }
 
 dependencies {
@@ -78,14 +81,12 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
-    implementation("ch.qos.logback:logback-core:1.5.19")
     implementation("ch.qos.logback.access:logback-access-tomcat:2.0.6")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.liquibase:liquibase-core:5.0.0")
-    implementation("org.apache.commons:commons-lang3:3.19.0")
+    implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
     implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.11.0")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
@@ -228,3 +229,16 @@ mjml {
 }
 
 node { download.set(true) }
+
+configure<DependencyCheckExtension> {
+    format = ReportGenerator.Format.ALL.toString()
+    suppressionFile = "$projectDir/dependency-check-suppressions.xml"
+    nvd {
+        apiKey = System.getenv("NVD_API_KEY")
+    }
+    analyzers {
+        ossIndex {
+            enabled = false
+        }
+    }
+}
