@@ -63,6 +63,11 @@ services:
     ports:
       - '3003:80' # Web UI
       - '2525:25' # Port for receiving SMTP
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:80 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     networks:
       backbone:
         aliases:
@@ -139,6 +144,8 @@ services:
         condition: service_healthy
       clamav-api:
         condition: service_started
+      smtp4dev:
+        condition: service_healthy
       azurite-setup:
         condition: service_started
     networks:
