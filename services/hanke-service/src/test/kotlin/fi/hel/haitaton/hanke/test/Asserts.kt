@@ -54,12 +54,6 @@ object Asserts {
         isNotNull().isBetween(now.minus(offset), now.plus(Duration.ofSeconds(5)))
     }
 
-    @JvmName("isRecentZoned")
-    fun Assert<ZonedDateTime?>.isRecent(offset: TemporalAmount = Duration.ofMinutes(1)) {
-        val now = ZonedDateTime.now()
-        isNotNull().isBetween(now.minus(offset), now.plus(Duration.ofSeconds(5)))
-    }
-
     fun Assert<Instant?>.isRecentInstant(offset: TemporalAmount = Duration.ofMinutes(1)) {
         val now = Instant.now()
         isNotNull().isBetween(now.minus(offset), now.plus(Duration.ofSeconds(5)))

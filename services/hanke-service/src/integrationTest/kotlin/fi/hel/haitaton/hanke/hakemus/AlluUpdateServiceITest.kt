@@ -54,8 +54,8 @@ import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
-import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.Asserts.isRecentInstant
+import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -142,7 +142,8 @@ class AlluUpdateServiceITest(
 
         updateService.handleUpdates()
 
-        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC)).isRecent()
+        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC))
+            .isRecentZDT()
         verifySequence {
             alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
@@ -161,7 +162,8 @@ class AlluUpdateServiceITest(
 
         updateService.handleUpdates()
 
-        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC)).isRecent()
+        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC))
+            .isRecentZDT()
         verifySequence {
             alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
@@ -877,7 +879,7 @@ class AlluUpdateServiceITest(
 
         updateService.handleUpdates()
 
-        assertThat(alluStatusRepository.getLastUpdateTime()).isRecent()
+        assertThat(alluStatusRepository.getLastUpdateTime()).isRecentZDT()
         val application = hakemusRepository.findAll().single()
         assertThat(application.alluStatus).isEqualTo(ApplicationStatus.HANDLING)
         val events = alluEventRepository.findAll()
