@@ -10,7 +10,7 @@ group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
 
 val sentryVersion = "8.21.1"
-val geoToolsVersion = "33.2"
+val geoToolsVersion = "34.3"
 
 repositories {
     mavenCentral().content { excludeModule("javax.media", "jai_core") }
