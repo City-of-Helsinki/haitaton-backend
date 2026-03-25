@@ -11,6 +11,10 @@ jobs:
   tests:
     name: Test
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
