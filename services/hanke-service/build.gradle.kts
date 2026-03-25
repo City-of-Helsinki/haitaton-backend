@@ -122,7 +122,7 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
 
     // Override commons-compress to fix CVE
-    testImplementation("org.apache.commons:commons-compress:1.26.0")
+    testImplementation("org.apache.commons:commons-compress:1.28.0")
     testImplementation("commons-codec:commons-codec:1.17.2")
 
     // Override commons-lang3 to fix CVE-2025-48924 (DoS via ClassUtils.getClass recursion)
