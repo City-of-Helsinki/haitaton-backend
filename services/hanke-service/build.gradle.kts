@@ -9,7 +9,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "8.21.1"
+val sentryVersion = "8.37.0"
 val geoToolsVersion = "33.2"
 
 repositories {
