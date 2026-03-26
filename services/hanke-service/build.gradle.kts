@@ -126,7 +126,7 @@ dependencies {
     testImplementation("commons-codec:commons-codec:1.17.2")
 
     // Override commons-lang3 to fix CVE-2025-48924 (DoS via ClassUtils.getClass recursion)
-    implementation("org.apache.commons:commons-lang3:3.18.0")
+    implementation("org.apache.commons:commons-lang3:3.20.0")
 
     // Spring Boot Management
     implementation("org.springframework.boot:spring-boot-starter-actuator")
