@@ -48,6 +48,7 @@ enum class ApplicationStatus {
     ARCHIVED, // Application archived
     REPLACED, // Application decision has been replaced with a new one
     COMMENT_ADDED, // A comment has been sent to Haitaton from Allu
+    ANONYMIZED, // Application anonymized
 }
 
 data class SupervisionEvent(
