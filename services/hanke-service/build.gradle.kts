@@ -12,6 +12,10 @@ version = "0.0.1-SNAPSHOT"
 val sentryVersion = "8.21.1"
 val geoToolsVersion = "33.2"
 
+// Force patched versions for critical CVEs not yet included in Spring Boot 3.5.14
+extra["netty.version"] = "4.1.133.Final" // CVE-2026-42579, CVE-2026-42581, CVE-2026-42584
+extra["tomcat.version"] = "10.1.55" // CVE-2026-41293, CVE-2026-43512, CVE-2026-43515
+
 repositories {
     mavenCentral().content { excludeModule("javax.media", "jai_core") }
     maven { url = uri("https://repo.osgeo.org/repository/release/") }
@@ -57,7 +61,7 @@ spotless {
 
 plugins {
     val kotlinVersion = "2.2.20"
-    id("org.springframework.boot") version "3.5.11"
+    id("org.springframework.boot") version "3.5.14"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.diffplug.spotless") version "7.2.1"
     kotlin("jvm") version kotlinVersion
@@ -69,6 +73,7 @@ plugins {
     id("jacoco")
     id("io.freefair.mjml.java") version "8.14.2"
     id("org.owasp.dependencycheck") version "12.1.0"
+    id("org.cyclonedx.bom") version "2.3.0"
 }
 
 dependencies {
@@ -139,10 +144,11 @@ dependencies {
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
-    implementation(platform("com.azure:azure-sdk-bom:1.2.38"))
+    implementation(platform("com.azure:azure-sdk-bom:1.3.7"))
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
-    implementation("com.azure:azure-identity")
+    implementation("com.azure:azure-identity") // BOM 1.3.7 → 1.18.3 (fixes CVE-2026-33117)
+    implementation("com.azure:azure-json")     // BOM 1.3.7 → 1.5.1 (false positive, see suppressions)
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }
@@ -202,6 +208,10 @@ tasks {
     }
 
     compileMjml { source(file("$rootDir/email")) }
+
+    named<com.github.gradle.node.npm.task.NpmTask>("installMjml") {
+        args.set(listOf("install", "mjml@4.15.3"))
+    }
 }
 
 tasks.register("installGitHook", Copy::class) {
