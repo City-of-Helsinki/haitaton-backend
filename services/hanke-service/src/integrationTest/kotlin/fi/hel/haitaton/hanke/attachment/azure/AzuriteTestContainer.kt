@@ -14,6 +14,7 @@ object AzuriteTestContainer {
     /** Shared Azurite container instance. Lazily initialized and started on first access. */
     val container: GenericContainer<*> by lazy {
         GenericContainer(DockerImageName.parse("mcr.microsoft.com/azure-storage/azurite"))
+            .withCommand("azurite-blob", "--blobHost", "0.0.0.0", "--skipApiVersionCheck")
             .withExposedPorts(10000)
             .also { it.start() }
     }
