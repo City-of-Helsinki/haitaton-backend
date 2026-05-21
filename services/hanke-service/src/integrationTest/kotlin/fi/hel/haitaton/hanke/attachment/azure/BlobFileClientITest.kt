@@ -5,20 +5,16 @@ import com.azure.storage.blob.BlobContainerClient
 import com.azure.storage.blob.BlobServiceClient
 import fi.hel.haitaton.hanke.attachment.common.FileClientTest
 import fi.hel.haitaton.hanke.attachment.common.TestFile
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
-import org.testcontainers.containers.GenericContainer
-import org.testcontainers.utility.DockerImageName
 
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BlobFileClientITest : FileClientTest() {
 
-    private lateinit var azuriteContainer: GenericContainer<*>
     private lateinit var serviceClient: BlobServiceClient
     private lateinit var hankeAttachmentClient: BlobContainerClient
 
@@ -28,17 +24,12 @@ class BlobFileClientITest : FileClientTest() {
         Containers(
             decisions = "paatokset-test",
             hakemusAttachments = "hakemusliitteet-test",
-            hankeAttachments = "hankeliitteet-test"
+            hankeAttachments = "hankeliitteet-test",
         )
 
     @BeforeAll
     fun setup() {
-        azuriteContainer =
-            GenericContainer(DockerImageName.parse("mcr.microsoft.com/azure-storage/azurite"))
-                .withExposedPorts(10000)
-        azuriteContainer.start()
-        val connectionString =
-            "BlobEndpoint=http://${azuriteContainer.host}:${azuriteContainer.firstMappedPort}/devstoreaccount1;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
+        val connectionString = AzuriteTestContainer.getConnectionString()
         serviceClient = AzureContainerServiceClient(connectionString, "").blobServiceClient()
         hankeAttachmentClient = serviceClient.getBlobContainerClient(containers.hankeAttachments)
 
@@ -58,11 +49,6 @@ class BlobFileClientITest : FileClientTest() {
         }
     }
 
-    @AfterAll
-    fun teardown() {
-        azuriteContainer.stop()
-    }
-
     override fun listBlobs(container: Container): List<TestFile> =
         when (container) {
                 Container.HAKEMUS_LIITTEET ->
@@ -78,7 +64,7 @@ class BlobFileClientITest : FileClientTest() {
                     MediaType.parseMediaType(it.properties.contentType),
                     it.properties.contentLength.toInt(),
                     it.properties.contentDisposition,
-                    BinaryData.fromString("")
+                    BinaryData.fromString(""),
                 )
             }
             .toList()
