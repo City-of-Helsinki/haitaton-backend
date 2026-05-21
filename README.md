@@ -150,6 +150,26 @@ Created report can be found at paths:
 - Html: build/reports/jacoco/test/html/index.html
 - Xml: build/reports/jacoco/test/jacocoTestReport.xml
 
+### Dependency vulnerability scanning
+
+The [CycloneDX Gradle plugin](https://github.com/CycloneDX/cyclonedx-gradle-plugin) generates a
+Software Bill of Materials (SBOM) that lists all project dependencies. The SBOM can then be scanned
+for known vulnerabilities with [osv-scanner](https://google.github.io/osv-scanner/).
+
+Generate the SBOM:
+
+```
+$ ./gradlew :services:hanke-service:cyclonedxBom
+```
+
+The generated file is at `services/hanke-service/build/reports/application.cdx.json`.
+
+Scan it for vulnerabilities:
+
+```
+$ osv-scanner scan source -L services/hanke-service/build/reports/application.cdx.json
+```
+
 ### Spotless formatter
 
 The Spotless Gradle plugin checks during the build stage that all code is formatted with ktfmt. If
