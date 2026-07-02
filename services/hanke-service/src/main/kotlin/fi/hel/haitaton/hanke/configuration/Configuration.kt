@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.configuration
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluProperties
 import fi.hel.haitaton.hanke.attachment.azure.Containers
@@ -14,10 +15,13 @@ import kotlinx.coroutines.Dispatchers
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.webclient.WebClientCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
+import org.springframework.http.codec.json.Jackson2JsonDecoder
+import org.springframework.http.codec.json.Jackson2JsonEncoder
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
 
@@ -36,6 +40,19 @@ class Configuration {
     @Autowired lateinit var alluProperties: AlluProperties
 
     @Bean fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO
+
+    /**
+     * Spring Boot 4's auto-configured WebClient.Builder defaults to Jackson 3 codecs. Keep it on
+     * Jackson 2 for now, matching spring.jackson.use-jackson2-defaults, since WebClient consumers
+     * such as ProfiiliClient still decode into com.fasterxml.jackson.databind.JsonNode.
+     */
+    @Bean
+    fun jackson2WebClientCustomizer(objectMapper: ObjectMapper) = WebClientCustomizer { builder ->
+        builder.codecs {
+            it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(objectMapper))
+            it.defaultCodecs().jackson2JsonDecoder(Jackson2JsonDecoder(objectMapper))
+        }
+    }
 
     @Bean
     @Profile("!test")
