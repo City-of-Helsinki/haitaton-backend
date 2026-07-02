@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package fi.hel.haitaton.hanke.configuration
 
 import com.fasterxml.jackson.databind.ObjectMapper

@@ -13,7 +13,10 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
     /** liikenteellinen katuluokka, street_classes */
     fun maxIntersectingLiikenteellinenKatuluokka(geometriaIds: Set<Int>): Int? =
         getDistinctValuesIntersectingRows(
-                geometriaIds, "tormays_street_classes_polys", "street_class")
+                geometriaIds,
+                "tormays_street_classes_polys",
+                "street_class",
+            )
             .filterNotNull()
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
@@ -28,7 +31,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
 
     fun maxLiikennemaara(
         geometriaIds: Set<Int>,
-        etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
+        etaisyys: TormaystarkasteluLiikennemaaranEtaisyys,
     ): Int? {
         if (geometriaIds.isEmpty()) return null
         val placeholders = Collections.nCopies(geometriaIds.size, "?").joinToString(", ")
@@ -48,7 +51,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
 
     fun maxLiikennemaara(
         geometry: GeoJsonObject,
-        etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
+        etaisyys: TormaystarkasteluLiikennemaaranEtaisyys,
     ): Int? {
         val tableName = "tormays_volumes${etaisyys.radius}_polys"
         val sql =
@@ -129,7 +132,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
     private fun getDistinctValuesIntersectingRows(
         geometriaIds: Set<Int>,
         table: String,
-        column: String
+        column: String,
     ): List<String?> {
         if (geometriaIds.isEmpty()) return listOf()
         val placeholders = Collections.nCopies(geometriaIds.size, "?").joinToString(", ")
@@ -147,7 +150,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
     private fun getDistinctValuesIntersectingRows(
         geometria: GeoJsonObject,
         table: String,
-        column: String
+        column: String,
     ): List<String?> {
         val sql =
             """
@@ -206,8 +209,7 @@ enum class PyoraliikenteenHierarkia(val value: Int, val hierarkia: String) {
     MUU_YHTEYS(2, "Muu yhteys"),
     MUU_PYORAREITTI(3, "Muu pyöräreitti"),
     BAANA(5, "Baana"),
-    PAAPYORAREITTI(5, "Pääpyöräreitti"),
-    ;
+    PAAPYORAREITTI(5, "Pääpyöräreitti");
 
     companion object {
         fun valueOfHierarkia(hierarkia: String?): PyoraliikenteenHierarkia =
@@ -228,11 +230,12 @@ enum class TormaystarkasteluKatuluokka(val value: Int, val katuluokka: String) {
     OLD_TONTTIKATU_TAI_AJOYHTEYS(1, "Tonttikatu tai ajoyhteys"),
     TONTTIKATU_TAI_AJOYHTEYS(1, "Asuntokatu, huoltoväylä tai muu vähäliikenteinen katu"),
     KANTAKAUPUNGIN_ASUNTOKATU_HUOLTAVAYLA_TAI_VAHALIIKENTEINEN_KATU(
-        2, "Kantakaupungin asuntokatu, huoltoväylä tai muu vähäliikenteinen katu"),
+        2,
+        "Kantakaupungin asuntokatu, huoltoväylä tai muu vähäliikenteinen katu",
+    ),
     PAIKALLINEN_KOKOOJAKATU(3, "Paikallinen kokoojakatu"),
     ALUEELLINEN_KOKOOJAKATU(4, "Alueellinen kokoojakatu"),
-    PAAKATU_TAI_MOOTTORIVAYLA(5, "Pääkatu tai moottoriväylä"),
-    ;
+    PAAKATU_TAI_MOOTTORIVAYLA(5, "Pääkatu tai moottoriväylä");
 
     companion object {
         fun valueOfKatuluokka(katuluokka: String): TormaystarkasteluKatuluokka {
@@ -249,7 +252,8 @@ enum class TormaystarkasteluBussiRunkolinja(val runkolinja: String) {
         fun valueOfRunkolinja(runkolinja: String): TormaystarkasteluBussiRunkolinja {
             return entries.find { it.runkolinja == runkolinja }
                 ?: throw IllegalArgumentException(
-                    "Unknown runkolinja value: $runkolinja. Only 'yes' and 'no' are allowed.")
+                    "Unknown runkolinja value: $runkolinja. Only 'yes' and 'no' are allowed."
+                )
         }
     }
 
@@ -263,7 +267,7 @@ enum class TormaystarkasteluBussiRunkolinja(val runkolinja: String) {
 /** There are two(2) separate traffic counts - one for radius of 15m and other for 30m */
 enum class TormaystarkasteluLiikennemaaranEtaisyys(internal val radius: Int) {
     RADIUS_15(15),
-    RADIUS_30(30)
+    RADIUS_30(30),
 }
 
 /** Bus route */
@@ -271,7 +275,7 @@ class TormaystarkasteluBussireitti(
     val reittiId: String,
     val suunta: Int,
     val vuoromaaraRuuhkatunnissa: Int,
-    val runkolinja: TormaystarkasteluBussiRunkolinja
+    val runkolinja: TormaystarkasteluBussiRunkolinja,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -124,7 +124,8 @@ class PaatosControllerITest(
                 .andExpect(status().isOk)
                 .andExpect(
                     MockMvcResultMatchers.header()
-                        .string("Content-Disposition", "inline; filename=KP2425421-2-paatos.pdf"))
+                        .string("Content-Disposition", "inline; filename=KP2425421-2-paatos.pdf")
+                )
                 .andExpect(MockMvcResultMatchers.content().bytes(PDF_BYTES))
 
             verifySequence {

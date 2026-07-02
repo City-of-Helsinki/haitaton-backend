@@ -47,12 +47,12 @@ class ApiBlockingFilterBlockedEndpointsITests(@Autowired override val mockMvc: M
                 "GET /profiili/verified-name",
                 "GET /swagger-ui/index.html",
             ],
-        delimiter = ' '
+        delimiter = ' ',
     )
     @WithMockUser(username = USERNAME)
     fun `should return 503 'Service Unavailable' for blocked endpoints when the user is authenticated`(
         method: String,
-        path: String
+        path: String,
     ) {
         when (method) {
             "GET" -> get(path, null).andExpect(status().isServiceUnavailable)
@@ -77,12 +77,12 @@ class ApiBlockingFilterBlockedEndpointsITests(@Autowired override val mockMvc: M
                 "GET /profiili/verified-name",
                 "GET /swagger-ui/index.html",
             ],
-        delimiter = ' '
+        delimiter = ' ',
     )
     @WithAnonymousUser
     fun `should return 503 'Service Unavailable' for blocked endpoints when the user is not authenticated`(
         method: String,
-        path: String
+        path: String,
     ) {
         when (method) {
             "GET" -> get(path, null).andExpect(status().isServiceUnavailable)
