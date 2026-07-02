@@ -19,7 +19,6 @@ extra["tomcat.version"] = "10.1.55" // CVE-2026-41293, CVE-2026-43512, CVE-2026-
 repositories {
     mavenCentral().content { excludeModule("javax.media", "jai_core") }
     maven { url = uri("https://repo.osgeo.org/repository/release/") }
-    maven { url = uri("https://maven.geotoolkit.org") }
 }
 
 sourceSets {
@@ -29,10 +28,12 @@ sourceSets {
     }
 }
 
-val integrationTestImplementation: Configuration by
-    configurations.getting { extendsFrom(configurations.testImplementation.get()) }
+val integrationTestImplementation: Configuration =
+    configurations.getByName("integrationTestImplementation") {
+        extendsFrom(configurations.testImplementation.get())
+    }
 
-configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
+configurations.getByName("integrationTestRuntimeOnly").extendsFrom(configurations.testRuntimeOnly.get())
 
 idea {
     module {
@@ -172,7 +173,7 @@ tasks {
         }
     }
 
-    create("integrationTest", Test::class) {
+    register("integrationTest", Test::class) {
         useJUnitPlatform()
         group = "verification"
         systemProperty("spring.profiles.active", "integrationTest")
@@ -189,7 +190,7 @@ tasks {
         exclude("**/*ManualTest*")
     }
 
-    create("copyEmailTemplates", Copy::class) {
+    register("copyEmailTemplates", Copy::class) {
         group = "other"
         description = "Installs shared git hooks"
         from(file("${layout.buildDirectory.get()}/mjml/main/"))
@@ -219,7 +220,7 @@ tasks.register("installGitHook", Copy::class) {
     description = "Installs shared git hooks"
     from(file("$rootDir/githooks"))
     into(file("$rootDir/.git/hooks"))
-    fileMode = 0b0111101101 // -rwxr-xr-x
+    filePermissions { unix("rwxr-xr-x") }
 }
 
 tasks.named("build") { dependsOn(tasks.named("installGitHook")) }
