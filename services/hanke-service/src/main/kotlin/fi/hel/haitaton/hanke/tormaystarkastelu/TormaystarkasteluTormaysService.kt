@@ -14,10 +14,12 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
     fun maxIntersectingLiikenteellinenKatuluokka(geometriaIds: Set<Int>): Int? =
         getDistinctValuesIntersectingRows(
                 geometriaIds, "tormays_street_classes_polys", "street_class")
+            .filterNotNull()
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
     fun maxIntersectingLiikenteellinenKatuluokka(geometry: GeoJsonObject): Int? =
         getDistinctValuesIntersectingRows(geometry, "tormays_street_classes_polys", "street_class")
+            .filterNotNull()
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
     /** kantakaupunki, central_business_area */
@@ -128,7 +130,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
         geometriaIds: Set<Int>,
         table: String,
         column: String
-    ): List<String> {
+    ): List<String?> {
         if (geometriaIds.isEmpty()) return listOf()
         val placeholders = Collections.nCopies(geometriaIds.size, "?").joinToString(", ")
         val sql =
@@ -146,7 +148,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
         geometria: GeoJsonObject,
         table: String,
         column: String
-    ): List<String> {
+    ): List<String?> {
         val sql =
             """
             SELECT DISTINCT $table.$column

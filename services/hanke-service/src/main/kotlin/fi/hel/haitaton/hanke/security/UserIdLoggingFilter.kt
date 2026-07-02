@@ -19,7 +19,7 @@ class UserIdLoggingFilter : Filter {
     ) {
         if (request is HttpServletRequest && response is HttpServletResponse) {
             // Nullable for GDPR API with alternative authentication
-            val userId = SecurityContextHolder.getContext().authentication.name
+            val userId = SecurityContextHolder.getContext().authentication!!.name
             // Application log can use MDC
             MDC.put("userId", userId)
             // Access log's AccessEventCompositeJsonEncoder can't use MDC, so use a request

@@ -38,7 +38,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 class MockFileClientExtension : BeforeEachCallback, BeforeAllCallback, AfterAllCallback {
     lateinit var client: MockFileClient
 
-    override fun beforeEach(context: ExtensionContext?) {
+    override fun beforeEach(context: ExtensionContext) {
         client.clearContainers()
         client.connected = true
     }
@@ -52,7 +52,7 @@ class MockFileClientExtension : BeforeEachCallback, BeforeAllCallback, AfterAllC
         client.recreateContainers()
     }
 
-    override fun afterAll(context: ExtensionContext?) {
+    override fun afterAll(context: ExtensionContext) {
         client.removeContainers()
     }
 

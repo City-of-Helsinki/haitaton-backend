@@ -14,7 +14,7 @@ class ProfiiliService(private val profiiliClient: ProfiiliClient) {
             securityContext.authentication?.let { it.credentials as Jwt }
                 ?: throw VerifiedNameNotFound("User not authenticated.")
 
-        val amr = credentials.getClaim<List<String>>(JwtClaims.AMR)
+        val amr = credentials.getClaim<List<String>>(JwtClaims.AMR) ?: emptyList()
         return if (amr.contains(AmrValues.SUOMI_FI)) {
             profiiliClient.getVerifiedName(credentials.tokenValue)
         } else if (amr.contains(AmrValues.AD)) {
@@ -26,10 +26,10 @@ class ProfiiliService(private val profiiliClient: ProfiiliClient) {
 
     private fun nameFromToken(credentials: Jwt): Names {
         val given: String =
-            credentials.getClaim<String?>(JwtClaims.GIVEN_NAME)?.ifBlank { null }
+            credentials.getClaim<String>(JwtClaims.GIVEN_NAME)?.ifBlank { null }
                 ?: throw NameClaimNotFound(JwtClaims.GIVEN_NAME)
         val family: String =
-            credentials.getClaim<String?>(JwtClaims.FAMILY_NAME)?.ifBlank { null }
+            credentials.getClaim<String>(JwtClaims.FAMILY_NAME)?.ifBlank { null }
                 ?: throw NameClaimNotFound(JwtClaims.FAMILY_NAME)
         return Names(given, family, given)
     }

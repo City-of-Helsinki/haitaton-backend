@@ -128,12 +128,9 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
             """
                 .trimIndent()
 
-        return jdbcOperations.queryForList(
-            query,
-            Int::class.java,
-            hankeId,
-            geometria.toJsonString(),
-        )
+        return jdbcOperations
+            .queryForList(query, Int::class.java, hankeId, geometria.toJsonString())
+            .filterNotNull()
     }
 
     /** Check if the given geometry is inside the given hankealue. */
@@ -149,7 +146,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
 
         return jdbcOperations
             .queryForList(query, Boolean::class.java, geometria.toJsonString(), hankealueId)
-            .any { it }
+            .any { it == true }
     }
 
     fun calculateArea(geometria: GeoJsonObject): Float? {
