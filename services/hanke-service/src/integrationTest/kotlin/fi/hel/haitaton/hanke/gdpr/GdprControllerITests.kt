@@ -307,7 +307,8 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         return mockMvc.perform(
             MockMvcRequestBuilders.get("/gdpr-api/$USERNAME")
                 .accept(MediaType.APPLICATION_JSON)
-                .with(jwt().jwt(jwtBuilder.build())))
+                .with(jwt().jwt(jwtBuilder.build()))
+        )
     }
 
     private fun delete(
@@ -320,7 +321,8 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         return mockMvc.perform(
             MockMvcRequestBuilders.delete(url)
                 .accept(MediaType.APPLICATION_JSON)
-                .with(jwt().jwt(jwtBuilder.build())))
+                .with(jwt().jwt(jwtBuilder.build()))
+        )
     }
 
     private fun Jwt.Builder.scopes(vararg scopes: String): Jwt.Builder =

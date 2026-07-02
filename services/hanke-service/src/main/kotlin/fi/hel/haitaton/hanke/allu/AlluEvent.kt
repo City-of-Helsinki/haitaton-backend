@@ -111,12 +111,12 @@ class AlluEventRepositoryImpl(private val jdbcTemplate: JdbcTemplate) : AlluEven
             BATCH_INSERT_SQL,
             events.map { event ->
                 arrayOf<Any?>(
-                        event.alluId,
-                        event.eventTime,
-                        event.newStatus.name,
-                        event.applicationIdentifier,
-                        event.targetStatus?.name,
-                    )
+                    event.alluId,
+                    event.eventTime,
+                    event.newStatus.name,
+                    event.applicationIdentifier,
+                    event.targetStatus?.name,
+                )
                     as Array<Any>
             },
         )

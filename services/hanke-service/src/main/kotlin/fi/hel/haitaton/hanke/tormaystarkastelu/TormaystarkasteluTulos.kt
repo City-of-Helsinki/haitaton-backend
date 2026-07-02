@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
@@ -57,7 +58,9 @@ data class TormaystarkasteluTulos(
 
 @Schema(description = "Car traffic nuisance index and classification")
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class Autoliikenneluokittelu(
+data class Autoliikenneluokittelu
+@JsonCreator
+constructor(
     @JsonView(ChangeLogView::class) val indeksi: Float,
     @JsonView(ChangeLogView::class) val haitanKesto: Int,
     @JsonView(ChangeLogView::class) val katuluokka: Int,

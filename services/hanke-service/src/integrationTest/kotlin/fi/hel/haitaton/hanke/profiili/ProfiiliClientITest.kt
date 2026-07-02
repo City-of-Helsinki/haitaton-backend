@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package fi.hel.haitaton.hanke.profiili
 
 import assertk.all
@@ -29,6 +31,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
+import org.springframework.http.codec.json.Jackson2JsonDecoder
+import org.springframework.http.codec.json.Jackson2JsonEncoder
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 
@@ -57,7 +61,15 @@ class ProfiiliClientITest {
 
         val graphQlUrl = mockGraphQl.url("/graphql/").toString()
         val properties = ProfiiliProperties(graphQlUrl, AUDIENCE)
-        profiiliClient = ProfiiliClient(properties, WebClient.builder(), issuer)
+        // In production, the injected WebClient.Builder is customized by Configuration's
+        // jackson2WebClientCustomizer bean. Replicate that here since this builder is created
+        // directly, not through Spring's DI.
+        val builder =
+            WebClient.builder().codecs {
+                it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OBJECT_MAPPER))
+                it.defaultCodecs().jackson2JsonDecoder(Jackson2JsonDecoder(OBJECT_MAPPER))
+            }
+        profiiliClient = ProfiiliClient(properties, builder, issuer)
     }
 
     @AfterEach

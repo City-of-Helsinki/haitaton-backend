@@ -19,13 +19,13 @@ import tools.jackson.databind.module.SimpleModule
 
 /**
  * hypersistence-utils 3.15's default [ObjectMapperJsonSerializer] clones JSON-mapped entity
- * attributes via Java serialization, which requires every mapped type (and its whole object
- * graph, including third-party types such as org.geojson's classes) to implement
- * [java.io.Serializable]. Cloning via Jackson instead avoids that requirement for our own domain
- * types, matching the pre-3.15 behavior. This same [JsonSerializer.clone] is also invoked
- * internally by hypersistence-utils on JDBC-level types such as [org.postgresql.util.PGobject],
- * which already implement Serializable and round-trip correctly via the default cloner but not
- * via a generic Jackson bean conversion - those are left untouched. Registered via
+ * attributes via Java serialization, which requires every mapped type (and its whole object graph,
+ * including third-party types such as org.geojson's classes) to implement [java.io.Serializable].
+ * Cloning via Jackson instead avoids that requirement for our own domain types, matching the
+ * pre-3.15 behavior. This same [JsonSerializer.clone] is also invoked internally by
+ * hypersistence-utils on JDBC-level types such as [org.postgresql.util.PGobject], which already
+ * implement Serializable and round-trip correctly via the default cloner but not via a generic
+ * Jackson bean conversion - those are left untouched. Registered via
  * `hypersistence-utils.properties`.
  */
 class ObjectMapperCloningJsonSerializer : JsonSerializer {
@@ -44,13 +44,13 @@ class ObjectMapperCloningJsonSerializerSupplier : JsonSerializerSupplier {
 }
 
 /**
- * de.grundid.opendatalab:geojson-jackson's [LngLatAlt] serializes as a flat GeoJSON position
- * array (`[lon, lat, alt?]`) via `@JsonSerialize`/`@JsonDeserialize(using = ...)` referencing
- * Jackson 2's `com.fasterxml.jackson.databind` annotations. Spring Boot 4's hypersistence-utils
- * uses Jackson 3 internally for JSON columns, which doesn't recognize those Jackson-2-typed
- * annotations, silently falling back to default bean introspection and corrupting the array
- * shape (Postgres then rejects it: "coordinates in GeoJSON are not sufficiently nested"). These
- * re-implement the same array format for Jackson 3. Registered via `hypersistence-utils.properties`.
+ * de.grundid.opendatalab:geojson-jackson's [LngLatAlt] serializes as a flat GeoJSON position array
+ * (`[lon, lat, alt?]`) via `@JsonSerialize`/`@JsonDeserialize(using = ...)` referencing Jackson 2's
+ * `com.fasterxml.jackson.databind` annotations. Spring Boot 4's hypersistence-utils uses Jackson 3
+ * internally for JSON columns, which doesn't recognize those Jackson-2-typed annotations, silently
+ * falling back to default bean introspection and corrupting the array shape (Postgres then rejects
+ * it: "coordinates in GeoJSON are not sufficiently nested"). These re-implement the same array
+ * format for Jackson 3. Registered via `hypersistence-utils.properties`.
  */
 class LngLatAltJackson3Serializer : ValueSerializer<LngLatAlt>() {
     override fun serialize(value: LngLatAlt, gen: JsonGenerator, ctxt: SerializationContext) {
@@ -85,13 +85,21 @@ class LngLatAltJackson3Deserializer : ValueDeserializer<LngLatAlt>() {
 }
 
 class GeoJsonAwareObjectMapperSupplier : ObjectMapperSupplier {
-    override fun get(): tools.jackson.databind.ObjectMapper =
-        ObjectMapperWrapper.INSTANCE.objectMapper
-            .rebuild<JsonMapper, JsonMapper.Builder>()
-            .addModule(
-                SimpleModule()
-                    .addSerializer(LngLatAlt::class.java, LngLatAltJackson3Serializer())
-                    .addDeserializer(LngLatAlt::class.java, LngLatAltJackson3Deserializer())
-            )
-            .build()
+    override fun get(): tools.jackson.databind.ObjectMapper {
+        val mapper =
+            ObjectMapperWrapper.INSTANCE.objectMapper
+                .rebuild<JsonMapper, JsonMapper.Builder>()
+                .addModule(
+                    SimpleModule()
+                        .addSerializer(LngLatAlt::class.java, LngLatAltJackson3Serializer())
+                        .addDeserializer(LngLatAlt::class.java, LngLatAltJackson3Deserializer())
+                )
+                .build()
+        // hypersistence-utils also reads/writes JSON via the static ObjectMapperWrapper.INSTANCE
+        // singleton directly (e.g. for Hibernate's dirty-checking) rather than always going
+        // through this ObjectMapperSupplier - keep both in sync or the geojson fix above is
+        // silently bypassed on that path.
+        ObjectMapperWrapper.INSTANCE.objectMapper = mapper
+        return mapper
+    }
 }
