@@ -253,3 +253,5 @@ databaseChangeLog:
       file: db/changelog/changesets/111-add-expired-after-to-int-lock.yml
   - include:
       file: db/changelog/changesets/112-fix-historia-triggers-for-iso8601-dates.sql
+  - include:
+      file: db/changelog/changesets/113-backfill-legacy-epoch-application-dates-to-iso8601.sql
