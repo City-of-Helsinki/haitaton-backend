@@ -12,6 +12,7 @@ import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.body
+import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import tools.jackson.databind.JsonNode
 
@@ -54,7 +55,7 @@ class ProfiiliClient(
 
     private fun authenticate(accessToken: String): String {
         val apiTokens = getApiTokens(accessToken)
-        return apiTokens["access_token"]?.asText()
+        return apiTokens["access_token"]?.asString()
             ?: throw VerifiedNameNotFound("Token response did not contain an access token.")
     }
 
@@ -73,7 +74,7 @@ class ProfiiliClient(
                     .with("permission", TOKEN_API_PERMISSION)
             )
             .retrieve()
-            .bodyToMono(JsonNode::class.java)
+            .bodyToMono<JsonNode>()
             .doOnError(WebClientResponseException::class.java) { ex ->
                 logger.error {
                     "Error from Profiili API call. Response status=${ex.statusCode}, body=${ex.responseBodyAsString}"
@@ -92,7 +93,7 @@ class ProfiiliClient(
                 .uri(configurationUri)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(JsonNode::class.java)
+                .bodyToMono<JsonNode>()
                 .onErrorMap(WebClientResponseException::class.java) { ex ->
                     ProfiiliConfigurationError(
                         "Unable to load OpenID configuration. " +
@@ -104,7 +105,7 @@ class ProfiiliClient(
                 .block()!!
 
         val uri =
-            conf["token_endpoint"]?.asText()
+            conf["token_endpoint"]?.asString()
                 ?: throw ProfiiliConfigurationError(
                     "OpenID configuration didn't contain a token endpoint."
                 )
