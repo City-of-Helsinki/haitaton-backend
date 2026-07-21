@@ -165,9 +165,11 @@ EOF
 
 **Interfaces:**
 - Consumes: nothing from Task 1.
-- Produces: `ProfiiliClient.getApiTokens(accessToken: String): JsonNode` and `getTokenApiUrl(): String` now return/use `tools.jackson.databind.JsonNode` internally — no change to their public signatures' semantics (both already return/consume plain strings or a `JsonNode` used only internally within the same file), so Task 3 doesn't need to know about this beyond "the codec applied to `ProfiiliClient`'s `WebClient` must be able to decode into `tools.jackson.databind.JsonNode`", which is exactly what removing the Jackson 2 customizer (Task 3) provides.
+- Produces: `ProfiiliClient.getApiTokens(accessToken: String): JsonNode` and `getTokenApiUrl(): String` now return/use `tools.jackson.databind.JsonNode` internally — no change to their public signatures' semantics. `ProfiiliClientITest.kt`'s manually-built `WebClient` (see Step 2.5 below) is fixed as part of *this* task, not Task 3 — Task 3 only needs to know that `ProfiiliClientITest.kt` is already done and should not touch it again.
 
-**Context:** `ProfiiliClient.getApiTokens()` and `getTokenApiUrl()` decode raw OAuth/OIDC discovery responses via `.bodyToMono(JsonNode::class.java)` using Jackson 2's `com.fasterxml.jackson.databind.JsonNode`, because that's what the `jackson2WebClientCustomizer`-configured `WebClient` currently decodes into. `Extensions.kt`'s `JsonNode::class.java.getResource(this)` and `Configuration.kt`'s comment mentioning `JsonNode` were checked and are **not** real dependencies — the former uses the class purely as an arbitrary classloader anchor (explicitly commented as such), the latter is just prose in a comment. Neither needs any change.
+**Context:** `ProfiiliClient.getApiTokens()` and `getTokenApiUrl()` decode raw OAuth/OIDC discovery responses via `.bodyToMono(JsonNode::class.java)` using Jackson 2's `com.fasterxml.jackson.databind.JsonNode`, because that's what the `jackson2WebClientCustomizer`-configured `WebClient` currently decodes into in production. `Extensions.kt`'s `JsonNode::class.java.getResource(this)` and `Configuration.kt`'s comment mentioning `JsonNode` were checked and are **not** real dependencies — the former uses the class purely as an arbitrary classloader anchor (explicitly commented as such), the latter is just prose in a comment. Neither needs any change.
+
+**Important correction (found during implementation of this task):** `ProfiiliClientITest.kt` does **not** go through Spring DI or the production `jackson2WebClientCustomizer` bean at all — it builds its own `WebClient` directly in `setUp()` and manually hand-rolls the identical Jackson 2 codec setup (see Step 2.5). This means the import migration in Step 3 cannot be verified against this test until that manual codec setup is also updated — the test's behavior depends entirely on what it builds itself, not on anything in `Configuration.kt`. Step 2.5 (added after an implementer hit this as a real test failure, not a hypothetical) fixes this as part of Task 2, not Task 3. Task 3's plan text below has been corrected to no longer touch `ProfiiliClientITest.kt`.
 
 - [ ] **Step 1: Write a failing test that exercises `JsonNode` field access against Jackson 3's type**
 
@@ -180,26 +182,29 @@ fun `getVerifiedName still works when Profiili's token and discovery responses u
     // their response body into a JsonNode and pull a field back out with `["field"]?.asText()`.
     // A prior regression here would surface as a null/ClassCastException from that access, not
     // a compile error, since JsonNode is used structurally rather than through a typed DTO.
+    mockApiToken()
     mockGraphQl.enqueueSuccess(
-        ProfiiliFactory.myProfileResponse(ProfiiliFactory.DEFAULT_FIRST_NAME).toJsonString()
+        ProfiiliResponse(ProfiiliData(MyProfile(ProfiiliFactory.DEFAULT_NAMES)))
     )
 
-    val result = profiiliClient.getVerifiedName(GRANT)
+    val result = profiiliClient.getVerifiedName(ACCESS_TOKEN)
 
     assertThat(result.firstName).isEqualTo(ProfiiliFactory.DEFAULT_FIRST_NAME)
 }
 ```
 
-(Check the exact existing helper names — `ProfiiliFactory.myProfileResponse`, `enqueueSuccess`, `GRANT` — against what's already used in the file's `GetVerifiedName` nested class before adding this; reuse those exact helpers rather than inventing new ones, since this test's whole point is to exercise the same `getApiTokens`/`getTokenApiUrl` path with the existing fixtures.)
+(These are the *verified* real helper names in the file, confirmed by reading it directly — `mockApiToken()` (a private helper at the bottom of the file), `ACCESS_TOKEN` (a private const, not `GRANT`), and `ProfiiliResponse(ProfiiliData(MyProfile(ProfiiliFactory.DEFAULT_NAMES)))` passed to `mockGraphQl.enqueueSuccess(...)` — this exact pattern is already used by another test in the file's `GetVerifiedName` nested class. Add this new test at the top level, not nested, alongside the class's other members.)
 
 - [ ] **Step 2: Run the test to confirm it passes today (baseline, Jackson 2)**
 
 Run: `./gradlew :services:hanke-service:integrationTest --tests "fi.hel.haitaton.hanke.profiili.ProfiiliClientITest"`
 Expected: PASS (all existing tests plus the new one).
 
-- [ ] **Step 3: Migrate the `JsonNode` import**
+- [ ] **Step 3: Change the codec setup and the `JsonNode` import together (they are not independently testable — see below)**
 
-In `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClient.kt`, change:
+**Why these two changes must land in one step, not two:** the decode-target type (`JsonNode`, from whichever Jackson generation `ProfiiliClient.kt` imports) and the codec actually doing the decoding (whichever Jackson generation is wired into the `WebClient`) must match, or deserialization fails with a "no Creators" `InvalidDefinitionException` — this is exactly the failure an implementer hit when only the import was changed first. Changing only the codec first (leaving the import on Jackson 2) fails the same way in reverse. Do both changes below before running the test again.
+
+**3a.** In `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClient.kt`, change:
 
 ```kotlin
 import com.fasterxml.jackson.databind.JsonNode
@@ -213,12 +218,34 @@ import tools.jackson.databind.JsonNode
 
 No other code in this file needs to change — `.bodyToMono(JsonNode::class.java)`, `apiTokens["access_token"]?.asText()`, and `conf["token_endpoint"]?.asText()` all use `JsonNode`'s standard field-access (`get`/`asText`) API, which Jackson 3's `JsonNode` keeps (only the internal `TextNode` concrete class was renamed to `StringNode` per the Jackson 3 migration guide — this doesn't affect the `JsonNode` interface's own accessor methods).
 
-- [ ] **Step 4: Run the test again to confirm it still passes under Jackson 3's `JsonNode`**
+**3b.** In `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClientITest.kt`, this file builds its `WebClient` directly in `setUp()`, bypassing Spring DI and the production `jackson2WebClientCustomizer` bean entirely — it hand-rolls the identical Jackson 2 codec setup itself:
+
+```kotlin
+        // In production, the injected WebClient.Builder is customized by Configuration's
+        // jackson2WebClientCustomizer bean. Replicate that here since this builder is created
+        // directly, not through Spring's DI.
+        val builder =
+            WebClient.builder().codecs {
+                it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OBJECT_MAPPER))
+                it.defaultCodecs().jackson2JsonDecoder(Jackson2JsonDecoder(OBJECT_MAPPER))
+            }
+        profiiliClient = ProfiiliClient(properties, builder, issuer)
+```
+
+Replace it with:
+
+```kotlin
+        profiiliClient = ProfiiliClient(properties, WebClient.builder(), issuer)
+```
+
+Once the `WebClient.Builder` has no codec override, Boot 4's default (Jackson 3) codecs apply, matching what `ProfiiliClient.kt` now expects after 3a.
+
+Remove the now-unused imports `org.springframework.http.codec.json.Jackson2JsonDecoder` and `org.springframework.http.codec.json.Jackson2JsonEncoder`. Do **not** remove the `fi.hel.haitaton.hanke.OBJECT_MAPPER` import — it's still used elsewhere in the file (e.g. `OBJECT_MAPPER.readValue(body)` for asserting request bodies). Check whether `@file:Suppress("DEPRECATION")` at the top of the file was added solely to silence a warning about the now-deleted `Jackson2JsonEncoder`/`Jackson2JsonDecoder` usage — if nothing else in the file triggers a deprecation warning, remove that annotation too; if anything else does, leave it and note why in your report.
 
 Run: `./gradlew :services:hanke-service:integrationTest --tests "fi.hel.haitaton.hanke.profiili.ProfiiliClientITest"`
-Expected: PASS. If it fails, do not proceed to Task 3 — this would mean Jackson 3's `WebClient` codec configuration (not yet changed in this task) is somehow already interfering, which needs investigating before continuing.
+Expected: PASS, with both 3a and 3b applied together. If it fails, do not try to "fix" it by reverting just one side — diagnose against the actual error message, since a partial revert reintroduces the exact type mismatch this step exists to avoid.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClient.kt services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClientITest.kt
@@ -226,10 +253,13 @@ git commit -m "$(cat <<'EOF'
 HAI-XXXX Migrate ProfiiliClient's JsonNode usage to Jackson 3
 
 getApiTokens() and getTokenApiUrl() decode raw OAuth/OIDC responses
-via JsonNode. Port the import from com.fasterxml.jackson.databind to
-tools.jackson.databind ahead of removing the Jackson 2 WebClient
-codec customizer, since that customizer is what currently makes this
-decode target resolvable.
+via JsonNode. The decode-target type and the WebClient's codec
+generation must match, so this ports the import from
+com.fasterxml.jackson.databind to tools.jackson.databind and, in the
+same change, removes ProfiiliClientITest's manual Jackson 2 codec
+override (it built its WebClient outside Spring DI and replicated
+the production jackson2WebClientCustomizer bean by hand, so it
+couldn't just inherit this fix from a later task).
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 EOF
@@ -242,17 +272,18 @@ EOF
 
 **Files:**
 - Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/Configuration.kt:1-86`
-- Modify: `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClientITest.kt` (remove duplicated codec setup)
 - Modify: `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/allu/AlluClientITests.kt` (remove duplicated codec setup)
-- Test: same two files, plus `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/attachment/common/FileScanClientITest.kt` (no code change needed there, but it's the regression check for the third affected client)
+- Test: same file, plus `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClientITest.kt` and `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/attachment/common/FileScanClientITest.kt` (no code change needed in either — they're the regression check for the other two affected clients)
+
+**Note:** `ProfiiliClientITest.kt`'s duplicated Jackson 2 codec setup was already removed in Task 2 (it turned out not independently separable from the `JsonNode` import change — see that task's plan text for why). Do not touch that file in this task beyond running its tests as a regression check.
 
 **Interfaces:**
-- Consumes: Task 2's `ProfiiliClient.kt` (must already be on `tools.jackson.databind.JsonNode` before this task, or `getApiTokens`/`getTokenApiUrl` would fail to decode once the Jackson 2 customizer is gone).
+- Consumes: Task 2's `ProfiiliClient.kt` and `ProfiiliClientITest.kt` (both must already be on Jackson 3 before this task).
 - Produces: no new function signatures — this task only removes a `@Bean` and its imports. Nothing later in this plan depends on any new interface from this task.
 
 **Context:** `jackson2WebClientCustomizer` in `Configuration.kt` is a single global `WebClientCustomizer` bean. Spring applies every `WebClientCustomizer` bean to every auto-configured `WebClient.Builder`, and this app has exactly one `WebClient.Builder` bean, shared by three consumers: `AlluClient`, `ProfiiliClient`, and `FileScanClient` (confirmed via `grep -rl "WebClient.Builder" services/hanke-service/src/main/kotlin`). None of the three have any other Jackson-2-specific dependency once Task 2 lands: `AlluClient` uses only fully-typed DTOs (no `JsonNode`), `FileScanClient` uses a plain two-field `FileScanResponse` data class with no secondary constructor, and `ProfiiliClient` was fixed in Task 2. So removing this one bean migrates all three consumers to Jackson 3 defaults in a single, clean step — there's no way to partially scope it without introducing per-client qualified `WebClient.Builder` beans, which isn't needed here since all three are equally ready.
 
-`ProfiiliClientITest.kt` and `AlluClientITests.kt` currently hand-roll the exact same Jackson 2 codec setup this bean provides, because they construct their `WebClient`/`ProfiiliClient`/`AlluClient` directly rather than through Spring DI (confirmed in a prior code review). Once the bean is gone, that manual duplication has nothing left to replicate and should be removed — leaving both clients' default (Jackson 3) codecs in place, matching what production now does too.
+`AlluClientITests.kt` currently hand-rolls the exact same Jackson 2 codec setup this bean provides, because it constructs its `WebClient`/`AlluClient` directly rather than through Spring DI (confirmed in a prior code review, and independently in Task 2 for the equivalent `ProfiiliClientITest.kt` case). Once the bean is gone, that manual duplication has nothing left to replicate and should be removed — leaving the client's default (Jackson 3) codecs in place, matching what production now does too.
 
 - [ ] **Step 1: Write a failing test proving Allu request/response bodies still round-trip correctly without the customizer**
 
@@ -311,48 +342,24 @@ import org.springframework.http.codec.json.Jackson2JsonEncoder
 
 (Keep everything else in the file unchanged — `alluClient()`, `webClientWithLargeBuffer()`, `createInsecureTrustingWebClient()` don't reference this bean.)
 
-- [ ] **Step 4: Remove the duplicated Jackson 2 codec setup in `ProfiiliClientITest.kt`**
+- [ ] **Step 4: Remove the equivalent duplication in `AlluClientITests.kt`**
 
-In `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClientITest.kt`, replace:
+In `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/allu/AlluClientITests.kt`, find and remove the manual `.codecs { it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OBJECT_MAPPER)) ... }` block (around line 86-88, per the imports at lines 63-64 found during this plan's research) the same way Task 2 did for the equivalent block in `ProfiiliClientITest.kt`, and remove the now-unused `Jackson2JsonEncoder`/`Jackson2JsonDecoder` imports and the `@file:Suppress("DEPRECATION")` annotation if this file was its target (per commit `0ffa5921`, "Suppress deprecated Jackson2 codec warning in AlluClientITests" — check first whether anything else in the file still needs that suppression before removing it).
 
-```kotlin
-        // In production, the injected WebClient.Builder is customized by Configuration's
-        // jackson2WebClientCustomizer bean. Replicate that here since this builder is created
-        // directly, not through Spring's DI.
-        val builder =
-            WebClient.builder().codecs {
-                it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OBJECT_MAPPER))
-                it.defaultCodecs().jackson2JsonDecoder(Jackson2JsonDecoder(OBJECT_MAPPER))
-            }
-        profiiliClient = ProfiiliClient(properties, builder, issuer)
-```
-
-with:
-
-```kotlin
-        profiiliClient = ProfiiliClient(properties, WebClient.builder(), issuer)
-```
-
-Remove the now-unused imports: `org.springframework.http.codec.json.Jackson2JsonDecoder`, `org.springframework.http.codec.json.Jackson2JsonEncoder`, and `fi.hel.haitaton.hanke.OBJECT_MAPPER` if nothing else in the file uses it (check first — `OBJECT_MAPPER` may be used elsewhere in the file for building expected request/response JSON; only remove the import if it's genuinely unused after this change). Also remove the file-level `@file:Suppress("DEPRECATION")` at the top of the file if it exists solely to suppress a warning about the now-deleted `Jackson2JsonEncoder`/`Jackson2JsonDecoder` usage — check the surrounding git blame/history first (it was added in commit `0ffa5921`, "Suppress deprecated Jackson2 codec warning in AlluClientITests" — check if that commit's suppression target was this file or `AlluClientITests.kt`; only remove it here if this file was its target and nothing else in the file needs it).
-
-- [ ] **Step 5: Remove the equivalent duplication in `AlluClientITests.kt`**
-
-In `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/allu/AlluClientITests.kt`, find and remove the analogous manual `.codecs { it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OBJECT_MAPPER)) ... }` block (around line 86-88, per the imports at lines 63-64 found during this plan's research) the same way as Step 4, and remove the now-unused `Jackson2JsonEncoder`/`Jackson2JsonDecoder` imports and the `@file:Suppress("DEPRECATION")` annotation if this file was its target (per commit `0ffa5921`).
-
-- [ ] **Step 6: Run the Allu, Profiili, and FileScan integration tests**
+- [ ] **Step 5: Run the Allu, Profiili, and FileScan integration tests**
 
 Run: `./gradlew :services:hanke-service:integrationTest --tests "fi.hel.haitaton.hanke.allu.AlluClientITests" --tests "fi.hel.haitaton.hanke.profiili.ProfiiliClientITest" --tests "fi.hel.haitaton.hanke.attachment.common.FileScanClientITest"`
-Expected: PASS, including the new Step-1 test — confirming Allu request bodies still serialize dates correctly, Profiili's `JsonNode`-based token/discovery parsing still works (Task 2 + this task combined), and `FileScanClient`'s plain-data-class round-trip is unaffected.
+Expected: PASS, including the new Step-1 test — confirming Allu request bodies still serialize dates correctly, Profiili's `JsonNode`-based token/discovery parsing still works (verified in Task 2, re-checked here as a regression), and `FileScanClient`'s plain-data-class round-trip is unaffected.
 
-- [ ] **Step 7: Run the full test suite**
+- [ ] **Step 6: Run the full test suite**
 
 Run: `./gradlew :services:hanke-service:spotlessCheck :services:hanke-service:test :services:hanke-service:integrationTest`
 Expected: BUILD SUCCESSFUL, 0 failures. This is the actual verification that removing a global bean didn't regress anything else in the app — trust this over any partial test run.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/Configuration.kt services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClientITest.kt services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/allu/AlluClientITests.kt
+git add services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/Configuration.kt services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/allu/AlluClientITests.kt
 git commit -m "$(cat <<'EOF'
 HAI-XXXX Remove the Jackson 2 WebClient customizer
 
@@ -381,5 +388,6 @@ This plan covers the spec's Phase 0 (audit — completed as research while writi
 ## Self-Review Notes
 
 - **Spec coverage:** This plan implements the spec's "Phase 0 — Audit" (folded into the tasks above as verified findings, not left as a vague step) and "Phase 1 — Migrate outbound WebClient consumers." The spec's Phases 2-4 are explicitly deferred to a follow-up plan (see "What's next" above), consistent with the spec's own incremental, risk-ordered sequencing.
-- **Placeholder scan:** No TBD/TODO markers. Two steps (Task 3 Step 1's exact fixture names, Task 3 Steps 4-5's `@file:Suppress` removal) tell the implementer to check existing code before naming things, rather than inventing unverified names — this is a deliberate "verify against the real file" instruction, not a placeholder, since fixture/constant names in test files change over time and guessing wrong would produce broken code.
+- **Placeholder scan:** No TBD/TODO markers. Several steps (Task 3 Step 1's exact fixture names, Task 3 Step 4's `@file:Suppress` removal) tell the implementer to check existing code before naming things, rather than inventing unverified names — this is a deliberate "verify against the real file" instruction, not a placeholder, since fixture/constant names in test files change over time and guessing wrong would produce broken code.
+- **Revision note (added after Task 2's implementer hit a real blocker):** the original Task 2/Task 3 split assumed `ProfiiliClient.kt`'s `JsonNode` import could be migrated independently of `ProfiiliClientITest.kt`'s codec setup. It can't — they're two halves of one atomic change (decode-target type vs. the codec that produces it), and the test bypasses Spring DI entirely so it can't inherit a fix from a later task touching `Configuration.kt`. Task 2 now owns both halves for the Profiili case; Task 3 was updated to no longer touch `ProfiiliClientITest.kt`.
 - **Type consistency:** `CustomOffsetDateTimeSerializer`/`Deserializer` keep their exact class names across Task 1 (so `AuditLogEvent`'s `using = ...` references don't need updating) and match the `ValueSerializer<T>`/`ValueDeserializer<T>` signature already established by `LngLatAltJackson3Serializer`/`Deserializer` in `HypersistenceJsonSerializer.kt`. `ProfiiliClient`'s `JsonNode` type is referenced identically before and after Task 2 (only the import package changes, not the type's usage). Task 3 introduces no new types.
