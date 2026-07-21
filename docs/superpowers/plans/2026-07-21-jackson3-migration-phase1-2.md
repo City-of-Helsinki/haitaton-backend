@@ -13,7 +13,7 @@
 - Do not touch `hypersistence-utils.properties`, `HypersistenceJsonSerializer.kt`'s `GeoJsonAwareObjectMapperSupplier`/`ObjectMapperCloningJsonSerializerSupplier`, or any JSON-column `@Type` mapping — out of scope, already Jackson 3.
 - Do not remove `spring.jackson.use-jackson2-defaults`, `spring.http.converters.preferred-json-mapper: jackson2`, or the `spring-boot-jackson2` dependency in this plan — REST controllers stay on Jackson 2 until the later "flip the global default" phase.
 - Every Jackson-3-native serializer/deserializer must import from `tools.jackson.*` (except `com.fasterxml.jackson.annotation.*`, which Jackson 3 keeps unchanged — confirmed via the official Jackson 3 migration guide).
-- Full existing test suite (unit + integration) must stay green after every task.
+- Full existing test suite (unit + integration) must stay green after every task, **and `./gradlew :services:hanke-service:spotlessCheck` must pass** — a Task 2 review caught a committed import-ordering violation (`ktfmt` sorts imports alphabetically as one flat block, not grouped by origin package) that the implementer's targeted test run didn't catch because `spotlessCheck` was never run. Run it explicitly before every commit in this plan, not just the integration tests.
 - Liquibase changesets in this repo use `--liquibase formatted sql`; any inline SQL comment in a changeset body must use `/* ... */` block-comment syntax, not `--`, because Liquibase's formatted-SQL parser treats every `--`-prefixed line as an attempted directive (confirmed by a real parse failure hit while working on changeset 113 — not relevant to this plan's files, noted here as a standing project constraint).
 
 ---
@@ -171,34 +171,14 @@ EOF
 
 **Important correction (found during implementation of this task):** `ProfiiliClientITest.kt` does **not** go through Spring DI or the production `jackson2WebClientCustomizer` bean at all — it builds its own `WebClient` directly in `setUp()` and manually hand-rolls the identical Jackson 2 codec setup (see Step 2.5). This means the import migration in Step 3 cannot be verified against this test until that manual codec setup is also updated — the test's behavior depends entirely on what it builds itself, not on anything in `Configuration.kt`. Step 2.5 (added after an implementer hit this as a real test failure, not a hypothetical) fixes this as part of Task 2, not Task 3. Task 3's plan text below has been corrected to no longer touch `ProfiiliClientITest.kt`.
 
-- [ ] **Step 1: Write a failing test that exercises `JsonNode` field access against Jackson 3's type**
+- [ ] **Step 1: Confirm existing coverage of `JsonNode` field access, and use it as the baseline (no new test needed)**
 
-`ProfiiliClientITest.kt` already exercises `getApiTokens`/`getTokenApiUrl` indirectly through `getVerifiedName` (see the existing `GetVerifiedName` nested test class). Add this focused test inside that same file, in the top-level test class (not nested), to pin the exact JSON-field-access behavior this migration must preserve:
+**Correction (found during task review):** an earlier version of this step asked for a new test exercising `getVerifiedName` to pin `getApiTokens`/`getTokenApiUrl`'s `JsonNode` field access. A reviewer found that test was a near-verbatim duplicate of the existing `returns name when user's profile has verified information` test in the `GetVerifiedName` nested class of `ProfiiliClientITest.kt` — same mocks, same call, a strictly weaker assertion. Don't add a new test. The existing `GetVerifiedName` nested class already exercises both `JsonNode`-using methods (`getApiTokens` via `mockApiToken()`'s token-endpoint response, `getTokenApiUrl` via the OIDC discovery response every test in that class triggers) end-to-end, including field access via `["field"]?.asText()`. That existing suite is the regression net for this task — use it as-is.
 
-```kotlin
-@Test
-fun `getVerifiedName still works when Profiili's token and discovery responses use nested JsonNode field access`() {
-    // This exercises ProfiiliClient.getApiTokens() and getTokenApiUrl(), both of which parse
-    // their response body into a JsonNode and pull a field back out with `["field"]?.asText()`.
-    // A prior regression here would surface as a null/ClassCastException from that access, not
-    // a compile error, since JsonNode is used structurally rather than through a typed DTO.
-    mockApiToken()
-    mockGraphQl.enqueueSuccess(
-        ProfiiliResponse(ProfiiliData(MyProfile(ProfiiliFactory.DEFAULT_NAMES)))
-    )
-
-    val result = profiiliClient.getVerifiedName(ACCESS_TOKEN)
-
-    assertThat(result.firstName).isEqualTo(ProfiiliFactory.DEFAULT_FIRST_NAME)
-}
-```
-
-(These are the *verified* real helper names in the file, confirmed by reading it directly — `mockApiToken()` (a private helper at the bottom of the file), `ACCESS_TOKEN` (a private const, not `GRANT`), and `ProfiiliResponse(ProfiiliData(MyProfile(ProfiiliFactory.DEFAULT_NAMES)))` passed to `mockGraphQl.enqueueSuccess(...)` — this exact pattern is already used by another test in the file's `GetVerifiedName` nested class. Add this new test at the top level, not nested, alongside the class's other members.)
-
-- [ ] **Step 2: Run the test to confirm it passes today (baseline, Jackson 2)**
+- [ ] **Step 2: Run the existing suite to confirm it passes today (baseline, Jackson 2)**
 
 Run: `./gradlew :services:hanke-service:integrationTest --tests "fi.hel.haitaton.hanke.profiili.ProfiiliClientITest"`
-Expected: PASS (all existing tests plus the new one).
+Expected: PASS (all existing tests, unchanged).
 
 - [ ] **Step 3: Change the codec setup and the `JsonNode` import together (they are not independently testable — see below)**
 
