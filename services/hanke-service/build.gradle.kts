@@ -89,6 +89,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-jackson2")
     implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("tools.jackson.module:jackson-module-kotlin:3.1.4")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
     implementation("ch.qos.logback.access:logback-access-tomcat:2.0.6")

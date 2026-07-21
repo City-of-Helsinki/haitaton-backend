@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package fi.hel.haitaton.hanke.allu
 
 import assertk.Assert
@@ -19,10 +17,11 @@ import assertk.assertions.messageContains
 import assertk.assertions.prop
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
+import fi.hel.haitaton.hanke.configuration.LngLatAltJackson3Deserializer
+import fi.hel.haitaton.hanke.configuration.LngLatAltJackson3Serializer
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
@@ -42,6 +41,7 @@ import okhttp3.MultipartReader
 import okio.Buffer
 import okio.BufferedSource
 import okio.ByteString
+import org.geojson.LngLatAlt
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -60,10 +60,12 @@ import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.http.MediaType.IMAGE_PNG
-import org.springframework.http.codec.json.Jackson2JsonDecoder
-import org.springframework.http.codec.json.Jackson2JsonEncoder
+import org.springframework.http.codec.json.JacksonJsonDecoder
+import org.springframework.http.codec.json.JacksonJsonEncoder
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.module.SimpleModule
 
 class AlluClientITests {
 
@@ -80,12 +82,20 @@ class AlluClientITests {
         val baseUrl = mockWebServer.url("/").toUrl().toString()
         val properties = AlluProperties(baseUrl, "fake_username", "any_password", 2)
         val builder = WebClient.builder()
-        // To fix the date formatting for the tests, customize ObjectMapper used by the WebClient.
-        // In production, when the client is built by Configuration, the builder is injected with an
-        // object mapper with correct date handling.
+        // This client is built directly rather than through Spring DI, so it doesn't pick up
+        // Configuration's geoJsonJsonMapperBuilderCustomizer bean. Replicate it here, the same way
+        // this setup used to replicate the (now-removed) Jackson 2 codec customizer bean.
+        val geoJsonAwareMapper =
+            JsonMapper.builder()
+                .addModule(
+                    SimpleModule()
+                        .addSerializer(LngLatAlt::class.java, LngLatAltJackson3Serializer())
+                        .addDeserializer(LngLatAlt::class.java, LngLatAltJackson3Deserializer())
+                )
+                .build()
         builder.codecs {
-            it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OBJECT_MAPPER))
-            it.defaultCodecs().jackson2JsonDecoder(Jackson2JsonDecoder(OBJECT_MAPPER))
+            it.defaultCodecs().jacksonJsonEncoder(JacksonJsonEncoder(geoJsonAwareMapper))
+            it.defaultCodecs().jacksonJsonDecoder(JacksonJsonDecoder(geoJsonAwareMapper))
         }
         val webClient = webClientWithLargeBuffer(builder)
         authToken = createMockToken()
@@ -299,6 +309,27 @@ class AlluClientITests {
             assertThat(createRequest.method).isEqualTo("POST")
             assertThat(createRequest.url.encodedPath).isEqualTo("/v2/cablereports")
             assertThat(createRequest.headers["Authorization"]).isEqualTo("Bearer $authToken")
+        }
+
+        @Test
+        fun `date fields in outgoing Allu payloads are still ISO-8601 offset strings after removing the Jackson 2 customizer`() {
+            mockWebServer.enqueue(
+                MockResponse.Builder()
+                    .code(200)
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .body("1337")
+                    .build()
+            )
+
+            service.create(AlluFactory.createCableReportApplicationData())
+
+            val request = mockWebServer.takeRequest()
+            val body = request.body?.utf8() ?: ""
+            val dateTimePattern =
+                Regex(
+                    """"startTime":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?[+-]\d{2}:\d{2}""""
+                )
+            assertThat(dateTimePattern.containsMatchIn(body)).isTrue()
         }
     }
 
