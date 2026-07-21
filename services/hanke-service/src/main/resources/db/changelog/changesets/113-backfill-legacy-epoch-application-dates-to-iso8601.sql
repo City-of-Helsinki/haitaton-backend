@@ -6,9 +6,11 @@
 --comment: cast to timestamptz. Convert those legacy values to ISO-8601 in applications, taydennys and
 --comment: muutosilmoitus so INSERT/UPDATE/DELETE on old rows doesn't fail the historia triggers.
 
--- Disable the historia triggers while backfilling applications: the UPDATE below would otherwise
--- fire them and have them try to cast the (still epoch-formatted) OLD.applicationdata using the
--- changeset-112 logic, failing on the very rows this migration is trying to fix.
+/* Disable the historia triggers while backfilling applications: the UPDATE below would otherwise
+   fire them and have them try to cast the (still epoch-formatted) OLD.applicationdata using the
+   fixed trigger logic from changeset 112, failing on the very rows this migration is trying to
+   fix. Liquibase's formatted-SQL parser treats any "--"-prefixed line in the body as an attempted
+   directive, so plain SQL comments here must use block-comment syntax instead. */
 ALTER TABLE applications
     DISABLE TRIGGER after_johtoselvitys_changes;
 ALTER TABLE applications
@@ -39,8 +41,8 @@ ALTER TABLE applications
 ALTER TABLE applications
     ENABLE TRIGGER after_kaivuilmoitus_changes;
 
--- taydennys and muutosilmoitus copy applicationdata from applications but have no historia
--- triggers of their own, so no need to disable anything before updating them.
+/* taydennys and muutosilmoitus copy applicationdata from applications but have no historia
+   triggers of their own, so no need to disable anything before updating them. */
 UPDATE taydennys
 SET application_data =
         application_data
