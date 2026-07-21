@@ -251,17 +251,18 @@ EOF
 ### Task 3: Remove the Jackson 2 WebClient customizer
 
 **Files:**
-- Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/Configuration.kt:1-86`
+- Modify: `services/hanke-service/build.gradle.kts` (add the Jackson 3 Kotlin module dependency)
+- Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/Configuration.kt:1-86` (remove the Jackson 2 customizer, add the GeoJSON `JsonMapperBuilderCustomizer`)
 - Modify: `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/allu/AlluClientITests.kt` (remove duplicated codec setup)
 - Test: same file, plus `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClientITest.kt` and `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/attachment/common/FileScanClientITest.kt` (no code change needed in either — they're the regression check for the other two affected clients)
 
 **Note:** `ProfiiliClientITest.kt`'s duplicated Jackson 2 codec setup was already removed in Task 2 (it turned out not independently separable from the `JsonNode` import change — see that task's plan text for why). Do not touch that file in this task beyond running its tests as a regression check.
 
 **Interfaces:**
-- Consumes: Task 2's `ProfiiliClient.kt` and `ProfiiliClientITest.kt` (both must already be on Jackson 3 before this task).
-- Produces: no new function signatures — this task only removes a `@Bean` and its imports. Nothing later in this plan depends on any new interface from this task.
+- Consumes: Task 2's `ProfiiliClient.kt` and `ProfiiliClientITest.kt` (both must already be on Jackson 3 before this task); `HypersistenceJsonSerializer.kt`'s existing (unmodified) `LngLatAltJackson3Serializer`/`LngLatAltJackson3Deserializer` classes, reused by name from the same package.
+- Produces: one new `@Bean` function, `geoJsonJsonMapperBuilderCustomizer` (in `Configuration.kt`) — not consumed by any later task in this plan, but relevant to the Phase 2 follow-up plan (see "What's next" below).
 
-**Context:** `jackson2WebClientCustomizer` in `Configuration.kt` is a single global `WebClientCustomizer` bean. Spring applies every `WebClientCustomizer` bean to every auto-configured `WebClient.Builder`, and this app has exactly one `WebClient.Builder` bean, shared by three consumers: `AlluClient`, `ProfiiliClient`, and `FileScanClient` (confirmed via `grep -rl "WebClient.Builder" services/hanke-service/src/main/kotlin`). None of the three have any other Jackson-2-specific dependency once Task 2 lands: `AlluClient` uses only fully-typed DTOs (no `JsonNode`), `FileScanClient` uses a plain two-field `FileScanResponse` data class with no secondary constructor, and `ProfiiliClient` was fixed in Task 2. So removing this one bean migrates all three consumers to Jackson 3 defaults in a single, clean step — there's no way to partially scope it without introducing per-client qualified `WebClient.Builder` beans, which isn't needed here since all three are equally ready.
+**Context:** `jackson2WebClientCustomizer` in `Configuration.kt` is a single global `WebClientCustomizer` bean. Spring applies every `WebClientCustomizer` bean to every auto-configured `WebClient.Builder`, and this app has exactly one `WebClient.Builder` bean, shared by three consumers: `AlluClient`, `ProfiiliClient`, and `FileScanClient` (confirmed via `grep -rl "WebClient.Builder" services/hanke-service/src/main/kotlin`). Removing this one bean migrates all three consumers to Jackson 3 defaults in a single, clean step — there's no way to partially scope it without introducing per-client qualified `WebClient.Builder` beans, which isn't needed once Steps 3-4 below land two prerequisite fixes (see the correction note right after Step 2).
 
 `AlluClientITests.kt` currently hand-rolls the exact same Jackson 2 codec setup this bean provides, because it constructs its `WebClient`/`AlluClient` directly rather than through Spring DI (confirmed in a prior code review, and independently in Task 2 for the equivalent `ProfiiliClientITest.kt` case). Once the bean is gone, that manual duplication has nothing left to replicate and should be removed — leaving the client's default (Jackson 3) codecs in place, matching what production now does too.
 
@@ -299,7 +300,56 @@ If anything else about this file's fixtures has changed since this plan was writ
 Run: `./gradlew :services:hanke-service:integrationTest --tests "fi.hel.haitaton.hanke.allu.AlluClientITests"`
 Expected: PASS.
 
-- [ ] **Step 3: Remove the `jackson2WebClientCustomizer` bean**
+- [ ] **⚠️ Correction — two blockers found when this task was first attempted, fixed by Steps 3-4 below before the bean removal (Steps 5-6)**
+
+A first implementation attempt got this far, then removed the bean and found two real, independently-verified regressions that this plan's original audit missed:
+
+1. **`AlluClient` silently corrupts outbound GeoJSON.** `AlluApplicationData.geometry: GeometryCollection` embeds `org.geojson.LngLatAlt`, which carries Jackson-2-only `@JsonSerialize`/`@JsonDeserialize` annotations (from `de.grundid.opendatalab:geojson-jackson:1.14`). Jackson 3's introspector doesn't recognize them and silently falls back to bean serialization — confirmed by dumping the actual request body sent through a bean-less WebClient: `"coordinates":[[{"additionalElements":[],"altitude":"NaN",...}]]` instead of `"coordinates":[[[lng,lat]]]`. This is the same bug class already fixed for the JPA JSON-column path (`LngLatAltJackson3Serializer`/`Deserializer` in `HypersistenceJsonSerializer.kt`), but that fix only applies to hypersistence-utils' own `ObjectMapperWrapper`, not the shared WebClient/MVC `JsonMapper`.
+2. **Jackson 3's Kotlin module isn't a dependency anywhere in this repo.** Confirmed via `./gradlew :services:hanke-service:dependencies --configuration runtimeClasspath | grep jackson-module-kotlin` — only `com.fasterxml.jackson.module:jackson-module-kotlin:2.21.4` (Jackson 2) resolves; `tools.jackson.module:jackson-module-kotlin` is absent. Without it, Jackson 3 can't read Kotlin constructor parameter names (no `-java-parameters` compiler flag either — confirmed absent from `build.gradle.kts`'s `freeCompilerArgs`), so it can't build a property-based creator for `FileScanClient`'s `FileResult` (a plain 3-arg data class, no secondary constructor) — confirmed via the actual thrown exception: `InvalidDefinitionException: ... has no property name (and is not Injectable): cannot use as property-based Creator`.
+
+Both fixes are added as Steps 3-4 below, **before** the bean removal (Steps 5-6) — like Task 2's import/codec coupling, these fixes are inert and unverifiable on their own without the bean also being gone, so Steps 3-6 land as one commit, not split further.
+
+- [ ] **Step 3: Add Jackson 3's Kotlin module dependency**
+
+In `services/hanke-service/build.gradle.kts`, add, next to the existing Jackson 2 Kotlin module line (around line 91):
+
+```kotlin
+    implementation("tools.jackson.module:jackson-module-kotlin:3.1.4")
+```
+
+(Version `3.1.4` matches the already-resolved `tools.jackson.core:jackson-databind:3.1.4` — confirmed available by checking `~/.gradle/caches/modules-2/files-2.1/tools.jackson.module/jackson-module-kotlin/` for that exact version alongside `3.2.0`/`3.2.1`; pin to `3.1.4` for version alignment with the rest of the Jackson 3 stack already in use, not the newest available.) Spring Boot's `JacksonAutoConfiguration` auto-discovers `JacksonModule` implementations on the classpath via Jackson 3's `ServiceLoader` mechanism (`spring.jackson.find-and-add-modules`, on by default and not overridden anywhere in this repo's `application.yml`) — no explicit bean registration needed for this module specifically, unlike the GeoJSON fix in Step 4.
+
+- [ ] **Step 4: Register native Jackson 3 GeoJSON serializers on the shared `JsonMapper`**
+
+In `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/Configuration.kt`, add a new bean reusing the *existing* `LngLatAltJackson3Serializer`/`LngLatAltJackson3Deserializer` classes already defined in `HypersistenceJsonSerializer.kt` (same package, `fi.hel.haitaton.hanke.configuration` — no import needed) — do not write new serializer classes, and do not modify `HypersistenceJsonSerializer.kt` itself:
+
+```kotlin
+    /**
+     * Registers the same GeoJSON LngLatAlt serializer/deserializer used for hypersistence-utils'
+     * JSON columns (see HypersistenceJsonSerializer.kt) on the app-wide JsonMapper.Builder that Boot
+     * auto-configures and that WebClient's codecs are built from. Without this, Jackson 3's default
+     * bean introspection corrupts LngLatAlt's array shape the same way it did on the JSON-column
+     * path before that fix — geojson-jackson's own serializer is Jackson-2-only and isn't picked up.
+     */
+    @Bean
+    fun geoJsonJsonMapperBuilderCustomizer() = JsonMapperBuilderCustomizer { builder ->
+        builder.addModule(
+            SimpleModule()
+                .addSerializer(LngLatAlt::class.java, LngLatAltJackson3Serializer())
+                .addDeserializer(LngLatAlt::class.java, LngLatAltJackson3Deserializer())
+        )
+    }
+```
+
+New imports needed in `Configuration.kt`:
+
+```kotlin
+import org.geojson.LngLatAlt
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer
+import tools.jackson.databind.module.SimpleModule
+```
+
+- [ ] **Step 5: Remove the `jackson2WebClientCustomizer` bean**
 
 In `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/Configuration.kt`, delete:
 
@@ -329,24 +379,24 @@ import org.springframework.http.codec.json.Jackson2JsonEncoder
 
 (Keep everything else in the file unchanged — `alluClient()`, `webClientWithLargeBuffer()`, `createInsecureTrustingWebClient()` don't reference this bean.)
 
-- [ ] **Step 4: Remove the equivalent duplication in `AlluClientITests.kt`**
+- [ ] **Step 6: Remove the equivalent duplication in `AlluClientITests.kt`**
 
 In `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/allu/AlluClientITests.kt`, find and remove the manual `.codecs { it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(OBJECT_MAPPER)) ... }` block (around line 86-88, per the imports at lines 63-64 found during this plan's research) the same way Task 2 did for the equivalent block in `ProfiiliClientITest.kt`, and remove the now-unused `Jackson2JsonEncoder`/`Jackson2JsonDecoder` imports and the `@file:Suppress("DEPRECATION")` annotation if this file was its target (per commit `0ffa5921`, "Suppress deprecated Jackson2 codec warning in AlluClientITests" — check first whether anything else in the file still needs that suppression before removing it).
 
-- [ ] **Step 5: Run the Allu, Profiili, and FileScan integration tests**
+- [ ] **Step 7: Run the Allu, Profiili, and FileScan integration tests**
 
 Run: `./gradlew :services:hanke-service:integrationTest --tests "fi.hel.haitaton.hanke.allu.AlluClientITests" --tests "fi.hel.haitaton.hanke.profiili.ProfiiliClientITest" --tests "fi.hel.haitaton.hanke.attachment.common.FileScanClientITest"`
-Expected: PASS, including the new Step-1 test — confirming Allu request bodies still serialize dates correctly, Profiili's `JsonNode`-based token/discovery parsing still works (verified in Task 2, re-checked here as a regression), and `FileScanClient`'s plain-data-class round-trip is unaffected.
+Expected: PASS, including the new Step-1 test — confirming Allu request bodies still serialize dates and geometry correctly (the GeoJSON fix from Step 4), Profiili's `JsonNode`-based token/discovery parsing still works, and `FileScanClient`'s `FileResult` deserializes correctly (the Kotlin module fix from Step 3). If any of these still fail, do not narrow scope or skip — the whole point of Steps 3-4 was to fix exactly this; a remaining failure means something wasn't fully diagnosed and needs investigating, not working around.
 
-- [ ] **Step 6: Run the full test suite**
+- [ ] **Step 8: Run the full test suite**
 
 Run: `./gradlew :services:hanke-service:spotlessCheck :services:hanke-service:test :services:hanke-service:integrationTest`
-Expected: BUILD SUCCESSFUL, 0 failures. This is the actual verification that removing a global bean didn't regress anything else in the app — trust this over any partial test run.
+Expected: BUILD SUCCESSFUL, 0 failures. This is the actual verification that removing a global bean (plus adding the two fixes) didn't regress anything else in the app — trust this over any partial test run. This step matters even more than usual here: the Kotlin module addition changes how Jackson 3 resolves creators for *every* Kotlin data class in the app that any auto-configured JsonMapper touches, not just the three WebClient consumers, so the full suite is the only real check against that blast radius.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/Configuration.kt services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/allu/AlluClientITests.kt
+git add services/hanke-service/build.gradle.kts services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/Configuration.kt services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/allu/AlluClientITests.kt
 git commit -m "$(cat <<'EOF'
 HAI-XXXX Remove the Jackson 2 WebClient customizer
 
@@ -361,6 +411,18 @@ Drops the manual Jackson 2 codec duplication in ProfiiliClientITest
 and AlluClientITests, which existed only to replicate this bean for
 tests that build their client outside Spring DI.
 
+Two gaps the original audit missed, fixed as prerequisites: added
+tools.jackson.module:jackson-module-kotlin (absent before this
+change, silently relying on the departing bean's Jackson 2 Kotlin
+support for every multi-property Kotlin data class any WebClient
+consumer deserializes), and registered the existing
+LngLatAltJackson3Serializer/Deserializer (already used for
+hypersistence-utils' JSON columns) on the shared JsonMapper.Builder
+via a JsonMapperBuilderCustomizer, since AlluClient's outgoing
+geometry payloads embed the same Jackson-2-only-annotated
+org.geojson.LngLatAlt type Jackson 3 can't serialize correctly on
+its own.
+
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 EOF
 )"
@@ -372,9 +434,12 @@ EOF
 
 This plan covers the spec's Phase 0 (audit — completed as research while writing this plan, not as a separate task, since every finding turned out concrete enough to act on directly) and Phase 1 (outbound WebClient consumers). The spec's Phase 2 (REST controllers/DTOs), Phase 3 (flip the global default), and Phase 4 (cleanup & documentation) get their own follow-up plan once this one is merged — Phase 2's tasks depend on running the before/after JSON format diff against real REST endpoints, which is itself work to schedule after Task 3 lands, not something to guess at here.
 
+**Also worth a deliberate look before Phase 2 starts:** Task 3's blocker revealed that `org.geojson.LngLatAlt`'s Jackson-2-only annotations are a risk on *any* Jackson-3-touched surface, not just JSON columns and outbound WebClient traffic — Phase 2 (REST controllers/DTOs) should explicitly re-check whether any REST-facing type embeds GeoJSON geometry (a prior grep for this found nothing exposed directly by controllers, but that was before this session learned the annotation-recognition failure mode is broader than first assumed, so it's worth re-verifying empirically rather than trusting the earlier grep alone).
+
 ## Self-Review Notes
 
 - **Spec coverage:** This plan implements the spec's "Phase 0 — Audit" (folded into the tasks above as verified findings, not left as a vague step) and "Phase 1 — Migrate outbound WebClient consumers." The spec's Phases 2-4 are explicitly deferred to a follow-up plan (see "What's next" above), consistent with the spec's own incremental, risk-ordered sequencing.
-- **Placeholder scan:** No TBD/TODO markers. Several steps (Task 3 Step 1's exact fixture names, Task 3 Step 4's `@file:Suppress` removal) tell the implementer to check existing code before naming things, rather than inventing unverified names — this is a deliberate "verify against the real file" instruction, not a placeholder, since fixture/constant names in test files change over time and guessing wrong would produce broken code.
+- **Placeholder scan:** No TBD/TODO markers. Several steps (Task 3 Step 1's exact fixture names, Task 3 Step 6's `@file:Suppress` removal) tell the implementer to check existing code before naming things, rather than inventing unverified names — this is a deliberate "verify against the real file" instruction, not a placeholder, since fixture/constant names in test files change over time and guessing wrong would produce broken code.
 - **Revision note (added after Task 2's implementer hit a real blocker):** the original Task 2/Task 3 split assumed `ProfiiliClient.kt`'s `JsonNode` import could be migrated independently of `ProfiiliClientITest.kt`'s codec setup. It can't — they're two halves of one atomic change (decode-target type vs. the codec that produces it), and the test bypasses Spring DI entirely so it can't inherit a fix from a later task touching `Configuration.kt`. Task 2 now owns both halves for the Profiili case; Task 3 was updated to no longer touch `ProfiiliClientITest.kt`.
-- **Type consistency:** `CustomOffsetDateTimeSerializer`/`Deserializer` keep their exact class names across Task 1 (so `AuditLogEvent`'s `using = ...` references don't need updating) and match the `ValueSerializer<T>`/`ValueDeserializer<T>` signature already established by `LngLatAltJackson3Serializer`/`Deserializer` in `HypersistenceJsonSerializer.kt`. `ProfiiliClient`'s `JsonNode` type is referenced identically before and after Task 2 (only the import package changes, not the type's usage). Task 3 introduces no new types.
+- **Revision note (added after Task 3's implementer hit a real blocker):** the original Task 3 audit claimed `AlluClient` and `FileScanClient` had no remaining Jackson-2 dependency once Task 2 landed. Wrong on two counts, both independently verified by the controller before rewriting this section: `AlluClient`'s DTOs transitively embed `org.geojson.LngLatAlt`, whose Jackson-2-only annotations Jackson 3 doesn't recognize (same bug class as the already-fixed JSON-column `LngLatAlt` issue, on a second, unfixed code path); and Jackson 3's Kotlin module was never a declared dependency at all, so no multi-property Kotlin data class could deserialize via any WebClient consumer once Jackson 2 stopped being forced onto the shared builder. Task 3 now adds both fixes (Steps 3-4) before the bean removal (Steps 5-6), verified together (Steps 7-8) since — like Task 2's coupling — the fixes are inert without the bean also being gone.
+- **Type consistency:** `CustomOffsetDateTimeSerializer`/`Deserializer` keep their exact class names across Task 1 (so `AuditLogEvent`'s `using = ...` references don't need updating) and match the `ValueSerializer<T>`/`ValueDeserializer<T>` signature already established by `LngLatAltJackson3Serializer`/`Deserializer` in `HypersistenceJsonSerializer.kt`. `ProfiiliClient`'s `JsonNode` type is referenced identically before and after Task 2 (only the import package changes, not the type's usage). Task 3 reuses `LngLatAltJackson3Serializer`/`Deserializer` from `HypersistenceJsonSerializer.kt` by name (same package, no import needed) rather than introducing new serializer classes — the one new type is `geoJsonJsonMapperBuilderCustomizer`, a `@Bean` function, not a class.
