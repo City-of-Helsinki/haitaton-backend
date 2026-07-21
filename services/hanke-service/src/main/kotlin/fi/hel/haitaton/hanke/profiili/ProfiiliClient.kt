@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.profiili
 
-import com.fasterxml.jackson.databind.JsonNode
 import fi.hel.haitaton.hanke.getResourceAsText
 import fi.hel.haitaton.hanke.toJsonString
 import mu.KotlinLogging
@@ -14,6 +13,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.body
 import reactor.core.publisher.Mono
+import tools.jackson.databind.JsonNode
 
 private val logger = KotlinLogging.logger {}
 
