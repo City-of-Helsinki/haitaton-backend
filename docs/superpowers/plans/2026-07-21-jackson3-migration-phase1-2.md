@@ -267,25 +267,32 @@ EOF
 
 - [ ] **Step 1: Write a failing test proving Allu request/response bodies still round-trip correctly without the customizer**
 
-In `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/allu/AlluClientITests.kt`, find the existing test that exercises `create()` or `getApplicationInformation()` against the `MockWebServer` (there is at least one — this file already tests `AlluClient` end-to-end against a mock server). Add this assertion alongside it, capturing the actual raw request body Allu would receive and checking a representative date field's shape:
+**Verified against the real file** (to avoid repeating Task 2's fixture-name mismatch): the test class's field is named `service` (type `AlluClient`), not `alluClient`; the existing `Create` nested test class already exercises `service.create(AlluFactory.createCableReportApplicationData())` against `mockWebServer`, asserting on `mockWebServer.takeRequest()`. `AlluFactory.createCableReportApplicationData(startTime: ZonedDateTime = ZonedDateTime.now().plusDays(1L), ...)` already defaults to a real `ZonedDateTime` — no named constant for a fixed test date exists in this file, so don't invent one; the default is sufficient since this test only checks the serialized *shape*, not a specific value.
+
+Add this test inside the existing `Create` nested class in `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/allu/AlluClientITests.kt`, alongside its other members:
 
 ```kotlin
 @Test
 fun `date fields in outgoing Allu payloads are still ISO-8601 offset strings after removing the Jackson 2 customizer`() {
-    val application = AlluFactory.createCableReportApplicationData(startTime = TESTIHENKILO_ZONED_DATE_TIME)
-    mockWebServer.enqueue(MockResponse.Builder().code(200).body("1").build())
+    mockWebServer.enqueue(
+        MockResponse.Builder()
+            .code(200)
+            .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+            .body("1337")
+            .build()
+    )
 
-    alluClient.create(application)
+    service.create(AlluFactory.createCableReportApplicationData())
 
-    val recordedRequest = mockWebServer.takeRequest()
-    val body = recordedRequest.body?.utf8() ?: ""
+    val request = mockWebServer.takeRequest()
+    val body = request.body?.utf8() ?: ""
     val dateTimePattern =
         Regex(""""startTime":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?[+-]\d{2}:\d{2}"""")
     assertThat(dateTimePattern.containsMatchIn(body)).isTrue()
 }
 ```
 
-(Check the exact existing factory/fixture names in this file first — `AlluFactory.createCableReportApplicationData`, the mock server field name, and whatever constant this file already uses for a fixed `ZonedDateTime` in other tests — and use those exact names rather than inventing new ones. This file already has comparable tests for `create()`; mirror the existing setup pattern precisely.)
+If anything else about this file's fixtures has changed since this plan was written, verify against the actual file rather than trusting this text — the same way this correction itself was produced.
 
 - [ ] **Step 2: Run it to confirm it passes today (baseline, with the customizer + duplicated ITest codec setup still in place)**
 
