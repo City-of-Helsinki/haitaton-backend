@@ -2,14 +2,6 @@ package fi.hel.haitaton.hanke.logging
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.SerializerProvider
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer
-import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -24,6 +16,14 @@ import org.hibernate.annotations.Generated
 import org.hibernate.annotations.Type
 import org.hibernate.generator.EventType
 import org.springframework.data.jpa.repository.JpaRepository
+import tools.jackson.core.JsonGenerator
+import tools.jackson.core.JsonParser
+import tools.jackson.databind.DeserializationContext
+import tools.jackson.databind.SerializationContext
+import tools.jackson.databind.ValueDeserializer
+import tools.jackson.databind.ValueSerializer
+import tools.jackson.databind.annotation.JsonDeserialize
+import tools.jackson.databind.annotation.JsonSerialize
 
 /**
  * Version for the schema of the audit log message schema. Change when making changes to the
@@ -93,24 +93,19 @@ interface AuditLogRepository : JpaRepository<AuditLogEntryEntity, UUID> {
 
 /**
  * A custom serializer to make sure the date_time field is in the right format (ISO 8601). We can't
- * directly specify which [com.fasterxml.jackson.databind.ObjectMapper] Hibernate uses when
- * serializing the message as JSON, so we can't just tell it to use
- * [com.fasterxml.jackson.datatype.jsr310.JavaTimeModule]. We could add configuration that forces
- * the object mapper everywhere, but that might have implications elsewhere, which could lead to
- * really hard bugs. Specifying custom serializers and deserializers is not the prettiest solution,
- * but still cleaner than changing project-wide configurations.
+ * directly specify which [tools.jackson.databind.ObjectMapper] Hibernate uses when serializing the
+ * message as JSON, so we can't just tell it to use [tools.jackson.datatype.jsr310.JavaTimeModule].
+ * We could add configuration that forces the object mapper everywhere, but that might have
+ * implications elsewhere, which could lead to really hard bugs. Specifying custom serializers and
+ * deserializers is not the prettiest solution, but still cleaner than changing project-wide
+ * configurations.
  *
  * Based on https://www.baeldung.com/jackson-serialize-dates#java-8-no-dependency
  */
-class CustomOffsetDateTimeSerializer @JvmOverloads constructor(t: Class<OffsetDateTime?>? = null) :
-    StdSerializer<OffsetDateTime?>(t) {
+class CustomOffsetDateTimeSerializer : ValueSerializer<OffsetDateTime>() {
 
-    override fun serialize(
-        value: OffsetDateTime?,
-        gen: JsonGenerator,
-        arg2: SerializerProvider?,
-    ) {
-        gen.writeString(value?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+    override fun serialize(value: OffsetDateTime, gen: JsonGenerator, ctxt: SerializationContext) {
+        gen.writeString(value.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
     }
 }
 
@@ -119,12 +114,7 @@ class CustomOffsetDateTimeSerializer @JvmOverloads constructor(t: Class<OffsetDa
  *
  * Based on: https://www.baeldung.com/jackson-serialize-dates#java-8-no-dependency
  */
-class CustomOffsetDateTimeDeserializer
-@JvmOverloads
-constructor(t: Class<OffsetDateTime?>? = null) : StdDeserializer<OffsetDateTime?>(t) {
-    override fun deserialize(
-        jsonparser: JsonParser,
-        context: DeserializationContext?
-    ): OffsetDateTime? =
-        OffsetDateTime.parse(jsonparser.text, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+class CustomOffsetDateTimeDeserializer : ValueDeserializer<OffsetDateTime>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): OffsetDateTime =
+        OffsetDateTime.parse(p.string, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 }
