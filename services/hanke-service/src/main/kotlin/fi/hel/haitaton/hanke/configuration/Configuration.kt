@@ -1,8 +1,5 @@
-@file:Suppress("DEPRECATION")
-
 package fi.hel.haitaton.hanke.configuration
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluProperties
 import fi.hel.haitaton.hanke.attachment.azure.Containers
@@ -14,18 +11,18 @@ import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import org.geojson.LngLatAlt
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.boot.webclient.WebClientCustomizer
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
-import org.springframework.http.codec.json.Jackson2JsonDecoder
-import org.springframework.http.codec.json.Jackson2JsonEncoder
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
+import tools.jackson.databind.module.SimpleModule
 
 @Configuration
 @EnableConfigurationProperties(
@@ -44,16 +41,20 @@ class Configuration {
     @Bean fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
     /**
-     * Spring Boot 4's auto-configured WebClient.Builder defaults to Jackson 3 codecs. Keep it on
-     * Jackson 2 for now, matching spring.jackson.use-jackson2-defaults, since WebClient consumers
-     * such as ProfiiliClient still decode into com.fasterxml.jackson.databind.JsonNode.
+     * Registers the same GeoJSON LngLatAlt serializer/deserializer used for hypersistence-utils'
+     * JSON columns (see HypersistenceJsonSerializer.kt) on the app-wide JsonMapper.Builder that
+     * Boot auto-configures and that WebClient's codecs are built from. Without this, Jackson 3's
+     * default bean introspection corrupts LngLatAlt's array shape the same way it did on the
+     * JSON-column path before that fix — geojson-jackson's own serializer is Jackson-2-only and
+     * isn't picked up.
      */
     @Bean
-    fun jackson2WebClientCustomizer(objectMapper: ObjectMapper) = WebClientCustomizer { builder ->
-        builder.codecs {
-            it.defaultCodecs().jackson2JsonEncoder(Jackson2JsonEncoder(objectMapper))
-            it.defaultCodecs().jackson2JsonDecoder(Jackson2JsonDecoder(objectMapper))
-        }
+    fun geoJsonJsonMapperBuilderCustomizer() = JsonMapperBuilderCustomizer { builder ->
+        builder.addModule(
+            SimpleModule()
+                .addSerializer(LngLatAlt::class.java, LngLatAltJackson3Serializer())
+                .addDeserializer(LngLatAlt::class.java, LngLatAltJackson3Deserializer())
+        )
     }
 
     @Bean
