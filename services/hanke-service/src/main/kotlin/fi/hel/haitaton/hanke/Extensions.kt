@@ -10,9 +10,6 @@ import java.time.temporal.TemporalAdjusters
 
 fun Any?.toJsonString(): String = OBJECT_MAPPER.writeValueAsString(this)
 
-fun Any?.toJsonPrettyString(): String =
-    OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(this)
-
 fun String.getResource() =
     // The class here is arbitrary, could be any class. Using ClassLoader might be cleaner, but it
     // would require changing every resource file path throughout the project.

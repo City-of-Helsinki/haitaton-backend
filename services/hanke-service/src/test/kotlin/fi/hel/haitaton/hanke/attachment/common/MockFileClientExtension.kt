@@ -4,6 +4,7 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.springframework.beans.factory.getBean
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
 /**
@@ -45,8 +46,7 @@ class MockFileClientExtension : BeforeEachCallback, BeforeAllCallback, AfterAllC
 
     override fun beforeAll(context: ExtensionContext) {
         if (!this::client.isInitialized) {
-            client =
-                SpringExtension.getApplicationContext(context).getBean(MockFileClient::class.java)
+            client = SpringExtension.getApplicationContext(context).getBean<MockFileClient>()
         }
 
         client.recreateContainers()
