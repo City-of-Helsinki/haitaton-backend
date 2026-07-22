@@ -11,7 +11,7 @@ abstract class Authorizer(
     private val permissionService: PermissionService,
     private val hankeRepository: HankeRepository,
 ) {
-    fun authorize(
+    open fun authorize(
         hankeId: Int?,
         permissionCode: PermissionCode,
         editDeniedForCompleted: Boolean = true,
@@ -32,7 +32,7 @@ abstract class Authorizer(
         }
     }
 
-    internal fun authorizeHankeTunnus(
+    internal open fun authorizeHankeTunnus(
         hankeTunnus: String,
         permissionCode: PermissionCode,
     ): Boolean {
