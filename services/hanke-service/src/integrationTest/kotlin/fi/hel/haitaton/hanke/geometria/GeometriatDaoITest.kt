@@ -6,8 +6,10 @@ import assertk.assertions.containsExactly
 import assertk.assertions.isCloseTo
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
@@ -159,6 +161,29 @@ internal class GeometriatDaoITest : IntegrationTest() {
         val result = geometriatDao.matchingHankealueet(5, aleksanterinPatsas)
 
         assertThat(result).containsExactly(23, 24)
+    }
+
+    @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
+    fun `isInsideHankeAlue returns true when the object is inside the hankealue`() {
+        val result = geometriatDao.isInsideHankeAlue(23, aleksanterinPatsas)
+
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
+    fun `isInsideHankeAlue returns false when the object is outside the hankealue`() {
+        val result = geometriatDao.isInsideHankeAlue(23, havisAmanda)
+
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `isInsideHankeAlue returns false when the hankealue doesn't exist`() {
+        val result = geometriatDao.isInsideHankeAlue(999, aleksanterinPatsas)
+
+        assertThat(result).isFalse()
     }
 
     private fun getGeometriaCount(): Int? =

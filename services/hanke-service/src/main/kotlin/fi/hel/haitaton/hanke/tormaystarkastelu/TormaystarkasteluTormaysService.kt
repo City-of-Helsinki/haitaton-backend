@@ -2,10 +2,13 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.toJsonString
 import java.util.Collections
+import mu.KotlinLogging
 import org.geojson.GeoJsonObject
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Service
+
+private val logger = KotlinLogging.logger {}
 
 @Service
 class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations) {
@@ -17,12 +20,12 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
                 "tormays_street_classes_polys",
                 "street_class",
             )
-            .filterNotNull()
+            .filterNotNullLogged("street_class")
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
     fun maxIntersectingLiikenteellinenKatuluokka(geometry: GeoJsonObject): Int? =
         getDistinctValuesIntersectingRows(geometry, "tormays_street_classes_polys", "street_class")
-            .filterNotNull()
+            .filterNotNullLogged("street_class")
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
     /** kantakaupunki, central_business_area */
@@ -160,6 +163,22 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
             """
                 .trimIndent()
         return jdbcOperations.queryForList(sql, String::class.java, geometria.toJsonString())
+    }
+
+    /**
+     * A null here means the DB genuinely returned SQL NULL for [column], which shouldn't happen for
+     * these lookup tables - log it instead of silently dropping the row so a real data issue
+     * doesn't go unnoticed.
+     */
+    private fun List<String?>.filterNotNullLogged(column: String): List<String> {
+        val result = filterNotNull()
+        if (result.size != size) {
+            logger.warn {
+                "Dropped ${size - result.size} null $column value(s) while computing " +
+                    "törmäystarkastelu"
+            }
+        }
+        return result
     }
 
     private fun anyIntersectsWith(geometriat: Set<Int>, table: String): Boolean {
