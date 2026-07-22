@@ -103,6 +103,12 @@ enum class IndeksiType {
     RAITIOLIIKENNEINDEKSI,
 }
 
+/**
+ * [id] and [hankealue] are `val` and never reassigned after construction - same reasoning as
+ * [fi.hel.haitaton.hanke.allu.AlluEventEntity]. The other fields are `var` because
+ * [fi.hel.haitaton.hanke.HankealueService] recalculates and mutates them in place when a
+ * hankealue's traffic-nuisance index changes.
+ */
 @Entity
 @Table(name = "tormaystarkastelutulos")
 class TormaystarkasteluTulosEntity(
