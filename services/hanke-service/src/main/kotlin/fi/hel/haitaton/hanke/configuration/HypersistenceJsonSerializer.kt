@@ -73,9 +73,16 @@ class LngLatAltJackson3Deserializer : ValueDeserializer<LngLatAlt>() {
             values.add(p.doubleValue)
             token = p.nextToken()
         }
+        if (values.size < 2) {
+            return ctxt.reportInputMismatch(
+                LngLatAlt::class.java,
+                "GeoJSON position must have at least 2 coordinates (longitude, latitude), got %d",
+                values.size,
+            )
+        }
         val result = LngLatAlt()
-        values.getOrNull(0)?.let { result.longitude = it }
-        values.getOrNull(1)?.let { result.latitude = it }
+        result.longitude = values[0]
+        result.latitude = values[1]
         values.getOrNull(2)?.let { result.altitude = it }
         if (values.size > 3) {
             result.setAdditionalElements(*values.drop(3).toDoubleArray())
