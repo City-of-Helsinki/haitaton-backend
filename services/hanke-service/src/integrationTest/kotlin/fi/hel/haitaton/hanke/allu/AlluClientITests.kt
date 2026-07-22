@@ -84,7 +84,8 @@ class AlluClientITests {
         val builder = WebClient.builder()
         // This client is built directly rather than through Spring DI, so it doesn't pick up
         // Configuration's geoJsonJsonMapperBuilderCustomizer bean. Replicate it here, the same way
-        // this setup used to replicate the (now-removed) Jackson 2 codec customizer bean.
+        // this setup used to configure a Jackson 2 ObjectMapper on the codecs directly, before
+        // Spring Boot's WebClient auto-configuration defaulted to Jackson 3 codecs.
         val geoJsonAwareMapper =
             JsonMapper.builder()
                 .addModule(
