@@ -2,10 +2,16 @@ package fi.hel.haitaton.hanke.configuration
 
 import assertk.assertThat
 import assertk.assertions.contains
+import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.IntegrationTest
+import fi.hel.haitaton.hanke.OBJECT_MAPPER
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
+import java.util.UUID
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import tools.jackson.databind.json.JsonMapper
@@ -24,5 +30,35 @@ class Jackson3FormatDiffITest(@Autowired val jsonMapper: JsonMapper) : Integrati
         val json = jsonMapper.writeValueAsString(value)
 
         assertThat(json).contains("2026-07-22")
+    }
+
+    @Test
+    fun `Hanke's ZonedDateTime fields serialize identically under Jackson 2 and Jackson 3`() {
+        val hanke = HankeFactory.create()
+
+        val jackson2Json = OBJECT_MAPPER.writeValueAsString(hanke)
+        val jackson3Json = jsonMapper.writeValueAsString(hanke)
+
+        assertThat(jackson3Json).isEqualTo(jackson2Json)
+    }
+
+    @Test
+    fun `attachment metadata's OffsetDateTime field serializes identically under Jackson 2 and Jackson 3`() {
+        val dto =
+            ApplicationAttachmentMetadataDto(
+                id = UUID.randomUUID(),
+                fileName = "test.pdf",
+                contentType = "application/pdf",
+                size = 1234L,
+                attachmentType = ApplicationAttachmentType.MUU,
+                createdByUserId = "test-user",
+                createdAt = OffsetDateTime.of(2026, 7, 22, 10, 0, 0, 0, ZoneOffset.UTC),
+                applicationId = 1L,
+            )
+
+        val jackson2Json = OBJECT_MAPPER.writeValueAsString(dto)
+        val jackson3Json = jsonMapper.writeValueAsString(dto)
+
+        assertThat(jackson3Json).isEqualTo(jackson2Json)
     }
 }
