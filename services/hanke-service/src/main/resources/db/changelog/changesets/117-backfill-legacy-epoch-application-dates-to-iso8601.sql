@@ -1,6 +1,6 @@
 --liquibase formatted sql
---changeset Claude:113-backfill-legacy-epoch-application-dates-to-iso8601
---comment: Changeset 112 made the historia triggers assume applicationdata's startTime/endTime are
+--changeset Claude:117-backfill-legacy-epoch-application-dates-to-iso8601
+--comment: Changeset 116 made the historia triggers assume applicationdata's startTime/endTime are
 --comment: ISO-8601 strings, matching what Spring Boot 4's Jackson 3 now writes. Rows saved before
 --comment: that change still hold these fields as epoch-second numbers, which the new triggers can't
 --comment: cast to timestamptz. Convert those legacy values to ISO-8601 in applications, taydennys and
@@ -9,7 +9,7 @@
 /* Disable all three historia triggers on applications (johtoselvitys and kaivuilmoitus from
    changesets 095/100, kaivuilmoitusalueet from changeset 105) while backfilling: the UPDATE below
    would otherwise fire johtoselvitys's trigger and have it try to cast the (still epoch-formatted)
-   OLD.applicationdata using the fixed trigger logic from changeset 112, failing on the very rows
+   OLD.applicationdata using the fixed trigger logic from changeset 116, failing on the very rows
    this migration is trying to fix. All three must be disabled, not just the two that reference
    startTime/endTime: these are DEFERRABLE INITIALLY DEFERRED constraint triggers, and Postgres
    refuses any ALTER TABLE on a table with a pending (not yet committed) deferred trigger event,

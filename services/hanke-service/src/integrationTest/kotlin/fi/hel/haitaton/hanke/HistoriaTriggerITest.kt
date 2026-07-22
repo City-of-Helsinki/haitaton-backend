@@ -12,11 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.jdbc.core.JdbcOperations
 
 /**
- * Regression coverage for changesets 112 (rewrote the historia triggers to parse ISO-8601
- * startTime/endTime instead of epoch-second numbers) and 113 (backfills any row still holding the
- * legacy epoch format). Simulates a row left in the legacy epoch format - as changeset 113's
+ * Regression coverage for changesets 116 (rewrote the historia triggers to parse ISO-8601
+ * startTime/endTime instead of epoch-second numbers) and 117 (backfills any row still holding the
+ * legacy epoch format). Simulates a row left in the legacy epoch format - as changeset 117's
  * backfill would have found before it ran - and proves both that the backfill conversion is correct
- * and that the changeset-112 trigger accepts the result afterwards.
+ * and that the changeset-116 trigger accepts the result afterwards.
  */
 class HistoriaTriggerITest(
     @Autowired private val hakemusFactory: HakemusFactory,
@@ -38,8 +38,8 @@ class HistoriaTriggerITest(
 
         // Simulate data written before the Jackson 2->3 migration: applicationdata's
         // startTime/endTime as raw epoch-second numbers. Triggers must be disabled first, exactly
-        // like changeset 113 does, since writing epoch-format data would otherwise make the
-        // changeset-112 trigger fail trying to cast it to timestamptz.
+        // like changeset 117 does, since writing epoch-format data would otherwise make the
+        // changeset-116 trigger fail trying to cast it to timestamptz.
         triggers.forEach { jdbcOperations.execute("ALTER TABLE applications DISABLE TRIGGER $it") }
         jdbcOperations.update(
             """
@@ -52,7 +52,7 @@ class HistoriaTriggerITest(
             hakemus.id,
         )
 
-        // Reproduce changeset 113's exact backfill expression against just this row.
+        // Reproduce changeset 117's exact backfill expression against just this row.
         jdbcOperations.update(
             """
             UPDATE applications
@@ -90,7 +90,7 @@ class HistoriaTriggerITest(
             )
         assertThat(backfilledEpoch!!.toLong()).isEqualTo(epochStart)
 
-        // Fire the trigger for real against the now-backfilled row - exercising changeset 112's
+        // Fire the trigger for real against the now-backfilled row - exercising changeset 116's
         // `(NEW.applicationdata ->> 'startTime')::timestamptz` cast on exactly the kind of data a
         // genuinely-backfilled legacy row would have.
         jdbcOperations.update(
