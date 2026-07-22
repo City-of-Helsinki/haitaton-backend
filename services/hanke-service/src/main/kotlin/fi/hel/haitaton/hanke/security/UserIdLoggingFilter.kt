@@ -18,7 +18,11 @@ class UserIdLoggingFilter : Filter {
         filterChain: FilterChain,
     ) {
         if (request is HttpServletRequest && response is HttpServletResponse) {
-            // Nullable for GDPR API with alternative authentication
+            // This filter is registered at Boot's default (lowest) precedence, so it only runs
+            // after Spring Security's filter chain. Filter chain authenticates or denies every
+            // request
+            // (including GDPR API and anonymous ones) before it gets here. Authentication is
+            // never null at this point.
             val userId = SecurityContextHolder.getContext().authentication!!.name
             // Application log can use MDC
             MDC.put("userId", userId)
