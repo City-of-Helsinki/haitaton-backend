@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -58,6 +59,17 @@ class Jackson3FormatDiffITest(@Autowired val jsonMapper: JsonMapper) : Integrati
 
         val jackson2Json = OBJECT_MAPPER.writeValueAsString(dto)
         val jackson3Json = jsonMapper.writeValueAsString(dto)
+
+        assertThat(jackson3Json).isEqualTo(jackson2Json)
+    }
+
+    @Test
+    fun `a Polygon serialized by Jackson 2 deserializes and re-serializes identically via Jackson 3`() {
+        val polygon = GeometriaFactory.polygon()
+
+        val jackson2Json = OBJECT_MAPPER.writeValueAsString(polygon)
+        val roundTripped = jsonMapper.readValue(jackson2Json, org.geojson.Polygon::class.java)
+        val jackson3Json = jsonMapper.writeValueAsString(roundTripped)
 
         assertThat(jackson3Json).isEqualTo(jackson2Json)
     }
