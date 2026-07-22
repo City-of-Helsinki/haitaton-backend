@@ -250,8 +250,8 @@ databaseChangeLog:
   - include:
       file: db/changelog/changesets/110-create-table-for-allu-events.sql
   - include:
-      file: db/changelog/changesets/111-add-expired-after-to-int-lock.yml
+      file: db/changelog/changesets/115-add-expired-after-to-int-lock.yml
   - include:
-      file: db/changelog/changesets/112-fix-historia-triggers-for-iso8601-dates.sql
+      file: db/changelog/changesets/116-fix-historia-triggers-for-iso8601-dates.sql
   - include:
-      file: db/changelog/changesets/113-backfill-legacy-epoch-application-dates-to-iso8601.sql
+      file: db/changelog/changesets/117-backfill-legacy-epoch-application-dates-to-iso8601.sql

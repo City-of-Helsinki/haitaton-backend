@@ -2,7 +2,7 @@
 # this column. See the Spring Integration 6.x to 7.0 migration guide.
 databaseChangeLog:
   - changeSet:
-      id: 111-add-expired-after-to-int-lock
+      id: 115-add-expired-after-to-int-lock
       comment: Add EXPIRED_AFTER column required by Spring Integration 7's JDBC lock registry.
       author: Claude
       changes:

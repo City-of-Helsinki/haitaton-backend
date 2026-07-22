@@ -1,5 +1,5 @@
 --liquibase formatted sql
---changeset Claude:112-fix-historia-triggers-for-iso8601-dates
+--changeset Claude:116-fix-historia-triggers-for-iso8601-dates
 --comment: Spring Boot 4's Jackson 3 writes applicationdata startTime/endTime as ISO-8601 strings
 --comment: instead of epoch-second numbers. Update the historia triggers to parse the new format.
 
