@@ -68,7 +68,18 @@ class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : Contro
         }
 
         @Test
-        fun `returns 404 when profiili client throws expected exception`() {
+        fun `returns 401 when profiili client throws unauthorized exception`() {
+            every { profiiliService.getVerifiedName(any()) } throws
+                UnauthorizedException("Because of reasons.")
+
+            get(url).andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+            verifyAll { profiiliService.getVerifiedName(any()) }
+            verify { disclosureLogService wasNot Called }
+        }
+
+        @Test
+        fun `returns 404 when profiili client throws not found exception`() {
             every { profiiliService.getVerifiedName(any()) } throws
                 VerifiedNameNotFound("Because of reasons.")
 

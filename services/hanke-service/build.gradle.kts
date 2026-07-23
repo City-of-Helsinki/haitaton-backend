@@ -100,6 +100,9 @@ dependencies {
     // Spring Boot 4's modularization split Liquibase autoconfiguration out of the generic
     // autoconfigure module into this dedicated one; without it, migrations silently never run.
     implementation("org.springframework.boot:spring-boot-liquibase")
+    // Same modularization split cache autoconfiguration out too; without it, @EnableCaching has no
+    // CacheAutoConfiguration to fall back on and beans needing a CacheManager fail to start.
+    implementation("org.springframework.boot:spring-boot-cache")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
     implementation("io.hypersistence:hypersistence-utils-hibernate-73:3.15.4")

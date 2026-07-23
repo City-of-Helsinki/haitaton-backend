@@ -30,6 +30,9 @@ import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.profiili.ProfiiliService
 import fi.hel.haitaton.hanke.security.AccessRules
+import fi.hel.haitaton.hanke.security.LogoutService
+import fi.hel.haitaton.hanke.security.UserSessionRepository
+import fi.hel.haitaton.hanke.security.UserSessionService
 import fi.hel.haitaton.hanke.taydennys.TaydennysAuthorizer
 import fi.hel.haitaton.hanke.taydennys.TaydennysService
 import fi.hel.haitaton.hanke.testdata.TestDataService
@@ -45,6 +48,7 @@ import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.cache.CacheManager
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.context.event.ContextRefreshedEvent
@@ -55,7 +59,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.web.SecurityFilterChain
 
 @TestConfiguration
-@EnableConfigurationProperties(GdprProperties::class, FeatureFlags::class)
+@EnableConfigurationProperties(
+    GdprProperties::class,
+    FeatureFlags::class,
+    HankeMapGridProperties::class,
+)
 @EnableMethodSecurity(prePostEnabled = true)
 @Import(value = [AopAutoConfiguration::class, DisclosureLoggingAspect::class])
 // Spring Boot 4's @WebMvcTest no longer auto-configures the HttpSecurity bean. Use
@@ -71,6 +79,8 @@ class IntegrationTestConfiguration {
     @Bean fun auditLogRepository(): AuditLogRepository = mockk()
 
     @Bean fun bannerService(): BannerService = mockk()
+
+    @Bean fun cacheManager(): CacheManager = mockk(relaxed = true)
 
     @Bean fun disclosureLogService(): DisclosureLogService = mockk(relaxUnitFun = true)
 
@@ -108,6 +118,8 @@ class IntegrationTestConfiguration {
 
     @Bean fun jdbcOperations(): JdbcOperations = mockk()
 
+    @Bean fun logoutService(): LogoutService = mockk()
+
     @Bean fun muutosilmoitusAttachmentService(): MuutosilmoitusAttachmentService = mockk()
 
     @Bean fun muutosilmoitusAuthorizer(): MuutosilmoitusAuthorizer = mockk()
@@ -135,6 +147,10 @@ class IntegrationTestConfiguration {
     @Bean fun tormaysService(): TormaystarkasteluTormaysService = mockk()
 
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
+
+    @Bean fun userSessionRepository(): UserSessionRepository = mockk()
+
+    @Bean fun userSessionService(): UserSessionService = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {

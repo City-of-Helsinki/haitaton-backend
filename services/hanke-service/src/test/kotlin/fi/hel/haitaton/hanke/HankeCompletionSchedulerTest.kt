@@ -97,6 +97,19 @@ class HankeCompletionSchedulerTest {
         }
 
         @Nested
+        inner class SendCompleteUnmodifiedDraftReminders {
+            @Test
+            fun `doesn't do anything`() {
+                hankeCompletionScheduler.sendUnmodifiedDraftReminders()
+
+                verify {
+                    jdbcLockRegistry wasNot Called
+                    completionService wasNot Called
+                }
+            }
+        }
+
+        @Nested
         inner class CompleteDrafts {
             @Test
             fun `doesn't do anything`() {
@@ -315,6 +328,60 @@ class HankeCompletionSchedulerTest {
                 mockLocking(false)
 
                 hankeCompletionScheduler.sendDeletionReminders()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService wasNot Called
+                }
+            }
+        }
+
+        @Nested
+        inner class SendCompleteUnmodifiedDraftReminders {
+            @Test
+            fun `gets a list of hanke IDs for each reminder and tries to send their reminders`() {
+                mockLocking(true)
+                every {
+                    completionService.idsForUnmodifiedDraftReminders(
+                        HankeReminder.DRAFT_COMPLETION_5
+                    )
+                } returns listOf(2)
+                every {
+                    completionService.idsForUnmodifiedDraftReminders(
+                        HankeReminder.DRAFT_COMPLETION_15
+                    )
+                } returns listOf(1, 2, 3)
+
+                hankeCompletionScheduler.sendUnmodifiedDraftReminders()
+
+                verifySequence {
+                    jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)
+                    completionService.idsForUnmodifiedDraftReminders(
+                        HankeReminder.DRAFT_COMPLETION_5
+                    )
+                    completionService.sendUnmodifiedDraftReminderIfNecessary(
+                        2,
+                        HankeReminder.DRAFT_COMPLETION_5,
+                    )
+                    completionService.idsForUnmodifiedDraftReminders(
+                        HankeReminder.DRAFT_COMPLETION_15
+                    )
+                    completionService.sendUnmodifiedDraftReminderIfNecessary(
+                        1,
+                        HankeReminder.DRAFT_COMPLETION_15,
+                    )
+                    completionService.sendUnmodifiedDraftReminderIfNecessary(
+                        3,
+                        HankeReminder.DRAFT_COMPLETION_15,
+                    )
+                }
+            }
+
+            @Test
+            fun `does nothing when lock can't be obtained after waiting`() {
+                mockLocking(false)
+
+                hankeCompletionScheduler.sendUnmodifiedDraftReminders()
 
                 verifySequence {
                     jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME)

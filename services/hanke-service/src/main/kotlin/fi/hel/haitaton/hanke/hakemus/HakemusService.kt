@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.HankeMapper
+import fi.hel.haitaton.hanke.HankeMapperService
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
@@ -87,6 +87,7 @@ class HakemusService(
     private val applicationEventPublisher: ApplicationEventPublisher,
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
     private val haittojenhallintasuunnitelmaPdfEncoder: HaittojenhallintasuunnitelmaPdfEncoder,
+    private val hankeMapperService: HankeMapperService,
 ) {
 
     @Transactional(readOnly = true)
@@ -173,14 +174,14 @@ class HakemusService(
     private fun updateHankevaiheToRakentaminen(hanke: HankeEntity, userId: String) {
         if (hanke.vaihe != Hankevaihe.RAKENTAMINEN) {
             val geometriatMap = hankealueService.geometryMapFrom(hanke.alueet)
-            val hankeBeforeUpdate = HankeMapper.domainFrom(hanke, geometriatMap)
+            val hankeBeforeUpdate = hankeMapperService.domainFrom(hanke, geometriatMap)
             hanke.vaihe = Hankevaihe.RAKENTAMINEN
             hanke.version = hanke.version?.inc() ?: 1
             hanke.modifiedByUserId = userId
             hanke.modifiedAt = getCurrentTimeUTCAsLocalTime()
 
             val savedHanke = hankeRepository.save(hanke)
-            val hankeAfterUpdate = HankeMapper.domainFrom(savedHanke, geometriatMap)
+            val hankeAfterUpdate = hankeMapperService.domainFrom(savedHanke, geometriatMap)
             hankeLoggingService.logUpdate(hankeBeforeUpdate, hankeAfterUpdate, userId)
         }
     }
@@ -427,7 +428,7 @@ class HakemusService(
             }
             hankeRepository.delete(hanke)
             val hankeDomain =
-                HankeMapper.domainFrom(hanke, hankealueService.geometryMapFrom(hanke.alueet))
+                hankeMapperService.domainFrom(hanke, hankealueService.geometryMapFrom(hanke.alueet))
             hankeLoggingService.logDelete(hankeDomain, userId)
 
             return HakemusDeletionResultDto(hankeDeleted = true)
@@ -767,7 +768,7 @@ class HakemusService(
 
         // We can't use HankeService to load the hanke, because HankeService depends on this class.
         val geometriatMap = hankealueService.geometryMapFrom(hankeEntity.alueet)
-        val hanke = HankeMapper.domainFrom(hankeEntity, geometriatMap)
+        val hanke = hankeMapperService.domainFrom(hankeEntity, geometriatMap)
 
         val totalArea =
             geometriatDao.calculateCombinedArea(data.areas?.flatMap { it.geometries() } ?: listOf())

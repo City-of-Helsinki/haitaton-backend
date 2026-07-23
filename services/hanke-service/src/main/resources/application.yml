@@ -18,6 +18,8 @@ haitaton:
     eventDeleteExpirationDays: ${HAITATON_ALLU_EVENT_DELETE_EXPIRATION_DAYS:90}
   api:
     disabled: ${HAITATON_API_DISABLED:false}
+  attachment-name-fix:
+    enabled: ${HAITATON_ATTACHMENT_NAME_FIX_ENABLED:false}
   azure:
     blob:
       connection-string: ${HAITATON_BLOB_CONNECTION_STRING:#{null}}
@@ -66,13 +68,30 @@ haitaton:
       reminderCron: ${HAITATON_COMPLETIONS_REMINDER_CRON:21 17 19 * * *}
       # By default, run every day at 20:03:53 (Helsinki time).
       deletionReminderCron: ${HAITATON_COMPLETIONS_DELETE_REMINDER_CRON:53 03 20 * * *}
+      # By default, run every day at 21:41:03 (Helsinki time).
+      unmodifiedDraftReminderCron: ${HAITATON_COMPLETIONS_UNMODIFIED_DRAFT_REMINDER_CRON:03 41 21 * * *}
       # By default, run every day at 17:53:27 (Helsinki time).
       draftCompletionCron: ${HAITATON_COMPLETIONS_DRAFT_CRON:27 53 17 * * *}
+  map-grid:
+    cell-size-meters: 1000
+    origin-x: 25486422.0
+    origin-y: 6643836.0
+    max-x: 25515423.0
+    max-y: 6687837.0
+    # Cache repopulation runs every 5 minutes (300000ms)
+    cache-repopulation-interval-ms: ${HAITATON_MAP_GRID_CACHE_INTERVAL:300000}
+    # Initial delay of 30 seconds to allow application startup
+    cache-initial-delay-ms: ${HAITATON_MAP_GRID_CACHE_INITIAL_DELAY:30000}
   map-service:
     capability-url: https://kartta.hel.fi/ws/geoserver/avoindata/wms?REQUEST=GetCapabilities&SERVICE=WMS
   profiili-api:
     graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
     audience: ${PROFIILI_AUDIENCE:profile-api-test}
+  security:
+    user-session:
+      cleanup:
+        # By default, run every five minutes.
+        interval: ${HAITATON_USER_SESSION_CLEANUP_INTERVAL:300000}
   testdata:
     enabled: ${HAITATON_TESTDATA_ENABLED:false}  # For dev and test environments, enable the testdata controller for resetting data
 
@@ -99,11 +118,14 @@ management:
     port: 8081
 
 sentry:
-  # DSN is a public detail.
-  dsn: ${HAITATON_SENTRY_DSN:https://47ff7aa8e32fa0f48fe211771c537299@o4508126783602688.ingest.de.sentry.io/4509236728627280}
+  # DSN is a public detail. When it is empty, Sentry is not configured or enabled.
+  # The real DSN: https://47ff7aa8e32fa0f48fe211771c537299@o4508126783602688.ingest.de.sentry.io/4509236728627280
+  dsn: ${HAITATON_SENTRY_DSN:}
   environment: ${HAITATON_SENTRY_ENVIRONMENT:dev}
   # Only exceptions that have not been handled by exception resolvers with higher order are sent to Sentry.
   exception-resolver-order: 2147483647
+  logs:
+    enabled: ${HAITATON_SENTRY_LOGGING_ENABLED:false}
   logging:
     enabled: ${HAITATON_SENTRY_LOGGING_ENABLED:false}
     minimum-breadcrumb-level: info

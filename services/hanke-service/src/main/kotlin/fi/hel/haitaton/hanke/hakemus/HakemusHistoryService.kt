@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.findPendingAndFailedEventsGrouped
 import java.time.Instant
 import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -28,7 +29,7 @@ class HakemusHistoryService(
     fun getLastUpdateTime() = alluStatusRepository.getLastUpdateTime()
 
     @Transactional
-    fun setLastUpdateTime(time: OffsetDateTime) {
+    fun setLastUpdateTime(time: ZonedDateTime) {
         val status = alluStatusRepository.getReferenceById(1)
         status.historyLastUpdated = time
     }

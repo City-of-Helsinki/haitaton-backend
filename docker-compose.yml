@@ -63,6 +63,11 @@ services:
     ports:
       - '3003:80' # Web UI
       - '2525:25' # Port for receiving SMTP
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:80 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     networks:
       backbone:
         aliases:
@@ -132,11 +137,15 @@ services:
       HAITATON_FEATURE_HANKE_COMPLETION: ${HAITATON_FEATURE_HANKE_COMPLETION:-true}
       HAITATON_API_DISABLED: ${HAITATON_API_DISABLED:-false}
       HAITATON_SENTRY_DSN: ${HAITATON_SENTRY_DSN:-}
+      HAITATON_COMPLETIONS_UNMODIFIED_DRAFT_REMINDER_CRON: ${HAITATON_COMPLETIONS_UNMODIFIED_DRAFT_REMINDER_CRON:-03 41 21 * * *}
+      HAITATON_ATTACHMENT_NAME_FIX_ENABLED: ${HAITATON_ATTACHMENT_NAME_FIX_ENABLED:-true}
     depends_on:
       db:
         condition: service_healthy
       clamav-api:
         condition: service_started
+      smtp4dev:
+        condition: service_healthy
       azurite-setup:
         condition: service_started
     networks:

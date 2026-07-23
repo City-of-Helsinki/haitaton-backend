@@ -40,6 +40,7 @@ import io.mockk.justRun
 import io.mockk.verifyOrder
 import io.mockk.verifySequence
 import java.util.UUID
+import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -98,8 +99,13 @@ class TaydennysAttachmentControllerITest(@Autowired override val mockMvc: MockMv
 
             get(url, APPLICATION_PDF)
                 .andExpect(status().isOk)
+                .andExpect(header().string(CONTENT_DISPOSITION, containsString("attachment")))
                 .andExpect(
-                    header().string(CONTENT_DISPOSITION, "attachment; filename=$FILE_NAME_PDF")
+                    header()
+                        .string(
+                            CONTENT_DISPOSITION,
+                            containsString("filename*=UTF-8''$FILE_NAME_PDF"),
+                        )
                 )
                 .andExpect(content().bytes(DUMMY_DATA))
 

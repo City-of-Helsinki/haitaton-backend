@@ -250,6 +250,14 @@ databaseChangeLog:
   - include:
       file: db/changelog/changesets/110-create-table-for-allu-events.sql
   - include:
+      file: db/changelog/changesets/111-add-user-sessions-table.sql
+  - include:
+      file: db/changelog/changesets/112-add-terminated-to-user-sessions.sql
+  - include:
+      file: db/changelog/changesets/113-add-expires-at-to-user-sessions.sql
+  - include:
+      file: db/changelog/changesets/114-populate-null-hanke-modified-fields.sql
+  - include:
       file: db/changelog/changesets/115-add-expired-after-to-int-lock.yml
   - include:
       file: db/changelog/changesets/116-fix-historia-triggers-for-iso8601-dates.sql

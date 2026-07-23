@@ -32,11 +32,12 @@ import org.testcontainers.utility.MountableFile
 @ExtendWith(MockFileClientExtension::class)
 @ExtendWith(JacksonTestExtension::class)
 abstract class IntegrationTest {
+
     companion object {
         @ServiceConnection
         private val postgresContainer: PostgreSQLContainer<*> =
             PostgreSQLContainer(
-                    DockerImageName.parse("postgis/postgis:13-master")
+                    DockerImageName.parse("postgis/postgis:18-3.6")
                         .asCompatibleSubstituteFor("postgres")
                 )
                 .withPassword("test")
@@ -45,7 +46,7 @@ abstract class IntegrationTest {
                     MountableFile.forClasspathResource(
                         "/fi/hel/haitaton/hanke/tormaystarkastelu/HEL-GIS-data-test.sql"
                     ),
-                    "/docker-entrypoint-initdb.d/HEL-GIS-data-test.sql"
+                    "/docker-entrypoint-initdb.d/HEL-GIS-data-test.sql",
                 )
 
         init {

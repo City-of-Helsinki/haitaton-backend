@@ -138,4 +138,6 @@ class TestDataServiceITest : IntegrationTest() {
             assertThat(muutosilmoitusRepository.findAll()).isEmpty()
         }
     }
+
+    @Nested inner class CreateRandomPublicHanke {}
 }

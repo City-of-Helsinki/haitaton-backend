@@ -57,6 +57,11 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 
+private const val EMAIL_PERUSTAJA = "pertti@perustaja.test"
+private const val EMAIL_OMISTAJA = "olivia.omistaja@mail.com"
+private const val EMAIL_RAKENNUTTAJA = "rane.rakennuttaja@mail.com"
+private const val EMAIL_ASIANHOITAJA = "anssi.asianhoitaja@mail.com"
+
 class HankeCompletionServiceITest(
     @Autowired private val hankeCompletionService: HankeCompletionService,
     @Autowired private val hakemusFactory: HakemusFactory,
@@ -412,6 +417,76 @@ class HankeCompletionServiceITest(
     }
 
     @Nested
+    inner class IdsForUnmodifiedDraftReminders {
+        private fun saveHanke(
+            status: HankeStatus = HankeStatus.DRAFT,
+            modifiedDaysAgo: Long = DAYS_BEFORE_COMPLETING_DRAFT - 5,
+            modifier: HankeBuilder.() -> HankeBuilder = { this },
+        ) =
+            hankeFactory.builder().modifier().saveEntity(status) {
+                it.modifiedAt = getCurrentTimeUTCAsLocalTime().minusDays(modifiedDaysAgo)
+            }
+
+        @EnumSource(HankeReminder::class, names = ["DRAFT_COMPLETION_15", "DRAFT_COMPLETION_5"])
+        @ParameterizedTest
+        fun `returns empty list when there are no hanke`(reminder: HankeReminder) {
+            val result = hankeCompletionService.idsForUnmodifiedDraftReminders(reminder)
+
+            assertThat(result).isEmpty()
+        }
+
+        @EnumSource(HankeReminder::class, names = ["DRAFT_COMPLETION_15", "DRAFT_COMPLETION_5"])
+        @ParameterizedTest
+        fun `returns only draft hanke`(reminder: HankeReminder) {
+            saveHanke(status = HankeStatus.COMPLETED)
+            val draft = saveHanke()
+            saveHanke(status = HankeStatus.PUBLIC)
+
+            val result = hankeCompletionService.idsForUnmodifiedDraftReminders(reminder)
+
+            assertThat(result).containsExactly(draft.id)
+        }
+
+        @EnumSource(HankeReminder::class, names = ["DRAFT_COMPLETION_15", "DRAFT_COMPLETION_5"])
+        @ParameterizedTest
+        fun `returns only hanke with missing area end dates`(reminder: HankeReminder) {
+            val noAreas = saveHanke { withNoAreas() }
+            saveHanke {
+                withHankealue()
+                withHankealue(haittaLoppuPvm = ZonedDateTime.now().minusMonths(7))
+            }
+            val missingEndDate = saveHanke {
+                withHankealue()
+                withHankealue(haittaLoppuPvm = null)
+            }
+
+            val result = hankeCompletionService.idsForUnmodifiedDraftReminders(reminder)
+
+            assertThat(result).containsExactlyInAnyOrder(noAreas.id, missingEndDate.id)
+        }
+
+        @EnumSource(HankeReminder::class, names = ["DRAFT_COMPLETION_15", "DRAFT_COMPLETION_5"])
+        @ParameterizedTest
+        fun `returns only hanke that haven't been modified in a long time`(
+            reminder: HankeReminder
+        ) {
+            val modifiedDaysAgo =
+                when (reminder) {
+                    HankeReminder.DRAFT_COMPLETION_15 -> DAYS_BEFORE_COMPLETING_DRAFT - 15
+                    HankeReminder.DRAFT_COMPLETION_5 -> DAYS_BEFORE_COMPLETING_DRAFT - 5
+                    else -> throw IllegalArgumentException("Unexpected reminder $reminder")
+                }
+            val onTheDay = saveHanke(modifiedDaysAgo = modifiedDaysAgo)
+            saveHanke(modifiedDaysAgo = modifiedDaysAgo - 1)
+            val beforeTheDay = saveHanke(modifiedDaysAgo = modifiedDaysAgo + 1)
+
+            val result = hankeCompletionService.idsForUnmodifiedDraftReminders(reminder)
+
+            assertThat(result).containsExactly(beforeTheDay.id, onTheDay.id)
+        }
+    }
+
+    @Nested
     inner class IdsForDraftsToComplete {
         private fun saveHanke(
             status: HankeStatus = HankeStatus.DRAFT,
@@ -602,10 +677,10 @@ class HankeCompletionServiceITest(
             assertThat(recipients).hasSize(4)
             assertThat(recipients)
                 .containsExactlyInAnyOrder(
-                    "pertti@perustaja.test",
-                    "olivia.omistaja@mail.com",
-                    "rane.rakennuttaja@mail.com",
-                    "anssi.asianhoitaja@mail.com",
+                    EMAIL_PERUSTAJA,
+                    EMAIL_OMISTAJA,
+                    EMAIL_RAKENNUTTAJA,
+                    EMAIL_ASIANHOITAJA,
                 )
             val email = emails.first()
             assertThat(email.subject)
@@ -731,11 +806,7 @@ class HankeCompletionServiceITest(
             val recipients = greenMail.receivedMessages.map { it.allRecipients.single().toString() }
             assertThat(recipients).hasSize(3)
             assertThat(recipients)
-                .containsExactlyInAnyOrder(
-                    "pertti@perustaja.test",
-                    "omistaja@test",
-                    "toteuttaja@test",
-                )
+                .containsExactlyInAnyOrder(EMAIL_PERUSTAJA, "omistaja@test", "toteuttaja@test")
         }
 
         @Test
@@ -841,7 +912,7 @@ class HankeCompletionServiceITest(
                 assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_5)
                 val email = greenMail.firstReceivedMessage()
                 assertThat(email.allRecipients).hasSize(1)
-                assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+                assertThat(email.allRecipients[0].toString()).isEqualTo(EMAIL_PERUSTAJA)
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
@@ -872,7 +943,7 @@ class HankeCompletionServiceITest(
                 assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_5)
                 val email = greenMail.firstReceivedMessage()
                 assertThat(email.allRecipients).hasSize(1)
-                assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+                assertThat(email.allRecipients[0].toString()).isEqualTo(EMAIL_PERUSTAJA)
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
@@ -1009,7 +1080,7 @@ class HankeCompletionServiceITest(
                 assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_14)
                 val email = greenMail.firstReceivedMessage()
                 assertThat(email.allRecipients).hasSize(1)
-                assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+                assertThat(email.allRecipients[0].toString()).isEqualTo(EMAIL_PERUSTAJA)
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
@@ -1043,7 +1114,7 @@ class HankeCompletionServiceITest(
                 assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.COMPLETION_14)
                 val email = greenMail.firstReceivedMessage()
                 assertThat(email.allRecipients).hasSize(1)
-                assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+                assertThat(email.allRecipients[0].toString()).isEqualTo(EMAIL_PERUSTAJA)
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Hankkeesi ${hanke.hankeTunnus} päättymispäivä lähenee " +
@@ -1292,7 +1363,7 @@ class HankeCompletionServiceITest(
             assertThat(updatedHanke.sentReminders).containsExactly(HankeReminder.DELETION_5)
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
-            assertThat(email.allRecipients[0].toString()).isEqualTo("pertti@perustaja.test")
+            assertThat(email.allRecipients[0].toString()).isEqualTo(EMAIL_PERUSTAJA)
             assertThat(email.subject)
                 .isEqualTo(
                     "Haitaton: Hankkeesi ${hanke.hankeTunnus} poistetaan järjestelmästä " +
@@ -1356,11 +1427,7 @@ class HankeCompletionServiceITest(
             val recipients = greenMail.receivedMessages.map { it.allRecipients.single().toString() }
             assertThat(recipients).hasSize(3)
             assertThat(recipients)
-                .containsExactlyInAnyOrder(
-                    "pertti@perustaja.test",
-                    "omistaja@test",
-                    "toteuttaja@test",
-                )
+                .containsExactlyInAnyOrder(EMAIL_PERUSTAJA, "omistaja@test", "toteuttaja@test")
         }
     }
 
@@ -1477,10 +1544,10 @@ class HankeCompletionServiceITest(
             assertThat(recipients).hasSize(4)
             assertThat(recipients)
                 .containsExactlyInAnyOrder(
-                    "pertti@perustaja.test",
-                    "olivia.omistaja@mail.com",
-                    "rane.rakennuttaja@mail.com",
-                    "anssi.asianhoitaja@mail.com",
+                    EMAIL_PERUSTAJA,
+                    EMAIL_OMISTAJA,
+                    EMAIL_RAKENNUTTAJA,
+                    EMAIL_ASIANHOITAJA,
                 )
             val email = emails.first()
             assertThat(email.subject)
@@ -1492,6 +1559,131 @@ class HankeCompletionServiceITest(
             assertThat(email.textBody())
                 .contains(
                     "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) ilmoitettu päättymispäivä on ohitettu. Hankkeesi ei enää näy muille Haitattoman käyttäjille, eikä sitä pääse enää muokkaamaan. Hanke säilyy Haitattomassa 6 kk, jona aikana pääset tarkastelemaan sitä."
+                )
+        }
+    }
+
+    @Nested
+    inner class SendUnmodifiedDraftReminderIfNecessary {
+        @Test
+        fun `does nothing when hanke has already been sent this reminder`() {
+            val hanke =
+                hankeFactory.builder().saveEntity(HankeStatus.DRAFT) {
+                    it.sentReminders += HankeReminder.DRAFT_COMPLETION_15
+                }
+
+            hankeCompletionService.sendUnmodifiedDraftReminderIfNecessary(
+                hanke.id,
+                HankeReminder.DRAFT_COMPLETION_15,
+            )
+
+            assertThat(greenMail.receivedMessages).isEmpty()
+            val result = hankeRepository.getReferenceById(hanke.id)
+            assertThat(result.sentReminders).containsExactly(HankeReminder.DRAFT_COMPLETION_15)
+        }
+
+        @Test
+        fun `marks reminder as sent and sends emails for DRAFT_COMPLETION_15`() {
+            val hanke =
+                hankeFactory.builder().withNoAreas().saveWithYhteystiedot {
+                    omistaja(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    rakennuttaja(Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
+                    toteuttaja(Kayttooikeustaso.KATSELUOIKEUS)
+                }
+            hanke.status = HankeStatus.DRAFT
+            hankeRepository.save(hanke)
+
+            hankeCompletionService.sendUnmodifiedDraftReminderIfNecessary(
+                hanke.id,
+                HankeReminder.DRAFT_COMPLETION_15,
+            )
+
+            val result = hankeRepository.getReferenceById(hanke.id)
+            assertThat(result.sentReminders).containsExactly(HankeReminder.DRAFT_COMPLETION_15)
+
+            val emails = greenMail.receivedMessages
+            assertThat(emails).hasSize(3)
+            val recipients = emails.map { it.allRecipients.single().toString() }
+            assertThat(recipients)
+                .containsExactlyInAnyOrder(EMAIL_PERUSTAJA, EMAIL_OMISTAJA, EMAIL_RAKENNUTTAJA)
+
+            val email = emails.first()
+            assertThat(email.subject)
+                .contains(
+                    "Haitaton: Luonnos-tilainen hankkeesi ${hanke.hankeTunnus} on ollut pitkään muokkaamattomana"
+                )
+            assertThat(email.textBody())
+                .contains(
+                    "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) on luonnos-tilassa",
+                    "165 vuorokauteen",
+                    "180 vuorokautta",
+                )
+        }
+
+        @Test
+        fun `marks reminder as sent and sends emails for DRAFT_COMPLETION_5`() {
+            val hanke =
+                hankeFactory.builder().withNoAreas().saveWithYhteystiedot {
+                    omistaja(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    rakennuttaja(Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
+                }
+            hanke.status = HankeStatus.DRAFT
+            hankeRepository.save(hanke)
+
+            hankeCompletionService.sendUnmodifiedDraftReminderIfNecessary(
+                hanke.id,
+                HankeReminder.DRAFT_COMPLETION_5,
+            )
+
+            val result = hankeRepository.getReferenceById(hanke.id)
+            assertThat(result.sentReminders).containsExactly(HankeReminder.DRAFT_COMPLETION_5)
+
+            val emails = greenMail.receivedMessages
+            assertThat(emails).hasSize(3)
+            val recipients = emails.map { it.allRecipients.single().toString() }
+            assertThat(recipients)
+                .containsExactlyInAnyOrder(EMAIL_PERUSTAJA, EMAIL_OMISTAJA, EMAIL_RAKENNUTTAJA)
+
+            val email = emails.first()
+            assertThat(email.subject)
+                .contains(
+                    "Haitaton: Luonnos-tilainen hankkeesi ${hanke.hankeTunnus} on ollut pitkään muokkaamattomana"
+                )
+            assertThat(email.textBody())
+                .contains(
+                    "Hankkeesi ${hanke.nimi} (${hanke.hankeTunnus}) on luonnos-tilassa",
+                    "175 vuorokauteen",
+                    "180 vuorokautta",
+                )
+        }
+
+        @Test
+        fun `sends emails only to users with EDIT permissions`() {
+            val hanke =
+                hankeFactory.builder().withNoAreas().saveWithYhteystiedot {
+                    omistaja(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    rakennuttaja(Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
+                    toteuttaja(Kayttooikeustaso.KATSELUOIKEUS)
+                    muuYhteystieto(Kayttooikeustaso.HANKEMUOKKAUS)
+                    toteuttaja(Kayttooikeustaso.HAKEMUSASIOINTI)
+                }
+            hanke.status = HankeStatus.DRAFT
+            hankeRepository.save(hanke)
+
+            hankeCompletionService.sendUnmodifiedDraftReminderIfNecessary(
+                hanke.id,
+                HankeReminder.DRAFT_COMPLETION_15,
+            )
+
+            val emails = greenMail.receivedMessages
+            val recipients = emails.map { it.allRecipients.single().toString() }
+            assertThat(recipients).hasSize(4)
+            assertThat(recipients)
+                .containsExactlyInAnyOrder(
+                    EMAIL_OMISTAJA,
+                    EMAIL_RAKENNUTTAJA,
+                    EMAIL_ASIANHOITAJA,
+                    EMAIL_PERUSTAJA,
                 )
         }
     }

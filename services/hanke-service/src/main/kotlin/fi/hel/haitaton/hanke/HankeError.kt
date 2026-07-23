@@ -13,6 +13,7 @@ enum class HankeError(val errorMessage: String) {
     HAI0003("Invalid data"),
     HAI0004("Resource does not exist"),
     HAI0005("Insufficient permissions"),
+    HAI0006("Session terminated"),
     HAI1001("Hanke not found"),
     HAI1002("Invalid Hanke data"),
     HAI1003("Internal error while saving Hanke"),
@@ -57,6 +58,7 @@ enum class HankeError(val errorMessage: String) {
     HAI4005("Could not verify user identity"),
     HAI4006("Duplicate hankekayttaja"),
     HAI4007("Verified name not found in Profiili"),
+    HAI4008("Verified name call was unauthorized"),
     HAI5001("Decision not found"),
     HAI6001("Taydennys not found"),
     HAI6002("Taydennys has no changes"),
@@ -88,6 +90,12 @@ data class HankeErrorDetail(
 class HankeNotFoundException(val hankeTunnus: String?) :
     RuntimeException("Hanke not found with hankeTunnus $hankeTunnus")
 
+class PublicHankeNotFoundException(val hankeTunnus: String) :
+    RuntimeException("Public hanke not found with hankeTunnus $hankeTunnus")
+
+class InvalidHankeDataException(val errorPaths: List<String>) :
+    RuntimeException("Hanke contains invalid data. Errors at paths: ${errorPaths.joinToString()}")
+
 class HankeArgumentException(message: String) : RuntimeException(message)
 
 class HankeYhteystietoNotFoundException(val hanke: HankeIdentifier, ytId: Int) :
@@ -103,3 +111,5 @@ class HankeAlreadyCompletedException(hankeId: Int) :
     )
 
 class DatabaseStateException(message: String) : RuntimeException(message)
+
+class InvalidGridCellException(message: String) : RuntimeException(message)

@@ -25,6 +25,7 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verifyOrder
 import java.util.UUID
+import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -93,7 +94,11 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
         getAttachmentContent(attachmentId = liiteId)
             .andExpect(status().isOk)
-            .andExpect(header().string(CONTENT_DISPOSITION, "attachment; filename=$FILE_NAME_PDF"))
+            .andExpect(header().string(CONTENT_DISPOSITION, containsString("attachment")))
+            .andExpect(
+                header()
+                    .string(CONTENT_DISPOSITION, containsString("filename*=UTF-8''$FILE_NAME_PDF"))
+            )
             .andExpect(content().bytes(DUMMY_DATA))
 
         verifyOrder {

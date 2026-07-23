@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusRepository
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusRepository
 import fi.hel.haitaton.hanke.paatos.PaatosEntity
 import fi.hel.haitaton.hanke.paatos.PaatosRepository
+import fi.hel.haitaton.hanke.security.UserSessionRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
 import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -30,6 +31,8 @@ class TestDataService(
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val fileClient: FileClient,
     private val alluUpdateService: AlluUpdateScheduler,
+    private val randomHankeGenerator: RandomHankeGenerator,
+    private val userSessionRepository: UserSessionRepository,
 ) {
     @Transactional
     fun unlinkApplicationsFromAllu() {
@@ -57,15 +60,38 @@ class TestDataService(
         muutosilmoitusRepository.deleteAll()
     }
 
+    private fun deletePaatosWithAttachments(paatosEntity: PaatosEntity) {
+        logger.warn { "Deleting paatos id=${paatosEntity.id} hakemusId=${paatosEntity.hakemusId}" }
+        fileClient.delete(Container.PAATOKSET, paatosEntity.blobLocation)
+        paatosRepository.delete(paatosEntity)
+    }
+
     fun triggerAlluUpdates() {
         logger.info { "Manually triggered Allu updates..." }
         alluUpdateService.checkApplicationHistories()
         logger.info { "Manual Allu updates done." }
     }
 
-    private fun deletePaatosWithAttachments(paatosEntity: PaatosEntity) {
-        logger.warn { "Deleting paatos id=${paatosEntity.id} hakemusId=${paatosEntity.hakemusId}" }
-        fileClient.delete(Container.PAATOKSET, paatosEntity.blobLocation)
-        paatosRepository.delete(paatosEntity)
+    @Transactional
+    fun createRandomPublicHanke(count: Int): Int {
+        logger.warn { "Creating $count random public hanke..." }
+        var created = 0
+        repeat(count) { index ->
+            randomHankeGenerator.createRandomHanke(index)
+
+            if (index % 25 == 0) {
+                logger.info { "Created ${index + 1} hanke..." }
+            }
+
+            created++
+        }
+        logger.warn { "Created $created random public hanke." }
+        return created
+    }
+
+    @Transactional
+    fun terminateUserSession(sessionId: String): Boolean {
+        logger.warn { "Terminating session for testing: sessionId=$sessionId" }
+        return userSessionRepository.terminateBySessionId(sessionId) > 0
     }
 }

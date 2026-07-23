@@ -20,6 +20,7 @@ import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.IntegrationTest
+import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluEventEntity
 import fi.hel.haitaton.hanke.allu.AlluEventRepository
@@ -27,7 +28,6 @@ import fi.hel.haitaton.hanke.allu.AlluEventStatus
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.InformationRequestFieldKey
-import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.attachment.PDF_BYTES
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
@@ -54,8 +54,8 @@ import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.taydennys.TaydennysRepository
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoEntity
 import fi.hel.haitaton.hanke.taydennys.TaydennyspyyntoRepository
-import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.Asserts.isRecentInstant
+import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -63,7 +63,6 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.verifySequence
 import jakarta.mail.internet.MimeMessage
-import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -105,7 +104,7 @@ class AlluUpdateServiceITest(
     private val alluId = 42
     private val identifier = DEFAULT_APPLICATION_IDENTIFIER
     /** The timestamp used in the initial DB migration. */
-    private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")
+    private val placeholderUpdateTime = ZonedDateTime.parse("2017-01-01T00:00:00Z")
     private val eventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
     private val errorMessage = "Test exception"
 
@@ -123,35 +122,30 @@ class AlluUpdateServiceITest(
     @Test
     fun `does not update the last update time without applications`() {
         assertThat(hakemusRepository.findAll()).isEmpty()
-        assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC))
             .isEqualTo(placeholderUpdateTime)
 
         updateService.handleUpdates()
 
-        assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC))
             .isEqualTo(placeholderUpdateTime)
     }
 
     @Test
     fun `updates the last update time without histories`() {
         hakemusFactory.builder(USERNAME).withStatus(alluId = alluId).save()
-        assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC))
             .isEqualTo(placeholderUpdateTime)
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns emptyList()
 
         updateService.handleUpdates()
 
-        assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isRecent()
+        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC))
+            .isRecentZDT()
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
     }
 
@@ -163,20 +157,15 @@ class AlluUpdateServiceITest(
                 .withEvent(newStatus = ApplicationStatus.PENDING)
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
 
         updateService.handleUpdates()
 
-        assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isRecent()
+        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC))
+            .isRecentZDT()
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
     }
 
@@ -191,10 +180,7 @@ class AlluUpdateServiceITest(
                 .withEvent(firstEventTime, ApplicationStatus.PENDING)
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
 
         updateService.handleUpdates()
@@ -206,10 +192,7 @@ class AlluUpdateServiceITest(
             .isEqualTo(ApplicationStatus.HANDLING)
         assertThat(application!!.applicationIdentifier).isEqualTo(identifier)
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
     }
 
@@ -222,10 +205,7 @@ class AlluUpdateServiceITest(
                 .withEvent(eventTime.plusDays(5), ApplicationStatus.HANDLING)
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
 
         updateService.handleUpdates()
@@ -256,10 +236,7 @@ class AlluUpdateServiceITest(
         }
 
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
     }
 
@@ -282,10 +259,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
 
         updateService.handleUpdates()
@@ -295,17 +269,14 @@ class AlluUpdateServiceITest(
             prop(HakemusEntity::applicationIdentifier).isEqualTo(originalTunnus)
         }
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
     }
 
     @Test
     fun `ignores missing hakemus`() {
         assertThat(hakemusRepository.findAll()).isEmpty()
-        assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC))
             .isEqualTo(placeholderUpdateTime)
         val hanke = hankeFactory.saveMinimal()
         hakemusFactory.builder(USERNAME, hanke).withStatus(alluId = alluId).save()
@@ -319,7 +290,7 @@ class AlluUpdateServiceITest(
         every {
             alluClient.getApplicationStatusHistories(
                 listOf(alluId, alluId + 2),
-                placeholderUpdateTime.toZonedDateTime(),
+                placeholderUpdateTime,
             )
         } returns history
 
@@ -338,7 +309,7 @@ class AlluUpdateServiceITest(
         verifySequence {
             alluClient.getApplicationStatusHistories(
                 listOf(alluId, alluId + 2),
-                placeholderUpdateTime.toZonedDateTime(),
+                placeholderUpdateTime,
             )
         }
     }
@@ -360,10 +331,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
 
         updateService.handleUpdates()
@@ -376,10 +344,7 @@ class AlluUpdateServiceITest(
                 "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier"
             )
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
     }
 
@@ -401,10 +366,7 @@ class AlluUpdateServiceITest(
                 .withEvent(applicationIdentifier = identifier, newStatus = applicationStatus)
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
         every { getPdfMethod(applicationStatus)(alluId) } returns PDF_BYTES
         every { alluClient.getApplicationInformation(alluId) } returns
@@ -420,10 +382,7 @@ class AlluUpdateServiceITest(
                 "Haitaton: Kaivuilmoitukseen KP2300001 liittyvä päätös on ladattavissa / Beslut om grävningsanmälan KP2300001 kan laddas ner / The decision concerning an excavation notification KP2300001 can be downloaded"
             )
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
             getPdfMethod(applicationStatus)(alluId)
             alluClient.getApplicationInformation(alluId)
         }
@@ -442,10 +401,7 @@ class AlluUpdateServiceITest(
                 .withEvent(applicationIdentifier = identifier, newStatus = status)
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
         every { getPdfMethod(status)(alluId) } returns PDF_BYTES
         every { alluClient.getApplicationInformation(alluId) } returns
@@ -458,10 +414,7 @@ class AlluUpdateServiceITest(
             .prop(TestFile::path)
             .startsWith("${hakemus.id}/")
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
             getPdfMethod(status)(alluId)
             alluClient.getApplicationInformation(alluId)
         }
@@ -486,10 +439,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
         if (applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
             every { getPdfMethod(ApplicationStatus.DECISION)(alluId) } returns PDF_BYTES
@@ -504,19 +454,13 @@ class AlluUpdateServiceITest(
         assertThat(muutosilmoitusRepository.findAll()).isEmpty()
         if (applicationType == ApplicationType.EXCAVATION_NOTIFICATION) {
             verifySequence {
-                alluClient.getApplicationStatusHistories(
-                    listOf(alluId),
-                    placeholderUpdateTime.toZonedDateTime(),
-                )
+                alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
                 getPdfMethod(ApplicationStatus.DECISION)(alluId)
                 alluClient.getApplicationInformation(alluId)
             }
         } else {
             verifySequence {
-                alluClient.getApplicationStatusHistories(
-                    listOf(alluId),
-                    placeholderUpdateTime.toZonedDateTime(),
-                )
+                alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
             }
         }
     }
@@ -538,10 +482,7 @@ class AlluUpdateServiceITest(
                 .withEvent(newStatus = ApplicationStatus.WAITING_INFORMATION)
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
         every { alluClient.getInformationRequest(alluId) } returns
             AlluFactory.createInformationRequest(applicationAlluId = alluId)
@@ -552,10 +493,7 @@ class AlluUpdateServiceITest(
         assertThat(hakemus.name).isEqualTo(newName)
         assertThat(muutosilmoitusRepository.findAll()).isEmpty()
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
             alluClient.getInformationRequest(alluId)
         }
     }
@@ -603,10 +541,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
         every { alluClient.getInformationRequest(alluId) } returns
             AlluFactory.createInformationRequest()
@@ -625,10 +560,7 @@ class AlluUpdateServiceITest(
                 )
         }
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
             alluClient.getInformationRequest(alluId)
         }
     }
@@ -649,10 +581,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
         every { alluClient.getInformationRequest(alluId) } returns
             AlluFactory.createInformationRequest(applicationAlluId = alluId)
@@ -669,10 +598,7 @@ class AlluUpdateServiceITest(
                 )
         }
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
             alluClient.getInformationRequest(alluId)
         }
     }
@@ -688,10 +614,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
         every { alluClient.getInformationRequest(alluId) } returns null
 
@@ -701,10 +624,7 @@ class AlluUpdateServiceITest(
         assertThat(emails).isEmpty()
         assertThat(taydennyspyyntoRepository.findAll()).isEmpty()
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
             alluClient.getInformationRequest(alluId)
         }
     }
@@ -727,10 +647,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
 
         updateService.handleUpdates()
@@ -744,10 +661,7 @@ class AlluUpdateServiceITest(
             .isEqualTo(ApplicationStatus.HANDLING)
         assertThat(output).doesNotContain("ERROR")
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
     }
 
@@ -771,10 +685,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
 
         updateService.handleUpdates()
@@ -794,10 +705,7 @@ class AlluUpdateServiceITest(
                 )
         }
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
     }
 
@@ -814,10 +722,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
 
         updateService.handleUpdates()
@@ -829,10 +734,7 @@ class AlluUpdateServiceITest(
             .isEqualTo(ApplicationStatus.HANDLING)
         assertThat(output).doesNotContain("ERROR")
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
     }
 
@@ -850,10 +752,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
 
         updateService.handleUpdates()
@@ -866,23 +765,21 @@ class AlluUpdateServiceITest(
             .prop(HakemusEntity::alluStatus)
             .isEqualTo(ApplicationStatus.HANDLING)
         assertThat(output).contains("ERROR")
+        println(output)
         assertThat(output)
             .contains(
-                "A hakemus moved to handling and it had a täydennyspyyntö, " +
+                "A hakemus moved to handling, and it had a täydennyspyyntö, " +
                     "but the previous state was not 'WAITING_INFORMATION'. status=DECISION"
             )
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
     }
 
     @Test
     fun `handles events for other applications when one fails`() {
         assertThat(hakemusRepository.findAll()).isEmpty()
-        assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC))
             .isEqualTo(placeholderUpdateTime)
         val hanke = hankeFactory.saveMinimal()
         hakemusFactory.builder(USERNAME, hanke).withStatus(alluId = alluId).save()
@@ -906,7 +803,7 @@ class AlluUpdateServiceITest(
         every {
             alluClient.getApplicationStatusHistories(
                 listOf(alluId, alluId + 1, alluId + 2),
-                placeholderUpdateTime.toZonedDateTime(),
+                placeholderUpdateTime,
             )
         } returns history
         every { alluClient.getInformationRequest(alluId + 1) } throws exception
@@ -939,7 +836,7 @@ class AlluUpdateServiceITest(
         verifySequence {
             alluClient.getApplicationStatusHistories(
                 listOf(alluId, alluId + 1, alluId + 2),
-                placeholderUpdateTime.toZonedDateTime(),
+                placeholderUpdateTime,
             )
             alluClient.getInformationRequest(alluId + 1)
         }
@@ -976,16 +873,13 @@ class AlluUpdateServiceITest(
                 .asList()
         val exception = RuntimeException(errorMessage)
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
         every { alluClient.getInformationRequest(alluId) } throws exception
 
         updateService.handleUpdates()
 
-        assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isRecent()
+        assertThat(alluStatusRepository.getLastUpdateTime()).isRecentZDT()
         val application = hakemusRepository.findAll().single()
         assertThat(application.alluStatus).isEqualTo(ApplicationStatus.HANDLING)
         val events = alluEventRepository.findAll()
@@ -1004,10 +898,7 @@ class AlluUpdateServiceITest(
             prop(AlluEventEntity::retryCount).isEqualTo(0)
         }
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
             alluClient.getInformationRequest(alluId)
         }
     }
@@ -1015,7 +906,7 @@ class AlluUpdateServiceITest(
     @Test
     fun `retries previously failed event`() {
         assertThat(hakemusRepository.findAll()).isEmpty()
-        assertThat(alluStatusRepository.getLastUpdateTime().asUtc())
+        assertThat(alluStatusRepository.getLastUpdateTime().withZoneSameInstant(TZ_UTC))
             .isEqualTo(placeholderUpdateTime)
         val hanke = hankeFactory.saveMinimal()
         hakemusFactory.builder(USERNAME, hanke).withStatus(alluId = alluId).save()
@@ -1029,10 +920,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
 
         updateService.handleUpdates()
@@ -1055,10 +943,7 @@ class AlluUpdateServiceITest(
             prop(AlluEventEntity::retryCount).isEqualTo(1)
         }
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         }
     }
 
@@ -1087,10 +972,7 @@ class AlluUpdateServiceITest(
                 )
                 .asList()
         every {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
         } returns history
         every { alluClient.getInformationRequest(alluId) } throws exception
 
@@ -1118,10 +1000,7 @@ class AlluUpdateServiceITest(
             prop(HakemusEntity::alluStatus).isEqualTo(ApplicationStatus.HANDLING)
         }
         verifySequence {
-            alluClient.getApplicationStatusHistories(
-                listOf(alluId),
-                placeholderUpdateTime.toZonedDateTime(),
-            )
+            alluClient.getApplicationStatusHistories(listOf(alluId), placeholderUpdateTime)
             alluClient.getInformationRequest(alluId)
         }
     }

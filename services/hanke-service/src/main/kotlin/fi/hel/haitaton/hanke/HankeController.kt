@@ -54,11 +54,15 @@ class HankeController(
                 ApiResponse(
                     description = "Success",
                     responseCode = "200",
-                    content = [Content(schema = Schema(implementation = Hanke::class))]),
+                    content = [Content(schema = Schema(implementation = Hanke::class))],
+                ),
                 ApiResponse(
                     description = "Hanke by requested hankeTunnus not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))])])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): Hanke =
         hankeService.loadHanke(hankeTunnus)!!
@@ -71,7 +75,8 @@ class HankeController(
                 Get Hanke list to which the user has permission to.
 
                 Contains e.g. personal contact information, which is not available in a public Hanke.
-            """)
+            """,
+    )
     @ApiResponses(
         value =
             [
@@ -81,8 +86,12 @@ class HankeController(
                     content =
                         [
                             Content(
-                                array =
-                                    ArraySchema(schema = Schema(implementation = Hanke::class)))])])
+                                array = ArraySchema(schema = Schema(implementation = Hanke::class))
+                            )
+                        ],
+                )
+            ]
+    )
     fun getHankeList(
         @Parameter(
             description =
@@ -118,22 +127,27 @@ The hanke can be updated with the PUT endpoint after creation to flesh it out.
 When Hanke is created:
 1. A unique Hanke tunnus is created.
 2. The status of the hanke is set as DRAFT.
-""")
+""",
+    )
     @ApiResponses(
         value =
             [
                 ApiResponse(
                     description = "Success",
                     responseCode = "200",
-                    content = [Content(schema = Schema(implementation = Hanke::class))]),
+                    content = [Content(schema = Schema(implementation = Hanke::class))],
+                ),
                 ApiResponse(
                     description = "The request body was invalid",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))])])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @PreAuthorize("@featureService.isEnabled('HANKE_EDITING')")
     fun createHanke(
         @ValidCreateHankeRequest @RequestBody request: CreateHankeRequest,
-        @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext
+        @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext,
     ): Hanke {
         logger.info { "Creating Hanke..." }
 
@@ -153,28 +167,35 @@ Update an existing hanke. Data must comply with the restrictions defined in Hank
 On update following will happen automatically:
 1. Status is updated. PUBLIC if required fields are filled. Else DRAFT.
 2. Tormaystarkastelu (project nuisance) is re-calculated.
-""")
+""",
+    )
     @ApiResponses(
         value =
             [
                 ApiResponse(
                     description = "Success",
                     responseCode = "200",
-                    content = [Content(schema = Schema(implementation = Hanke::class))]),
+                    content = [Content(schema = Schema(implementation = Hanke::class))],
+                ),
                 ApiResponse(
-                    description = "The request body was invalid",
+                    description = "Hanke contains invalid data",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeErrorDetail::class))],
+                ),
                 ApiResponse(
                     description = "Hanke by requested tunnus not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))])])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @PreAuthorize(
         "@featureService.isEnabled('HANKE_EDITING') && " +
-            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'EDIT')")
+            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'EDIT')"
+    )
     fun updateHanke(
         @ValidHanke @RequestBody hankeUpdate: ModifyHankeRequest,
-        @PathVariable hankeTunnus: String
+        @PathVariable hankeTunnus: String,
     ): Hanke {
         logger.info { "Updating Hanke: $hankeTunnus" }
 
@@ -188,7 +209,8 @@ On update following will happen automatically:
     @Operation(
         summary = "Delete hanke",
         description =
-            "Delete an existing hanke. Deletion is not possible if Hanke contains active applications.")
+            "Delete an existing hanke. Deletion is not possible if Hanke contains active applications.",
+    )
     @ApiResponses(
         value =
             [
@@ -196,11 +218,15 @@ On update following will happen automatically:
                 ApiResponse(
                     description = "Hanke by requested hankeTunnus not found",
                     responseCode = "404",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]),
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
                 ApiResponse(
                     description = "Hanke has active application(s) in Allu, will not delete.",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))])])
+                    content = [Content(schema = Schema(implementation = HankeError::class))],
+                ),
+            ]
+    )
     @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'DELETE')")
     fun deleteHanke(@PathVariable hankeTunnus: String) {
         logger.info { "Deleting hanke: $hankeTunnus" }
@@ -223,5 +249,13 @@ On update following will happen automatically:
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
         logger.warn { ex.message }
         return ex.toHankeError(HankeError.HAI1002)
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(InvalidHankeDataException::class)
+    @Hidden
+    fun handleInvalidHankeDataException(ex: InvalidHankeDataException): HankeErrorDetail {
+        logger.warn { ex.message }
+        return HankeErrorDetail(HankeError.HAI1031, ex.errorPaths)
     }
 }

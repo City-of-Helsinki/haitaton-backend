@@ -840,6 +840,117 @@ class EmailSenderServiceTest {
     }
 
     @Nested
+    inner class HankeDraftUnmodified {
+        private val notification =
+            HankeDraftUnmodifiedNotification(
+                to = TEST_EMAIL,
+                hanketunnus = HANKE_TUNNUS,
+                hankeNimi = HANKE_NIMI,
+                daysUnmodified = 175,
+                daysUntilMarkedReady = 180,
+            )
+
+        private fun sendAndCapture(): MimeMessage {
+            val email = slot<MimeMessage>()
+            justRun { mailSender.send(capture(email)) }
+
+            emailSenderService.sendHankeDraftUnmodifiedNotification(notification)
+
+            return email.captured
+        }
+
+        @Test
+        fun `has the correct subject`() {
+            val email = sendAndCapture()
+
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Luonnos-tilainen hankkeesi $HANKE_TUNNUS on ollut pitkään muokkaamattomana/Ditt projekt $HANKE_TUNNUS med Utkast-status har länge varit oförändrat/Your project $HANKE_TUNNUS with a Draft status has remained unedited for a long time"
+                )
+        }
+
+        @Test
+        fun `has a header line in the body`() {
+            val (textBody, htmlBody) = sendAndCapture().bodies()
+
+            val expectedBody =
+                "Luonnos-tilainen hankkeesi $HANKE_TUNNUS on ollut pitkään muokkaamattomana/Ditt projekt $HANKE_TUNNUS med Utkast-status har länge varit oförändrat/Your project $HANKE_TUNNUS with a Draft status has remained unedited for a long time"
+            assertThat(textBody).contains(expectedBody)
+            assertThat(htmlBody).contains(expectedBody)
+        }
+
+        @Nested
+        open inner class BodyInFinnish {
+            open val text =
+                "Hankkeesi $HANKE_NIMI ($HANKE_TUNNUS) on luonnos-tilassa, eikä sitä ole muokattu 175 vuorokauteen. Kun hankkeesi on ollut muokkaamattomana 180 vuorokautta, merkitään se Haitattomassa valmiiksi, etkä enää pääse muokkaamaan hankettasi. Jos haluat pitää hankkeesi aktiivisena, lisää sille päivämäärät. Huomaathan, että pitääksesi hankkeen aktiivisena, tulee hankkeen loppupäivämäärän olla tulevaisuudessa."
+
+            open val html =
+                "Hankkeesi <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> on luonnos -tilassa, eikä sitä ole muokattu 175 vuorokauteen. Kun hankkeesi on ollut muokkaamattomana 180 vuorokautta, merkitään se Haitattomassa valmiiksi, etkä enää pääse muokkaamaan hankettasi. Jos haluat pitää hankkeesi aktiivisena, lisää sille päivämäärät. Huomaathan, että pitääksesi hankkeen aktiivisena, tulee hankkeen loppupäivämäärän olla tulevaisuudessa."
+
+            open val signatureLines =
+                listOf(
+                    "Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.",
+                    "Ystävällisin terveisin,",
+                    "Helsingin kaupungin kaupunkiympäristön toimiala",
+                    "Haitaton-asiointi",
+                    "haitaton@hel.fi",
+                )
+
+            @Test
+            open fun `contains ending information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(text)
+                assertThat(htmlBody).contains(html)
+            }
+
+            @Test
+            open fun `contains the signature`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(signatureLines)
+                assertThat(htmlBody).contains(signatureLines)
+            }
+        }
+
+        @Nested
+        inner class BodyInSwedish : BodyInFinnish() {
+            override val text =
+                "Ditt projekt $HANKE_NIMI ($HANKE_TUNNUS) har status Utkast och det har inte redigeras på 175 dygn. När ditt projekt har varit oredigerat i 180 dygn, antecknas det som färdigt i Haitaton och du kan inte längre redigera ditt projekt. Om du vill hålla ditt projekt aktivt, lägg till datum för det. Observera att avslutningsdatumet för projektet ska vara i framtiden för att hålla projektet aktivt."
+
+            override val html =
+                "Ditt projekt <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> har status Utkast och det har inte redigeras på 175 dygn. När ditt projekt har varit oredigerat i 180 dygn, antecknas det som färdigt i Haitaton och du kan inte längre redigera ditt projekt. Om du vill hålla ditt projekt aktivt, lägg till datum för det. Observera att avslutningsdatumet för projektet ska vara i framtiden för att hålla projektet aktivt."
+
+            override val signatureLines =
+                listOf(
+                    "Det här är ett automatiskt e-postmeddelande – svara inte på det.",
+                    "Med vänlig hälsning,",
+                    "Helsingfors stads stadsmiljösektor",
+                    "Haitaton-ärenden",
+                    "haitaton@hel.fi",
+                )
+        }
+
+        @Nested
+        inner class BodyInEnglish : BodyInFinnish() {
+            override val text =
+                "Your project $HANKE_NIMI ($HANKE_TUNNUS) is in Draft status and has not been edited for 175 days. When your project has remained unedited for 180 days, Haitaton will mark it as ‘complete’ and you will no longer be able to edit your project. If you would like to keep your project active, add dates to it. Please note that the project’s end date must be in the future in order to maintain its active status."
+
+            override val html =
+                "Your project <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> is in Draft status and has not been edited for 175 days. When your project has remained unedited for 180 days, Haitaton will mark it as ‘complete’ and you will no longer be able to edit your project. If you would like to keep your project active, add dates to it. Please note that the project’s end date must be in the future in order to maintain its active status."
+
+            override val signatureLines =
+                listOf(
+                    "This email was generated automatically – please do not reply to this message.",
+                    "Kind regards,",
+                    "Haitaton services",
+                    "City of Helsinki Urban Environment Division",
+                    "haitaton@hel.fi",
+                )
+        }
+    }
+
+    @Nested
     inner class HankeCompleted {
         private val notification =
             HankeCompletedNotification(

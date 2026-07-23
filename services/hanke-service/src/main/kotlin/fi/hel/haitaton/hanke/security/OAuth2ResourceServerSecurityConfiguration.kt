@@ -1,5 +1,9 @@
 package fi.hel.haitaton.hanke.security
 
+import com.nimbusds.jose.JOSEObjectType
+import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier
+import com.nimbusds.jose.proc.SecurityContext
+import com.nimbusds.jwt.proc.DefaultJWTProcessor
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
 import mu.KotlinLogging
 import mu.withLoggingContext
@@ -7,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -33,19 +38,39 @@ class OAuth2ResourceServerSecurityConfiguration(
     @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
     private val issuerUri: String,
     @Value("\${spring.security.oauth2.resourceserver.jwt.audiences}") private val audience: String,
+    private val tokenValidator: LogoutTokenValidator,
 ) {
 
     @Bean
-    fun filterChain(http: HttpSecurity): SecurityFilterChain {
+    fun userSessionFilter(userSessionService: UserSessionService): UserSessionFilter {
+        return UserSessionFilter(userSessionService)
+    }
+
+    @Bean
+    fun filterChain(http: HttpSecurity, userSessionFilter: UserSessionFilter): SecurityFilterChain {
         AccessRules.configureHttpAccessRules(http)
-        http.oauth2ResourceServer { it.jwt {} }
+        http.oauth2ResourceServer { it.jwt { jwt -> jwt.decoder(defaultJwtDecoder()) } }
+
+        // Add UserSessionFilter after JWT authentication
+        http.addFilterAfter(
+            userSessionFilter,
+            org.springframework.security.web.authentication.www.BasicAuthenticationFilter::class
+                .java,
+        )
+
         return http.build()
     }
 
-    fun adGroupValidator(): OAuth2TokenValidator<Jwt> = AdGroupValidator(adFilterProperties)
-
-    fun audienceValidator(): OAuth2TokenValidator<Jwt> =
-        JwtClaimValidator<List<String>>(JwtClaimNames.AUD) { aud -> aud.contains(audience) }
+    @Bean
+    @Order(0)
+    fun backchannelLogoutFilterChain(http: HttpSecurity): SecurityFilterChain {
+        http
+            .securityMatcher("/backchannel-logout")
+            .authorizeHttpRequests { it.anyRequest().permitAll() }
+            .csrf { it.disable() }
+            .oauth2ResourceServer { it.jwt { jwt -> jwt.decoder(logoutJwtDecoder()) } }
+        return http.build()
+    }
 
     /**
      * Custom decoder that verifies the AD groups and audience of the token on top of the default
@@ -54,17 +79,56 @@ class OAuth2ResourceServerSecurityConfiguration(
      * Adopted from:
      * https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html#oauth2resourceserver-jwt-validation-custom
      */
-    @Bean
-    fun jwtDecoder(): JwtDecoder {
+    @Bean("defaultJwtDecoder")
+    @Primary
+    fun defaultJwtDecoder(): JwtDecoder {
         val jwtDecoder = JwtDecoders.fromIssuerLocation(issuerUri) as NimbusJwtDecoder
 
-        val adGroupValidator = adGroupValidator()
-        val audienceValidator = audienceValidator()
+        val adGroupValidator = AdGroupValidator(adFilterProperties)
+        val audienceValidator =
+            JwtClaimValidator<List<String>>(JwtClaimNames.AUD) { aud -> aud.contains(audience) }
         val defaultValidator = JwtValidators.createDefaultWithIssuer(issuerUri)
         val combinedValidator =
             DelegatingOAuth2TokenValidator(defaultValidator, audienceValidator, adGroupValidator)
 
         jwtDecoder.setJwtValidator(combinedValidator)
+
+        return jwtDecoder
+    }
+
+    /**
+     * Custom decoder for logout tokens that verifies the claims required for backchannel logout.
+     *
+     * This is used for the backchannel logout endpoint. Logout tokens use typ: logout+jwt in the
+     * JOSE header according to the OpenID Connect Back-Channel Logout spec. We need to configure
+     * the decoder to accept this type, which is not accepted by default.
+     */
+    @Bean("logoutJwtDecoder")
+    fun logoutJwtDecoder(): JwtDecoder {
+        // Create a decoder from the issuer location which will configure the JWK set
+        val jwtDecoder = NimbusJwtDecoder.withIssuerLocation(issuerUri).build()
+
+        // Access the internal processor to configure type verification
+        val processorField = jwtDecoder.javaClass.getDeclaredField("jwtProcessor")
+        processorField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val processor = processorField.get(jwtDecoder) as DefaultJWTProcessor<SecurityContext>
+
+        // Configure to accept logout+jwt type in addition to JWT
+        processor.jwsTypeVerifier =
+            DefaultJOSEObjectTypeVerifier(
+                JOSEObjectType("logout+jwt"),
+                JOSEObjectType.JWT,
+                null, // Also accept tokens with no typ header
+            )
+
+        // Set the validator
+        jwtDecoder.setJwtValidator(
+            DelegatingOAuth2TokenValidator(
+                JwtValidators.createDefaultWithIssuer(issuerUri),
+                tokenValidator,
+            )
+        )
 
         return jwtDecoder
     }

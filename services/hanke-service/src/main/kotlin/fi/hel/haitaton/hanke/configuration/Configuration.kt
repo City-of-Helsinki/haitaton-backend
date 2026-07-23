@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.configuration
 
+import fi.hel.haitaton.hanke.HankeMapGridProperties
 import fi.hel.haitaton.hanke.allu.AlluClient
 import fi.hel.haitaton.hanke.allu.AlluProperties
 import fi.hel.haitaton.hanke.attachment.azure.Containers
@@ -7,6 +8,7 @@ import fi.hel.haitaton.hanke.email.EmailProperties
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
 import fi.hel.haitaton.hanke.profiili.ProfiiliProperties
 import fi.hel.haitaton.hanke.security.AdFilterProperties
+import fi.hel.haitaton.hanke.security.UserSessionCleanupProperties
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import kotlinx.coroutines.CoroutineDispatcher
@@ -33,6 +35,8 @@ import tools.jackson.databind.module.SimpleModule
     EmailProperties::class,
     AdFilterProperties::class,
     Containers::class,
+    HankeMapGridProperties::class,
+    UserSessionCleanupProperties::class,
 )
 class Configuration {
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false

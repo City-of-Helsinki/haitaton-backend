@@ -50,18 +50,22 @@ abstract class FileClientTest {
         @CsvSource(
             "test.txt,test.txt",
             "åäö.txt,%C3%A5%C3%A4%C3%B6.txt",
-            "1 2 3 €.pdf,1%202%203%20%E2%82%AC.pdf"
+            "1 2 3 €.pdf,1%202%203%20%E2%82%AC.pdf",
+            "'attachment, with, commas.pdf','attachment%2C%20with%2C%20commas.pdf'",
+            "'file;with;semicolons.txt','file%3Bwith%3Bsemicolons.txt'",
+            "'file''with''quotes.pdf','file%27with%27quotes.pdf'",
+            "'file*with*asterisks.pdf','file%2Awith%2Aasterisks.pdf'",
         )
         fun `uploads a file with the correct content disposition`(
             originalFileName: String,
-            encodedFileName: String
+            encodedFileName: String,
         ) {
             fileClient.upload(
                 container,
                 "test/$originalFileName",
                 originalFileName,
                 MediaType.TEXT_PLAIN,
-                testContent
+                testContent,
             )
 
             assertThat(listBlobs())
@@ -232,11 +236,7 @@ abstract class FileClientTest {
 
         @Test
         fun `deletes the correct files`() {
-            val matchingPaths =
-                listOf(
-                    "45/file.txt",
-                    "45/file2.txt",
-                )
+            val matchingPaths = listOf("45/file.txt", "45/file2.txt")
             val notMatchingPaths =
                 listOf(
                     "file.txt",

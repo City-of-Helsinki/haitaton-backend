@@ -189,6 +189,8 @@ enum class TyomaaTyyppi {
 }
 
 enum class HankeReminder {
+    DRAFT_COMPLETION_15,
+    DRAFT_COMPLETION_5,
     COMPLETION_5,
     COMPLETION_14,
     DELETION_5,

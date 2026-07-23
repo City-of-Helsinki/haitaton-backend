@@ -175,7 +175,7 @@ class TaydennysService(
 
             if (application.alluStatus != ApplicationStatus.WAITING_INFORMATION) {
                 logger.error {
-                    "A hakemus moved to handling and it had a täydennyspyyntö, " +
+                    "A hakemus moved to handling, and it had a täydennyspyyntö, " +
                         "but the previous state was not 'WAITING_INFORMATION'. " +
                         "status=${application.alluStatus} ${application.logString()}"
                 }
