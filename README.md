@@ -162,12 +162,12 @@ Generate the SBOM:
 $ ./gradlew :services:hanke-service:cyclonedxBom
 ```
 
-The generated file is at `services/hanke-service/build/reports/application.cdx.json`.
+The generated file is at `services/hanke-service/build/reports/bom.json`.
 
 Scan it for vulnerabilities:
 
 ```
-$ osv-scanner scan source -L services/hanke-service/build/reports/application.cdx.json
+$ osv-scanner scan source -L services/hanke-service/build/reports/bom.json
 ```
 
 ### Spotless formatter
