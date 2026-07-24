@@ -328,7 +328,7 @@ class AlluClientITests {
             val body = request.body?.utf8() ?: ""
             val dateTimePattern =
                 Regex(
-                    """"startTime":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?[+-]\d{2}:\d{2}""""
+                    """"startTime":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(?:[+-]\d{2}:\d{2}|Z)""""
                 )
             assertThat(dateTimePattern.containsMatchIn(body)).isTrue()
         }

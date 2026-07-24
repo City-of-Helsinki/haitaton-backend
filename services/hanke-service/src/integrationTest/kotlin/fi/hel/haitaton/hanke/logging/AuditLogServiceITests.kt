@@ -87,9 +87,12 @@ class AuditLogServiceITests : IntegrationTest() {
                 .singleResult as String
 
         // Regex: "date_time": "<ISO-8601 offset date-time>" with no extra wrapping, arrays, or
-        // nulls.
+        // nulls. Offset may be a numeric offset (e.g. "+03:00") or "Z" for a zero offset -- both
+        // are valid ISO-8601, and which one comes out depends on the JVM's default time zone.
         val dateTimePattern =
-            Regex(""""date_time":\s*"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?[+-]\d{2}:\d{2}"""")
+            Regex(
+                """"date_time":\s*"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(?:[+-]\d{2}:\d{2}|Z)""""
+            )
         assertThat(dateTimePattern.containsMatchIn(raw)).isTrue()
     }
 }
