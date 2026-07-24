@@ -12,6 +12,12 @@ version = "0.0.1-SNAPSHOT"
 val sentryVersion = "8.46.0"
 val geoToolsVersion = "33.2"
 
+// Override Spring Boot 4.1.0's managed versions ahead of the next Boot patch release,
+// to pick up CVE fixes for these specific transitive dependencies.
+ext["log4j2.version"] = "2.26.1"
+ext["netty.version"] = "4.2.16.Final"
+ext["postgresql.version"] = "42.7.13"
+ext["tomcat.version"] = "11.0.24"
 
 repositories {
     mavenCentral().content { excludeModule("javax.media", "jai_core") }
