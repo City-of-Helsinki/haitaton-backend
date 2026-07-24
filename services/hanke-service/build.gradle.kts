@@ -13,6 +13,7 @@ val sentryVersion = "8.21.1"
 val geoToolsVersion = "33.2"
 
 repositories {
+    mavenLocal()
     mavenCentral().content { excludeModule("javax.media", "jai_core") }
     maven { url = uri("https://repo.osgeo.org/repository/release/") }
     maven { url = uri("https://maven.geotoolkit.org") }
@@ -143,6 +144,9 @@ dependencies {
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity")
+
+    // Audit log transfer
+    implementation("fi.hel:resilient-logger:0.0.1")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }
