@@ -18,6 +18,8 @@ ext["log4j2.version"] = "2.26.1"
 ext["netty.version"] = "4.2.16.Final"
 ext["postgresql.version"] = "42.7.13"
 ext["tomcat.version"] = "11.0.24"
+ext["jackson-2-bom.version"] = "2.21.5"
+ext["jackson-bom.version"] = "3.1.5"
 
 repositories {
     mavenCentral().content { excludeModule("javax.media", "jai_core") }
@@ -95,7 +97,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-jackson2")
     implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("tools.jackson.module:jackson-module-kotlin:3.1.4")
+    implementation("tools.jackson.module:jackson-module-kotlin:3.1.5")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
     implementation("ch.qos.logback.access:logback-access-tomcat:2.0.6")
