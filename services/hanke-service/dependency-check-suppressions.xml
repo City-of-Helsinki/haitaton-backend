@@ -206,4 +206,24 @@
         <vulnerabilityName>DOMPurify: `IN_PLACE` mode trusts attacker-controlled `nodeName` on live non-form nodes, allowing script retention and XSS via attacker-supplied DOM objects</vulnerabilityName>
     </suppress>
 
+    <!--
+        DOMPurify (bundled inside springdoc's swagger-ui webjar) CUSTOM_ELEMENT_HANDLING bypass,
+        same version constraint as above (springdoc 3.0.3 bundles swagger-ui 5.32.2 / DOMPurify
+        3.3.2, no newer springdoc release exists yet). Confirmed with the team that Swagger UI /
+        the OpenAPI docs endpoints are not reachable in production (blocked at the gateway), and
+        only enabled in dev/test. Not exploitable there regardless: the sanitized content is our
+        own server-generated OpenAPI spec, not attacker-controlled input.
+    -->
+    <suppress>
+        <notes>Not exploitable: Swagger UI is not reachable in production (blocked at the gateway); OpenAPI spec content is server-generated, not attacker-controlled. No fix available: springdoc 3.0.3 still bundles DOMPurify 3.3.2.</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-65898</cve>
+        <cve>CVE-2026-65899</cve>
+        <cve>CVE-2026-65900</cve>
+        <cve>CVE-2026-65901</cve>
+        <cve>CVE-2026-65902</cve>
+        <cve>CVE-2026-65903</cve>
+        <vulnerabilityName>DOMPurify: `CUSTOM_ELEMENT_HANDLING` bypasses `afterSanitizeElements` for allowed custom elements.</vulnerabilityName>
+    </suppress>
+
 </suppressions>
