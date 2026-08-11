@@ -9,11 +9,11 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verifyOrder
 import io.mockk.verifySequence
-import java.util.concurrent.locks.Lock
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.integration.jdbc.lock.JdbcLockRegistry
+import org.springframework.integration.support.locks.DistributedLock
 
 class AlluUpdateSchedulerTest {
     private val alluUpdateService: AlluUpdateService = mockk()
@@ -62,8 +62,8 @@ class AlluUpdateSchedulerTest {
         }
     }
 
-    private fun mockLocking(canObtainLock: Boolean): Lock {
-        val mockLock = mockk<Lock>(relaxUnitFun = true)
+    private fun mockLocking(canObtainLock: Boolean): DistributedLock {
+        val mockLock = mockk<DistributedLock>(relaxUnitFun = true)
         every { mockLock.tryLock() } returns canObtainLock
         every { jdbcLockRegistry.obtain(AlluUpdateScheduler.LOCK_NAME) } returns mockLock
         return mockLock

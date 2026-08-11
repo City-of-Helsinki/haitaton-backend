@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
@@ -57,7 +58,9 @@ data class TormaystarkasteluTulos(
 
 @Schema(description = "Car traffic nuisance index and classification")
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class Autoliikenneluokittelu(
+data class Autoliikenneluokittelu
+@JsonCreator
+constructor(
     @JsonView(ChangeLogView::class) val indeksi: Float,
     @JsonView(ChangeLogView::class) val haitanKesto: Int,
     @JsonView(ChangeLogView::class) val katuluokka: Int,
@@ -100,6 +103,12 @@ enum class IndeksiType {
     RAITIOLIIKENNEINDEKSI,
 }
 
+/**
+ * [id] and [hankealue] are `val` and never reassigned after construction - same reasoning as
+ * [fi.hel.haitaton.hanke.allu.AlluEventEntity]. The other fields are `var` because
+ * [fi.hel.haitaton.hanke.HankealueService] recalculates and mutates them in place when a
+ * hankealue's traffic-nuisance index changes.
+ */
 @Entity
 @Table(name = "tormaystarkastelutulos")
 class TormaystarkasteluTulosEntity(

@@ -14,12 +14,12 @@ import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifySequence
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.Lock
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.integration.jdbc.lock.JdbcLockRegistry
+import org.springframework.integration.support.locks.DistributedLock
 
 class HankeCompletionSchedulerTest {
     private val completionService: HankeCompletionService = mockk(relaxUnitFun = true)
@@ -441,8 +441,8 @@ class HankeCompletionSchedulerTest {
         }
     }
 
-    private fun mockLocking(canObtainLock: Boolean): Lock {
-        val mockLock = mockk<Lock>(relaxUnitFun = true)
+    private fun mockLocking(canObtainLock: Boolean): DistributedLock {
+        val mockLock = mockk<DistributedLock>(relaxUnitFun = true)
         every { mockLock.tryLock(10, TimeUnit.MINUTES) } returns canObtainLock
         every { jdbcLockRegistry.obtain(HankeCompletionScheduler.LOCK_NAME) } returns mockLock
         return mockLock

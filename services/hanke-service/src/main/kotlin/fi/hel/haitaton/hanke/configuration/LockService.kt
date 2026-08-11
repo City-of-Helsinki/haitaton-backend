@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.configuration
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Lock
 import javax.sql.DataSource
@@ -18,18 +19,16 @@ private val logger = KotlinLogging.logger {}
 @Profile("!test")
 class LockRepositories {
     /** The time to hold on to dead locks. */
-    private val timeToLive = 15 * 60 * 1000 // 15 minutes in milliseconds
+    private val timeToLive = Duration.ofMinutes(15)
 
     @Bean
-    fun defaultLockRepository(dataSource: DataSource?): DefaultLockRepository {
-        val repository = DefaultLockRepository(dataSource)
-        repository.setTimeToLive(timeToLive)
-        return repository
+    fun defaultLockRepository(dataSource: DataSource): DefaultLockRepository {
+        return DefaultLockRepository(dataSource)
     }
 
     @Bean
-    fun jdbcLockRegistry(lockRepository: LockRepository?): JdbcLockRegistry {
-        return JdbcLockRegistry(lockRepository)
+    fun jdbcLockRegistry(lockRepository: LockRepository): JdbcLockRegistry {
+        return JdbcLockRegistry(lockRepository, timeToLive)
     }
 }
 

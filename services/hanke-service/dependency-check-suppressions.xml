@@ -2,28 +2,28 @@
 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
 
     <!--
-        CVE-2023-36415: Fixed in azure-identity 1.10.2 (Java). We use 1.17.0.
+        CVE-2023-36415: Fixed in azure-identity 1.10.2 (Java). We use 1.18.3.
         Known OWASP false positive: scanner incorrectly matches the Java version range
         against the Python version range in NVD CPE data.
         https://github.com/jeremylong/DependencyCheck/issues/7245
     -->
     <suppress>
-        <notes>False positive: CVE-2023-36415 is fixed in azure-identity >= 1.10.2 for Java. We use 1.17.0.</notes>
+        <notes>False positive: CVE-2023-36415 is fixed in azure-identity >= 1.10.2 for Java. We use 1.18.3.</notes>
         <packageUrl regex="true">^pkg:maven/com\.azure/azure-identity@.*$</packageUrl>
         <cve>CVE-2023-36415</cve>
     </suppress>
 
     <!--
         CVE-2024-35255: Fixed in azure-identity 1.12.2 and msal4j 1.15.1 (Java).
-        We use azure-identity 1.17.0 and msal4j 1.22.0, both of which are patched.
+        We use azure-identity 1.18.3 and msal4j 1.23.1, both of which are patched.
     -->
     <suppress>
-        <notes>False positive: CVE-2024-35255 is fixed in azure-identity >= 1.12.2. We use 1.17.0.</notes>
+        <notes>False positive: CVE-2024-35255 is fixed in azure-identity >= 1.12.2. We use 1.18.3.</notes>
         <packageUrl regex="true">^pkg:maven/com\.azure/azure-identity@.*$</packageUrl>
         <cve>CVE-2024-35255</cve>
     </suppress>
     <suppress>
-        <notes>False positive: CVE-2024-35255 is fixed in msal4j >= 1.15.1. We use 1.22.0.</notes>
+        <notes>False positive: CVE-2024-35255 is fixed in msal4j >= 1.15.1. We use 1.23.1.</notes>
         <packageUrl regex="true">^pkg:maven/com\.microsoft\.azure/msal4j@.*$</packageUrl>
         <cve>CVE-2024-35255</cve>
     </suppress>
@@ -88,21 +88,15 @@
     </suppress>
 
     <!--
-        CVE-2025-15599 and CVE-2026-0540: XSS vulnerabilities in DOMPurify bundled inside swagger-ui.
-        These require DOMPurify >= 3.2.7 and >= 3.3.2 respectively. As of swagger-ui 5.32.0
-        (latest), DOMPurify is still pinned to 3.2.6 — no upstream fix is available yet.
-        Risk is low: Swagger UI is only exposed in non-production environments and exploitation
-        requires a user to be tricked into using it.
+        CVE-2026-33929: follow-up to CVE-2026-23907 — the path traversal fix shipped in PDFBox
+        2.0.36/3.0.7 for the ExtractEmbeddedFiles example was itself incomplete (didn't account
+        for path separators). Same reasoning as above still applies: this is example code in the
+        main pdfbox artifact, not pdfbox-io, and we don't use PDFBox's example code in production.
     -->
     <suppress>
-        <notes>No fix available: swagger-ui 5.32.0 still bundles DOMPurify 3.2.6. Swagger UI is dev/test only.</notes>
-        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
-        <cve>CVE-2025-15599</cve>
-    </suppress>
-    <suppress>
-        <notes>No fix available: swagger-ui 5.32.0 still bundles DOMPurify 3.2.6. Swagger UI is dev/test only.</notes>
-        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
-        <cve>CVE-2026-0540</cve>
+        <notes>False positive: CVE-2026-33929 affects the ExtractEmbeddedFiles example in the main pdfbox artifact, not pdfbox-io.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.pdfbox/pdfbox-io@.*$</packageUrl>
+        <cve>CVE-2026-33929</cve>
     </suppress>
 
     <!--
@@ -119,6 +113,19 @@
     </suppress>
 
     <!--
+        CVE-2026-33117 (continued): the same overly broad microsoft:azure_sdk_for_java CPE also
+        matches azure-core, azure-core-http-netty, and azure-identity, but the actual vulnerable
+        code is in the local cryptographic verification path of the Key Vault Keys library
+        (com.azure:azure-security-keyvault-keys), fixed in 4.10.6. We do not depend on
+        azure-security-keyvault-keys at all, so the vulnerable code path is not present.
+    -->
+    <suppress>
+        <notes>Not exploitable: CVE-2026-33117 affects azure-security-keyvault-keys' local crypto verification, which we don't depend on.</notes>
+        <packageUrl regex="true">^pkg:maven/com\.azure/(azure-core|azure-core-http-netty|azure-identity)@.*$</packageUrl>
+        <cve>CVE-2026-33117</cve>
+    </suppress>
+
+    <!--
         CVE-2025-67721: Information leakage via buffer reuse in aircompressor's Snappy/LZ4 decompressors.
         aircompressor is pulled in transitively by GeoTools (gt-wms -> gt-coverage -> imageio-ext-tiff)
         for WMS/image rendering only. We do not decompress Snappy or LZ4 streams from external input,
@@ -129,6 +136,94 @@
         <notes>Not exploitable: aircompressor is used only via GeoTools WMS rendering, not for Snappy/LZ4 decompression of external input.</notes>
         <packageUrl regex="true">^pkg:maven/io\.airlift/aircompressor@.*$</packageUrl>
         <cve>CVE-2025-67721</cve>
+    </suppress>
+
+    <!--
+        CVE-2022-0839: XXE vulnerability in liquibase-core prior to 4.8.0.
+        This CVE is incorrectly matched against spring-boot-liquibase, which is Spring Boot 4.1's
+        autoconfiguration glue module for wiring up Liquibase — it contains no XML parsing code of
+        its own. The actual liquibase-core version resolved via Spring Boot's dependency management
+        is 5.0.3, far past the 4.8.0 fix.
+    -->
+    <suppress>
+        <notes>False positive: CVE-2022-0839 affects liquibase-core &lt; 4.8.0. spring-boot-liquibase is just Boot's autoconfiguration glue; the actual liquibase-core resolved is 5.0.3.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring-boot-liquibase@.*$</packageUrl>
+        <cve>CVE-2022-0839</cve>
+    </suppress>
+
+    <!--
+        CVE-2026-54515: jackson-databind bug where @JsonFormat(with = ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+        can undo an unrelated @JsonIgnoreProperties exclusion. Fixed in 2.18.9, 2.21.5, and 3.1.4 — none
+        of which are compatible drop-in replacements for the 2.21.4 that Spring Boot 4.1.0 manages
+        (2.21.5 for the 2.x line hasn't been published yet as of this scan). Not exploitable regardless:
+        we don't use ACCEPT_CASE_INSENSITIVE_PROPERTIES anywhere in the codebase.
+    -->
+    <suppress>
+        <notes>Not exploitable: requires @JsonFormat ACCEPT_CASE_INSENSITIVE_PROPERTIES, which we don't use anywhere. No 2.21.x fix released yet.</notes>
+        <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.core/jackson-databind@.*$</packageUrl>
+        <cve>CVE-2026-54515</cve>
+    </suppress>
+
+    <!--
+        CVE-2026-53914: unsafe deserialization in the Kotlin compiler/build-tools' build cache
+        metadata handling. NVD's jetbrains:kotlin CPE matches the whole org.jetbrains.kotlin group,
+        including kotlin-stdlib (a pure runtime API library with no build-cache code) and every
+        kotlin-compiler-embeddable/kotlin-daemon-*/abi-tools build-tooling jar that only ever runs
+        during our own trusted local/CI builds — none of them ship in the deployed application.
+        The vulnerable path also requires a shared/remote Gradle build cache that an attacker could
+        poison; this project doesn't configure one (see settings.gradle.kts).
+    -->
+    <suppress>
+        <notes>Not exploitable: requires a poisoned remote build cache, which we don't use; these are build-time-only compiler jars, not shipped in the app.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/.*$</packageUrl>
+        <cve>CVE-2026-53914</cve>
+    </suppress>
+
+    <!--
+        DOMPurify (bundled inside springdoc's swagger-ui webjar) CVEs/advisories requiring
+        DOMPurify >= 3.4.0 (and later >= 3.4.7-plus for a couple of them). springdoc-openapi 3.0.3
+        (latest) still bundles swagger-ui 5.32.2, which vendors DOMPurify 3.3.2. Forcing a newer
+        swagger-ui webjar version independently of springdoc breaks Swagger UI's static resource
+        resolution (springdoc resolves swagger-ui's resource path by its own bundled version), so
+        there's no clean fix until springdoc bumps its managed swagger-ui version. Risk is low:
+        Swagger UI is a dev-only tool and every one of these requires a user to be tricked into
+        interacting with attacker-controlled content while using it.
+    -->
+    <suppress>
+        <notes>No fix available without breaking Swagger UI: springdoc 3.0.3 still bundles swagger-ui 5.32.2 / DOMPurify 3.3.2. Swagger UI is dev/test only.</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-41240</cve>
+        <cve>CVE-2026-41238</cve>
+        <cve>CVE-2026-41239</cve>
+        <cve>CVE-2026-49458</cve>
+        <cve>CVE-2026-49459</cve>
+        <cve>CVE-2026-49978</cve>
+        <vulnerabilityName>DOMPurify has a logic inconsistency where FORBID_TAGS is not checked when a function-based ADD_TAGS (tagCheck) returns true. Due to short-circuit evaluation, the FORBID_TAGS check is never evaluated, allowing explicitly forbidden elements to pass through sanitization when EXTRA_ELEMENT_HANDLING.tagCheck is configured.</vulnerabilityName>
+        <vulnerabilityName>DOMPurify: Hook mutation of `data.allowedTags` / `data.allowedAttributes` permanently pollutes `DEFAULT_ALLOWED_TAGS` / `DEFAULT_ALLOWED_ATTR`</vulnerabilityName>
+        <vulnerabilityName>DOMPurify: Permanent `ALLOWED_ATTR` pollution via `setConfig()` bypassing the hook clone-guard (incomplete fix of the 3.4.7 hook-pollution patch)</vulnerabilityName>
+        <vulnerabilityName>DOMPurify: SAFE_FOR_TEMPLATES bypass - template expressions survive sanitization inside &lt;template&gt; content when using DOM output modes</vulnerabilityName>
+        <vulnerabilityName>DOMPurify: Trusted Types policy survives `clearConfig()` and can poison later `RETURN_TRUSTED_TYPE` output</vulnerabilityName>
+        <vulnerabilityName>DOMPurify: `IN_PLACE` mode trusts attacker-controlled `nodeName` on live non-form nodes, allowing script retention and XSS via attacker-supplied DOM objects</vulnerabilityName>
+    </suppress>
+
+    <!--
+        DOMPurify (bundled inside springdoc's swagger-ui webjar) CUSTOM_ELEMENT_HANDLING bypass,
+        same version constraint as above (springdoc 3.0.3 bundles swagger-ui 5.32.2 / DOMPurify
+        3.3.2, no newer springdoc release exists yet). Confirmed with the team that Swagger UI /
+        the OpenAPI docs endpoints are not reachable in production (blocked at the gateway), and
+        only enabled in dev/test. Not exploitable there regardless: the sanitized content is our
+        own server-generated OpenAPI spec, not attacker-controlled input.
+    -->
+    <suppress>
+        <notes>Not exploitable: Swagger UI is not reachable in production (blocked at the gateway); OpenAPI spec content is server-generated, not attacker-controlled. No fix available: springdoc 3.0.3 still bundles DOMPurify 3.3.2.</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-65898</cve>
+        <cve>CVE-2026-65899</cve>
+        <cve>CVE-2026-65900</cve>
+        <cve>CVE-2026-65901</cve>
+        <cve>CVE-2026-65902</cve>
+        <cve>CVE-2026-65903</cve>
+        <vulnerabilityName>DOMPurify: `CUSTOM_ELEMENT_HANDLING` bypasses `afterSanitizeElements` for allowed custom elements.</vulnerabilityName>
     </suppress>
 
 </suppressions>

@@ -30,7 +30,7 @@ class UserSessionFilter(private val userSessionService: UserSessionService) :
 
         if (authentication is JwtAuthenticationToken) {
             val jwt = authentication.token
-            val sub = jwt.subject
+            val sub = jwt.subject!!
             val sid = jwt.getClaim<String>("sid")
 
             if (sid != null) {

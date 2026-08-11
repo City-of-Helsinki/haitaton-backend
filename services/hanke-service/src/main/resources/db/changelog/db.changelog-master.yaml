@@ -257,3 +257,9 @@ databaseChangeLog:
       file: db/changelog/changesets/113-add-expires-at-to-user-sessions.sql
   - include:
       file: db/changelog/changesets/114-populate-null-hanke-modified-fields.sql
+  - include:
+      file: db/changelog/changesets/115-add-expired-after-to-int-lock.yml
+  - include:
+      file: db/changelog/changesets/116-fix-historia-triggers-for-iso8601-dates.sql
+  - include:
+      file: db/changelog/changesets/117-backfill-legacy-epoch-application-dates-to-iso8601.sql

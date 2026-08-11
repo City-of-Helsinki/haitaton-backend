@@ -65,7 +65,7 @@ class BackChannelLogoutController(private val logoutService: LogoutService) {
                 ),
             ]
     )
-    fun logout(@RequestBody form: MultiValueMap<String, String?>): ResponseEntity<out Any?> {
+    fun logout(@RequestBody form: MultiValueMap<String, String?>): ResponseEntity<out Any> {
         logger.info { "Received backchannel logout request with form keys: ${form.keys}" }
         val logoutToken = form.getFirst("logout_token")
         if (logoutToken == null) {
@@ -86,7 +86,7 @@ class BackChannelLogoutController(private val logoutService: LogoutService) {
     ): ResponseEntity<BackChannelLogoutError> {
         logger.error(e) { "Invalid request in backchannel logout: ${e.message}" }
         return ResponseEntity.badRequest()
-            .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().headerValue)
+            .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().headerValue!!)
             .body(BackChannelLogoutError(BackChannelLogoutError.ERROR_INVALID_REQUEST, e.message))
     }
 
@@ -98,7 +98,7 @@ class BackChannelLogoutController(private val logoutService: LogoutService) {
             "Invalid JWT token in backchannel logout: ${e.message}. Cause: ${e.cause?.message}"
         }
         return ResponseEntity.badRequest()
-            .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().headerValue)
+            .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().headerValue!!)
             .body(BackChannelLogoutError(BackChannelLogoutError.ERROR_INVALID_TOKEN, e.message))
     }
 
@@ -108,7 +108,7 @@ class BackChannelLogoutController(private val logoutService: LogoutService) {
     fun handleException(e: Exception): ResponseEntity<BackChannelLogoutError> {
         logger.error(e) { "Unexpected error in backchannel logout: ${e.message}" }
         return ResponseEntity.internalServerError()
-            .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().headerValue)
+            .header(HttpHeaders.CACHE_CONTROL, CacheControl.noStore().headerValue!!)
             .body(
                 BackChannelLogoutError(
                     BackChannelLogoutError.ERROR_INTERNAL_SERVER_ERROR,

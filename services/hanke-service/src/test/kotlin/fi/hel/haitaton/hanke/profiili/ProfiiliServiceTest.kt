@@ -158,13 +158,13 @@ class ProfiiliServiceTest {
         @ValueSource(strings = [" ", " \t "])
         @NullAndEmptySource
         fun `throws an exception when given name not found in token`(givenName: String?) {
-            val jwt =
+            val builder =
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
                     .claim(JwtClaims.AMR, listOf(AmrValues.AD))
-                    .claim(JwtClaims.GIVEN_NAME, givenName)
                     .claim(JwtClaims.FAMILY_NAME, ProfiiliFactory.DEFAULT_LAST_NAME)
-                    .build()
+            if (givenName != null) builder.claim(JwtClaims.GIVEN_NAME, givenName)
+            val jwt = builder.build()
             val authentication: Authentication = mockk()
             every { authentication.credentials } returns jwt
             every { securityContext.authentication } returns authentication
@@ -187,13 +187,13 @@ class ProfiiliServiceTest {
         @ValueSource(strings = [" ", " \t "])
         @NullAndEmptySource
         fun `throws an exception when family name not found in token`(familyName: String?) {
-            val jwt =
+            val builder =
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
                     .claim(JwtClaims.AMR, listOf(AmrValues.AD))
                     .claim(JwtClaims.GIVEN_NAME, ProfiiliFactory.DEFAULT_GIVEN_NAME)
-                    .claim(JwtClaims.FAMILY_NAME, familyName)
-                    .build()
+            if (familyName != null) builder.claim(JwtClaims.FAMILY_NAME, familyName)
+            val jwt = builder.build()
             val authentication: Authentication = mockk()
             every { authentication.credentials } returns jwt
             every { securityContext.authentication } returns authentication

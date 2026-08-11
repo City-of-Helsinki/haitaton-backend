@@ -76,7 +76,7 @@ fun getCurrentTimeUTCAsLocalTime(): LocalDateTime = getCurrentTimeUTC().toLocalD
  */
 fun currentUserId(): String = SecurityContextHolder.getContext().userId()
 
-fun SecurityContext.userId(): String = authentication.name
+fun SecurityContext.userId(): String = authentication!!.name
 
 /**
  * Valid business id (y-tunnus) requirements:

@@ -30,8 +30,8 @@ class LogoutTokenValidator(
         // sub - OPTIONAL
         val sub: String? = token.subject
         // aud - REQUIRED
-        token.audience?.toString() ?: return failure("Missing audience claim in logout token")
-        if (!token.audience.contains(audience)) {
+        val aud = token.audience ?: return failure("Missing audience claim in logout token")
+        if (!aud.contains(audience)) {
             return failure("The required audience '$audience' is missing in logout token")
         }
         // iat - REQUIRED
@@ -57,13 +57,13 @@ class LogoutTokenValidator(
             )
         }
         // sid - OPTIONAL
-        val sid: String? = token.getClaim<String?>("sid")
+        val sid: String? = token.getClaim<String>("sid")
         // "A Logout Token MUST contain either a sub or a sid Claim, and MAY contain both"
         if (sid == null && sub == null) {
             return failure("Logout token must contain 'sid' or 'sub' claim")
         }
         // nonce - PROHIBITED
-        if (token.getClaim<String?>("nonce") != null) {
+        if (token.getClaim<String>("nonce") != null) {
             return failure("Logout token must not contain 'nonce' claim")
         }
 

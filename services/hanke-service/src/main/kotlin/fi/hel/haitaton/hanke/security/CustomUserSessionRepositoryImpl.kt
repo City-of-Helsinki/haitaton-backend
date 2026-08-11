@@ -14,9 +14,12 @@ fun interface CustomUserSessionRepository {
 }
 
 @Repository
-class CustomUserSessionRepositoryImpl(
-    @PersistenceContext private val entityManager: EntityManager
-) : CustomUserSessionRepository {
+class CustomUserSessionRepositoryImpl : CustomUserSessionRepository {
+
+    // @PersistenceContext only works via field/setter injection (a BeanPostProcessor step after
+    // construction) - it can't resolve a constructor parameter, since Spring then falls back to a
+    // plain type-based bean lookup for EntityManager, and no such bean is ever registered directly.
+    @PersistenceContext private lateinit var entityManager: EntityManager
 
     override fun saveIfNotExists(session: UserSessionEntity) {
         val sql =

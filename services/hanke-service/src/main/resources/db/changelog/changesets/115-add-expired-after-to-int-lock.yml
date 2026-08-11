@@ -1,0 +1,17 @@
+# Spring Integration 7's JdbcLockRegistry adds TTL support to distributed locks and requires
+# this column. See the Spring Integration 6.x to 7.0 migration guide.
+databaseChangeLog:
+  - changeSet:
+      id: 115-add-expired-after-to-int-lock
+      comment: Add EXPIRED_AFTER column required by Spring Integration 7's JDBC lock registry.
+      author: Claude
+      changes:
+        - addColumn:
+            tableName: INT_LOCK
+            columns:
+              - column:
+                  name: EXPIRED_AFTER
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false

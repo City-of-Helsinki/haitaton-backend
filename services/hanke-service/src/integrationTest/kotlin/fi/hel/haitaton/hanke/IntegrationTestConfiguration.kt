@@ -43,8 +43,10 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.sentry.Sentry
 import io.sentry.protocol.SentryId
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.cache.CacheManager
 import org.springframework.context.annotation.Bean
@@ -64,6 +66,11 @@ import org.springframework.security.web.SecurityFilterChain
 )
 @EnableMethodSecurity(prePostEnabled = true)
 @Import(value = [AopAutoConfiguration::class, DisclosureLoggingAspect::class])
+// Spring Boot 4's @WebMvcTest no longer auto-configures the HttpSecurity bean. Use
+// @ImportAutoConfiguration (not @Import) so its @ConditionalOnMissingBean(SecurityFilterChain)
+// default chain is correctly deferred behind the filterChain() bean declared below, instead of
+// both being registered and conflicting.
+@ImportAutoConfiguration(ServletWebSecurityAutoConfiguration::class)
 class IntegrationTestConfiguration {
     @Bean fun applicationAttachmentMetadataService(): ApplicationAttachmentMetadataService = mockk()
 
