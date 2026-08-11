@@ -40,11 +40,18 @@ must be resolved before the app can be trusted as Jackson-3-only:
 
 ## Goal & end state
 
-Jackson 3 (`tools.jackson.*`) is the only JSON stack anywhere in `services/hanke-service`: REST,
+Jackson 3 (`tools.jackson.*`) is the only JSON stack the app *itself* uses or configures: REST,
 WebClient (already done), JPA columns (already done), and the `OBJECT_MAPPER` singleton and its
 call sites. `jackson-databind`, `jackson-module-kotlin` (2.x), and `spring-boot-jackson2` are
-removed from `build.gradle.kts` entirely — not just unused-by-default, but gone from the
-classpath.
+removed from the app's own dependency declarations in `build.gradle.kts`.
+
+Verified via the runtime classpath (`./gradlew :services:hanke-service:dependencies`) that Jackson
+2's `jackson-databind` will still be present transitively regardless — both
+`net.logstash.logback:logstash-logback-encoder` and `de.grundid.opendatalab:geojson-jackson` pull
+it in independently of `spring-boot-jackson2` or anything the app declares directly. Replacing
+those two libraries is out of scope; "full retirement" here means the app no longer directly
+depends on, configures, or calls Jackson 2 — not that Jackson 2 vanishes from the classpath
+entirely.
 
 Tracked under HAI-3618, continuing the same ticket as the Spring Boot 4.1.0 upgrade and Phases 1-2.
 Based on a new branch off `dev` (which already has the SB4 upgrade, Phases 1-2, and the
@@ -92,7 +99,9 @@ verified in isolation before touching the global default.
 
 Remove `spring.jackson.use-jackson2-defaults`, `spring.http.converters.preferred-json-mapper:
 jackson2`, the `spring-boot-jackson2` module, and the `jackson-databind`/`jackson-module-kotlin`
-(2.x) dependencies from `build.gradle.kts`. Highest-risk single change in the whole migration — its
+(2.x) dependencies from `build.gradle.kts`. `com.fasterxml.jackson.module:jackson-module-jaxb-annotations`
+stays — it was added for `logstash-logback-encoder`'s JSON log encoding, unrelated to the app's own
+REST/WebClient/JPA Jackson usage. Highest-risk single change in the whole migration — its
 own isolated, revertible PR, landing only after 3a and 3b are merged and green. Full regression run
 (unit + integration) plus a manual smoke test pass (create/update/submit a hakemus, fetch it back,
 confirm dates render correctly) before considering this phase done.
