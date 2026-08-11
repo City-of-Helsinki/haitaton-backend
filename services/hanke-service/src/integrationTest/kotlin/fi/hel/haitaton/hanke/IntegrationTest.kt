@@ -10,7 +10,7 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlMergeMode
-import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import org.testcontainers.utility.MountableFile
 
@@ -35,7 +35,7 @@ abstract class IntegrationTest {
 
     companion object {
         @ServiceConnection
-        private val postgresContainer: PostgreSQLContainer<*> =
+        private val postgresContainer: PostgreSQLContainer =
             PostgreSQLContainer(
                     DockerImageName.parse("postgis/postgis:18-3.6")
                         .asCompatibleSubstituteFor("postgres")
