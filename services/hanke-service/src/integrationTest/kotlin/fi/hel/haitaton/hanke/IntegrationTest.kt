@@ -45,7 +45,7 @@ abstract class IntegrationTest {
                     MountableFile.forClasspathResource(
                         "/fi/hel/haitaton/hanke/tormaystarkastelu/HEL-GIS-data-test.sql"
                     ),
-                    "/docker-entrypoint-initdb.d/HEL-GIS-data-test.sql"
+                    "/docker-entrypoint-initdb.d/HEL-GIS-data-test.sql",
                 )
 
         init {

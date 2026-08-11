@@ -289,7 +289,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     private fun postAttachment(
         applicationId: Long = APPLICATION_ID,
         attachmentType: ApplicationAttachmentType = MUU,
-        file: MockMultipartFile = testFile()
+        file: MockMultipartFile = testFile(),
     ): ResultActions {
         return mockMvc.perform(
             multipart("/hakemukset/$applicationId/liitteet")
