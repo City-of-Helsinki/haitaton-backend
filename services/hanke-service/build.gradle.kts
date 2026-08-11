@@ -144,10 +144,11 @@ dependencies {
     implementation("org.locationtech.jts.io:jts-io-common:1.20.0")
 
     // Testcontainers
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:2.0.5"))
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:postgresql")
+    // Testcontainers 2.x renamed these artifacts with a testcontainers- prefix.
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation("org.testcontainers:testcontainers-postgresql")
 
     // Spring Boot Management
     implementation("org.springframework.boot:spring-boot-starter-actuator")
