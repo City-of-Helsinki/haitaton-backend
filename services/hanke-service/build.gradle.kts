@@ -127,7 +127,7 @@ dependencies {
     // Spring Boot 4's modularization split @WebMvcTest/@AutoConfigureMockMvc out of
     // spring-boot-test-autoconfigure into this dedicated module.
     testImplementation("org.springframework.boot:spring-boot-webmvc-test")
-    testImplementation("io.mockk:mockk:1.14.5")
+    testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("com.ninja-squad:springmockk:5.0.1")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
     testImplementation("com.squareup.okhttp3:mockwebserver3:5.3.2")
