@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import assertk.assertThat
 import assertk.assertions.contains
+import assertk.assertions.doesNotContain
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
@@ -9,6 +10,8 @@ import assertk.assertions.isFalse
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import org.geojson.LngLatAlt
+import org.geojson.Polygon
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -182,6 +185,35 @@ class UtilsKtTest {
             val roundTripped = mapper.readValue(json, Sample::class.java)
 
             assertThat(roundTripped).isEqualTo(Sample("test", 3))
+        }
+
+        @Test
+        fun `serializes and deserializes GeoJSON LngLatAlt coordinates as flat arrays`() {
+            val mapper = createObjectMapper()
+            val polygon =
+                Polygon(
+                    listOf(
+                        LngLatAlt(1.0, 2.0),
+                        LngLatAlt(3.0, 4.0),
+                        LngLatAlt(5.0, 6.0),
+                        LngLatAlt(1.0, 2.0),
+                    )
+                )
+
+            val json = mapper.writeValueAsString(polygon)
+
+            // Not bean-serialized, i.e. not
+            // {"additionalElements":[],"altitude":"NaN","latitude":2.0,"longitude":1.0}
+            assertThat(json).doesNotContain("longitude")
+            assertThat(json).doesNotContain("latitude")
+            assertThat(json)
+                .isEqualTo(
+                    """{"type":"Polygon","coordinates":[[[1.0,2.0],[3.0,4.0],[5.0,6.0],[1.0,2.0]]]}"""
+                )
+
+            val roundTripped = mapper.readValue(json, Polygon::class.java)
+
+            assertThat(roundTripped).isEqualTo(polygon)
         }
     }
 }
