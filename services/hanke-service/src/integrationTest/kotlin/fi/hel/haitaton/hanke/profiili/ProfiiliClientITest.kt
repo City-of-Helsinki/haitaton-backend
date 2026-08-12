@@ -12,7 +12,6 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.messageContains
 import assertk.assertions.prop
-import com.fasterxml.jackson.module.kotlin.readValue
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.toJsonString
@@ -31,6 +30,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import tools.jackson.module.kotlin.readValue
 
 class ProfiiliClientITest {
 
