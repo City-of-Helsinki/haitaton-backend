@@ -73,4 +73,17 @@ class Jackson3FormatDiffITest(@Autowired val jsonMapper: JsonMapper) : Integrati
 
         assertThat(jackson3Json).isEqualTo(jackson2Json)
     }
+
+    @Test
+    fun `KaivuilmoitusAlue's enum-keyed haittojenhallintasuunnitelma map round-trips identically under Jackson 2 and Jackson 3`() {
+        val alue = fi.hel.haitaton.hanke.factory.ApplicationFactory.createExcavationNotificationArea()
+
+        val jackson2Json = OBJECT_MAPPER.writeValueAsString(alue)
+        val roundTripped =
+            jsonMapper.readValue(jackson2Json, fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue::class.java)
+        val jackson3Json = jsonMapper.writeValueAsString(roundTripped)
+
+        assertThat(jackson3Json).isEqualTo(jackson2Json)
+        assertThat(roundTripped.haittojenhallintasuunnitelma).isEqualTo(alue.haittojenhallintasuunnitelma)
+    }
 }
