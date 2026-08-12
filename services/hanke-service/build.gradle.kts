@@ -103,7 +103,7 @@ dependencies {
     implementation("ch.qos.logback.access:logback-access-tomcat:2.0.6")
     implementation("net.logstash.logback:logstash-logback-encoder:8.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("de.grundid.opendatalab:geojson-jackson:1.14")
+    implementation("de.grundid.opendatalab:geojson-jackson:3.0")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     // Spring Boot 4's modularization split Liquibase autoconfiguration out of the generic
     // autoconfigure module into this dedicated one; without it, migrations silently never run.
