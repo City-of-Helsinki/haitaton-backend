@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.gdpr
 
-import com.fasterxml.jackson.databind.node.ObjectNode
+import tools.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.toJsonString
@@ -169,7 +169,7 @@ class GdprController(
                     .getClaimAsMap("authorization")!!
                     .let { OBJECT_MAPPER.valueToTree<ObjectNode>(it) }["permissions"]
                     .flatMap { permission ->
-                        permission["scopes"]?.map { scope -> scope.textValue() } ?: listOf()
+                        permission["scopes"]?.mapNotNull { scope -> scope.asString() } ?: listOf()
                     }
 
             if (!scopes.contains(requiredScope)) {
