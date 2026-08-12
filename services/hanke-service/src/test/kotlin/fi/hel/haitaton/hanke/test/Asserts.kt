@@ -13,9 +13,9 @@ import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
 import assertk.assertions.prop
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.NullNode
-import com.fasterxml.jackson.databind.node.TextNode
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.node.NullNode
+import tools.jackson.databind.node.StringNode
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.hakemus.Hakemusalue
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
@@ -111,7 +111,7 @@ object Asserts {
     fun Assert<JsonNode>.hasNullNode(path: String) = hasPath(path).hasClass(NullNode::class)
 
     fun Assert<JsonNode>.hasTextNode(path: String) =
-        hasPath(path).isInstanceOf(TextNode::class).transform { node: JsonNode -> node.textValue() }
+        hasPath(path).isInstanceOf(StringNode::class).transform { node: JsonNode -> node.asString() }
 
     private fun Assert<JsonNode>.hasPath(path: String) =
         transform { node: JsonNode -> node.get(path) }.isNotNull()

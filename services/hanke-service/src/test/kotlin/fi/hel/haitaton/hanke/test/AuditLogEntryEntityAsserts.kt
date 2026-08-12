@@ -7,7 +7,7 @@ import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.prop
-import com.fasterxml.jackson.databind.node.ObjectNode
+import tools.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.logging.AuditLogActor
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
