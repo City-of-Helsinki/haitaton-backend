@@ -5,7 +5,7 @@ import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.isEqualTo
 import assertk.assertions.isTrue
-import com.fasterxml.jackson.module.kotlin.readValue
+import tools.jackson.module.kotlin.readValue
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import fi.hel.haitaton.hanke.allu.AlluEventEntity
 import fi.hel.haitaton.hanke.allu.AlluEventRepository
