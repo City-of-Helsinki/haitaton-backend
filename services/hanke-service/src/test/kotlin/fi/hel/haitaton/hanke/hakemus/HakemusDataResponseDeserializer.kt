@@ -1,20 +1,17 @@
 package fi.hel.haitaton.hanke.hakemus
 
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
+import tools.jackson.core.JsonParser
+import tools.jackson.databind.DeserializationContext
+import tools.jackson.databind.ValueDeserializer
+import tools.jackson.databind.node.ObjectNode
 
-class HakemusDataResponseDeserializer : JsonDeserializer<HakemusDataResponse>() {
-    override fun deserialize(
-        parser: JsonParser,
-        context: DeserializationContext,
-    ): HakemusDataResponse {
-        val root = parser.readValueAsTree<ObjectNode>()
+class HakemusDataResponseDeserializer : ValueDeserializer<HakemusDataResponse>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): HakemusDataResponse {
+        val root = p.readValueAsTree<ObjectNode>()
 
         val dataClass =
-            when (ApplicationType.valueOf(root.path("applicationType").textValue())) {
+            when (ApplicationType.valueOf(root.path("applicationType").asString())) {
                 ApplicationType.CABLE_REPORT -> JohtoselvitysHakemusDataResponse::class.java
                 ApplicationType.EXCAVATION_NOTIFICATION -> KaivuilmoitusDataResponse::class.java
             }

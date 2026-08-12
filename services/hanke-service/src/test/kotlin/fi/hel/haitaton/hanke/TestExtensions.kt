@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.allu.AlluEventRepository
 import fi.hel.haitaton.hanke.allu.AlluEventStatus
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
+import fi.hel.haitaton.hanke.test.TEST_OBJECT_MAPPER
 import jakarta.mail.internet.MimeMessage
 import java.nio.charset.StandardCharsets
 import java.time.OffsetDateTime
@@ -19,22 +20,28 @@ import java.time.ZoneOffset
 import java.util.UUID
 import org.springframework.test.web.servlet.ResultActions
 
+// These deserialize via TEST_OBJECT_MAPPER, not OBJECT_MAPPER, since the JSON they read can
+// contain (possibly nested) HakemusResponse/HakemusDataResponse/HakemusData/
+// HankkeenHakemusResponse, which need the test-only deserializers JacksonTestExtension registers
+// on TEST_OBJECT_MAPPER - see that class's doc comment. TEST_OBJECT_MAPPER behaves identically to
+// OBJECT_MAPPER for every other type, so this is safe for the many unrelated types also read
+// through these same helpers.
 fun <T> String.asJsonResource(type: Class<T>): T =
-    OBJECT_MAPPER.readValue(this.getResourceAsText(), type)
+    TEST_OBJECT_MAPPER.readValue(this.getResourceAsText(), type)
 
 inline fun <reified T : Any> String.asJsonResource(): T =
-    OBJECT_MAPPER.readValue(this.getResourceAsText())
+    TEST_OBJECT_MAPPER.readValue(this.getResourceAsText())
 
 /** Read the response body from a MockMvc result and deserialize from JSON. */
 inline fun <reified T> ResultActions.andReturnBody(): T =
-    OBJECT_MAPPER.readValue(andReturnContent())
+    TEST_OBJECT_MAPPER.readValue(andReturnContent())
 
 fun ResultActions.andReturnContent(): String =
     andReturn().response.getContentAsString(StandardCharsets.UTF_8)
 
 fun String.getResourceAsBytes(): ByteArray = this.getResource().readBytes()
 
-inline fun <reified T> String.parseJson(): T = OBJECT_MAPPER.readValue(this)
+inline fun <reified T> String.parseJson(): T = TEST_OBJECT_MAPPER.readValue(this)
 
 /**
  * Deserialize the string to a JSON node and then serialize it back to a string, effectively
