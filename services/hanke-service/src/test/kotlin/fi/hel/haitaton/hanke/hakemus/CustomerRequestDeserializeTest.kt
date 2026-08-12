@@ -7,8 +7,6 @@ import assertk.assertions.doesNotContain
 import assertk.assertions.hasClass
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
-import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException
-import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
 import fi.hel.haitaton.hanke.parseJson
@@ -17,6 +15,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import tools.jackson.databind.exc.UnrecognizedPropertyException
+import tools.jackson.databind.node.ObjectNode
 
 class CustomerRequestDeserializeTest {
 

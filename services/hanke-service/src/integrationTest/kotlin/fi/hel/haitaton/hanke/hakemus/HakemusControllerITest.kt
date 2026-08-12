@@ -12,7 +12,6 @@ import assertk.assertions.isNull
 import assertk.assertions.key
 import assertk.assertions.prop
 import assertk.assertions.single
-import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
@@ -95,6 +94,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import tools.jackson.databind.node.ObjectNode
 
 private const val HANKE_TUNNUS = "HAI-1234"
 
