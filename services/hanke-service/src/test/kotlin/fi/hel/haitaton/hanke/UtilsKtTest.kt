@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
@@ -155,6 +156,32 @@ class UtilsKtTest {
         @CsvSource("null", "11372182805", nullValues = ["null"])
         fun `returns false when is invalid`(ovt: String?) {
             assertThat(ovt.isValidOVT()).isFalse()
+        }
+    }
+
+    @Nested
+    inner class CreateObjectMapper {
+        @Test
+        fun `serializes ZonedDateTime as an ISO-8601 string, not a timestamp`() {
+            val mapper = createObjectMapper()
+
+            val json =
+                mapper.writeValueAsString(
+                    mapOf("t" to java.time.ZonedDateTime.parse("2026-01-01T10:00:00Z"))
+                )
+
+            assertThat(json).contains("2026-01-01T10:00:00Z")
+        }
+
+        @Test
+        fun `serializes and deserializes a Kotlin data class`() {
+            val mapper = createObjectMapper()
+            data class Sample(val name: String, val count: Int)
+
+            val json = mapper.writeValueAsString(Sample("test", 3))
+            val roundTripped = mapper.readValue(json, Sample::class.java)
+
+            assertThat(roundTripped).isEqualTo(Sample("test", 3))
         }
     }
 }

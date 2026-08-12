@@ -1,9 +1,7 @@
 package fi.hel.haitaton.hanke
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.kotlinModule
 import fi.hel.haitaton.hanke.domain.HasId
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
@@ -19,10 +17,7 @@ private val logger = KotlinLogging.logger {}
 private val businessIdRegex = "^(\\d{7})-(\\d)\$".toRegex()
 private val businessIdMultipliers = listOf(7, 9, 10, 5, 8, 4, 2)
 
-fun createObjectMapper(): ObjectMapper =
-    jacksonObjectMapper()
-        .registerModule(JavaTimeModule())
-        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+fun createObjectMapper(): JsonMapper = JsonMapper.builder().addModule(kotlinModule()).build()
 
 /**
  * Helper for mapping and sorting data to existing collections.
