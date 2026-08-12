@@ -9,12 +9,13 @@ stack the app itself configures or calls.
 **Architecture:** Sequenced by risk, exactly as `docs/superpowers/specs/2026-08-11-jackson3-full-retirement-design.md`
 lays out: verify two previously-flagged Jackson 3 gaps are actually fixed (Task 1), migrate the
 `OBJECT_MAPPER` singleton and its six main-source call sites one file at a time since each touches a
-different subsystem (security, GDPR, audit, geometry — Tasks 2-8), migrate a cluster of test-only
-Jackson 2 usage discovered during Task 5's review that the design doc's original file scan missed
-(Tasks 6-9 — renumbered in from the original Tasks 6-8 during execution; see Self-Review Notes),
-then flip the two Spring config flags and remove the app's own Jackson 2 dependency declarations as
-one isolated, high-visibility change (Task 13), then cleanup (Task 14). Every task after Task 1
-depends on the previous one being merged and green.
+different subsystem (security, GDPR, audit, geometry — Tasks 2-5, 11-13), migrate a cluster of
+test-only Jackson 2 usage discovered during Task 5's review that the design doc's original file
+scan missed (Tasks 6-7, 9-10; renumbered during execution — see Self-Review Notes), fix a
+`createObjectMapper()` GeoJSON gap discovered during Task 7's review (Task 8), then flip the two
+Spring config flags and remove the app's own Jackson 2 dependency declarations as one isolated,
+high-visibility change (Task 14), then cleanup (Task 15). Every task after Task 1 depends on the
+previous one being merged and green.
 
 **Tech Stack:** Kotlin, Spring Boot 4.1.0, Jackson 3 (`tools.jackson.*`) via
 `tools.jackson.module:jackson-module-kotlin:3.1.5`, JUnit 5, assertk, Testcontainers.
@@ -32,9 +33,11 @@ depends on the previous one being merged and green.
   expected and out of scope; the goal is the app no longer declaring or calling it directly.
 - `HypersistenceJsonSerializer.kt`'s primary Jackson-3 JSON-column serialization path (the
   `LngLatAlt` serializer/deserializer, the `ObjectMapperSupplier`) is NOT touched — only its
-  `OBJECT_MAPPER.convertValue()` fallback path (Task 12) changes.
-- Tasks 6-9 were added mid-execution (discovered during Task 5's review) to cover a cluster of
-  test-source Jackson 2 usage the design doc's original file scan missed — see Self-Review Notes.
+  `OBJECT_MAPPER.convertValue()` fallback path (Task 13) changes.
+- Tasks 6-7, 9-10 were added mid-execution (discovered during Task 5's review) to cover a cluster
+  of test-source Jackson 2 usage the design doc's original file scan missed. Task 8 was added
+  mid-execution (discovered during Task 7's review) to fix a `createObjectMapper()` GeoJSON gap.
+  See Self-Review Notes.
 
 ---
 
@@ -619,7 +622,125 @@ git commit -m "HAI-3618 Migrate JacksonTestExtension and its custom deserializer
 
 ---
 
-## Task 8: Migrate `test/Asserts.kt` and `test/AuditLogEntryEntityAsserts.kt` off Jackson 2
+## Task 8: Fix `createObjectMapper()`'s missing GeoJSON `LngLatAlt` serializer/deserializer
+
+**Files:**
+- Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/Utils.kt`
+
+**Interfaces:**
+- Consumes: `fi.hel.haitaton.hanke.configuration.LngLatAltJackson3Serializer`,
+  `fi.hel.haitaton.hanke.configuration.LngLatAltJackson3Deserializer` (already-merged, working
+  classes from Phase 1 of the earlier Jackson 3 migration — see `HypersistenceJsonSerializer.kt`),
+  `tools.jackson.databind.module.SimpleModule`, `org.geojson.LngLatAlt`.
+- Produces: `createObjectMapper()` now serializes/deserializes GeoJSON coordinates in the same
+  flat-array format as every other Jackson 3 mapper in the app (`Configuration.kt`'s
+  `geoJsonJsonMapperBuilderCustomizer` bean, `HypersistenceJsonSerializer.kt`'s JSON-column mapper).
+  `OBJECT_MAPPER`, `TEST_OBJECT_MAPPER` (built from it in Task 7), and the internal mappers built
+  inside `HakemusResponseDeserializer`/`HankkeenHakemusResponseDeserializer` (also built from
+  `createObjectMapper()`, Task 7) all inherit this fix automatically — no other file needs to
+  change.
+
+Context: discovered during Task 7's review, not anticipated when this plan (or the original Task 2)
+was written. `createObjectMapper()` (Task 2) only added `kotlinModule()` — it never got the same
+`LngLatAlt` fix that `Configuration.kt` and `HypersistenceJsonSerializer.kt` already apply to their
+own Jackson 3 mappers, because at the time Task 2 was planned, nobody had traced whether
+`OBJECT_MAPPER` itself ever handles GeoJSON. It does — directly (`GeometriatDao.kt`, Task 3, reads
+and writes real GeoJSON `Feature`/`Polygon` data from/to Postgres) and indirectly (test fixtures via
+`GeometriaFactory`, `HakemusFactory`, etc., all read/written through `OBJECT_MAPPER`-backed helpers).
+
+The controller independently reproduced this before adding this task: a `Polygon` with `LngLatAlt`
+coordinates, round-tripped through `OBJECT_MAPPER` as it stands, serializes coordinates as bean
+objects (`{"additionalElements":[],"altitude":"NaN","latitude":2.0,"longitude":1.0}`) instead of the
+correct GeoJSON position array (`[1.0,2.0]`) — the exact corruption already documented in
+`HypersistenceJsonSerializer.kt`'s class comment ("Postgres then rejects it: 'coordinates in GeoJSON
+are not sufficiently nested'"). This is a real, production-reachable defect via `GeometriatDao.kt`,
+not just a test-fixture inconvenience. The fix itself was also independently verified by the
+controller via a scratch test before writing this task: adding the same `SimpleModule` used in
+`Configuration.kt` to `createObjectMapper()` produces the correct flat-array format.
+
+- [ ] **Step 1: Add the `LngLatAlt` module to `createObjectMapper()`**
+
+In `Utils.kt`, add the import:
+
+```kotlin
+import fi.hel.haitaton.hanke.configuration.LngLatAltJackson3Deserializer
+import fi.hel.haitaton.hanke.configuration.LngLatAltJackson3Serializer
+import org.geojson.LngLatAlt
+import tools.jackson.databind.module.SimpleModule
+```
+
+and replace:
+
+```kotlin
+fun createObjectMapper(): JsonMapper = JsonMapper.builder().addModule(kotlinModule()).build()
+```
+
+with:
+
+```kotlin
+fun createObjectMapper(): JsonMapper =
+    JsonMapper.builder()
+        .addModule(kotlinModule())
+        .addModule(
+            SimpleModule()
+                .addSerializer(LngLatAlt::class.java, LngLatAltJackson3Serializer())
+                .addDeserializer(LngLatAlt::class.java, LngLatAltJackson3Deserializer())
+        )
+        .build()
+```
+
+(This is the same `SimpleModule` construction already used in `Configuration.kt`'s
+`geoJsonJsonMapperBuilderCustomizer` — verified via scratch test during plan-writing that it
+produces the correct flat-array GeoJSON format when applied here too.)
+
+- [ ] **Step 2: Verify the fix directly**
+
+Add a temporary test (or run one interactively and discard it — your choice, as long as you verify
+before moving on) confirming a `Polygon`/`LngLatAlt` round-trips through `OBJECT_MAPPER` with the
+correct array shape, e.g.:
+
+```kotlin
+val polygon = org.geojson.Polygon(listOf(org.geojson.LngLatAlt(1.0, 2.0), org.geojson.LngLatAlt(3.0, 4.0), org.geojson.LngLatAlt(5.0, 6.0), org.geojson.LngLatAlt(1.0, 2.0)))
+val json = OBJECT_MAPPER.writeValueAsString(polygon)
+// Expect: {"type":"Polygon","coordinates":[[[1.0,2.0],[3.0,4.0],[5.0,6.0],[1.0,2.0]]]}
+// NOT: {"type":"Polygon","coordinates":[[{"longitude":1.0,"latitude":2.0,...}, ...]]}
+```
+
+- [ ] **Step 3: Run the full unit test suite**
+
+Run: `./gradlew :services:hanke-service:test`
+Expected: PASS. This confirms the fix doesn't regress anything already covered by unit tests
+(Tasks 2, 6, 7, 8's own unit tests among them).
+
+- [ ] **Step 4: Re-verify Task 3's and Task 7's affected integration tests**
+
+This fix specifically unblocks tests that were failing due to this exact bug — confirm it actually
+does, don't just assume:
+
+Run: `./gradlew :services:hanke-service:integrationTest --tests "fi.hel.haitaton.hanke.geometria.GeometriatDaoITest"`
+Expected: PASS (Task 3 already reported this passing, but that was before this bug was known to
+exist — re-confirm now that real Docker/Postgres execution with correctly-formatted GeoJSON works
+end-to-end, not just that no Jackson-2-type-error exists).
+
+Run: `./gradlew :services:hanke-service:integrationTest --tests "fi.hel.haitaton.hanke.hakemus.HakemusControllerITest"`
+Expected: previously 60/98 failed (Task 7's report), with 58 of those attributed specifically to
+this bug. After this fix, expect that count to drop substantially — if failures remain, check
+whether they're the two other, already-identified pre-existing issues Task 7's report flagged (a
+stale `ObjectNode` import in `HakemusControllerITest.kt` itself, and one JSON field-ordering
+assertion) rather than a sign this fix didn't work. Both of those are already in scope for Task 9
+(the `ObjectNode` import) or explicitly out of scope (the field-ordering issue, noted as a
+pre-existing Jackson 2→3 difference unrelated to any task in this plan).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/Utils.kt
+git commit -m "HAI-3618 Add missing LngLatAlt GeoJSON serializer/deserializer to createObjectMapper()"
+```
+
+---
+
+## Task 9: Migrate `test/Asserts.kt` and `test/AuditLogEntryEntityAsserts.kt` off Jackson 2
 
 **Files:**
 - Modify: `services/hanke-service/src/test/kotlin/fi/hel/haitaton/hanke/test/Asserts.kt`
@@ -691,25 +812,30 @@ git commit -m "HAI-3618 Migrate test assertion helpers off Jackson 2"
 
 ---
 
-## Task 9: Migrate the remaining stray Jackson 2 imports off Jackson 2
+## Task 10: Migrate the remaining stray Jackson 2 imports off Jackson 2
 
 **Files:**
 - Modify: `services/hanke-service/src/test/kotlin/fi/hel/haitaton/hanke/hakemus/CustomerRequestDeserializeTest.kt`
 - Modify: `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/hakemus/HakemusControllerITest.kt`
-- Modify: `services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClientITest.kt`
 
 **Interfaces:**
-- Consumes: `tools.jackson.databind.node.ObjectNode`, `tools.jackson.module.kotlin.readValue`.
-  All three files' call sites use an explicit `val x: Type = ...` declaration (e.g. `val json:
-  ObjectNode = OBJECT_MAPPER.valueToTree(customer)`, `val query: ProfiiliClient.GraphQlQuery =
-  OBJECT_MAPPER.readValue(body)`) — the same pattern verified safe in Tasks 2 and 5's scratch
-  tests, not the property-setter-inside-`apply` pattern that needed a helper in Task 3.
+- Consumes: `tools.jackson.databind.node.ObjectNode`. Both files' call sites use an explicit `val x:
+  Type = ...` declaration (e.g. `val json: ObjectNode = OBJECT_MAPPER.valueToTree(customer)`) — the
+  same pattern verified safe in Tasks 2 and 5's scratch tests, not the property-setter-inside-`apply`
+  pattern that needed a helper in Task 3.
 - Produces: no new interface — these are test-only call sites.
 
 This is the last of the newly-discovered test-source cluster (found during Task 5's review) — after
 this task, a full `grep -rln "com\.fasterxml\.jackson" --include="*.kt" services/hanke-service/src/`
 should show only files using the shared, unaffected `com.fasterxml.jackson.annotation.*` package
 (safe, unchanged between Jackson 2 and 3 — not part of this migration).
+
+**`ProfiiliClientITest.kt` update:** originally in scope for this task (a `readValue` import swap),
+but Task 7's implementer already fixed it in commit `61444538` — it fully blocked
+`compileIntegrationTestKotlin` from running at all, so fixing it couldn't wait for this task. Verify
+it's already done (`grep -n "^import.*jackson" services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClientITest.kt`
+should show `tools.jackson.module.kotlin.readValue`, not `com.fasterxml.jackson.*`) rather than
+re-doing it.
 
 - [ ] **Step 1: Update `CustomerRequestDeserializeTest.kt`**
 
@@ -726,18 +852,18 @@ than silently leaving a mismatched exception type.
 Replace `import com.fasterxml.jackson.databind.node.ObjectNode` with
 `import tools.jackson.databind.node.ObjectNode`. Call sites at the lines found during plan-writing
 (`val json: ObjectNode = OBJECT_MAPPER.valueToTree(customer)`, appearing multiple times) need no
-other change.
+other change. Task 7's report specifically flagged this file's stale import as the cause of a
+`ClassCastException` in one test ("returns 200 and the created hakemus when the hakemus is a
+kaivuilmoitus") — confirm that specific test passes after this fix.
 
-- [ ] **Step 3: Update `ProfiiliClientITest.kt`**
+- [ ] **Step 3: Confirm `ProfiiliClientITest.kt` needs no further change**
 
-Replace `import com.fasterxml.jackson.module.kotlin.readValue` with `import
-tools.jackson.module.kotlin.readValue`. The call site `val query: ProfiiliClient.GraphQlQuery =
-OBJECT_MAPPER.readValue(body)` needs no other change.
+Per the note above — just verify, don't re-edit.
 
 - [ ] **Step 4: Verify compilation and confirm the codebase-wide grep is clean**
 
 Run: `./gradlew :services:hanke-service:compileTestKotlin :services:hanke-service:compileIntegrationTestKotlin`
-Expected: PASS with zero errors, assuming Tasks 6-8 are also done — this is the first point in the
+Expected: PASS with zero errors, assuming Tasks 6-9 are also done — this is the first point in the
 plan where the whole module should compile cleanly again end-to-end.
 
 Run: `grep -rln "com\.fasterxml\.jackson\.databind\|com\.fasterxml\.jackson\.module\.kotlin\|com\.fasterxml\.jackson\.core\.Json\|com\.fasterxml\.jackson\.datatype" --include="*.kt" services/hanke-service/src/`
@@ -747,22 +873,23 @@ Expected: no output (the only remaining `com.fasterxml.jackson` references anywh
 - [ ] **Step 5: Run the full test suite**
 
 Run: `./gradlew :services:hanke-service:test :services:hanke-service:integrationTest`
-Expected: PASS. This is the real checkpoint before Task 13 (the global flip) — confirms the entire
+Expected: PASS. This is the real checkpoint before Task 14 (the global flip) — confirms the entire
 codebase, main and test sources alike, is Jackson-3-only for everything except the Spring MVC
-config flags themselves.
+config flags themselves. With Task 8's `LngLatAlt` fix and this task both done, `HakemusControllerITest`
+should now be fully green (or close to it — re-check Task 8's Step 4 notes on the one remaining
+pre-existing, unrelated field-ordering issue if anything still fails here).
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add services/hanke-service/src/test/kotlin/fi/hel/haitaton/hanke/hakemus/CustomerRequestDeserializeTest.kt \
-        services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/hakemus/HakemusControllerITest.kt \
-        services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/profiili/ProfiiliClientITest.kt
+        services/hanke-service/src/integrationTest/kotlin/fi/hel/haitaton/hanke/hakemus/HakemusControllerITest.kt
 git commit -m "HAI-3618 Migrate remaining stray Jackson 2 imports to Jackson 3"
 ```
 
 ---
 
-## Task 10: Migrate `Extensions.kt` off Jackson 2
+## Task 11: Migrate `Extensions.kt` off Jackson 2
 
 **Files:**
 - Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/Extensions.kt:11,26-27`
@@ -808,7 +935,7 @@ the commit if so, since Task 2 already did the underlying type change.)
 
 ---
 
-## Task 11: Migrate `AccessRules.kt` off Jackson 2
+## Task 12: Migrate `AccessRules.kt` off Jackson 2
 
 **Files:**
 - Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/security/AccessRules.kt:44`
@@ -817,7 +944,7 @@ the commit if so, since Task 2 already did the underlying type change.)
   which references `HAI0001` per the codebase search done while writing this plan).
 
 **Interfaces:**
-- Consumes: `OBJECT_MAPPER.writeValueAsString(Any?)` — verified in Task 10.
+- Consumes: `OBJECT_MAPPER.writeValueAsString(Any?)` — verified in Task 11.
 - Produces: no new interface. This is the security-critical path (writes the 401 response body
   directly to the raw servlet response, bypassing Spring MVC's converters entirely) — the design
   doc calls this out as needing its own careful verification.
@@ -855,7 +982,7 @@ git commit -m "HAI-3618 Confirm AccessRules' 401 error body serialization works 
 
 ---
 
-## Task 12: Migrate `HypersistenceJsonSerializer.kt`'s `OBJECT_MAPPER` fallback off Jackson 2
+## Task 13: Migrate `HypersistenceJsonSerializer.kt`'s `OBJECT_MAPPER` fallback off Jackson 2
 
 **Files:**
 - Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/HypersistenceJsonSerializer.kt:38`
@@ -894,7 +1021,7 @@ Expected: PASS.
 - [ ] **Step 3: Run the full test suite as a final check for this migration phase**
 
 Run: `./gradlew :services:hanke-service:test :services:hanke-service:integrationTest`
-Expected: PASS (0 failures). This is the checkpoint before Task 13 — `OBJECT_MAPPER`, all six of its
+Expected: PASS (0 failures). This is the checkpoint before Task 14 — `OBJECT_MAPPER`, all six of its
 original main-source call sites, and the Task 6-9 test-source cluster are now Jackson 3, with the
 Spring config flags still unchanged (still Jackson 2 for MVC), so this confirms Phase 3b is fully
 done and safe before touching the global default.
@@ -908,7 +1035,7 @@ git commit -m "HAI-3618 Confirm HypersistenceJsonSerializer's convertValue fallb
 
 ---
 
-## Task 13: Flip the global Jackson default (Phase 3c)
+## Task 14: Flip the global Jackson default (Phase 3c)
 
 **Files:**
 - Modify: `services/hanke-service/src/main/resources/application.yml`
@@ -919,10 +1046,10 @@ git commit -m "HAI-3618 Confirm HypersistenceJsonSerializer's convertValue fallb
 - Produces: nothing new — Spring MVC's `@ResponseBody`/`@RequestBody` handling now uses Boot's
   auto-configured Jackson 3 `JsonMapper` bean instead of the Jackson 2 compat path. No caller-facing
   interface changes; this is the highest-risk task in the plan precisely because its correctness
-  depends on everything verified in Tasks 1-12, not on any new code of its own.
+  depends on everything verified in Tasks 1-13, not on any new code of its own.
 
 This is the single highest-risk change in the whole migration, per the design doc. Do not start
-this task until Tasks 1-12 are all merged and green.
+this task until Tasks 1-13 are all merged and green.
 
 - [ ] **Step 1: Remove the two Spring config properties**
 
@@ -979,7 +1106,7 @@ app's own dependency, and is still doing useful work.
 Run: `./gradlew :services:hanke-service:test :services:hanke-service:integrationTest`
 Expected: PASS (0 failures). If anything fails here, this is exactly the scenario the design doc
 flags as highest-risk — use `superpowers:systematic-debugging` rather than guessing at a fix, and
-consider that reverting this one task's commit restores the known-working state from Task 12.
+consider that reverting this one task's commit restores the known-working state from Task 13.
 
 - [ ] **Step 4: Manual smoke test**
 
@@ -1009,7 +1136,7 @@ git commit -m "HAI-3618 Flip Spring's Jackson default from 2 to 3, remove the ap
 
 ---
 
-## Task 14: Cleanup & documentation (Phase 4)
+## Task 15: Cleanup & documentation (Phase 4)
 
 **Files:**
 - Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/Configuration.kt`
@@ -1063,29 +1190,43 @@ git commit -m "HAI-3618 Update comments and add team guideline now that the app 
 
 ## Self-Review Notes
 
-- **Spec coverage:** Phase 3a → Task 1. Phase 3b → Tasks 2-5 and 10-12 (one per file, matching the
-  design doc's six original call sites plus the foundational `Utils.kt` change) plus Tasks 6-9 (the
-  test-source cluster added mid-execution — see below). Phase 3c → Task 13. Phase 4 → Task 14. All
-  design doc sections have a corresponding task.
+- **Spec coverage:** Phase 3a → Task 1. Phase 3b → Tasks 2-5 and 11-13 (one per file, matching the
+  design doc's six original call sites plus the foundational `Utils.kt` change) plus Tasks 6-7, 9-10
+  (the test-source cluster added mid-execution — see below) and Task 8 (the `createObjectMapper()`
+  GeoJSON fix, also added mid-execution). Phase 3c → Task 14. Phase 4 → Task 15. All design doc
+  sections have a corresponding task.
 - **Corrections found and folded in while writing this plan** (both already applied to the design
   doc, commit `9d8cdab3`): the two "known gaps" don't reproduce against current code (verified via
   scratch tests, not assumed) — Task 1 is verify-and-lock-in rather than open-ended debugging.
   Jackson 2's `jackson-databind` stays on the classpath transitively via `logstash-logback-encoder`
-  and `geojson-jackson` regardless of this plan — Task 13's goal statement and Step 5 reflect that
+  and `geojson-jackson` regardless of this plan — Task 14's goal statement and Step 5 reflect that
   honestly rather than claiming full classpath removal.
-- **Scope correction found during execution, not during planning** (unlike the two corrections
-  above): Task 5's review surfaced a whole cluster of test-source Jackson 2 usage — `TestExtensions.kt`,
-  `JacksonTestExtension.kt`, four custom `JsonDeserializer` classes it registers, two assertion
-  helper files, and three files with stray imports — that the original plan-writing file scan
-  missed entirely, because that scan only covered `src/main/kotlin`. Tasks 6-9 were inserted to
-  cover this cluster, renumbering the original Tasks 6-10 to 10-14. This is a real gap in the
-  original plan's completeness, not a text-level mistake like the other two corrections — flagged
-  to the user before the new tasks were added (per the SDD process's handling of plan-defect
-  findings), who approved expanding the plan in place.
+- **Scope corrections found during execution, not during planning** (unlike the two corrections
+  above):
+  - Task 5's review surfaced a whole cluster of test-source Jackson 2 usage — `TestExtensions.kt`,
+    `JacksonTestExtension.kt`, four custom `JsonDeserializer` classes it registers, two assertion
+    helper files, and three files with stray imports — that the original plan-writing file scan
+    missed entirely, because that scan only covered `src/main/kotlin`. Tasks 6-7 and 9-10 were
+    inserted to cover this cluster, renumbering the original Tasks 6-10 to 11-15. Flagged to the
+    user before the new tasks were added, who approved expanding the plan in place.
+  - Task 7's review surfaced a second, unrelated gap: `createObjectMapper()` (Task 2, already
+    merged) never got the GeoJSON `LngLatAlt` serializer/deserializer that `Configuration.kt` and
+    `HypersistenceJsonSerializer.kt` already register on their own Jackson 3 mappers. The
+    controller independently reproduced real coordinate corruption (bean objects instead of GeoJSON
+    arrays) before adding Task 8 to fix it, since this affects an already-merged, already-reviewed
+    task and has production-reachable impact via `GeometriatDao.kt` (Task 3), not just tests.
+    Flagged to the user, who approved fixing it immediately as a new task before continuing.
+  - Both are real gaps in the original plan's completeness, not text-level mistakes like the two
+    corrections above — the plan's file-discovery process (Task 1's scan, this task's design)
+    simply didn't reach these two areas until execution surfaced them.
 - **Type consistency:** `createObjectMapper(): JsonMapper` (Task 2) is consumed identically by name
-  in Tasks 3, 5, 6, 9, 11, 12's import-check steps and Task 4/10's no-op-if-nothing-found steps — no
-  signature drift between tasks. Task 7's `ValueDeserializer`/`JsonMapper.rebuild()` pattern matches
-  the already-merged `LngLatAltJackson3Deserializer` reference implementation named in that task.
+  in Tasks 3, 5, 6, 10, 12, 13's import-check steps and Task 4/11's no-op-if-nothing-found steps —
+  no signature drift between tasks. Task 8's fix to `createObjectMapper()` is inherited automatically
+  by every task that already depends on it (`OBJECT_MAPPER`, Task 7's `TEST_OBJECT_MAPPER`, the
+  internal mappers built inside `HakemusResponseDeserializer`/`HankkeenHakemusResponseDeserializer`)
+  without any of those tasks needing to change. Task 7's `ValueDeserializer`/`JsonMapper.rebuild()`
+  pattern matches the already-merged `LngLatAltJackson3Deserializer` reference implementation named
+  in that task — the same reference implementation Task 8 reuses directly.
 - **No placeholders:** every code-bearing step has real, verified code (each Jackson 3 API call —
   `writeValueAsString`, `writerWithView`, reified `readValue`, `readTree`, `valueToTree`,
   `convertValue`, `readValueAsTree`, `treeToValue`, `addAbstractTypeMapping`,
