@@ -1,7 +1,10 @@
 package fi.hel.haitaton.hanke
 
 import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.module.SimpleModule
 import tools.jackson.module.kotlin.kotlinModule
+import fi.hel.haitaton.hanke.configuration.LngLatAltJackson3Deserializer
+import fi.hel.haitaton.hanke.configuration.LngLatAltJackson3Serializer
 import fi.hel.haitaton.hanke.domain.HasId
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
@@ -9,6 +12,7 @@ import java.time.temporal.ChronoUnit
 import java.time.temporal.Temporal
 import kotlin.reflect.KProperty1
 import mu.KotlinLogging
+import org.geojson.LngLatAlt
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
 
@@ -17,7 +21,15 @@ private val logger = KotlinLogging.logger {}
 private val businessIdRegex = "^(\\d{7})-(\\d)\$".toRegex()
 private val businessIdMultipliers = listOf(7, 9, 10, 5, 8, 4, 2)
 
-fun createObjectMapper(): JsonMapper = JsonMapper.builder().addModule(kotlinModule()).build()
+fun createObjectMapper(): JsonMapper =
+    JsonMapper.builder()
+        .addModule(kotlinModule())
+        .addModule(
+            SimpleModule()
+                .addSerializer(LngLatAlt::class.java, LngLatAltJackson3Serializer())
+                .addDeserializer(LngLatAlt::class.java, LngLatAltJackson3Deserializer())
+        )
+        .build()
 
 /**
  * Helper for mapping and sorting data to existing collections.
