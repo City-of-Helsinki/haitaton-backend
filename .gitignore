@@ -44,3 +44,7 @@ out/
 /AGENTS.md
 /*.txt
 /*.log
+
+# Git worktrees for isolated task-plan execution
+/.worktrees/
+/.superpowers/
