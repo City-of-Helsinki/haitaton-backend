@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.geometria
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.SRID
@@ -22,6 +21,8 @@ import org.springframework.jdbc.core.queryForObject
 import org.springframework.stereotype.Component
 
 private val logger = KotlinLogging.logger {}
+
+private inline fun <reified T> String.parseJson(): T = OBJECT_MAPPER.readValue(this, T::class.java)
 
 @Component
 class GeometriatDao(private val jdbcOperations: JdbcOperations) {
@@ -197,8 +198,8 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
             val geojson = rs.getString(1)
             val paramjson = rs.getString(2)
             Feature().apply {
-                geometry = OBJECT_MAPPER.readValue(geojson)
-                paramjson?.let { properties = OBJECT_MAPPER.readValue(paramjson) }
+                geometry = geojson.parseJson()
+                paramjson?.let { properties = it.parseJson() }
             }
         }
         return jdbcOperations.query(query, rowMapper, geometriatId)
