@@ -5,7 +5,6 @@ import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.isEqualTo
 import assertk.assertions.isTrue
-import tools.jackson.module.kotlin.readValue
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import fi.hel.haitaton.hanke.allu.AlluEventEntity
 import fi.hel.haitaton.hanke.allu.AlluEventRepository
@@ -19,6 +18,7 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
 import org.springframework.test.web.servlet.ResultActions
+import tools.jackson.module.kotlin.readValue
 
 // These deserialize via TEST_OBJECT_MAPPER, not OBJECT_MAPPER, since the JSON they read can
 // contain (possibly nested) HakemusResponse/HakemusDataResponse/HakemusData/

@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.gdpr
 
-import tools.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.toJsonString
@@ -25,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import tools.jackson.databind.node.ObjectNode
 
 private val logger = KotlinLogging.logger {}
 

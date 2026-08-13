@@ -1,9 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import tools.jackson.databind.MapperFeature
-import tools.jackson.databind.json.JsonMapper
-import tools.jackson.databind.module.SimpleModule
-import tools.jackson.module.kotlin.kotlinModule
 import fi.hel.haitaton.hanke.configuration.LngLatAltJackson3Deserializer
 import fi.hel.haitaton.hanke.configuration.LngLatAltJackson3Serializer
 import fi.hel.haitaton.hanke.domain.HasId
@@ -16,6 +12,10 @@ import mu.KotlinLogging
 import org.geojson.LngLatAlt
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
+import tools.jackson.databind.MapperFeature
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.module.SimpleModule
+import tools.jackson.module.kotlin.kotlinModule
 
 private val logger = KotlinLogging.logger {}
 

@@ -7,7 +7,6 @@ import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.prop
-import tools.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.logging.AuditLogActor
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
@@ -20,6 +19,7 @@ import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.parseJson
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
+import tools.jackson.databind.node.ObjectNode
 
 object AuditLogEntryEntityAsserts {
     fun Assert<AuditLogEntryEntity>.auditEvent() =

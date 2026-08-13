@@ -13,9 +13,6 @@ import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
 import assertk.assertions.prop
-import tools.jackson.databind.JsonNode
-import tools.jackson.databind.node.NullNode
-import tools.jackson.databind.node.StringNode
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.hakemus.Hakemusalue
 import fi.hel.haitaton.hanke.hakemus.PostalAddress
@@ -32,6 +29,9 @@ import java.time.ZonedDateTime
 import java.time.temporal.TemporalAmount
 import java.util.UUID
 import org.geojson.Polygon
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.node.NullNode
+import tools.jackson.databind.node.StringNode
 
 object Asserts {
 
