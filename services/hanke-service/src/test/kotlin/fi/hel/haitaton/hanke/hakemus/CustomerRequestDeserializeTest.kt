@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import tools.jackson.databind.exc.UnrecognizedPropertyException
+import tools.jackson.databind.exc.InvalidFormatException
 import tools.jackson.databind.node.ObjectNode
 
 class CustomerRequestDeserializeTest {
@@ -68,7 +68,10 @@ class CustomerRequestDeserializeTest {
             val jsonString = json.toString()
             assertThat(jsonString).contains("\"registryKeyHidden\":\"nonsense\"")
 
-            assertFailure { jsonString.parseJson() }.hasClass(UnrecognizedPropertyException::class)
+            // Explicit type param required: without it, T reifies as Unit (the lambda's inferred
+            // return type, since the result is unused) instead of CustomerRequest, silently
+            // testing something else entirely - see git history for the full story.
+            assertFailure { jsonString.parseJson<CustomerRequest>() }.hasClass(InvalidFormatException::class)
         }
     }
 }
