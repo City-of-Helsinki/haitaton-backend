@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
+import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.andReturnBody
@@ -247,8 +248,8 @@ class MuutosilmoitusControllerITest(
             mockAuthorization()
             val response = put(url, request).andExpect(status().isBadRequest).andReturnContent()
 
-            assertThat(response)
-                .isEqualTo(HankeErrorDetail(HankeError.HAI2008, listOf("endTime")).toJsonString())
+            assertThat(OBJECT_MAPPER.readTree(response))
+                .isEqualTo(OBJECT_MAPPER.readTree(HankeErrorDetail(HankeError.HAI2008, listOf("endTime")).toJsonString()))
             verifySequence {
                 muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
                 muutosilmoitusService wasNot Called
@@ -274,8 +275,8 @@ class MuutosilmoitusControllerITest(
             mockAuthorization()
             val response = put(url, request).andExpect(status().isBadRequest).andReturnContent()
 
-            assertThat(response)
-                .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
+            assertThat(OBJECT_MAPPER.readTree(response))
+                .isEqualTo(OBJECT_MAPPER.readTree(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString()))
             verifySequence {
                 muutosilmoitusAuthorizer.authorize(id, PermissionCode.EDIT_APPLICATIONS.name)
                 muutosilmoitusService wasNot Called

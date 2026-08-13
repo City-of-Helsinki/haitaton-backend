@@ -949,8 +949,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             val response = put(url, request).andExpect(status().isBadRequest).andReturnContent()
 
-            assertThat(response)
-                .isEqualTo(HankeErrorDetail(HankeError.HAI2008, listOf("endTime")).toJsonString())
+            assertThat(OBJECT_MAPPER.readTree(response))
+                .isEqualTo(OBJECT_MAPPER.readTree(HankeErrorDetail(HankeError.HAI2008, listOf("endTime")).toJsonString()))
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService wasNot Called
@@ -986,8 +986,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             val response = put(url, request).andExpect(status().isBadRequest).andReturnContent()
 
-            assertThat(response)
-                .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
+            assertThat(OBJECT_MAPPER.readTree(response))
+                .isEqualTo(OBJECT_MAPPER.readTree(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString()))
             verifySequence {
                 authorizer.authorizeHakemusId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService wasNot Called
