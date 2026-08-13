@@ -142,16 +142,6 @@ spring:
     password: ${HAITATON_PASSWORD:haitaton}
     url: jdbc:postgresql://${HAITATON_HOST:localhost}:${HAITATON_PORT:5432}/${HAITATON_DATABASE:haitaton}${HAITATON_DATABASE_PARAMS:}
     username: ${HAITATON_USER:haitaton_user}
-  http:
-    converters:
-      # Spring Boot 4 defaults to Jackson 3's HttpMessageConverter when both Jackson versions are
-      # on the classpath. Keep Jackson 2 for this upgrade; see the jackson.use-jackson2-defaults
-      # note below.
-      preferred-json-mapper: jackson2
-  jackson:
-    # Spring Boot 4 defaults to Jackson 3. Keep Jackson 2 behavior for this upgrade; migrating
-    # to Jackson 3 is tracked separately since it touches nearly every JSON surface in the app.
-    use-jackson2-defaults: true
   jpa:
     hibernate:
       naming:

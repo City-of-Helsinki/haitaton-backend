@@ -1198,7 +1198,13 @@ git commit -m "HAI-3618 Fix Jackson 3's stricter null/absent-primitive handling 
 This is the single highest-risk change in the whole migration, per the design doc. Do not start
 this task until Tasks 1-13 are all merged and green.
 
-- [ ] **Step 1: Remove the two Spring config properties**
+**PAUSED at Step 3 (2026-08-13) — see `docs/superpowers/2026-08-13-jackson3-task16-pause-memo.md`
+for the full status.** Steps 1, 2, and 5 are done and committed. Step 3's `integrationTest` run
+surfaced 66 failures, the large majority traced to real HTTP/DB round-trips of geometry-bearing
+requests/responses — not reproducible in a Docker-less sandbox despite extensive isolated-mapper
+testing (all of which came back clean). Do not resume this task without reading that memo first.
+
+- [x] **Step 1: Remove the two Spring config properties**
 
 In `application.yml`, remove:
 
@@ -1218,7 +1224,7 @@ In `application.yml`, remove:
 (These sit under the `spring:` key, alongside `spring.datasource`, `spring.jpa`, etc. — remove only
 these two nested blocks, not the whole `spring:` section.)
 
-- [ ] **Step 2: Remove the Jackson 2 dependency declarations**
+- [x] **Step 2: Remove the Jackson 2 dependency declarations**
 
 In `build.gradle.kts`, remove these three lines (leave the comment above them if it still makes
 sense standalone, otherwise remove the comment too since it specifically explains why Jackson 2 was
@@ -1263,7 +1269,7 @@ dates render correctly in the response (matching the format the frontend expects
 Phase 2 format-diff testing's main concern, and Phase 2 already confirmed no format difference, but
 this is the first time that configuration actually takes effect for real traffic).
 
-- [ ] **Step 5: Verify the classpath — Jackson 2 databind is still present, just transitive now**
+- [x] **Step 5: Verify the classpath — Jackson 2 databind is still present, just transitive now**
 
 ```bash
 ./gradlew :services:hanke-service:dependencies --configuration runtimeClasspath | grep "com.fasterxml.jackson.core:jackson-databind"
@@ -1273,6 +1279,10 @@ Expected: still present, but only reachable via `net.logstash.logback:logstash-l
 `de.grundid.opendatalab:geojson-jackson` in the tree output — not via `spring-boot-jackson2`
 (which no longer appears at all) and not as a direct dependency of `services:hanke-service` itself.
 This confirms the removal actually took effect and matches the Global Constraints' expectation.
+
+Confirmed: `jackson-databind:2.21.5` (pinned via the retained `ext["jackson-2-bom.version"]`
+override) is present only transitively (`geojson-jackson`, several Spring Boot starters, etc.);
+`spring-boot-jackson2` no longer appears anywhere in the tree.
 
 - [ ] **Step 6: Commit**
 

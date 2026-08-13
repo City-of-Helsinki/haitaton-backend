@@ -91,12 +91,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-mail")
     implementation("org.springframework.integration:spring-integration-jdbc")
-    // Deprecated-but-supported Jackson 2 autoconfiguration module (provides the ObjectMapper
-    // bean); needed alongside spring.jackson.use-jackson2-defaults=true since Boot 4 defaults
-    // to a Jackson 3 JsonMapper otherwise.
-    implementation("org.springframework.boot:spring-boot-jackson2")
-    implementation("com.fasterxml.jackson.core:jackson-databind")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("tools.jackson.module:jackson-module-kotlin:3.1.5")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
