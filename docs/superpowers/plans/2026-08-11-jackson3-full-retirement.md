@@ -1097,12 +1097,14 @@ Ran `./gradlew :services:hanke-service:test` — 1283 tests, failures dropped fr
 failures are the pre-existing `HankeErrorTest` field-ordering issue and the two primitive-null-
 strictness cases covered by Task 15 below — unrelated to this fix.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/Utils.kt
 git commit -m "HAI-3618 Restore MapperFeature.DEFAULT_VIEW_INCLUSION in createObjectMapper()"
 ```
+
+Committed as `e97894ef`.
 
 ---
 
