@@ -2,8 +2,10 @@ package fi.hel.haitaton.hanke.hakemus
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.annotation.Nulls
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(
@@ -75,6 +77,6 @@ data class CreateKaivuilmoitusRequest(
     /** Sijoitussopimukset */
     val placementContracts: List<String>? = emptyList(),
     /** Työhön vaadittava pätevyys */
-    val requiredCompetence: Boolean = false,
+    @JsonSetter(nulls = Nulls.AS_EMPTY) val requiredCompetence: Boolean = false,
     override val hankeTunnus: String,
 ) : CreateHakemusRequest

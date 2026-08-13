@@ -161,7 +161,7 @@ data class KaivuilmoitusUpdateRequest(
     /** Sijoitussopimukset */
     val placementContracts: List<String>? = emptyList(),
     /** Työhön vaadittava pätevyys */
-    val requiredCompetence: Boolean = false,
+    @JsonSetter(nulls = Nulls.AS_EMPTY) val requiredCompetence: Boolean = false,
     // 2. sivu Alueet
     /** Työn arvioitu alkupäivä */
     override val startTime: ZonedDateTime? = null,
