@@ -1136,7 +1136,7 @@ directly, rather than loosening `createObjectMapper()`'s global config to match 
 silent-defaulting behavior (unlike Task 14, which is a legitimate global mapper-config fix — this
 is per-field validation strictness, not a broken default).
 
-- [ ] **Step 1: Fix `CustomerRequest.registryKeyHidden` and `InvoicingCustomerRequest.registryKeyHidden`**
+- [x] **Step 1: Fix `CustomerRequest.registryKeyHidden` and `InvoicingCustomerRequest.registryKeyHidden`**
 
 In `HakemusUpdateRequest.kt`, both properties already carry the doc comment "Value is false when
 read from JSON with null or empty value" — add `@JsonSetter(nulls = Nulls.AS_EMPTY)` to make that
@@ -1144,13 +1144,13 @@ documented behavior actually hold under Jackson 3. Verified via scratch test: th
 resolves both the explicit-null and absent-key cases for a `Boolean` primitive, matching Jackson
 2's old silent-default behavior exactly.
 
-- [ ] **Step 2: Fix `Geometriat.version`**
+- [x] **Step 2: Fix `Geometriat.version`**
 
 In `Geometriat.kt`, `version: Int` has no Kotlin default and is documented "set by the service" —
 give it an explicit `= 0` default so an absent JSON key (as in the `hankeGeometriat-delete.json`
 test fixture) deserializes the same way it did under Jackson 2.
 
-- [ ] **Step 3: Run the previously-failing tests**
+- [x] **Step 3: Run the previously-failing tests**
 
 Run:
 `./gradlew :services:hanke-service:test --tests "fi.hel.haitaton.hanke.hakemus.CustomerRequestDeserializeTest" --tests "fi.hel.haitaton.hanke.geometria.GeometriatServiceTest"`
@@ -1160,11 +1160,17 @@ when value is nonsense in JSON` is a separate, unrelated pre-existing bug (flagg
 review) — do not expect this fix to resolve it, and do not fold a fix for it into this task without
 flagging it first.
 
-- [ ] **Step 4: Run the full unit test suite**
+Confirmed: both target tests pass; the unrelated "nonsense" test still fails, exactly as expected.
+
+- [x] **Step 4: Run the full unit test suite**
 
 Run: `./gradlew :services:hanke-service:test`
 Expected: only the known pre-existing `HankeErrorTest`/field-ordering failures remain (and the
 unrelated `RegistryKeyHidden` "nonsense" test above, if still unaddressed).
+
+Confirmed: 1283 tests, failures dropped from 4 to 2 (`HankeErrorTest.testJacksonSerialization` and
+`RegistryKeyHidden > throws exception when value is nonsense in JSON`, both pre-existing and
+unrelated) — no regressions.
 
 - [ ] **Step 5: Commit**
 

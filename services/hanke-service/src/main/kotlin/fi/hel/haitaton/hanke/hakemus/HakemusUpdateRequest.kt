@@ -2,8 +2,10 @@ package fi.hel.haitaton.hanke.hakemus
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.annotation.Nulls
 import fi.hel.haitaton.hanke.allu.CustomerType
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -261,7 +263,7 @@ data class CustomerRequest(
     val phone: String,
     val registryKey: String? = null,
     /** Value is false when read from JSON with null or empty value. */
-    val registryKeyHidden: Boolean = false,
+    @JsonSetter(nulls = Nulls.AS_EMPTY) val registryKeyHidden: Boolean = false,
 ) {
     /** Returns true if this customer has changes compared to the given [hakemusyhteystieto]. */
     fun hasChanges(hakemusyhteystieto: Hakemusyhteystieto): Boolean =
@@ -284,7 +286,7 @@ data class InvoicingCustomerRequest(
     val name: String?,
     val registryKey: String?,
     /** Value is false when read from JSON with null or empty value. */
-    val registryKeyHidden: Boolean = false,
+    @JsonSetter(nulls = Nulls.AS_EMPTY) val registryKeyHidden: Boolean = false,
     val ovt: String?,
     val invoicingOperator: String?,
     val customerReference: String?,

@@ -21,7 +21,7 @@ data class Geometriat(
     //
     @field:Schema(description = "Version, set by the service")
     @JsonView(ChangeLogView::class)
-    var version: Int,
+    var version: Int = 0,
     //
     @field:Schema(description = "User id of the geometry data creator, set by the service")
     @JsonView(NotInChangeLogView::class)
