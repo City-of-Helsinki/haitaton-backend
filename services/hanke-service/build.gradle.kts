@@ -9,17 +9,21 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "8.21.1"
+val sentryVersion = "8.46.0"
 val geoToolsVersion = "33.2"
 
-// Force patched versions for critical CVEs not yet included in Spring Boot 3.5.14
-extra["netty.version"] = "4.1.133.Final" // CVE-2026-42579, CVE-2026-42581, CVE-2026-42584
-extra["tomcat.version"] = "10.1.55" // CVE-2026-41293, CVE-2026-43512, CVE-2026-43515
+// Override Spring Boot 4.1.0's managed versions ahead of the next Boot patch release,
+// to pick up CVE fixes for these specific transitive dependencies.
+ext["log4j2.version"] = "2.26.1"
+ext["netty.version"] = "4.2.16.Final"
+ext["postgresql.version"] = "42.7.13"
+ext["tomcat.version"] = "11.0.24"
+ext["jackson-2-bom.version"] = "2.21.5"
+ext["jackson-bom.version"] = "3.1.5"
 
 repositories {
     mavenCentral().content { excludeModule("javax.media", "jai_core") }
     maven { url = uri("https://repo.osgeo.org/repository/release/") }
-    maven { url = uri("https://maven.geotoolkit.org") }
 }
 
 sourceSets {
@@ -29,10 +33,12 @@ sourceSets {
     }
 }
 
-val integrationTestImplementation: Configuration by
-    configurations.getting { extendsFrom(configurations.testImplementation.get()) }
+val integrationTestImplementation: Configuration =
+    configurations.getByName("integrationTestImplementation") {
+        extendsFrom(configurations.testImplementation.get())
+    }
 
-configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
+configurations.getByName("integrationTestRuntimeOnly").extendsFrom(configurations.testRuntimeOnly.get())
 
 idea {
     module {
@@ -61,7 +67,7 @@ spotless {
 
 plugins {
     val kotlinVersion = "2.2.20"
-    id("org.springframework.boot") version "3.5.14"
+    id("org.springframework.boot") version "4.1.0"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.diffplug.spotless") version "7.2.1"
     kotlin("jvm") version kotlinVersion
@@ -79,11 +85,19 @@ plugins {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    // Spring Boot 4's modularization split WebClient autoconfiguration (incl. WebClientCustomizer)
+    // out of spring-boot-starter-webflux into this dedicated module.
+    implementation("org.springframework.boot:spring-boot-webclient")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-mail")
     implementation("org.springframework.integration:spring-integration-jdbc")
+    // Deprecated-but-supported Jackson 2 autoconfiguration module (provides the ObjectMapper
+    // bean); needed alongside spring.jackson.use-jackson2-defaults=true since Boot 4 defaults
+    // to a Jackson 3 JsonMapper otherwise.
+    implementation("org.springframework.boot:spring-boot-jackson2")
     implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("tools.jackson.module:jackson-module-kotlin:3.1.5")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
     implementation("ch.qos.logback.access:logback-access-tomcat:2.0.6")
@@ -91,21 +105,30 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    // Spring Boot 4's modularization split Liquibase autoconfiguration out of the generic
+    // autoconfigure module into this dedicated one; without it, migrations silently never run.
+    implementation("org.springframework.boot:spring-boot-liquibase")
+    // Same modularization split cache autoconfiguration out too; without it, @EnableCaching has no
+    // CacheAutoConfiguration to fall back on and beans needing a CacheManager fail to start.
+    implementation("org.springframework.boot:spring-boot-cache")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.11.0")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-73:3.15.4")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("com.auth0:java-jwt:4.5.0")
 
     implementation("org.postgresql:postgresql")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
+    // Spring Boot 4's modularization split @WebMvcTest/@AutoConfigureMockMvc out of
+    // spring-boot-test-autoconfigure into this dedicated module.
+    testImplementation("org.springframework.boot:spring-boot-webmvc-test")
     testImplementation("io.mockk:mockk:1.14.5")
-    testImplementation("com.ninja-squad:springmockk:4.0.2")
+    testImplementation("com.ninja-squad:springmockk:5.0.1")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
     testImplementation("com.squareup.okhttp3:mockwebserver3:5.1.0")
     testImplementation("com.icegreen:greenmail-junit5:2.1.5")
@@ -126,21 +149,19 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
 
-    // Override commons-compress to fix CVE
-    testImplementation("org.apache.commons:commons-compress:1.26.0")
-    testImplementation("commons-codec:commons-codec:1.17.2")
-
-    // Override commons-lang3 to fix CVE-2025-48924 (DoS via ClassUtils.getClass recursion)
-    implementation("org.apache.commons:commons-lang3:3.18.0")
-
     // Spring Boot Management
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     testImplementation("org.springframework.security:spring-security-test")
+    // Provides SecurityMockMvcAutoConfiguration, which applies @WithMockUser's security context
+    // to MockMvc requests; split out of the generic test-autoconfigure module in Spring Boot 4.
+    testImplementation("org.springframework.boot:spring-boot-security-test")
 
     // Sentry
-    implementation("io.sentry:sentry-spring-boot-starter-jakarta:$sentryVersion")
+    // sentry-spring-boot-4 replaces sentry-spring-boot-starter-jakarta for Spring Boot 4; it's a
+    // single self-contained artifact, no separate starter needed.
+    implementation("io.sentry:sentry-spring-boot-4:$sentryVersion")
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
@@ -172,7 +193,7 @@ tasks {
         }
     }
 
-    create("integrationTest", Test::class) {
+    register("integrationTest", Test::class) {
         useJUnitPlatform()
         group = "verification"
         systemProperty("spring.profiles.active", "integrationTest")
@@ -189,7 +210,7 @@ tasks {
         exclude("**/*ManualTest*")
     }
 
-    create("copyEmailTemplates", Copy::class) {
+    register("copyEmailTemplates", Copy::class) {
         group = "other"
         description = "Installs shared git hooks"
         from(file("${layout.buildDirectory.get()}/mjml/main/"))
@@ -219,7 +240,7 @@ tasks.register("installGitHook", Copy::class) {
     description = "Installs shared git hooks"
     from(file("$rootDir/githooks"))
     into(file("$rootDir/.git/hooks"))
-    fileMode = 0b0111101101 // -rwxr-xr-x
+    filePermissions { unix("rwxr-xr-x") }
 }
 
 tasks.named("build") { dependsOn(tasks.named("installGitHook")) }
