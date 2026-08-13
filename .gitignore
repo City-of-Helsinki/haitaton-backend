@@ -48,5 +48,7 @@ out/
 # git worktrees checked out under the repo root
 /.worktrees/
 
-# Claude/SDD process artifacts (plans, specs, memos) - kept locally, not committed
-/docs/
+# Claude/SDD process artifacts (plans, specs, memos) - kept locally, not committed.
+# Scoped to superpowers/ specifically, not all of docs/, in case non-Claude docs are
+# added under docs/ later.
+/docs/superpowers/
