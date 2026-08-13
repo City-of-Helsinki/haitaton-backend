@@ -1035,7 +1035,146 @@ git commit -m "HAI-3618 Confirm HypersistenceJsonSerializer's convertValue fallb
 
 ---
 
-## Task 14: Flip the global Jackson default (Phase 3c)
+## Task 14: Fix `createObjectMapper()`'s missing `MapperFeature.DEFAULT_VIEW_INCLUSION`
+
+**Files:**
+- Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/Utils.kt`
+
+**Interfaces:**
+- Consumes: `tools.jackson.databind.MapperFeature`.
+- Produces: `createObjectMapper()` now includes `@JsonView`-unannotated properties in every view,
+  matching Jackson 2's default. `OBJECT_MAPPER` and everything built from `createObjectMapper()`
+  (Task 7's `TEST_OBJECT_MAPPER`, the internal mappers inside
+  `HakemusResponseDeserializer`/`HankkeenHakemusResponseDeserializer`) inherit this fix
+  automatically.
+
+Context: discovered while investigating `HankeKayttajaLoggingServiceTest`'s failure (initially
+mis-triaged as the primitive-null-strictness gap below — it is not). Jackson 3 defaults
+`MapperFeature.DEFAULT_VIEW_INCLUSION` to disabled (opt-in views); Jackson 2 defaulted it to
+enabled (opt-out views). The codebase's `ChangeLogView`/`NotInChangeLogView` pattern
+(`toChangeLogJsonString()`, `Extensions.kt`) was built entirely around Jackson 2's opt-out
+semantics: only fields that should be *excluded* from the audit log are annotated
+(`@JsonView(NotInChangeLogView::class)`); everything else was assumed included by default.
+
+This is a real, production-reachable defect: a read-only audit confirmed `HankeKayttaja` (the
+domain class logged for `ObjectType.HANKE_KAYTTAJA` — none of its 11 fields have `@JsonView`) and
+`Yhteyshenkilo` (nested inside `HankeYhteystieto.yhteyshenkilot`, also fully unannotated) both
+serialize to effectively empty audit-log entries under Jackson 3 as it stood, silently dropping
+name/email/phone/role/permission/PII from the audit trail. `Geometriat.featureCollection`
+(third-party `org.geojson.FeatureCollection`, no view annotations on its own internals) loses its
+actual coordinates from geometry audit entries the same way. Flagged to the user given the
+severity (silent audit-trail data loss), who approved restoring the mapper default globally.
+
+Separately flagged, NOT covered by this task: `HakemusData`/`JohtoselvityshakemusData`/
+`KaivuilmoitusData` (the actual logged types for Hakemus/Muutosilmoitus/Taydennys) have zero
+`@JsonView` annotations anywhere. This task's fix restores their prior (correct) behavior too since
+it's a mapper-level default, but their apparent total reliance on default-inclusion was not audited
+in depth — worth a follow-up look if audit-log correctness for Hakemus entries is ever in question.
+
+- [x] **Step 1: Enable `MapperFeature.DEFAULT_VIEW_INCLUSION` on `createObjectMapper()`**
+
+In `Utils.kt`, add the import `tools.jackson.databind.MapperFeature` and add
+`.enable(MapperFeature.DEFAULT_VIEW_INCLUSION)` to the builder chain in `createObjectMapper()`
+(before `.build()`).
+
+- [x] **Step 2: Verify the correct Jackson 3 builder API**
+
+Confirmed via Context7 docs (`jackson-databind` 3.x) that `JsonMapper.builder().enable(MapperFeature
+f)` is the correct signature, and independently via a temporary scratch test (written, run, deleted
+— never committed) demonstrating the default-inclusion behavior flips as described above.
+
+- [x] **Step 3: Compile and run the targeted failing test**
+
+Ran `./gradlew :services:hanke-service:compileKotlin :services:hanke-service:compileTestKotlin` —
+BUILD SUCCESSFUL. Ran
+`./gradlew :services:hanke-service:test --tests "fi.hel.haitaton.hanke.logging.*LoggingServiceTest"`
+— all pass, including the previously-failing `HankeKayttajaLoggingServiceTest`.
+
+- [x] **Step 4: Run the full unit test suite, confirm no regressions**
+
+Ran `./gradlew :services:hanke-service:test` — 1283 tests, failures dropped from 5 to 4.
+`HankeKayttajaLoggingServiceTest` no longer fails; no new failures introduced. The 4 remaining
+failures are the pre-existing `HankeErrorTest` field-ordering issue and the two primitive-null-
+strictness cases covered by Task 15 below — unrelated to this fix.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/Utils.kt
+git commit -m "HAI-3618 Restore MapperFeature.DEFAULT_VIEW_INCLUSION in createObjectMapper()"
+```
+
+---
+
+## Task 15: Fix Jackson 3's stricter null/absent-primitive handling in affected DTOs
+
+**Files:**
+- Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/hakemus/HakemusUpdateRequest.kt`
+- Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/geometria/Geometriat.kt`
+
+**Interfaces:**
+- Consumes: `com.fasterxml.jackson.annotation.JsonSetter`, `com.fasterxml.jackson.annotation.Nulls`
+  (unchanged annotation package, shared between Jackson 2/3).
+- Produces: no signature changes — `CustomerRequest.registryKeyHidden`,
+  `InvoicingCustomerRequest.registryKeyHidden`, and `Geometriat.version` deserialize the same way
+  they did under Jackson 2.
+
+Context: Jackson 3's Kotlin module (`tools.jackson.module.kotlin`) is stricter than Jackson 2's
+about primitive constructor parameters. Two distinct shapes of this gap were confirmed via scratch
+tests (written, run, deleted — never committed):
+- Explicit JSON `null` into a primitive **with** a Kotlin default (e.g.
+  `val registryKeyHidden: Boolean = false`): Jackson 2 silently used the default; Jackson 3 throws
+  `MismatchedInputException: Cannot map 'null' into type 'boolean'`.
+- A JSON key entirely **absent** for a primitive **without** a Kotlin default (e.g.
+  `Geometriat.version: Int`, no `=`): Jackson 2 silently fell back to the JVM zero-value; Jackson 3
+  throws `MismatchedInputException: Missing required creator property 'version'`.
+
+User decided: treat Jackson 3's stricter behavior as correct and fix the affected DTOs/fields
+directly, rather than loosening `createObjectMapper()`'s global config to match Jackson 2's old
+silent-defaulting behavior (unlike Task 14, which is a legitimate global mapper-config fix — this
+is per-field validation strictness, not a broken default).
+
+- [ ] **Step 1: Fix `CustomerRequest.registryKeyHidden` and `InvoicingCustomerRequest.registryKeyHidden`**
+
+In `HakemusUpdateRequest.kt`, both properties already carry the doc comment "Value is false when
+read from JSON with null or empty value" — add `@JsonSetter(nulls = Nulls.AS_EMPTY)` to make that
+documented behavior actually hold under Jackson 3. Verified via scratch test: this annotation
+resolves both the explicit-null and absent-key cases for a `Boolean` primitive, matching Jackson
+2's old silent-default behavior exactly.
+
+- [ ] **Step 2: Fix `Geometriat.version`**
+
+In `Geometriat.kt`, `version: Int` has no Kotlin default and is documented "set by the service" —
+give it an explicit `= 0` default so an absent JSON key (as in the `hankeGeometriat-delete.json`
+test fixture) deserializes the same way it did under Jackson 2.
+
+- [ ] **Step 3: Run the previously-failing tests**
+
+Run:
+`./gradlew :services:hanke-service:test --tests "fi.hel.haitaton.hanke.hakemus.CustomerRequestDeserializeTest" --tests "fi.hel.haitaton.hanke.geometria.GeometriatServiceTest"`
+Expected: `RegistryKeyHidden > is false when null in JSON` and
+`save Geometriat OK - without features (delete)` both pass. `RegistryKeyHidden > throws exception
+when value is nonsense in JSON` is a separate, unrelated pre-existing bug (flagged by Task 10's
+review) — do not expect this fix to resolve it, and do not fold a fix for it into this task without
+flagging it first.
+
+- [ ] **Step 4: Run the full unit test suite**
+
+Run: `./gradlew :services:hanke-service:test`
+Expected: only the known pre-existing `HankeErrorTest`/field-ordering failures remain (and the
+unrelated `RegistryKeyHidden` "nonsense" test above, if still unaddressed).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/hakemus/HakemusUpdateRequest.kt \
+        services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/geometria/Geometriat.kt
+git commit -m "HAI-3618 Fix Jackson 3's stricter null/absent-primitive handling in affected DTOs"
+```
+
+---
+
+## Task 16: Flip the global Jackson default (Phase 3c)
 
 **Files:**
 - Modify: `services/hanke-service/src/main/resources/application.yml`
@@ -1136,7 +1275,7 @@ git commit -m "HAI-3618 Flip Spring's Jackson default from 2 to 3, remove the ap
 
 ---
 
-## Task 15: Cleanup & documentation (Phase 4)
+## Task 17: Cleanup & documentation (Phase 4)
 
 **Files:**
 - Modify: `services/hanke-service/src/main/kotlin/fi/hel/haitaton/hanke/configuration/Configuration.kt`
@@ -1193,8 +1332,11 @@ git commit -m "HAI-3618 Update comments and add team guideline now that the app 
 - **Spec coverage:** Phase 3a → Task 1. Phase 3b → Tasks 2-5 and 11-13 (one per file, matching the
   design doc's six original call sites plus the foundational `Utils.kt` change) plus Tasks 6-7, 9-10
   (the test-source cluster added mid-execution — see below) and Task 8 (the `createObjectMapper()`
-  GeoJSON fix, also added mid-execution). Phase 3c → Task 14. Phase 4 → Task 15. All design doc
-  sections have a corresponding task.
+  GeoJSON fix, also added mid-execution). Phase 3c → Task 16. Phase 4 → Task 17. All design doc
+  sections have a corresponding task. Tasks 14-15 (the `DEFAULT_VIEW_INCLUSION` fix and the
+  primitive-null-strictness DTO fixes) were added mid-execution, discovered during post-Task-13
+  investigation — not part of the original design doc's scope, but blocking Task 16 (the global
+  flip) per the plan's own Global Constraints.
 - **Corrections found and folded in while writing this plan** (both already applied to the design
   doc, commit `9d8cdab3`): the two "known gaps" don't reproduce against current code (verified via
   scratch tests, not assumed) — Task 1 is verify-and-lock-in rather than open-ended debugging.
@@ -1219,6 +1361,18 @@ git commit -m "HAI-3618 Update comments and add team guideline now that the app 
   - Both are real gaps in the original plan's completeness, not text-level mistakes like the two
     corrections above — the plan's file-discovery process (Task 1's scan, this task's design)
     simply didn't reach these two areas until execution surfaced them.
+  - Post-Task-13 investigation (into 3 test failures left unresolved pending user review) surfaced
+    two more, distinct gaps. First, `HankeKayttajaLoggingServiceTest`'s failure was initially
+    mis-triaged (Task 10's report) as the same primitive-null-strictness issue as the other two —
+    it is not. Independent re-investigation found the real cause: Jackson 3 defaults
+    `MapperFeature.DEFAULT_VIEW_INCLUSION` to disabled, breaking the `ChangeLogView`/
+    `NotInChangeLogView` audit-logging pattern's reliance on Jackson 2's opt-out default. A
+    read-only audit confirmed this silently drops PII/audit-relevant fields (`HankeKayttaja`,
+    `Yhteyshenkilo`, `Geometriat.featureCollection`) from real audit-log entries — flagged to the
+    user given the severity, who approved restoring the mapper default globally (Task 14). Second,
+    the actual primitive-null-strictness gap (affecting `CustomerRequestDeserializeTest` and
+    `GeometriatServiceTest`) was confirmed real and scoped into Task 15, per the user's explicit
+    decision to fix the affected DTOs rather than loosen the global mapper config for that case.
 - **Type consistency:** `createObjectMapper(): JsonMapper` (Task 2) is consumed identically by name
   in Tasks 3, 5, 6, 10, 12, 13's import-check steps and Task 4/11's no-op-if-nothing-found steps —
   no signature drift between tasks. Task 8's fix to `createObjectMapper()` is inherited automatically

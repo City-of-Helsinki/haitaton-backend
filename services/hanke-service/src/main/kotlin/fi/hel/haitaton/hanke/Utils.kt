@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import tools.jackson.databind.MapperFeature
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.databind.module.SimpleModule
 import tools.jackson.module.kotlin.kotlinModule
@@ -29,6 +30,10 @@ fun createObjectMapper(): JsonMapper =
                 .addSerializer(LngLatAlt::class.java, LngLatAltJackson3Serializer())
                 .addDeserializer(LngLatAlt::class.java, LngLatAltJackson3Deserializer())
         )
+        // Jackson 3 defaults this to disabled (opt-in views), unlike Jackson 2. The codebase's
+        // ChangeLogView/NotInChangeLogView pattern (see toChangeLogJsonString()) assumes Jackson
+        // 2's opt-out semantics: fields with no @JsonView annotation must still be included.
+        .enable(MapperFeature.DEFAULT_VIEW_INCLUSION)
         .build()
 
 /**
