@@ -40,7 +40,9 @@ class Jackson3FormatDiffITest(@Autowired val jsonMapper: JsonMapper) : Integrati
         val jackson2Json = OBJECT_MAPPER.writeValueAsString(hanke)
         val jackson3Json = jsonMapper.writeValueAsString(hanke)
 
-        assertThat(jackson3Json).isEqualTo(jackson2Json)
+        // Structural, not textual, comparison: Jackson 2's and Jackson 3's Kotlin modules order
+        // properties differently, but JSON object member order carries no meaning per RFC 8259.
+        assertThat(jsonMapper.readTree(jackson3Json)).isEqualTo(jsonMapper.readTree(jackson2Json))
     }
 
     @Test
@@ -71,7 +73,10 @@ class Jackson3FormatDiffITest(@Autowired val jsonMapper: JsonMapper) : Integrati
         val roundTripped = jsonMapper.readValue(jackson2Json, org.geojson.Polygon::class.java)
         val jackson3Json = jsonMapper.writeValueAsString(roundTripped)
 
-        assertThat(jackson3Json).isEqualTo(jackson2Json)
+        // Structural, not textual, comparison: Jackson 2's and Jackson 3's Kotlin modules order
+        // properties differently (e.g. crs vs. coordinates), but JSON object member order carries
+        // no meaning per RFC 8259.
+        assertThat(jsonMapper.readTree(jackson3Json)).isEqualTo(jsonMapper.readTree(jackson2Json))
     }
 
     @Test
@@ -83,7 +88,11 @@ class Jackson3FormatDiffITest(@Autowired val jsonMapper: JsonMapper) : Integrati
             jsonMapper.readValue(jackson2Json, fi.hel.haitaton.hanke.hakemus.KaivuilmoitusAlue::class.java)
         val jackson3Json = jsonMapper.writeValueAsString(roundTripped)
 
-        assertThat(jackson3Json).isEqualTo(jackson2Json)
+        // Structural, not textual, comparison: Jackson 3's Kotlin module deserializes an
+        // enum-keyed Map in enum declaration order rather than preserving JSON insertion order
+        // (Jackson 2's module preserved it) - a real difference, but JSON object/map member order
+        // carries no meaning per RFC 8259, and Map.equals() below is order-independent too.
+        assertThat(jsonMapper.readTree(jackson3Json)).isEqualTo(jsonMapper.readTree(jackson2Json))
         assertThat(roundTripped.haittojenhallintasuunnitelma).isEqualTo(alue.haittojenhallintasuunnitelma)
     }
 }
