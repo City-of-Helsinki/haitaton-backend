@@ -226,4 +226,49 @@
         <vulnerabilityName>DOMPurify: `CUSTOM_ELEMENT_HANDLING` bypasses `afterSanitizeElements` for allowed custom elements.</vulnerabilityName>
     </suppress>
 
+    <!--
+        CVE-2026-21853, CVE-2026-25477: These CVEs are for AFFiNE, the open-source workspace/
+        note-taking application (affine.pro) - a remote-code-execution via crafted affine: URLs
+        and an open-redirect in its /redirect-proxy endpoint, respectively. NVD's CPE match
+        (cpe:2.3:a:affine:affine) incorrectly matches org.eclipse.imagen:affine, which is Eclipse
+        ImageN's low-level image affine-transform module, pulled in transitively via GeoTools
+        (gt-wms/gt-render/gt-coverage). The two projects are completely unrelated; there is no
+        affine: URL handler or redirect-proxy endpoint in Eclipse ImageN.
+    -->
+    <suppress>
+        <notes>False positive: CVE-2026-21853/CVE-2026-25477 affect the AFFiNE workspace app (affine.pro), not Eclipse ImageN's affine transform module.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.eclipse\.imagen/affine@.*$</packageUrl>
+        <cve>CVE-2026-21853</cve>
+        <cve>CVE-2026-25477</cve>
+    </suppress>
+
+    <!--
+        CVE-2026-66299: Uncontrolled resource consumption in Apache Tomcat's bundled WebSocket
+        chat example application, affecting 11.0.0-M20 through 11.0.24 (fixed in 11.0.25, not yet
+        published on Maven Central as of this scan - 11.0.24 remains the latest available). Not
+        exploitable here regardless: the CVE's own advisory states users who removed the examples
+        web application are unaffected, and Spring Boot's embedded Tomcat (spring-boot-starter-
+        tomcat) never bundles the examples webapp in the first place - only the standalone Tomcat
+        distribution does.
+    -->
+    <suppress>
+        <notes>Not exploitable: affects Tomcat's bundled WebSocket examples webapp, which Spring Boot's embedded Tomcat never includes. No fix available yet (11.0.25 not yet published).</notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.tomcat\.embed/tomcat-embed-.*@.*$</packageUrl>
+        <cve>CVE-2026-66299</cve>
+    </suppress>
+
+    <!--
+        CVE-2026-66010: DOMPurify IN_PLACE hook removal leaves a detached subtree executable,
+        causing XSS. Fixed in DOMPurify 3.4.13. Same constraint as the other DOMPurify
+        suppressions above: springdoc-openapi 3.0.3 (latest) still bundles swagger-ui 5.32.2,
+        which vendors DOMPurify 3.3.2, and there's no clean fix until springdoc bumps its managed
+        swagger-ui version.
+    -->
+    <suppress>
+        <notes>No fix available without breaking Swagger UI: springdoc 3.0.3 still bundles swagger-ui 5.32.2 / DOMPurify 3.3.2. Swagger UI is dev/test only.</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-66010</cve>
+        <vulnerabilityName>DOMPurify: IN_PLACE hook removal leaves a detached subtree executable, causing XSS</vulnerabilityName>
+    </suppress>
+
 </suppressions>
