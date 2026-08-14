@@ -1,0 +1,11 @@
+[[IgnoredVulns]]
+id = "GHSA-cj8j-37rh-8475"
+reason = "org.bouncycastle:bcpg-jdk18on 1.80 comes from the Kotlin Gradle plugin's internal kotlinBouncyCastleConfiguration (library-publishing validation tooling), pinned to [1.80,1.81) by the plugin itself. Confirmed via dependencyInsight: not present in runtimeClasspath, testRuntimeClasspath, integrationTestRuntimeClasspath, or the buildscript classpath. Never compiled against, never shipped, never runs at test/runtime."
+
+[[IgnoredVulns]]
+id = "GHSA-wg6q-6289-32hp"
+reason = "org.bouncycastle:bcpkix-jdk18on 1.80 - same kotlinBouncyCastleConfiguration source as GHSA-cj8j-37rh-8475."
+
+[[IgnoredVulns]]
+id = "GHSA-c3fc-8qff-9hwx"
+reason = "org.bouncycastle:bcprov-jdk18on 1.80.2 - same kotlinBouncyCastleConfiguration source as GHSA-cj8j-37rh-8475."
