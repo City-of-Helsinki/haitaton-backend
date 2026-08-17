@@ -1,19 +1,21 @@
 package fi.hel.haitaton.hanke.profiili
 
-import com.fasterxml.jackson.databind.JsonNode
 import fi.hel.haitaton.hanke.getResourceAsText
 import fi.hel.haitaton.hanke.toJsonString
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.body
+import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
+import tools.jackson.databind.JsonNode
 
 private val logger = KotlinLogging.logger {}
 
@@ -54,7 +56,7 @@ class ProfiiliClient(
 
     private fun authenticate(accessToken: String): String {
         val apiTokens = getApiTokens(accessToken)
-        return apiTokens["access_token"]?.asText()
+        return apiTokens["access_token"]?.asString()
             ?: throw VerifiedNameNotFound("Token response did not contain an access token.")
     }
 
@@ -73,7 +75,14 @@ class ProfiiliClient(
                     .with("permission", TOKEN_API_PERMISSION)
             )
             .retrieve()
-            .bodyToMono(JsonNode::class.java)
+            // handle 401 errors specifically to give a more informative error message
+            .onStatus({ responseStatus -> responseStatus == HttpStatus.UNAUTHORIZED }) { response ->
+                response.bodyToMono<String>().flatMap { body ->
+                    logger.error { "Error from Profiili API call. Response status=401, body=$body" }
+                    Mono.error(UnauthorizedException(body))
+                }
+            }
+            .bodyToMono<JsonNode>()
             .doOnError(WebClientResponseException::class.java) { ex ->
                 logger.error {
                     "Error from Profiili API call. Response status=${ex.statusCode}, body=${ex.responseBodyAsString}"
@@ -83,7 +92,7 @@ class ProfiiliClient(
     }
 
     private fun getTokenApiUrl(): String {
-        logger.info { "Loading Profiili token URI from OpenID configuration.." }
+        logger.info { "Loading Profiili token URI from OpenID configuration..." }
         val configurationUri = "$issuer/.well-known/openid-configuration"
 
         val conf =
@@ -92,7 +101,7 @@ class ProfiiliClient(
                 .uri(configurationUri)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(JsonNode::class.java)
+                .bodyToMono<JsonNode>()
                 .onErrorMap(WebClientResponseException::class.java) { ex ->
                     ProfiiliConfigurationError(
                         "Unable to load OpenID configuration. " +
@@ -104,7 +113,7 @@ class ProfiiliClient(
                 .block()!!
 
         val uri =
-            conf["token_endpoint"]?.asText()
+            conf["token_endpoint"]?.asString()
                 ?: throw ProfiiliConfigurationError(
                     "OpenID configuration didn't contain a token endpoint."
                 )
@@ -129,6 +138,9 @@ class ProfiiliClient(
 
 class VerifiedNameNotFound(reason: String) :
     RuntimeException("Verified name of user could not be obtained. $reason")
+
+class UnauthorizedException(reason: String) :
+    RuntimeException("Profiili API token request was unauthorized. $reason")
 
 class ProfiiliConfigurationError(reason: String, cause: Exception? = null) :
     RuntimeException("Error in Profiili API connection: $reason", cause)

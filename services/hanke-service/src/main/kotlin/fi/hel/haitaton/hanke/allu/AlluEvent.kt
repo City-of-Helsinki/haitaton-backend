@@ -21,6 +21,13 @@ enum class AlluEventStatus {
     FAILED,
 }
 
+/**
+ * The `val` properties below (including [id]) are intentional: kotlin("plugin.jpa") generates a
+ * no-arg constructor for this class so Hibernate can populate every field via reflection, `val`
+ * included, regardless of the IDE's "not truly immutable" warning. Nothing in the codebase ever
+ * reassigns them - they're the event exactly as reported by Allu. Only the actual processing state
+ * ([status], [stackTrace], [processedAt], [retryCount]) is mutated in place, hence `var`.
+ */
 @Entity
 @Table(name = "allu_event")
 class AlluEventEntity(
@@ -105,6 +112,7 @@ class AlluEventRepositoryImpl(private val jdbcTemplate: JdbcTemplate) : AlluEven
         """
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun batchInsertIgnoreDuplicates(events: List<AlluEventEntity>) {
         jdbcTemplate.batchUpdate(
             BATCH_INSERT_SQL,
@@ -116,6 +124,7 @@ class AlluEventRepositoryImpl(private val jdbcTemplate: JdbcTemplate) : AlluEven
                     event.applicationIdentifier,
                     event.targetStatus?.name,
                 )
+                    as Array<Any>
             },
         )
     }

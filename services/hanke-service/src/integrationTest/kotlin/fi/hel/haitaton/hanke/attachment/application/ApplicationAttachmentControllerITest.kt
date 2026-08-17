@@ -41,7 +41,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpHeaders.CONTENT_DISPOSITION
 import org.springframework.http.MediaType
@@ -289,7 +289,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     private fun postAttachment(
         applicationId: Long = APPLICATION_ID,
         attachmentType: ApplicationAttachmentType = MUU,
-        file: MockMultipartFile = testFile()
+        file: MockMultipartFile = testFile(),
     ): ResultActions {
         return mockMvc.perform(
             multipart("/hakemukset/$applicationId/liitteet")

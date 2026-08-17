@@ -7,7 +7,7 @@ import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
@@ -47,12 +47,12 @@ class ApiBlockingFilterBlockedEndpointsITests(@Autowired override val mockMvc: M
                 "GET /profiili/verified-name",
                 "GET /swagger-ui/index.html",
             ],
-        delimiter = ' '
+        delimiter = ' ',
     )
     @WithMockUser(username = USERNAME)
     fun `should return 503 'Service Unavailable' for blocked endpoints when the user is authenticated`(
         method: String,
-        path: String
+        path: String,
     ) {
         when (method) {
             "GET" -> get(path, null).andExpect(status().isServiceUnavailable)
@@ -77,12 +77,12 @@ class ApiBlockingFilterBlockedEndpointsITests(@Autowired override val mockMvc: M
                 "GET /profiili/verified-name",
                 "GET /swagger-ui/index.html",
             ],
-        delimiter = ' '
+        delimiter = ' ',
     )
     @WithAnonymousUser
     fun `should return 503 'Service Unavailable' for blocked endpoints when the user is not authenticated`(
         method: String,
-        path: String
+        path: String,
     ) {
         when (method) {
             "GET" -> get(path, null).andExpect(status().isServiceUnavailable)

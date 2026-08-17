@@ -162,13 +162,17 @@ Generate the SBOM:
 $ ./gradlew :services:hanke-service:cyclonedxBom
 ```
 
-The generated file is at `services/hanke-service/build/reports/application.cdx.json`.
+The generated file is at `services/hanke-service/build/reports/bom.json`.
 
 Scan it for vulnerabilities:
 
 ```
-$ osv-scanner scan source -L services/hanke-service/build/reports/application.cdx.json
+$ osv-scanner scan source --config osv-scanner.toml -L services/hanke-service/build/reports/bom.json
 ```
+
+`osv-scanner.toml` (repo root) lists known false-positive/non-exploitable findings to ignore, with
+the reasoning for each. `osv-scanner` does not auto-discover this file from the repo root when
+scanning an explicit `-L` path, so `--config osv-scanner.toml` must be passed explicitly.
 
 ### Spotless formatter
 

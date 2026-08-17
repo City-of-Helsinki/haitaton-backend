@@ -40,7 +40,7 @@ internal class GeometriatServiceITest : IntegrationTest() {
     @Test
     fun `save and load and update`() {
         val geometriat: Geometriat = GeometriaFactory.create()
-        val username = SecurityContextHolder.getContext().authentication.name
+        val username = SecurityContextHolder.getContext().authentication!!.name
 
         // For FK constraints we need a Hanke in database
         // Using hankeService to create the dummy hanke into database causes

@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.toJsonString
 import java.sql.Timestamp
 import java.sql.Types
+import mu.KotlinLogging
 import org.geojson.Crs
 import org.geojson.Feature
 import org.geojson.FeatureCollection
@@ -16,7 +17,11 @@ import org.geojson.MultiPolygon
 import org.geojson.Polygon
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.RowMapper
+import org.springframework.jdbc.core.queryForList
+import org.springframework.jdbc.core.queryForObject
 import org.springframework.stereotype.Component
+
+private val logger = KotlinLogging.logger {}
 
 @Component
 class GeometriatDao(private val jdbcOperations: JdbcOperations) {
@@ -128,12 +133,14 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
             """
                 .trimIndent()
 
-        return jdbcOperations.queryForList(
-            query,
-            Int::class.java,
-            hankeId,
-            geometria.toJsonString(),
-        )
+        val ids = jdbcOperations.queryForList<Int>(query, hankeId, geometria.toJsonString())
+        val nonNullIds = ids.filterNotNull()
+        if (nonNullIds.size != ids.size) {
+            logger.warn {
+                "Dropped ${ids.size - nonNullIds.size} null ha.id value(s) for hankeId=$hankeId"
+            }
+        }
+        return nonNullIds
     }
 
     /** Check if the given geometry is inside the given hankealue. */
@@ -147,15 +154,23 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
             """
                 .trimIndent()
 
-        return jdbcOperations
-            .queryForList(query, Boolean::class.java, geometria.toJsonString(), hankealueId)
-            .any { it }
+        val results =
+            jdbcOperations.queryForList<Boolean>(query, geometria.toJsonString(), hankealueId)
+        if (results.any { it == null }) {
+            // ST_Covers returns SQL NULL for degenerate/invalid input geometry rather than
+            // true/false - log it instead of silently treating it as "not covered".
+            logger.warn {
+                "ST_Covers returned null while checking hankealueId=$hankealueId against the " +
+                    "given geometry"
+            }
+        }
+        return results.any { it == true }
     }
 
     fun calculateArea(geometria: GeoJsonObject): Float? {
         val areaQuery = "select ST_Area(ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID))"
 
-        return jdbcOperations.queryForObject(areaQuery, Float::class.java, geometria.toJsonString())
+        return jdbcOperations.queryForObject<Float>(areaQuery, geometria.toJsonString())
     }
 
     fun calculateCombinedArea(geometriat: List<Polygon>): Float? {
@@ -163,11 +178,7 @@ class GeometriatDao(private val jdbcOperations: JdbcOperations) {
         geometriat.forEach { geometryCollection.add(it) }
 
         val areaQuery = "select ST_Area(ST_UnaryUnion(ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID)))"
-        return jdbcOperations.queryForObject(
-            areaQuery,
-            Float::class.java,
-            geometryCollection.toJsonString(),
-        )
+        return jdbcOperations.queryForObject<Float>(areaQuery, geometryCollection.toJsonString())
     }
 
     private fun retrieveHankeGeometriaRows(geometriatId: Int): List<Feature> {

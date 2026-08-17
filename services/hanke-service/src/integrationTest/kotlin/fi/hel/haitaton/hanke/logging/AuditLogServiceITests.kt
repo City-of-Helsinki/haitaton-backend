@@ -5,6 +5,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
@@ -34,7 +35,7 @@ class AuditLogServiceITests : IntegrationTest() {
                 failureDescription = "There was an error",
                 objectType = ObjectType.YHTEYSTIETO,
                 objectId = "333",
-                objectAfter = "fake JSON"
+                objectAfter = "fake JSON",
             )
         TestUtils.addMockedRequestIp()
 
@@ -60,5 +61,38 @@ class AuditLogServiceITests : IntegrationTest() {
         assertThat(auditLogEvent.target.id).isEqualTo("333")
         assertThat(auditLogEvent.target.objectAfter).isEqualTo("fake JSON")
         assertThat(auditLogEvent.target.objectBefore).isNull()
+    }
+
+    @Test
+    fun `date_time is stored as a plain ISO-8601 offset string, not corrupted by the serializer port`() {
+        val auditLogEntry =
+            AuditLogEntry(
+                userId = "1234-1234",
+                userRole = UserRole.USER,
+                operation = Operation.CREATE,
+                status = Status.FAILED,
+                failureDescription = "There was an error",
+                objectType = ObjectType.YHTEYSTIETO,
+                objectId = "333",
+                objectAfter = "fake JSON",
+            )
+        TestUtils.addMockedRequestIp()
+        val saved = auditLogService.createAll(listOf(auditLogEntry))[0]
+
+        @Suppress("UNCHECKED_CAST")
+        val raw =
+            entityManager
+                .createNativeQuery("SELECT message::text FROM audit_logs WHERE id = :id")
+                .setParameter("id", saved.id)
+                .singleResult as String
+
+        // Regex: "date_time": "<ISO-8601 offset date-time>" with no extra wrapping, arrays, or
+        // nulls. Offset may be a numeric offset (e.g. "+03:00") or "Z" for a zero offset -- both
+        // are valid ISO-8601, and which one comes out depends on the JVM's default time zone.
+        val dateTimePattern =
+            Regex(
+                """"date_time":\s*"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(?:[+-]\d{2}:\d{2}|Z)""""
+            )
+        assertThat(dateTimePattern.containsMatchIn(raw)).isTrue()
     }
 }

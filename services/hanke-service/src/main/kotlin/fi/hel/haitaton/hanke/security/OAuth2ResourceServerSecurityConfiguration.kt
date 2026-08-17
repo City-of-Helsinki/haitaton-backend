@@ -44,7 +44,7 @@ class OAuth2ResourceServerSecurityConfiguration(
 
     fun adGroupValidator(): OAuth2TokenValidator<Jwt> = AdGroupValidator(adFilterProperties)
 
-    fun audienceValidator(): OAuth2TokenValidator<Jwt?> =
+    fun audienceValidator(): OAuth2TokenValidator<Jwt> =
         JwtClaimValidator<List<String>>(JwtClaimNames.AUD) { aud -> aud.contains(audience) }
 
     /**
@@ -107,7 +107,7 @@ class OAuth2ResourceServerSecurityConfiguration(
         return http.build()
     }
 
-    fun gdprAudienceValidator(): OAuth2TokenValidator<Jwt?> =
+    fun gdprAudienceValidator(): OAuth2TokenValidator<Jwt> =
         JwtClaimValidator<List<String>>(JwtClaimNames.AUD) { aud ->
             aud.contains(gdprProperties.audience)
         }
@@ -131,9 +131,9 @@ class OAuth2ResourceServerSecurityConfiguration(
     class AdGroupValidator(private val adFilterProperties: AdFilterProperties) :
         OAuth2TokenValidator<Jwt> {
         override fun validate(jwt: Jwt): OAuth2TokenValidatorResult =
-            if (jwt.getClaimAsStringList(JwtClaims.AMR).contains(AmrValues.SUOMI_FI)) {
+            if (jwt.getClaimAsStringList(JwtClaims.AMR).orEmpty().contains(AmrValues.SUOMI_FI)) {
                 OAuth2TokenValidatorResult.success()
-            } else if (jwt.getClaimAsStringList(JwtClaims.AMR).contains(AmrValues.AD)) {
+            } else if (jwt.getClaimAsStringList(JwtClaims.AMR).orEmpty().contains(AmrValues.AD)) {
                 validateAdGroups(jwt).let { if (it.hasErrors()) it else validateNames(jwt) }
             } else {
                 val error =
@@ -146,7 +146,7 @@ class OAuth2ResourceServerSecurityConfiguration(
             }
 
         private fun validateAdGroups(jwt: Jwt): OAuth2TokenValidatorResult {
-            val groups = jwt.getClaimAsStringList("ad_groups").toSet()
+            val groups = jwt.getClaimAsStringList("ad_groups").orEmpty().toSet()
 
             return if (!adFilterProperties.use) {
                 OAuth2TokenValidatorResult.success()
