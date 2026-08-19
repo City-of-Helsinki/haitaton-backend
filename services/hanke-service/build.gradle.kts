@@ -15,7 +15,7 @@ val geoToolsVersion = "35.0"
 // Override Spring Boot 4.1.0's managed versions ahead of the next Boot patch release,
 // to pick up CVE fixes for these specific transitive dependencies.
 ext["log4j2.version"] = "2.26.1"
-ext["netty.version"] = "4.2.16.Final"
+ext["netty.version"] = "4.2.17.Final"
 ext["postgresql.version"] = "42.7.13"
 ext["tomcat.version"] = "11.0.24"
 ext["jackson-2-bom.version"] = "2.21.5"
