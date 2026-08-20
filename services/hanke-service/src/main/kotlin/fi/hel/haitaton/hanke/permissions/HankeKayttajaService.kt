@@ -258,14 +258,14 @@ class HankeKayttajaService(
         update: ContactUpdate,
         currentUserId: String,
     ): HankeKayttaja {
-        hankeRepository
-            .findOneByHankeTunnus(hankeTunnus)
-            ?.let { getKayttajaByUserId(it.id, currentUserId) }
-            ?.let {
-                it.sahkoposti = update.sahkoposti
-                it.puhelin = update.puhelinnumero
-                return it.toDomain()
-            } ?: throw HankeNotFoundException(hankeTunnus)
+        val hanke =
+            hankeRepository.findOneByHankeTunnus(hankeTunnus)
+                ?: throw HankeNotFoundException(hankeTunnus)
+        val kayttaja =
+            getKayttajaByUserId(hanke.id, currentUserId) ?: throw HankeNotFoundException(hankeTunnus)
+        kayttaja.sahkoposti = update.sahkoposti
+        kayttaja.puhelin = update.puhelinnumero
+        return kayttaja.toDomain()
     }
 
     @Transactional

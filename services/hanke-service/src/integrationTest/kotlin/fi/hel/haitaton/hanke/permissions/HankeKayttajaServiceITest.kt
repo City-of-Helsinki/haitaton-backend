@@ -60,7 +60,6 @@ import fi.hel.haitaton.hanke.test.AuthenticationMocks
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toChangeLogJsonString
 import fi.hel.haitaton.hanke.verifiedname.NameClaimNotFound
-import io.mockk.every
 import jakarta.mail.internet.MimeMessage
 import java.time.OffsetDateTime
 import java.util.UUID

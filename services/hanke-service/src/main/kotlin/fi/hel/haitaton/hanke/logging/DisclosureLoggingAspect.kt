@@ -133,5 +133,5 @@ class UnknownResponseListTypeException(kclass: KClass<*>) :
 
 class MixedElementsInResponseException(expected: KClass<*>, actual: Set<KClass<*>>) :
     RuntimeException(
-        "Mixed types inside a list. Expected type: ${expected.qualifiedName} Actual types: ${actual.map { it.qualifiedName }.joinToString ()}"
+        "Mixed types inside a list. Expected type: ${expected.qualifiedName} Actual types: ${actual.joinToString { it.qualifiedName.toString() }}"
     )

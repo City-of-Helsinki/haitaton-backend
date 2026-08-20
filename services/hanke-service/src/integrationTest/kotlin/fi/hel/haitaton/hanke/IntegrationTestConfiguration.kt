@@ -57,7 +57,7 @@ import org.springframework.security.web.SecurityFilterChain
 @EnableConfigurationProperties(GdprProperties::class, FeatureFlags::class)
 @EnableMethodSecurity(prePostEnabled = true)
 @Import(value = [AopAutoConfiguration::class, DisclosureLoggingAspect::class])
-// Spring Boot 4's @WebMvcTest no longer auto-configures the HttpSecurity bean. Use
+// Spring Boot 4's @WebMvcTest no longer autoconfigures the HttpSecurity bean. Use
 // @ImportAutoConfiguration (not @Import) so its @ConditionalOnMissingBean(SecurityFilterChain)
 // default chain is correctly deferred behind the filterChain() bean declared below, instead of
 // both being registered and conflicting.
@@ -133,6 +133,7 @@ class IntegrationTestConfiguration {
 
     @Bean fun verifiedNameService(): VerifiedNameService = mockk()
 
+    @Suppress("UNUSED_PARAMETER")
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {
         // disable Sentry by mocking it

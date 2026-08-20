@@ -36,7 +36,9 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_EDIT_PERMISSIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_USER
 import fi.hel.haitaton.hanke.permissions.PermissionCode.RESEND_INVITATION
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
+import fi.hel.haitaton.hanke.security.JwtClaims
 import fi.hel.haitaton.hanke.test.USERNAME
+import fi.hel.haitaton.hanke.verifiedname.NameClaimNotFound
 import fi.hel.haitaton.hanke.verifiedname.VerifiedNameNotFound
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -63,7 +65,7 @@ import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
+private const val HANKE_TUNNUS = HankeFactory.DEFAULT_HANKE_TUNNUS
 
 @WebMvcTest(HankeKayttajaController::class)
 @Import(IntegrationTestConfiguration::class)
@@ -642,10 +644,26 @@ class HankeKayttajaControllerITest(
         }
 
         @Test
-        fun `Returns 500 when cannot retrieve verified name from Profiil`() {
+        fun `Returns 500 when cannot retrieve verified name`() {
             every {
                 hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
             } throws VerifiedNameNotFound("Verified name not found from profile.")
+
+            post(url, Tunnistautuminen(tunniste))
+                .andExpect(status().isInternalServerError)
+                .andExpect(hankeError(HankeError.HAI4007))
+
+            verify {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+                hankeService wasNot Called
+            }
+        }
+
+        @Test
+        fun `Returns 500 when the name claim is missing from the token`() {
+            every {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+            } throws NameClaimNotFound(JwtClaims.GIVEN_NAME)
 
             post(url, Tunnistautuminen(tunniste))
                 .andExpect(status().isInternalServerError)

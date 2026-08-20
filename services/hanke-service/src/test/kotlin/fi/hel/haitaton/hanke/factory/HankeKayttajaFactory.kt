@@ -223,7 +223,7 @@ class HankeKayttajaFactory(
 
         fun create(
             id: UUID = KAYTTAJA_ID,
-            hankeId: Int = HankeFactory.defaultId,
+            hankeId: Int = HankeFactory.DEFAULT_ID,
             etunimi: String = KAKE,
             sukunimi: String = KATSELIJA,
             sahkoposti: String = KAKE_EMAIL,
@@ -249,7 +249,7 @@ class HankeKayttajaFactory(
 
         fun createEntity(
             id: UUID = KAYTTAJA_ID,
-            hankeId: Int = HankeFactory.defaultId,
+            hankeId: Int = HankeFactory.DEFAULT_ID,
             etunimi: String = KAKE,
             sukunimi: String = KATSELIJA,
             sahkoposti: String = KAKE_EMAIL,

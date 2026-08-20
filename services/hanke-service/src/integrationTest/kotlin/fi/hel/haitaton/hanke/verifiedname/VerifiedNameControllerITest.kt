@@ -132,6 +132,10 @@ class VerifiedNameControllerITest(@Autowired override val mockMvc: MockMvc) : Co
                 prop(Names::lastName).isEqualTo(VerifiedNameFactory.DEFAULT_LAST_NAME)
                 prop(Names::givenName).isEqualTo(VerifiedNameFactory.DEFAULT_GIVEN_NAME)
             }
+            verifyAll {
+                verifiedNameService.getVerifiedName(any())
+                disclosureLogService.saveForVerifiedName(any(), any())
+            }
         }
     }
 }
