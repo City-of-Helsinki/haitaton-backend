@@ -1137,7 +1137,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
         }
 
         @Test
-        fun `Updates name from Profiili`() {
+        fun `Updates name from token`() {
             val hanke = hankeFactory.builder(USERNAME).save()
             val originalHankekayttaja =
                 kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)

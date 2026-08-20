@@ -197,7 +197,7 @@ class HankeKayttajaService(
         val kayttaja = tunnisteEntity.hankekayttaja
 
         if (updateVerifiedName(kayttaja, securityContext)) {
-            logger.info { "Updated user's name from Profiili. userId = $userId" }
+            logger.info { "Updated user's name from token. userId = $userId" }
         }
 
         permissionService.findPermission(kayttaja.hankeId, userId)?.let { permission ->

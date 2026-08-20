@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.permissions
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.verifiedname.NameClaimNotFound
 import fi.hel.haitaton.hanke.verifiedname.VerifiedNameNotFound
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
@@ -272,7 +273,7 @@ Responds with information about the activated user and the hanke associated with
                 ),
                 ApiResponse(
                     description =
-                        "Token doesn't have a user associated with it or the verified name cannot be retrieved from Profiili",
+                        "Token doesn't have a user associated with it or the verified name cannot be retrieved",
                     responseCode = "500",
                     content = [Content(schema = Schema(implementation = HankeError::class))],
                 ),
@@ -539,6 +540,14 @@ contact in the applicant customer role. If either is true, refuse to delete the 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @Hidden
     fun verifiedNameNotFoundException(ex: VerifiedNameNotFound): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4007
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @Hidden
+    fun nameClaimNotFoundException(ex: NameClaimNotFound): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI4007
     }
