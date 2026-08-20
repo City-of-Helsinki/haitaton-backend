@@ -45,8 +45,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
-import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
+import fi.hel.haitaton.hanke.profiili.NameClaimNotFound
 import fi.hel.haitaton.hanke.test.Asserts.hasReceivers
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.auditEvent
@@ -88,8 +87,6 @@ class HankeKayttajaServiceITest : IntegrationTest() {
     @Autowired private lateinit var hankeKayttajaRepository: HankekayttajaRepository
     @Autowired private lateinit var permissionRepository: PermissionRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
-
-    @Autowired private lateinit var profiiliClient: ProfiiliClient
 
     companion object {
         @JvmField
@@ -1052,12 +1049,10 @@ class HankeKayttajaServiceITest : IntegrationTest() {
         }
 
         @Test
-        fun `throws exception if cannot retrieve verified name from Profiili`() {
-            securityContext = AuthenticationMocks.suomiFiLoginMock()
+        fun `throws exception if the Suomi fi token has no verified name`() {
+            securityContext = AuthenticationMocks.suomiFiLoginMock(givenName = null)
             val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
-            every { profiiliClient.getVerifiedName(any()) } throws
-                VerifiedNameNotFound("Verified name not found from profile.")
 
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
@@ -1067,8 +1062,8 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                     )
                 }
                 .all {
-                    hasClass(VerifiedNameNotFound::class)
-                    messageContains("Verified name not found from profile.")
+                    hasClass(NameClaimNotFound::class)
+                    messageContains("Claim given_name not found from token.")
                 }
         }
 
