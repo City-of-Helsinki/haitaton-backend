@@ -36,3 +36,8 @@ class NameClaimNotFound(claim: String) : RuntimeException("Claim $claim not foun
 
 class AuthenticationMethodNotSupported(amr: List<String>?) :
     RuntimeException("Authentication method not supported: $amr")
+
+data class Names(val firstName: String, val lastName: String, val givenName: String)
+
+class VerifiedNameNotFound(reason: String) :
+    RuntimeException("Verified name of user could not be obtained. $reason")

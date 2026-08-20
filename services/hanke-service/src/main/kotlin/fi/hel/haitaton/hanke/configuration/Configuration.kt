@@ -5,7 +5,6 @@ import fi.hel.haitaton.hanke.allu.AlluProperties
 import fi.hel.haitaton.hanke.attachment.azure.Containers
 import fi.hel.haitaton.hanke.email.EmailProperties
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
-import fi.hel.haitaton.hanke.profiili.ProfiiliProperties
 import fi.hel.haitaton.hanke.security.AdFilterProperties
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
@@ -29,7 +28,6 @@ import tools.jackson.databind.module.SimpleModule
     GdprProperties::class,
     FeatureFlags::class,
     AlluProperties::class,
-    ProfiiliProperties::class,
     EmailProperties::class,
     AdFilterProperties::class,
     Containers::class,

@@ -27,7 +27,6 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaAuthorizer
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.profiili.ProfiiliService
 import fi.hel.haitaton.hanke.security.AccessRules
 import fi.hel.haitaton.hanke.taydennys.TaydennysAuthorizer
@@ -119,8 +118,6 @@ class IntegrationTestConfiguration {
     @Bean fun paatosService(): PaatosService = mockk()
 
     @Bean fun permissionService(): PermissionService = mockk()
-
-    @Bean fun profiiliClient(): ProfiiliClient = mockk()
 
     @Bean fun profiiliService(): ProfiiliService = mockk()
 
