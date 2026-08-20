@@ -1,8 +1,8 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.profiili.Names
+import fi.hel.haitaton.hanke.verifiedname.Names
 
-object ProfiiliFactory {
+object VerifiedNameFactory {
 
     const val DEFAULT_FIRST_NAME = "Antti-Matti Tapani"
     const val DEFAULT_LAST_NAME = "Apuhärmä"

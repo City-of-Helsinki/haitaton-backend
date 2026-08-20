@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.profiili
+package fi.hel.haitaton.hanke.verifiedname
 
 import fi.hel.haitaton.hanke.security.AmrValues
 import fi.hel.haitaton.hanke.security.JwtClaims
@@ -7,7 +7,7 @@ import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
 
 @Service
-class ProfiiliService {
+class VerifiedNameService {
 
     fun getVerifiedName(securityContext: SecurityContext): Names {
         val credentials =
@@ -32,12 +32,12 @@ class ProfiiliService {
     }
 }
 
-class NameClaimNotFound(claim: String) : RuntimeException("Claim $claim not found from token.")
-
-class AuthenticationMethodNotSupported(amr: List<String>?) :
-    RuntimeException("Authentication method not supported: $amr")
-
 data class Names(val firstName: String, val lastName: String, val givenName: String)
 
 class VerifiedNameNotFound(reason: String) :
     RuntimeException("Verified name of user could not be obtained. $reason")
+
+class NameClaimNotFound(claim: String) : RuntimeException("Claim $claim not found from token.")
+
+class AuthenticationMethodNotSupported(amr: List<String>?) :
+    RuntimeException("Authentication method not supported: $amr")

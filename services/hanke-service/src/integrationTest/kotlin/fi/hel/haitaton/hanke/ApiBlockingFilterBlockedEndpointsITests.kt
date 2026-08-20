@@ -2,8 +2,8 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.hakemus.HakemusController
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaController
-import fi.hel.haitaton.hanke.profiili.ProfiiliController
 import fi.hel.haitaton.hanke.test.USERNAME
+import fi.hel.haitaton.hanke.verifiedname.VerifiedNameController
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
             HankeKayttajaController::class,
             PublicHankeController::class,
             StatusController::class,
-            ProfiiliController::class,
+            VerifiedNameController::class,
         ],
     properties = ["haitaton.api.disabled=true"],
 )

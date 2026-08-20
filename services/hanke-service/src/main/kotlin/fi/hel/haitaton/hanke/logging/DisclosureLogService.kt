@@ -22,9 +22,9 @@ import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusDataResponse
 import fi.hel.haitaton.hanke.muutosilmoitus.MuutosilmoitusResponse
 import fi.hel.haitaton.hanke.paatos.PaatosMetadata
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
-import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.taydennys.TaydennysResponse
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.verifiedname.Names
 import org.springframework.stereotype.Service
 
 /** Special username for Allu service. */
@@ -50,10 +50,10 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     }
 
     /**
-     * Save disclosure log for when we are reading the verified name from Profiili. Write a single
+     * Save disclosure log for when we are reading the user's verified name. Write a single
      * disclosure log entry with user's names.
      */
-    fun saveForProfiiliNimi(names: Names, userId: String) {
+    fun saveForVerifiedName(names: Names, userId: String) {
         val entry = disclosureLogEntry(ObjectType.PROFIILI_NIMI, userId, names)
         saveDisclosureLog(userId, UserRole.USER, entry)
     }

@@ -21,12 +21,12 @@ import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankealueRequest
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
-import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.test.AuthenticationMocks
+import fi.hel.haitaton.hanke.verifiedname.Names
 import java.time.ZonedDateTime
 
 data class HankeBuilder(

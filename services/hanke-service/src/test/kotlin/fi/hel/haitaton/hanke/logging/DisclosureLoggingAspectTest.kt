@@ -6,7 +6,7 @@ import assertk.assertions.hasClass
 import assertk.assertions.messageContains
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory
 import fi.hel.haitaton.hanke.hakemus.HakemusDeletionResultDto
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.checkUnnecessaryStub
@@ -76,10 +76,10 @@ class DisclosureLoggingAspectTest {
         fun `calls disclosure service for logging when necessary`() {
             mockAuthentication()
 
-            disclosureLoggingAspect.logResponse(ProfiiliFactory.DEFAULT_NAMES)
+            disclosureLoggingAspect.logResponse(VerifiedNameFactory.DEFAULT_NAMES)
 
             verifySequence {
-                disclosureLogService.saveForProfiiliNimi(ProfiiliFactory.DEFAULT_NAMES, USERNAME)
+                disclosureLogService.saveForVerifiedName(VerifiedNameFactory.DEFAULT_NAMES, USERNAME)
             }
         }
 
@@ -139,10 +139,10 @@ class DisclosureLoggingAspectTest {
             mockAuthentication()
 
             disclosureLoggingAspect.logResponse(
-                ResponseEntity.ofNullable(ProfiiliFactory.DEFAULT_NAMES))
+                ResponseEntity.ofNullable(VerifiedNameFactory.DEFAULT_NAMES))
 
             verifySequence {
-                disclosureLogService.saveForProfiiliNimi(ProfiiliFactory.DEFAULT_NAMES, USERNAME)
+                disclosureLogService.saveForVerifiedName(VerifiedNameFactory.DEFAULT_NAMES, USERNAME)
             }
         }
 

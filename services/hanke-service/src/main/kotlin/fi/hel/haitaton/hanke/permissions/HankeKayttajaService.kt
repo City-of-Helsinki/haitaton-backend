@@ -8,8 +8,8 @@ import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.email.AccessRightsUpdateNotificationEmail
 import fi.hel.haitaton.hanke.email.HankeInvitationEmail
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
-import fi.hel.haitaton.hanke.profiili.ProfiiliService
 import fi.hel.haitaton.hanke.userId
+import fi.hel.haitaton.hanke.verifiedname.VerifiedNameService
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
@@ -27,7 +27,7 @@ class HankeKayttajaService(
     private val hankeRepository: HankeRepository,
     private val permissionService: PermissionService,
     private val logService: HankeKayttajaLoggingService,
-    private val profiiliService: ProfiiliService,
+    private val verifiedNameService: VerifiedNameService,
     private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional(readOnly = true)
@@ -126,7 +126,7 @@ class HankeKayttajaService(
                 Kayttooikeustaso.KAIKKI_OIKEUDET,
             )
 
-        val names = profiiliService.getVerifiedName(securityContext)
+        val names = verifiedNameService.getVerifiedName(securityContext)
         val kayttaja =
             HankekayttajaInput(
                 names.givenName,
@@ -227,7 +227,7 @@ class HankeKayttajaService(
         kayttaja: HankekayttajaEntity,
         securityContext: SecurityContext,
     ): Boolean {
-        val (_, lastName, givenName) = profiiliService.getVerifiedName(securityContext)
+        val (_, lastName, givenName) = verifiedNameService.getVerifiedName(securityContext)
         return if (givenName != kayttaja.etunimi || lastName != kayttaja.sukunimi) {
             kayttaja.etunimi = givenName
             kayttaja.sukunimi = lastName

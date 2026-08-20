@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.permissions
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
-import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
+import fi.hel.haitaton.hanke.verifiedname.VerifiedNameNotFound
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter

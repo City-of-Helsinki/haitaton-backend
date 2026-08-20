@@ -36,8 +36,8 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_EDIT_PERMISSIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_USER
 import fi.hel.haitaton.hanke.permissions.PermissionCode.RESEND_INVITATION
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
-import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
 import fi.hel.haitaton.hanke.test.USERNAME
+import fi.hel.haitaton.hanke.verifiedname.VerifiedNameNotFound
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks

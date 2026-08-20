@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.profiili
+package fi.hel.haitaton.hanke.verifiedname
 
 import assertk.all
 import assertk.assertFailure
@@ -7,7 +7,7 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.prop
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory
 import fi.hel.haitaton.hanke.security.AmrValues
 import fi.hel.haitaton.hanke.security.JwtClaims
 import fi.hel.haitaton.hanke.test.AuthenticationMocks
@@ -28,11 +28,11 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.oauth2.jwt.Jwt
 
-class ProfiiliServiceTest {
+class VerifiedNameServiceTest {
 
     private val securityContext: SecurityContext = mockk()
 
-    private val profiiliService = ProfiiliService()
+    private val verifiedNameService = VerifiedNameService()
 
     @BeforeEach
     fun clearMocks() {
@@ -51,7 +51,7 @@ class ProfiiliServiceTest {
         fun `throws exception when no authentication is found`() {
             every { securityContext.authentication } returns null
 
-            val failure = assertFailure { profiiliService.getVerifiedName(securityContext) }
+            val failure = assertFailure { verifiedNameService.getVerifiedName(securityContext) }
 
             failure.all {
                 hasClass(VerifiedNameNotFound::class)
@@ -66,7 +66,7 @@ class ProfiiliServiceTest {
             every { securityContext.authentication } returns authentication
             every { authentication.credentials } returns null
 
-            val failure = assertFailure { profiiliService.getVerifiedName(securityContext) }
+            val failure = assertFailure { verifiedNameService.getVerifiedName(securityContext) }
 
             failure.all {
                 hasClass(NullPointerException::class)
@@ -82,12 +82,12 @@ class ProfiiliServiceTest {
             val authentication = AuthenticationMocks.suomiFiAuthentication()
             every { securityContext.authentication } returns authentication
 
-            val response = profiiliService.getVerifiedName(securityContext)
+            val response = verifiedNameService.getVerifiedName(securityContext)
 
             assertThat(response).all {
-                prop(Names::firstName).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
-                prop(Names::lastName).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
-                prop(Names::givenName).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
+                prop(Names::firstName).isEqualTo(VerifiedNameFactory.DEFAULT_GIVEN_NAME)
+                prop(Names::lastName).isEqualTo(VerifiedNameFactory.DEFAULT_LAST_NAME)
+                prop(Names::givenName).isEqualTo(VerifiedNameFactory.DEFAULT_GIVEN_NAME)
             }
             verifySequence { securityContext.authentication }
         }
@@ -97,12 +97,12 @@ class ProfiiliServiceTest {
             val authentication = AuthenticationMocks.adAuthentication()
             every { securityContext.authentication } returns authentication
 
-            val response = profiiliService.getVerifiedName(securityContext)
+            val response = verifiedNameService.getVerifiedName(securityContext)
 
             assertThat(response).all {
-                prop(Names::firstName).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
-                prop(Names::lastName).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
-                prop(Names::givenName).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
+                prop(Names::firstName).isEqualTo(VerifiedNameFactory.DEFAULT_GIVEN_NAME)
+                prop(Names::lastName).isEqualTo(VerifiedNameFactory.DEFAULT_LAST_NAME)
+                prop(Names::givenName).isEqualTo(VerifiedNameFactory.DEFAULT_GIVEN_NAME)
             }
             verifySequence { securityContext.authentication }
         }
@@ -118,7 +118,7 @@ class ProfiiliServiceTest {
             every { authentication.credentials } returns jwt
             every { securityContext.authentication } returns authentication
 
-            val failure = assertFailure { profiiliService.getVerifiedName(securityContext) }
+            val failure = assertFailure { verifiedNameService.getVerifiedName(securityContext) }
 
             failure.all {
                 hasClass(AuthenticationMethodNotSupported::class)
@@ -135,14 +135,14 @@ class ProfiiliServiceTest {
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
                     .claim(JwtClaims.AMR, listOf(AmrValues.AD))
-                    .claim(JwtClaims.FAMILY_NAME, ProfiiliFactory.DEFAULT_LAST_NAME)
+                    .claim(JwtClaims.FAMILY_NAME, VerifiedNameFactory.DEFAULT_LAST_NAME)
             if (givenName != null) builder.claim(JwtClaims.GIVEN_NAME, givenName)
             val jwt = builder.build()
             val authentication: Authentication = mockk()
             every { authentication.credentials } returns jwt
             every { securityContext.authentication } returns authentication
 
-            val failure = assertFailure { profiiliService.getVerifiedName(securityContext) }
+            val failure = assertFailure { verifiedNameService.getVerifiedName(securityContext) }
 
             failure.all {
                 hasClass(NameClaimNotFound::class)
@@ -159,14 +159,14 @@ class ProfiiliServiceTest {
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
                     .claim(JwtClaims.AMR, listOf(AmrValues.AD))
-                    .claim(JwtClaims.GIVEN_NAME, ProfiiliFactory.DEFAULT_GIVEN_NAME)
+                    .claim(JwtClaims.GIVEN_NAME, VerifiedNameFactory.DEFAULT_GIVEN_NAME)
             if (familyName != null) builder.claim(JwtClaims.FAMILY_NAME, familyName)
             val jwt = builder.build()
             val authentication: Authentication = mockk()
             every { authentication.credentials } returns jwt
             every { securityContext.authentication } returns authentication
 
-            val failure = assertFailure { profiiliService.getVerifiedName(securityContext) }
+            val failure = assertFailure { verifiedNameService.getVerifiedName(securityContext) }
 
             failure.all {
                 hasClass(NameClaimNotFound::class)
@@ -185,14 +185,14 @@ class ProfiiliServiceTest {
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
                     .claim(JwtClaims.AMR, listOf(AmrValues.SUOMI_FI))
-                    .claim(JwtClaims.FAMILY_NAME, ProfiiliFactory.DEFAULT_LAST_NAME)
+                    .claim(JwtClaims.FAMILY_NAME, VerifiedNameFactory.DEFAULT_LAST_NAME)
             if (givenName != null) builder.claim(JwtClaims.GIVEN_NAME, givenName)
             val jwt = builder.build()
             val authentication: Authentication = mockk()
             every { authentication.credentials } returns jwt
             every { securityContext.authentication } returns authentication
 
-            val failure = assertFailure { profiiliService.getVerifiedName(securityContext) }
+            val failure = assertFailure { verifiedNameService.getVerifiedName(securityContext) }
 
             failure.all {
                 hasClass(NameClaimNotFound::class)
@@ -211,14 +211,14 @@ class ProfiiliServiceTest {
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
                     .claim(JwtClaims.AMR, listOf(AmrValues.SUOMI_FI))
-                    .claim(JwtClaims.GIVEN_NAME, ProfiiliFactory.DEFAULT_GIVEN_NAME)
+                    .claim(JwtClaims.GIVEN_NAME, VerifiedNameFactory.DEFAULT_GIVEN_NAME)
             if (familyName != null) builder.claim(JwtClaims.FAMILY_NAME, familyName)
             val jwt = builder.build()
             val authentication: Authentication = mockk()
             every { authentication.credentials } returns jwt
             every { securityContext.authentication } returns authentication
 
-            val failure = assertFailure { profiiliService.getVerifiedName(securityContext) }
+            val failure = assertFailure { verifiedNameService.getVerifiedName(securityContext) }
 
             failure.all {
                 hasClass(NameClaimNotFound::class)

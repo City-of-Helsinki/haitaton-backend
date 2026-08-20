@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.test
 
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_GIVEN_NAME
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.security.AmrValues
 import fi.hel.haitaton.hanke.security.JwtClaims
 import io.mockk.every
