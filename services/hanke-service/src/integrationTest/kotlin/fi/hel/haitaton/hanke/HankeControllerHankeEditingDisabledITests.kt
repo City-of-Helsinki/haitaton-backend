@@ -14,7 +14,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
-private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
+private const val HANKE_TUNNUS = HankeFactory.DEFAULT_HANKE_TUNNUS
 private const val BASE_URL = "/hankkeet"
 
 @WebMvcTest(HankeController::class, properties = ["haitaton.features.hanke-editing=false"])

@@ -43,9 +43,9 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUSTAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_GIVEN_NAME
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.hakemus.ALLU_USER_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
@@ -264,7 +264,7 @@ class HankeServiceITests(
                 // Check the ID is reassigned by the DB:
                 prop(Hanke::id).isNotEqualTo(0)
                 prop(Hanke::onYKTHanke).isNull()
-                prop(Hanke::nimi).isEqualTo(HankeFactory.defaultNimi)
+                prop(Hanke::nimi).isEqualTo(HankeFactory.DEFAULT_NIMI)
                 prop(Hanke::kuvaus).isNull()
                 prop(Hanke::vaihe).isNull()
                 prop(Hanke::version).isEqualTo(0)
@@ -300,7 +300,7 @@ class HankeServiceITests(
                 // Check the ID is reassigned by the DB:
                 prop(HankeEntity::id).isNotEqualTo(0)
                 prop(HankeEntity::status).isEqualTo(HankeStatus.DRAFT)
-                prop(HankeEntity::nimi).isEqualTo(HankeFactory.defaultNimi)
+                prop(HankeEntity::nimi).isEqualTo(HankeFactory.DEFAULT_NIMI)
                 prop(HankeEntity::kuvaus).isNull()
                 prop(HankeEntity::vaihe).isNull()
                 prop(HankeEntity::onYKTHanke).isNull()

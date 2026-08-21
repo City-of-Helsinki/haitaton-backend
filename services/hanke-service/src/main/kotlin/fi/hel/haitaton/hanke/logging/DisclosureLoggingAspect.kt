@@ -19,9 +19,9 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaResponse
 import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService
 import fi.hel.haitaton.hanke.permissions.WhoamiResponse
-import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.taydennys.TaydennysResponse
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import fi.hel.haitaton.hanke.verifiedname.Names
 import kotlin.reflect.KClass
 import org.aspectj.lang.annotation.AfterReturning
 import org.aspectj.lang.annotation.Aspect
@@ -64,7 +64,7 @@ class DisclosureLoggingAspect(private val disclosureLogService: DisclosureLogSer
                 disclosureLogService.saveForHankeKayttajat(result.kayttajat, currentUserId())
             is MuutosilmoitusResponse ->
                 disclosureLogService.saveForMuutosilmoitus(result, currentUserId())
-            is Names -> disclosureLogService.saveForProfiiliNimi(result, currentUserId())
+            is Names -> disclosureLogService.saveForVerifiedName(result, currentUserId())
             is TaydennysResponse -> disclosureLogService.saveForTaydennys(result, currentUserId())
 
             // Some classes cannot hold personal information, so they are skipped
@@ -133,5 +133,5 @@ class UnknownResponseListTypeException(kclass: KClass<*>) :
 
 class MixedElementsInResponseException(expected: KClass<*>, actual: Set<KClass<*>>) :
     RuntimeException(
-        "Mixed types inside a list. Expected type: ${expected.qualifiedName} Actual types: ${actual.map { it.qualifiedName }.joinToString ()}"
+        "Mixed types inside a list. Expected type: ${expected.qualifiedName} Actual types: ${actual.joinToString { it.qualifiedName.toString() }}"
     )

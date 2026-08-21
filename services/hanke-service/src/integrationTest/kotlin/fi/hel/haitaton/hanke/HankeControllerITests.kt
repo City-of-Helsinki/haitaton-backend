@@ -55,7 +55,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
+private const val HANKE_TUNNUS = HankeFactory.DEFAULT_HANKE_TUNNUS
 private const val BASE_URL = "/hankkeet"
 
 /**
@@ -517,7 +517,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             put(url, hankeToBeUpdated)
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.nimi").value(HankeFactory.defaultNimi))
+                .andExpect(jsonPath("$.nimi").value(HankeFactory.DEFAULT_NIMI))
                 .andExpect(jsonPath("$.status").value(HankeStatus.PUBLIC.name))
 
             verifySequence {

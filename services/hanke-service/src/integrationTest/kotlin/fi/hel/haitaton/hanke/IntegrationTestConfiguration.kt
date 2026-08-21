@@ -27,14 +27,13 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaAuthorizer
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
-import fi.hel.haitaton.hanke.profiili.ProfiiliService
 import fi.hel.haitaton.hanke.security.AccessRules
 import fi.hel.haitaton.hanke.taydennys.TaydennysAuthorizer
 import fi.hel.haitaton.hanke.taydennys.TaydennysService
 import fi.hel.haitaton.hanke.testdata.TestDataService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
+import fi.hel.haitaton.hanke.verifiedname.VerifiedNameService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -58,7 +57,7 @@ import org.springframework.security.web.SecurityFilterChain
 @EnableConfigurationProperties(GdprProperties::class, FeatureFlags::class)
 @EnableMethodSecurity(prePostEnabled = true)
 @Import(value = [AopAutoConfiguration::class, DisclosureLoggingAspect::class])
-// Spring Boot 4's @WebMvcTest no longer auto-configures the HttpSecurity bean. Use
+// Spring Boot 4's @WebMvcTest no longer autoconfigures the HttpSecurity bean. Use
 // @ImportAutoConfiguration (not @Import) so its @ConditionalOnMissingBean(SecurityFilterChain)
 // default chain is correctly deferred behind the filterChain() bean declared below, instead of
 // both being registered and conflicting.
@@ -120,10 +119,6 @@ class IntegrationTestConfiguration {
 
     @Bean fun permissionService(): PermissionService = mockk()
 
-    @Bean fun profiiliClient(): ProfiiliClient = mockk()
-
-    @Bean fun profiiliService(): ProfiiliService = mockk()
-
     @Bean fun taydennysAttachmentService(): TaydennysAttachmentService = mockk()
 
     @Bean fun taydennysAuthorizer(): TaydennysAuthorizer = mockk()
@@ -136,6 +131,9 @@ class IntegrationTestConfiguration {
 
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
 
+    @Bean fun verifiedNameService(): VerifiedNameService = mockk()
+
+    @Suppress("UNUSED_PARAMETER")
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {
         // disable Sentry by mocking it

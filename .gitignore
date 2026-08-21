@@ -52,3 +52,6 @@ out/
 # Scoped to superpowers/ specifically, not all of docs/, in case non-Claude docs are
 # added under docs/ later.
 /docs/superpowers/
+
+# Subagent-driven-development workspace (ledgers, briefs, review packages) - scratch, not committed.
+/.superpowers/

@@ -103,9 +103,9 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
         fun expectedHanke(id: Int, nimi: String) =
             PublicHanke(
                 id = id,
-                hankeTunnus = HankeFactory.defaultHankeTunnus,
+                hankeTunnus = HankeFactory.DEFAULT_HANKE_TUNNUS,
                 nimi = nimi,
-                kuvaus = HankeFactory.defaultKuvaus,
+                kuvaus = HankeFactory.DEFAULT_KUVAUS,
                 alkuPvm = DateFactory.getStartDatetime(),
                 loppuPvm = DateFactory.getEndDatetime(),
                 vaihe = Hankevaihe.OHJELMOINTI,
