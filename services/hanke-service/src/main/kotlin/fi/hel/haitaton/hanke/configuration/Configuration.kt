@@ -6,7 +6,6 @@ import fi.hel.haitaton.hanke.allu.AlluProperties
 import fi.hel.haitaton.hanke.attachment.azure.Containers
 import fi.hel.haitaton.hanke.email.EmailProperties
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
-import fi.hel.haitaton.hanke.profiili.ProfiiliProperties
 import fi.hel.haitaton.hanke.security.AdFilterProperties
 import fi.hel.haitaton.hanke.security.UserSessionCleanupProperties
 import io.netty.handler.ssl.SslContextBuilder
@@ -14,7 +13,6 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.geojson.LngLatAlt
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer
@@ -31,23 +29,21 @@ import tools.jackson.databind.module.SimpleModule
     GdprProperties::class,
     FeatureFlags::class,
     AlluProperties::class,
-    ProfiiliProperties::class,
     EmailProperties::class,
     AdFilterProperties::class,
     Containers::class,
     HankeMapGridProperties::class,
     UserSessionCleanupProperties::class,
 )
-class Configuration {
+class Configuration(private val alluProperties: AlluProperties) {
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false
-    @Autowired lateinit var alluProperties: AlluProperties
 
     @Bean fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
     /**
      * Registers the same GeoJSON LngLatAlt serializer/deserializer used for hypersistence-utils'
      * JSON columns (see HypersistenceJsonSerializer.kt) on the app-wide JsonMapper.Builder that
-     * Boot auto-configures and that WebClient's codecs are built from. Without this, Jackson 3's
+     * Boot autoconfigures and that WebClient's codecs are built from. Without this, Jackson 3's
      * default bean introspection corrupts LngLatAlt's array shape the same way it did on the
      * JSON-column path before that fix — geojson-jackson's own serializer is Jackson-2-only and
      * isn't picked up.

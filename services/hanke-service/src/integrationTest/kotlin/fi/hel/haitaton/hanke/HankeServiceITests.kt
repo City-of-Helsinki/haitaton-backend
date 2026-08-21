@@ -47,9 +47,9 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUST
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_GIVEN_NAME
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.hakemus.ALLU_USER_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData

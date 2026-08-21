@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.test
 
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_GIVEN_NAME
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.security.AmrValues
 import fi.hel.haitaton.hanke.security.JwtClaims
 import io.mockk.every
@@ -45,11 +45,14 @@ object AuthenticationMocks {
         return builder.build()
     }
 
-    /** When using this, you have to mock ProfiiliClient.getVerifiedName as well. */
-    fun suomiFiLoginMock(userId: String = USERNAME): SecurityContext = mockk {
+    fun suomiFiLoginMock(
+        userId: String = USERNAME,
+        givenName: String? = DEFAULT_GIVEN_NAME,
+        familyName: String? = DEFAULT_LAST_NAME,
+    ): SecurityContext = mockk {
         every { authentication } returns
             mockk {
-                every { credentials } returns suomiFiJwt(userId)
+                every { credentials } returns suomiFiJwt(userId, givenName, familyName)
                 every { name } returns userId
             }
     }
@@ -57,10 +60,18 @@ object AuthenticationMocks {
     fun suomiFiAuthentication(userId: String = USERNAME): Authentication =
         mockk(relaxed = true) { every { credentials } returns suomiFiJwt(userId) }
 
-    fun suomiFiJwt(userId: String = USERNAME): Jwt =
-        Jwt.withTokenValue(TOKEN_VALUE)
-            .header("alg", "none")
-            .subject(userId)
-            .claim(JwtClaims.AMR, listOf(AmrValues.SUOMI_FI))
-            .build()
+    fun suomiFiJwt(
+        userId: String = USERNAME,
+        givenName: String? = DEFAULT_GIVEN_NAME,
+        familyName: String? = DEFAULT_LAST_NAME,
+    ): Jwt {
+        val builder =
+            Jwt.withTokenValue(TOKEN_VALUE)
+                .header("alg", "none")
+                .subject(userId)
+                .claim(JwtClaims.AMR, listOf(AmrValues.SUOMI_FI))
+        if (givenName != null) builder.claim(JwtClaims.GIVEN_NAME, givenName)
+        if (familyName != null) builder.claim(JwtClaims.FAMILY_NAME, familyName)
+        return builder.build()
+    }
 }
