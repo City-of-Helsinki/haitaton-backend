@@ -64,6 +64,34 @@ class AdGroupValidatorTest {
 
     @ParameterizedTest
     @MethodSource("emptyNames")
+    fun `fails when Suomi fi token has no given name information`(
+        useAdFilter: Boolean,
+        givenName: String?,
+    ) {
+        val validator = validator(useAdFilter)
+        val jwt = AuthenticationMocks.suomiFiJwt(givenName = givenName)
+
+        val result = validator.validate(jwt)
+
+        assertThat(result).hasError("Missing given_name")
+    }
+
+    @ParameterizedTest
+    @MethodSource("emptyNames")
+    fun `fails when Suomi fi token has no family name information`(
+        useAdFilter: Boolean,
+        familyName: String?,
+    ) {
+        val validator = validator(useAdFilter)
+        val jwt = AuthenticationMocks.suomiFiJwt(familyName = familyName)
+
+        val result = validator.validate(jwt)
+
+        assertThat(result).hasError("Missing family_name")
+    }
+
+    @ParameterizedTest
+    @MethodSource("emptyNames")
     fun `fails when AD token has no given name information`(
         useAdFilter: Boolean,
         givenName: String?,

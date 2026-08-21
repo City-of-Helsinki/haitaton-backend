@@ -35,9 +35,9 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INP
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_PERUSTAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_SUORITTAJA
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_GIVEN_NAME
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.identifier
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
@@ -45,8 +45,6 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
-import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
 import fi.hel.haitaton.hanke.test.Asserts.hasReceivers
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.auditEvent
@@ -61,7 +59,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.AuthenticationMocks
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toChangeLogJsonString
-import io.mockk.every
+import fi.hel.haitaton.hanke.verifiedname.NameClaimNotFound
 import jakarta.mail.internet.MimeMessage
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -88,8 +86,6 @@ class HankeKayttajaServiceITest : IntegrationTest() {
     @Autowired private lateinit var hankeKayttajaRepository: HankekayttajaRepository
     @Autowired private lateinit var permissionRepository: PermissionRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
-
-    @Autowired private lateinit var profiiliClient: ProfiiliClient
 
     companion object {
         @JvmField
@@ -446,9 +442,9 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                 prop(HankekayttajaEntity::sahkoposti).isEqualTo(founder.sahkoposti)
                 prop(HankekayttajaEntity::puhelin).isEqualTo(founder.puhelinnumero)
                 prop(HankekayttajaEntity::etunimi)
-                    .isEqualTo(ProfiiliFactory.DEFAULT_NAMES.givenName)
+                    .isEqualTo(VerifiedNameFactory.DEFAULT_NAMES.givenName)
                 prop(HankekayttajaEntity::sukunimi)
-                    .isEqualTo(ProfiiliFactory.DEFAULT_NAMES.lastName)
+                    .isEqualTo(VerifiedNameFactory.DEFAULT_NAMES.lastName)
             }
         }
 
@@ -477,9 +473,9 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                         prop(HankeKayttaja::kayttajaTunnisteId).isNull()
                         prop(HankeKayttaja::permissionId).isNotNull()
                         prop(HankeKayttaja::etunimi)
-                            .isEqualTo(ProfiiliFactory.DEFAULT_NAMES.givenName)
+                            .isEqualTo(VerifiedNameFactory.DEFAULT_NAMES.givenName)
                         prop(HankeKayttaja::sukunimi)
-                            .isEqualTo(ProfiiliFactory.DEFAULT_NAMES.lastName)
+                            .isEqualTo(VerifiedNameFactory.DEFAULT_NAMES.lastName)
                         prop(HankeKayttaja::sahkoposti).isEqualTo(founder.sahkoposti)
                         prop(HankeKayttaja::puhelinnumero).isEqualTo(founder.puhelinnumero)
                     }
@@ -1052,12 +1048,10 @@ class HankeKayttajaServiceITest : IntegrationTest() {
         }
 
         @Test
-        fun `throws exception if cannot retrieve verified name from Profiili`() {
-            securityContext = AuthenticationMocks.suomiFiLoginMock()
+        fun `throws exception if the Suomi fi token has no verified name`() {
+            securityContext = AuthenticationMocks.suomiFiLoginMock(givenName = null)
             val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
-            every { profiiliClient.getVerifiedName(any()) } throws
-                VerifiedNameNotFound("Verified name not found from profile.")
 
             assertFailure {
                     hankeKayttajaService.createPermissionFromToken(
@@ -1067,8 +1061,8 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                     )
                 }
                 .all {
-                    hasClass(VerifiedNameNotFound::class)
-                    messageContains("Verified name not found from profile.")
+                    hasClass(NameClaimNotFound::class)
+                    messageContains("Claim given_name not found from token.")
                 }
         }
 
@@ -1142,7 +1136,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
         }
 
         @Test
-        fun `Updates name from Profiili`() {
+        fun `Updates name from token`() {
             val hanke = hankeFactory.builder(USERNAME).save()
             val originalHankekayttaja =
                 kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
