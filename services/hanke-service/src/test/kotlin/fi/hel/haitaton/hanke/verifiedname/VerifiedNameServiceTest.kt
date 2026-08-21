@@ -21,9 +21,10 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.NullAndEmptySource
-import org.junit.jupiter.params.provider.ValueSource
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.oauth2.jwt.Jwt
@@ -46,6 +47,7 @@ class VerifiedNameServiceTest {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class GetVerifiedName {
         @Test
         fun `throws exception when no authentication is found`() {
@@ -128,13 +130,15 @@ class VerifiedNameServiceTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = [" ", " \t "])
-        @NullAndEmptySource
-        fun `throws an exception when given name not found in an AD token`(givenName: String?) {
+        @MethodSource("missingNameCases")
+        fun `throws an exception when given name not found in the token`(
+            amr: String,
+            givenName: String?,
+        ) {
             val builder =
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
-                    .claim(JwtClaims.AMR, listOf(AmrValues.AD))
+                    .claim(JwtClaims.AMR, listOf(amr))
                     .claim(JwtClaims.FAMILY_NAME, VerifiedNameFactory.DEFAULT_LAST_NAME)
             if (givenName != null) builder.claim(JwtClaims.GIVEN_NAME, givenName)
             val jwt = builder.build()
@@ -152,13 +156,15 @@ class VerifiedNameServiceTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = [" ", " \t "])
-        @NullAndEmptySource
-        fun `throws an exception when family name not found in an AD token`(familyName: String?) {
+        @MethodSource("missingNameCases")
+        fun `throws an exception when family name not found in the token`(
+            amr: String,
+            familyName: String?,
+        ) {
             val builder =
                 Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
                     .header("alg", "none")
-                    .claim(JwtClaims.AMR, listOf(AmrValues.AD))
+                    .claim(JwtClaims.AMR, listOf(amr))
                     .claim(JwtClaims.GIVEN_NAME, VerifiedNameFactory.DEFAULT_GIVEN_NAME)
             if (familyName != null) builder.claim(JwtClaims.FAMILY_NAME, familyName)
             val jwt = builder.build()
@@ -175,56 +181,9 @@ class VerifiedNameServiceTest {
             verifySequence { securityContext.authentication }
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = [" ", " \t "])
-        @NullAndEmptySource
-        fun `throws an exception when given name not found in a Suomi fi token`(
-            givenName: String?
-        ) {
-            val builder =
-                Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
-                    .header("alg", "none")
-                    .claim(JwtClaims.AMR, listOf(AmrValues.SUOMI_FI))
-                    .claim(JwtClaims.FAMILY_NAME, VerifiedNameFactory.DEFAULT_LAST_NAME)
-            if (givenName != null) builder.claim(JwtClaims.GIVEN_NAME, givenName)
-            val jwt = builder.build()
-            val authentication: Authentication = mockk()
-            every { authentication.credentials } returns jwt
-            every { securityContext.authentication } returns authentication
-
-            val failure = assertFailure { verifiedNameService.getVerifiedName(securityContext) }
-
-            failure.all {
-                hasClass(NameClaimNotFound::class)
-                hasMessage("Claim given_name not found from token.")
+        private fun missingNameCases(): List<Arguments> =
+            setOf(null, "", " ", " \t ").flatMap { name ->
+                listOf(Arguments.of(AmrValues.AD, name), Arguments.of(AmrValues.SUOMI_FI, name))
             }
-            verifySequence { securityContext.authentication }
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = [" ", " \t "])
-        @NullAndEmptySource
-        fun `throws an exception when family name not found in a Suomi fi token`(
-            familyName: String?
-        ) {
-            val builder =
-                Jwt.withTokenValue(AuthenticationMocks.TOKEN_VALUE)
-                    .header("alg", "none")
-                    .claim(JwtClaims.AMR, listOf(AmrValues.SUOMI_FI))
-                    .claim(JwtClaims.GIVEN_NAME, VerifiedNameFactory.DEFAULT_GIVEN_NAME)
-            if (familyName != null) builder.claim(JwtClaims.FAMILY_NAME, familyName)
-            val jwt = builder.build()
-            val authentication: Authentication = mockk()
-            every { authentication.credentials } returns jwt
-            every { securityContext.authentication } returns authentication
-
-            val failure = assertFailure { verifiedNameService.getVerifiedName(securityContext) }
-
-            failure.all {
-                hasClass(NameClaimNotFound::class)
-                hasMessage("Claim family_name not found from token.")
-            }
-            verifySequence { securityContext.authentication }
-        }
     }
 }
