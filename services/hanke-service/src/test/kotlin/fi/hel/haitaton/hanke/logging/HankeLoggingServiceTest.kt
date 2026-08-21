@@ -92,7 +92,7 @@ class HankeLoggingServiceTest {
                                 ObjectType.YHTEYSTIETO,
                                 ObjectType.YHTEYSTIETO,
                                 ObjectType.YHTEYSTIETO,
-                                ObjectType.HANKE
+                                ObjectType.HANKE,
                             )
                     }
                 }

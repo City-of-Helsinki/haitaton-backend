@@ -6,7 +6,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 object HankeIdentifierFactory {
     fun create(
         id: Int = HankeFactory.DEFAULT_ID,
-        hankeTunnus: String = HankeFactory.DEFAULT_HANKE_TUNNUS
+        hankeTunnus: String = HankeFactory.DEFAULT_HANKE_TUNNUS,
     ): HankeIdentifier = TestHankeIdentifier(id, hankeTunnus)
 }
 

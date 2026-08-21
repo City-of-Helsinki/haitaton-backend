@@ -14,6 +14,6 @@ object VerifiedNameFactory {
         Names(
             firstName = DEFAULT_FIRST_NAME,
             lastName = DEFAULT_LAST_NAME,
-            givenName = DEFAULT_GIVEN_NAME
+            givenName = DEFAULT_GIVEN_NAME,
         )
 }

@@ -79,7 +79,10 @@ class DisclosureLoggingAspectTest {
             disclosureLoggingAspect.logResponse(VerifiedNameFactory.DEFAULT_NAMES)
 
             verifySequence {
-                disclosureLogService.saveForVerifiedName(VerifiedNameFactory.DEFAULT_NAMES, USERNAME)
+                disclosureLogService.saveForVerifiedName(
+                    VerifiedNameFactory.DEFAULT_NAMES,
+                    USERNAME,
+                )
             }
         }
 
@@ -110,7 +113,8 @@ class DisclosureLoggingAspectTest {
                 messageContains("Mixed types inside a list")
                 messageContains("Expected type: fi.hel.haitaton.hanke.domain.Hanke")
                 messageContains(
-                    "Actual types: fi.hel.haitaton.hanke.domain.Hanke, kotlin.String, kotlin.Int")
+                    "Actual types: fi.hel.haitaton.hanke.domain.Hanke, kotlin.String, kotlin.Int"
+                )
             }
         }
 
@@ -139,10 +143,14 @@ class DisclosureLoggingAspectTest {
             mockAuthentication()
 
             disclosureLoggingAspect.logResponse(
-                ResponseEntity.ofNullable(VerifiedNameFactory.DEFAULT_NAMES))
+                ResponseEntity.ofNullable(VerifiedNameFactory.DEFAULT_NAMES)
+            )
 
             verifySequence {
-                disclosureLogService.saveForVerifiedName(VerifiedNameFactory.DEFAULT_NAMES, USERNAME)
+                disclosureLogService.saveForVerifiedName(
+                    VerifiedNameFactory.DEFAULT_NAMES,
+                    USERNAME,
+                )
             }
         }
 
@@ -178,7 +186,8 @@ class DisclosureLoggingAspectTest {
                 messageContains("Mixed types inside a list")
                 messageContains("Expected type: fi.hel.haitaton.hanke.domain.Hanke")
                 messageContains(
-                    "Actual types: fi.hel.haitaton.hanke.domain.Hanke, kotlin.String, kotlin.Int")
+                    "Actual types: fi.hel.haitaton.hanke.domain.Hanke, kotlin.String, kotlin.Int"
+                )
             }
         }
 

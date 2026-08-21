@@ -33,8 +33,8 @@ class VerifiedNameService {
 }
 
 /**
- * firstName and givenName are always identical now: the JWT only carries a single given_name
- * claim, not the full set of a person's first names that DVV data used to provide via Profiili.
+ * firstName and givenName are always identical now: the JWT only carries a single given_name claim,
+ * not the full set of a person's first names that DVV data used to provide via Profiili.
  */
 data class Names(val firstName: String, val lastName: String, val givenName: String)
 

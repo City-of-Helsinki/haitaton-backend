@@ -262,7 +262,8 @@ class HankeKayttajaService(
             hankeRepository.findOneByHankeTunnus(hankeTunnus)
                 ?: throw HankeNotFoundException(hankeTunnus)
         val kayttaja =
-            getKayttajaByUserId(hanke.id, currentUserId) ?: throw HankeNotFoundException(hankeTunnus)
+            getKayttajaByUserId(hanke.id, currentUserId)
+                ?: throw HankeNotFoundException(hankeTunnus)
         kayttaja.sahkoposti = update.sahkoposti
         kayttaja.puhelin = update.puhelinnumero
         return kayttaja.toDomain()
