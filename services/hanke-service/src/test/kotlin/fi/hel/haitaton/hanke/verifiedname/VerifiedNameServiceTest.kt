@@ -181,6 +181,8 @@ class VerifiedNameServiceTest {
             verifySequence { securityContext.authentication }
         }
 
+        // Referenced by name from @MethodSource above; static analysis can't see that use.
+        @Suppress("unused")
         private fun missingNameCases(): List<Arguments> =
             setOf(null, "", " ", " \t ").flatMap { name ->
                 listOf(Arguments.of(AmrValues.AD, name), Arguments.of(AmrValues.SUOMI_FI, name))
