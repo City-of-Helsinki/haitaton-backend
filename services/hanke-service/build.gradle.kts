@@ -9,7 +9,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "8.46.0"
+val sentryVersion = "8.52.0"
 val geoToolsVersion = "35.0"
 
 // Override Spring Boot 4.1.0's managed versions ahead of the next Boot patch release,
