@@ -78,7 +78,7 @@ plugins {
     idea
     id("jacoco")
     id("io.freefair.mjml.java") version "8.14.2"
-    id("org.owasp.dependencycheck") version "12.1.0"
+    id("org.owasp.dependencycheck") version "13.0.0"
     id("org.cyclonedx.bom") version "2.3.0"
 }
 
