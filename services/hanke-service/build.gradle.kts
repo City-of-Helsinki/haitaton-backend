@@ -166,7 +166,7 @@ dependencies {
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
-    implementation(platform("com.azure:azure-sdk-bom:1.3.7"))
+    implementation(platform("com.azure:azure-sdk-bom:1.3.8"))
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity") // BOM 1.3.7 → 1.18.3 (fixes CVE-2026-33117)
