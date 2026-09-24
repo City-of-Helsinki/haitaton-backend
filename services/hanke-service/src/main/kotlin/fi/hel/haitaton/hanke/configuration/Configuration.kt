@@ -81,17 +81,18 @@ class Configuration(private val alluProperties: AlluProperties) {
     /**
      * Allu closes keep-alive connections after 5 seconds of inactivity. Without an idle limit the
      * pool keeps those connections and reuses them after Allu has already closed them, which fails
-     * the request with "Connection reset by peer". Drop idle connections before Allu does.
+     * the request with "Connection reset by peer". Drop idle connections before Allu does, leaving
+     * enough margin against Allu's timeout to absorb GC pauses and scheduler jitter.
      */
-    private fun alluConnectionProvider(): ConnectionProvider =
+    internal fun alluConnectionProvider(): ConnectionProvider =
         ConnectionProvider.builder("allu")
             .maxIdleTime(ALLU_MAX_IDLE_TIME)
             .evictInBackground(ALLU_EVICTION_INTERVAL)
             .build()
 
     companion object {
-        private val ALLU_MAX_IDLE_TIME: Duration = Duration.ofSeconds(4)
-        private val ALLU_EVICTION_INTERVAL: Duration = Duration.ofSeconds(5)
+        internal val ALLU_MAX_IDLE_TIME: Duration = Duration.ofSeconds(2)
+        internal val ALLU_EVICTION_INTERVAL: Duration = Duration.ofSeconds(1)
 
         /** Create a web client that can download large files in memory. */
         fun webClientWithLargeBuffer(webClientBuilder: WebClient.Builder): WebClient =
