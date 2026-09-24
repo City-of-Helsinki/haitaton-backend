@@ -91,7 +91,7 @@ plugins {
     id("jacoco")
     id("io.freefair.mjml.java") version "9.5.0"
     id("org.owasp.dependencycheck") version "13.0.0"
-    id("org.cyclonedx.bom") version "2.3.0"
+    id("org.cyclonedx.bom") version "3.4.0"
 }
 
 dependencies {
