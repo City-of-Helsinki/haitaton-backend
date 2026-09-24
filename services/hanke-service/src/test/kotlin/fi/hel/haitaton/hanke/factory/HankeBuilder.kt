@@ -21,13 +21,12 @@ import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankealueRequest
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
-import fi.hel.haitaton.hanke.profiili.Names
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.test.AuthenticationMocks
+import fi.hel.haitaton.hanke.verifiedname.Names
 import java.time.ZonedDateTime
 
 data class HankeBuilder(
@@ -37,7 +36,6 @@ data class HankeBuilder(
     private val names: Names = DEFAULT_NAMES,
     private val hankeService: HankeService,
     private val hankeRepository: HankeRepository,
-    private val mockProfiiliClient: ProfiiliClient,
     private val hankeKayttajaFactory: HankeKayttajaFactory,
     private val hankeYhteystietoRepository: HankeYhteystietoRepository,
     private val hankeYhteyshenkiloRepository: HankeYhteyshenkiloRepository,
@@ -49,7 +47,7 @@ data class HankeBuilder(
      * A founder is created as a HankeKayttaja with KAIKKI_OIKEUDET permission to the hanke. The
      * email and phonenumber of the founder are read from the `perustaja` field, but first and last
      * name are read from `names` field. This mimics how founder information is given partly from
-     * the UI and partly read from Profiili.
+     * the UI and partly read from the user's access token.
      */
     fun create(): Hanke {
         val request = CreateHankeRequest(hanke.nimi, perustaja)

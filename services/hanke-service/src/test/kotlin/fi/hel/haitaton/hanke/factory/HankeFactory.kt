@@ -21,8 +21,7 @@ import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
-import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
+import fi.hel.haitaton.hanke.factory.VerifiedNameFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
@@ -31,7 +30,6 @@ import org.springframework.stereotype.Component
 @Component
 class HankeFactory(
     private val hankeService: HankeService,
-    private val profiiliClient: ProfiiliClient,
     private val hanketunnusService: HanketunnusService,
     private val hankeRepository: HankeRepository,
     private val hankeYhteystietoRepository: HankeYhteystietoRepository,
@@ -98,7 +96,6 @@ class HankeFactory(
             DEFAULT_NAMES,
             hankeService,
             hankeRepository,
-            profiiliClient,
             hankeKayttajaFactory,
             hankeYhteystietoRepository,
             hankeYhteyshenkiloRepository,

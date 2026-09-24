@@ -196,7 +196,7 @@ class OAuth2ResourceServerSecurityConfiguration(
         OAuth2TokenValidator<Jwt> {
         override fun validate(jwt: Jwt): OAuth2TokenValidatorResult =
             if (jwt.getClaimAsStringList(JwtClaims.AMR).orEmpty().contains(AmrValues.SUOMI_FI)) {
-                OAuth2TokenValidatorResult.success()
+                validateNames(jwt)
             } else if (jwt.getClaimAsStringList(JwtClaims.AMR).orEmpty().contains(AmrValues.AD)) {
                 validateAdGroups(jwt).let { if (it.hasErrors()) it else validateNames(jwt) }
             } else {
@@ -232,9 +232,7 @@ class OAuth2ResourceServerSecurityConfiguration(
         private fun checkClaim(jwt: Jwt, claim: String): List<OAuth2Error> =
             if (jwt.getClaimAsString(claim).isNullOrBlank()) {
                 withLoggingContext("userId" to jwt.subject) {
-                    logger.error {
-                        "Claim $claim not found from token even though the token is with Helsinki AD authentication."
-                    }
+                    logger.error { "Claim $claim not found from token." }
                 }
                 listOf(OAuth2Error("invalid_token", "Missing $claim", null))
             } else {

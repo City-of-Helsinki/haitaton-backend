@@ -1,0 +1,6 @@
+# Known false-positive/non-exploitable osv-scanner findings to ignore. Each entry needs an
+# [[IgnoredVulns]] block with the advisory id and the reasoning, e.g.:
+#
+# [[IgnoredVulns]]
+# id = "GHSA-xxxx-xxxx-xxxx"
+# reason = "Why this finding does not apply to us."

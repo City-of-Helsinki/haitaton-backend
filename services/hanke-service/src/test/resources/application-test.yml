@@ -23,9 +23,6 @@ haitaton:
       max-per-run: 3
   map-service:
     url: http://localhost:3004
-  profiili-api:
-    api-tokens-url: http://localhost:14678/api-tokens/
-    graph-ql-url: http://localhost:14678/graphql/
   testdata:
     enabled: true
 

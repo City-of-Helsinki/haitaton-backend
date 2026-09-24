@@ -12,14 +12,26 @@ version = "0.0.1-SNAPSHOT"
 val sentryVersion = "8.46.0"
 val geoToolsVersion = "35.0"
 
-// Override Spring Boot 4.1.0's managed versions ahead of the next Boot patch release,
+// Override Spring Boot 4.1.1's managed versions ahead of the next Boot patch release,
 // to pick up CVE fixes for these specific transitive dependencies.
 ext["log4j2.version"] = "2.26.1"
-ext["netty.version"] = "4.2.16.Final"
-ext["postgresql.version"] = "42.7.13"
-ext["tomcat.version"] = "11.0.24"
-ext["jackson-2-bom.version"] = "2.21.5"
-ext["jackson-bom.version"] = "3.1.5"
+ext["netty.version"] = "4.2.18.Final"
+ext["tomcat.version"] = "11.0.26"
+
+// The Kotlin Gradle plugin resolves Bouncy Castle into its own internal configuration (used only by
+// library-publishing validation tasks, which we don't run), pinned to [1.80,1.81). It never reaches
+// any compile/runtime/test classpath, but vulnerability scanners still report it, so force a patched
+// version there.
+configurations
+    .matching { it.name == "kotlinBouncyCastleConfiguration" }
+    .configureEach {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.bouncycastle") {
+                useVersion("1.86")
+                because("CVE-2026-8763, CVE-2026-13506 (fixed in 1.85)")
+            }
+        }
+    }
 
 repositories {
     mavenCentral().content { excludeModule("javax.media", "jai_core") }
@@ -67,7 +79,7 @@ spotless {
 
 plugins {
     val kotlinVersion = "2.2.20"
-    id("org.springframework.boot") version "4.1.0"
+    id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.diffplug.spotless") version "7.2.1"
     kotlin("jvm") version kotlinVersion
@@ -119,7 +131,7 @@ dependencies {
     implementation("com.auth0:java-jwt:4.5.0")
 
     implementation("org.postgresql:postgresql")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")

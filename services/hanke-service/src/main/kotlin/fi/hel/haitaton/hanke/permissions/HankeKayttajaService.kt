@@ -8,8 +8,8 @@ import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.email.AccessRightsUpdateNotificationEmail
 import fi.hel.haitaton.hanke.email.HankeInvitationEmail
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
-import fi.hel.haitaton.hanke.profiili.ProfiiliService
 import fi.hel.haitaton.hanke.userId
+import fi.hel.haitaton.hanke.verifiedname.VerifiedNameService
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.context.ApplicationEventPublisher
@@ -27,7 +27,7 @@ class HankeKayttajaService(
     private val hankeRepository: HankeRepository,
     private val permissionService: PermissionService,
     private val logService: HankeKayttajaLoggingService,
-    private val profiiliService: ProfiiliService,
+    private val verifiedNameService: VerifiedNameService,
     private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional(readOnly = true)
@@ -126,7 +126,7 @@ class HankeKayttajaService(
                 Kayttooikeustaso.KAIKKI_OIKEUDET,
             )
 
-        val names = profiiliService.getVerifiedName(securityContext)
+        val names = verifiedNameService.getVerifiedName(securityContext)
         val kayttaja =
             HankekayttajaInput(
                 names.givenName,
@@ -197,7 +197,7 @@ class HankeKayttajaService(
         val kayttaja = tunnisteEntity.hankekayttaja
 
         if (updateVerifiedName(kayttaja, securityContext)) {
-            logger.info { "Updated user's name from Profiili. userId = $userId" }
+            logger.info { "Updated user's name from token. userId = $userId" }
         }
 
         permissionService.findPermission(kayttaja.hankeId, userId)?.let { permission ->
@@ -227,7 +227,7 @@ class HankeKayttajaService(
         kayttaja: HankekayttajaEntity,
         securityContext: SecurityContext,
     ): Boolean {
-        val (_, lastName, givenName) = profiiliService.getVerifiedName(securityContext)
+        val (_, lastName, givenName) = verifiedNameService.getVerifiedName(securityContext)
         return if (givenName != kayttaja.etunimi || lastName != kayttaja.sukunimi) {
             kayttaja.etunimi = givenName
             kayttaja.sukunimi = lastName
@@ -258,14 +258,15 @@ class HankeKayttajaService(
         update: ContactUpdate,
         currentUserId: String,
     ): HankeKayttaja {
-        hankeRepository
-            .findOneByHankeTunnus(hankeTunnus)
-            ?.let { getKayttajaByUserId(it.id, currentUserId) }
-            ?.let {
-                it.sahkoposti = update.sahkoposti
-                it.puhelin = update.puhelinnumero
-                return it.toDomain()
-            } ?: throw HankeNotFoundException(hankeTunnus)
+        val hanke =
+            hankeRepository.findOneByHankeTunnus(hankeTunnus)
+                ?: throw HankeNotFoundException(hankeTunnus)
+        val kayttaja =
+            getKayttajaByUserId(hanke.id, currentUserId)
+                ?: throw HankeNotFoundException(hankeTunnus)
+        kayttaja.sahkoposti = update.sahkoposti
+        kayttaja.puhelin = update.puhelinnumero
+        return kayttaja.toDomain()
     }
 
     @Transactional
