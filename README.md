@@ -162,12 +162,12 @@ Generate the SBOM:
 $ ./gradlew :services:hanke-service:cyclonedxBom
 ```
 
-The generated file is at `services/hanke-service/build/reports/bom.json`.
+The generated file is at `services/hanke-service/build/reports/cyclonedx-direct/bom.json`.
 
 Scan it for vulnerabilities:
 
 ```
-$ osv-scanner scan source --config osv-scanner.toml -L services/hanke-service/build/reports/bom.json
+$ osv-scanner scan source --config osv-scanner.toml -L services/hanke-service/build/reports/cyclonedx-direct/bom.json
 ```
 
 `osv-scanner.toml` (repo root) lists known false-positive/non-exploitable findings to ignore, with
