@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.security.AdFilterProperties
 import fi.hel.haitaton.hanke.security.UserSessionCleanupProperties
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
+import java.time.Duration
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.geojson.LngLatAlt
@@ -22,6 +23,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
+import reactor.netty.resources.ConnectionProvider
 import tools.jackson.databind.module.SimpleModule
 
 @Configuration
@@ -60,24 +62,37 @@ class Configuration(private val alluProperties: AlluProperties) {
     @Bean
     @Profile("!test")
     fun alluClient(webClientBuilder: WebClient.Builder): AlluClient {
+        val httpClient = HttpClient.create(alluConnectionProvider())
+        val securedClient =
+            if (alluTrustInsecure) {
+                val sslContext =
+                    SslContextBuilder.forClient()
+                        .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                        .build()
+                httpClient.secure { t -> t.sslContext(sslContext) }
+            } else httpClient
         val webClient =
             webClientWithLargeBuffer(
-                if (alluTrustInsecure) createInsecureTrustingWebClient(webClientBuilder)
-                else webClientBuilder
+                webClientBuilder.clientConnector(ReactorClientHttpConnector(securedClient))
             )
         return AlluClient(webClient, alluProperties)
     }
 
-    private fun createInsecureTrustingWebClient(
-        webClientBuilder: WebClient.Builder
-    ): WebClient.Builder {
-        val sslContext =
-            SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build()
-        val httpClient = HttpClient.create().secure { t -> t.sslContext(sslContext) }
-        return webClientBuilder.clientConnector(ReactorClientHttpConnector(httpClient))
-    }
+    /**
+     * Allu closes keep-alive connections after 5 seconds of inactivity. Without an idle limit the
+     * pool keeps those connections and reuses them after Allu has already closed them, which fails
+     * the request with "Connection reset by peer". Drop idle connections before Allu does.
+     */
+    private fun alluConnectionProvider(): ConnectionProvider =
+        ConnectionProvider.builder("allu")
+            .maxIdleTime(ALLU_MAX_IDLE_TIME)
+            .evictInBackground(ALLU_EVICTION_INTERVAL)
+            .build()
 
     companion object {
+        private val ALLU_MAX_IDLE_TIME: Duration = Duration.ofSeconds(4)
+        private val ALLU_EVICTION_INTERVAL: Duration = Duration.ofSeconds(5)
+
         /** Create a web client that can download large files in memory. */
         fun webClientWithLargeBuffer(webClientBuilder: WebClient.Builder): WebClient =
             webClientBuilder
