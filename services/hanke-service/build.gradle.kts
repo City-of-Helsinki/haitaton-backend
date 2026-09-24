@@ -9,7 +9,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "8.46.0"
+val sentryVersion = "8.52.0"
 val geoToolsVersion = "35.0"
 
 // Override Spring Boot 4.1.1's managed versions ahead of the next Boot patch release,
@@ -89,7 +89,7 @@ plugins {
     kotlin("plugin.jpa") version kotlinVersion
     idea
     id("jacoco")
-    id("io.freefair.mjml.java") version "8.14.2"
+    id("io.freefair.mjml.java") version "9.5.0"
     id("org.owasp.dependencycheck") version "13.0.0"
     id("org.cyclonedx.bom") version "2.3.0"
 }
@@ -113,7 +113,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
     implementation("ch.qos.logback.access:logback-access-tomcat:2.0.6")
-    implementation("net.logstash.logback:logstash-logback-encoder:8.1")
+    implementation("net.logstash.logback:logstash-logback-encoder:9.0")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -139,7 +139,7 @@ dependencies {
     // Spring Boot 4's modularization split @WebMvcTest/@AutoConfigureMockMvc out of
     // spring-boot-test-autoconfigure into this dedicated module.
     testImplementation("org.springframework.boot:spring-boot-webmvc-test")
-    testImplementation("io.mockk:mockk:1.14.5")
+    testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("com.ninja-squad:springmockk:5.0.1")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.28.1")
     testImplementation("com.squareup.okhttp3:mockwebserver3:5.3.2")
@@ -178,7 +178,7 @@ dependencies {
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
-    implementation(platform("com.azure:azure-sdk-bom:1.3.7"))
+    implementation(platform("com.azure:azure-sdk-bom:1.3.8"))
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity") // BOM 1.3.7 → 1.18.3 (fixes CVE-2026-33117)
