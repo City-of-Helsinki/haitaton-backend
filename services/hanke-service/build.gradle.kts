@@ -81,7 +81,7 @@ plugins {
     val kotlinVersion = "2.2.20"
     id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
-    id("com.diffplug.spotless") version "7.2.1"
+    id("com.diffplug.spotless") version "8.10.2"
     kotlin("jvm") version kotlinVersion
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
     kotlin("plugin.spring") version kotlinVersion
