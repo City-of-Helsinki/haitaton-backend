@@ -128,7 +128,7 @@ dependencies {
     implementation("io.hypersistence:hypersistence-utils-hibernate-73:3.15.4")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-    implementation("com.auth0:java-jwt:4.5.0")
+    implementation("com.auth0:java-jwt:4.6.1")
 
     implementation("org.postgresql:postgresql")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
