@@ -17,6 +17,8 @@ val geoToolsVersion = "35.0"
 ext["log4j2.version"] = "2.26.1"
 ext["netty.version"] = "4.2.18.Final"
 ext["tomcat.version"] = "11.0.26"
+ext["jackson-2-bom.version"] = "2.21.7"
+ext["jackson-bom.version"] = "3.1.7"
 
 // The Kotlin Gradle plugin resolves Bouncy Castle into its own internal configuration (used only by
 // library-publishing validation tasks, which we don't run), pinned to [1.80,1.81). It never reaches
@@ -109,7 +111,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-jackson2")
     implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("tools.jackson.module:jackson-module-kotlin:3.1.5")
+    implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
     implementation("ch.qos.logback.access:logback-access-tomcat:2.0.6")
