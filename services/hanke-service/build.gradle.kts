@@ -127,7 +127,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-cache")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-73:3.15.4")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-73:3.16.0")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("com.auth0:java-jwt:4.5.0")
