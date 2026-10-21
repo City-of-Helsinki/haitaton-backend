@@ -31,14 +31,14 @@ RUN microdnf -y install fontconfig && microdnf clean all
 # they all go into the blocked.certs of the JVM's own java.home, readable by all.
 COPY services/hanke-service/blocked-certs-emudhra.txt /usr/local/share/
 RUN java_home=$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java\.home = //p') && \
-    blocked=$java_home/lib/security/blocked.certs && \
+    blocked="$java_home/lib/security/blocked.certs" && \
     fingerprints=$(grep -v -e '^#' -e '^$' /usr/local/share/blocked-certs-emudhra.txt) && \
     ! printf '%s\n' "$fingerprints" | grep -vxE '[0-9A-F]{64}' && \
-    test $(printf '%s\n' "$fingerprints" | wc -l) -eq 16 && \
-    grep -qx 'Algorithm=SHA-256' $blocked && \
-    printf '\n%s\n' "$fingerprints" >> $blocked && \
-    test $(printf '%s\n' "$fingerprints" | grep -cxFf - $blocked) -eq 16 && \
-    test -n "$(find $blocked -perm -o=r)"
+    test "$(printf '%s\n' "$fingerprints" | wc -l)" -eq 16 && \
+    grep -qx 'Algorithm=SHA-256' "$blocked" && \
+    printf '\n%s\n' "$fingerprints" >> "$blocked" && \
+    test "$(printf '%s\n' "$fingerprints" | grep -cxFf - "$blocked")" -eq 16 && \
+    test -n "$(find "$blocked" -perm -o=r)"
 USER default
 
 ENTRYPOINT ["java", "-cp", "app:app/lib/*", "fi.hel.haitaton.hanke.ApplicationKt"]
