@@ -23,6 +23,14 @@ EXPOSE 8080 8081
 # Fix RuntimeException: Fontconfig head is null
 USER root
 RUN microdnf -y install fontconfig && microdnf clean all
+# Distrust compromised eMudhra intermediates until the base image ships a fix.
+# Same block in Dockerfile-local; see blocked-certs-emudhra.txt for when to remove.
+# Fails the build if blocked.certs is missing or not all fingerprints end up in it.
+COPY services/hanke-service/blocked-certs-emudhra.txt /usr/local/share/
+RUN blocked=$JAVA_HOME/lib/security/blocked.certs && \
+    grep -qx 'Algorithm=SHA-256' $blocked && \
+    cat /usr/local/share/blocked-certs-emudhra.txt >> $blocked && \
+    test $(grep -E '^[0-9A-F]{64}$' /usr/local/share/blocked-certs-emudhra.txt | grep -cxFf $blocked) -eq 16
 USER default
 
 CMD [ "sh", "-c", "java $JAVA_OPTS -Djava.security.egd=file:/dev/urandom -jar hanke-service.jar" ]
