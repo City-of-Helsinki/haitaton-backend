@@ -79,6 +79,22 @@ spotless {
     }
 }
 
+// Gradle plugins (Spring Boot, mjml, dependency-check, CycloneDX) pull vulnerable jackson-databind
+// versions onto the build classpath. They never reach the application, but GitHub's dependency
+// submission reports the build classpath too, so force patched versions there.
+buildscript {
+    dependencies {
+        constraints {
+            classpath("com.fasterxml.jackson.core:jackson-databind:2.22.2") {
+                because("GHSA-q4xh-88c3-wmh7")
+            }
+            classpath("tools.jackson.core:jackson-databind:3.1.7") {
+                because("GHSA-q4xh-88c3-wmh7")
+            }
+        }
+    }
+}
+
 plugins {
     val kotlinVersion = "2.2.20"
     id("org.springframework.boot") version "4.1.1"
