@@ -1,3 +1,2 @@
 *.sh        text eol=lf
 /gradlew    text eol=lf
-/services/hanke-service/blocked-certs-emudhra.txt text eol=lf
